@@ -19,7 +19,7 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 
 * Role: Project Advisor
 
-### Jane Doe
+### Edison Choo
 
 <img src="images/edison-choo.png" width="200px">
 

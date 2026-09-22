@@ -28,12 +28,11 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 <img src="images/elljaykei.png" width="200px">
 
 
-### Jean Doe
+### Noel Tong
 
-<img src="images/johndoe.png" width="200px">
+<img src="images/h0nh0nbaguette.png" width="200px">
 
-[[github](http://github.com/johndoe)]
-[[portfolio](team/johndoe.md)]
+[[github](https://github.com/h0nh0nbaguette)]
 
 * Role: Developer
 * Responsibilities: Dev Ops + Threading

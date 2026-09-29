@@ -261,71 +261,138 @@ _{Explain here how the data archiving feature will be implemented}_
 
 **Target user profile**:
 
-* has a need to manage a significant number of contacts
-* prefers desktop apps over other types of applications
-* can type fast
-* prefers typing to mouse interactions
-* is reasonably comfortable using CLI apps
+* is an independent part-time tutor in Singapore
+* teaches approximately 10 to 20 secondary or junior-college students through individual lessons
+* needs to manage student details, guardian contact details, academic information, and regular lesson schedules
+* prefers a desktop application that can be operated efficiently using the keyboard
+* is reasonably comfortable using command-line interfaces
 
-**Value proposition**: Manage contacts faster than with a typical mouse-driven GUI application.
-
+**Value proposition**: TutorFlow helps independent tutors manage student information and regular lesson schedules faster and more reliably than scattered notes, while reducing the risk of timetable clashes.
 
 ### User stories
 
-Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unlikely to have) - `*`
+Priorities: High (must-have) - `* * *`, Medium (should-have) - `* *`, Low (nice-to-have) - `*`
 
-| Priority | As a …​                                    | I want to …​                     | So that I can…​                                                        |
-| -------- | ------------------------------------------ | ------------------------------ | ---------------------------------------------------------------------- |
-| `* * *`  | new user                                   | see usage instructions         | refer to instructions when I forget how to use the App                 |
-| `* * *`  | user                                       | add a new person               |                                                                        |
-| `* * *`  | user                                       | delete a person                | remove entries that I no longer need                                   |
-| `* * *`  | user                                       | find a person by name          | locate details of persons without having to go through the entire list |
-| `* *`    | user                                       | hide private contact details   | minimize chance of someone else seeing them by accident                |
-| `*`      | user with many persons in the address book | sort persons by name           | locate a person easily                                                 |
-
-*{More to be added}*
+| ID | Priority | As a/an | I want to | So that I can |
+| --- | --- | --- | --- | --- |
+| US01 | `* * *` | independent tutor | add a student profile | keep the student's essential information in one place |
+| US02 | `* * *` | independent tutor | list all my students | review my current student roster |
+| US03 | `* * *` | independent tutor | view a student's profile | retrieve the student's contact and academic information |
+| US04 | `* * *` | independent tutor | delete a student record | remove obsolete or incorrectly created records from my roster |
+| US05 | `* * *` | independent tutor | add a regular lesson to a student | record when I teach that student each week |
+| US06 | `* * *` | independent tutor | view the regular lessons assigned to a student | check that student's regular lesson schedule |
+| US07 | `* * *` | independent tutor | view all regular lessons in weekday-and-time order | understand my overall teaching schedule |
+| US08 | `* * *` | independent tutor | delete a regular lesson | remove lessons that no longer take place |
+| US09 | `* * *` | independent tutor | be prevented from adding an overlapping regular lesson | avoid double-booking myself |
+| US10 | `* * *` | independent tutor | reopen TutorFlow and recover my student and lesson records | avoid entering them again |
+| US11 | `* *` | independent tutor | search for a student by name | find the student's record quickly |
+| US12 | `* *` | independent tutor | filter students by academic level | focus on students at a particular stage of study |
+| US13 | `* *` | independent tutor | filter students by subject | find the students whom I teach a particular subject |
+| US14 | `* *` | independent tutor | view regular lessons scheduled on a selected weekday | focus on one day's teaching schedule |
+| US15 | `* *` | independent tutor | edit a student's profile | correct changed or incorrectly entered information |
+| US16 | `* *` | independent tutor | change a regular lesson's timeslot | keep my schedule accurate when a regular arrangement changes |
+| US17 | `*` | independent tutor | archive an inactive student | keep former students from cluttering my current roster |
+| US18 | `*` | independent tutor | restore an archived student | resume managing a returning student |
+| US19 | `*` | independent tutor | identify students without a regular lesson | notice students whose schedules are incomplete |
+| US20 | `*` | independent tutor | export my regular lesson schedule | view or print it outside TutorFlow |
+| US21 | `*` | independent tutor | sort students alphabetically | scan my roster more easily |
+| US22 | `*` | independent tutor | sort students by academic level | group students at similar stages of study |
+| US23 | `*` | independent tutor | search for a student by phone number | identify a student from an unfamiliar contact number |
+| US24 | `*` | independent tutor | view available periods in my regular lesson schedule | propose lesson times without checking each lesson manually |
+| US25 | `*` | independent tutor | add homework to a student | record the work assigned to that student |
+| US26 | `*` | independent tutor | view and filter homework by student, due date, subject, or completion status | find homework that requires my attention |
+| US27 | `*` | independent tutor | edit recorded homework | correct or update an assignment's details |
+| US28 | `*` | independent tutor | delete recorded homework | remove assignments entered incorrectly or no longer required |
+| US29 | `*` | independent tutor | update a homework assignment's completion status | track which assignments remain unfinished |
+| US30 | `*` | independent tutor | record a student's homework score | keep track of the student's performance |
 
 ### Use cases
 
-(For all use cases below, the **System** is the `AddressBook` and the **Actor** is the `user`, unless specified otherwise)
+For all use cases below, the **System** is `TutorFlow` and the **Actor** is the `Tutor`, unless specified otherwise.
 
-**Use case: Delete a person**
+#### Use case: UC01 - Add a regular lesson
 
 **MSS**
 
-1.  User requests to list persons
-2.  AddressBook shows a list of persons
-3.  User requests to delete a specific person in the list
-4.  AddressBook deletes the person
-
-    Use case ends.
+1. Tutor requests to view the student roster.
+2. TutorFlow displays the student roster with displayed indices.
+3. Tutor requests to add a regular lesson to a displayed student, specifying the subject, weekday, start time, and end time.
+4. TutorFlow records the regular lesson and confirms its details.
+5. Use case ends.
 
 **Extensions**
 
-* 2a. The list is empty.
+* 2a. The student roster is empty.
+  * 2a1. TutorFlow informs the tutor that there are no students.
+  * 2a2. Use case ends.
+* 3a. The supplied student index does not identify a displayed student.
+  * 3a1. TutorFlow displays an error.
+  * 3a2. Use case resumes at step 3.
+* 3b. One or more lesson details are invalid.
+  * 3b1. TutorFlow displays the relevant validation error.
+  * 3b2. Use case resumes at step 3.
+* 3c. The selected student is not registered for the supplied subject.
+  * 3c1. TutorFlow rejects the lesson and displays an error.
+  * 3c2. Use case resumes at step 3.
+* 3d. The regular lesson already exists.
+  * 3d1. TutorFlow informs the tutor that the lesson already exists.
+  * 3d2. Use case ends.
+* 3e. The lesson overlaps another regular lesson on the same weekday.
+  * 3e1. TutorFlow rejects the new lesson and identifies the conflicting lesson.
+  * 3e2. Use case ends.
+* 4a. TutorFlow cannot save the updated data.
+  * 4a1. TutorFlow leaves the lesson schedule unchanged.
+  * 4a2. TutorFlow informs the tutor that no lesson data was changed.
+  * 4a3. Use case ends.
 
-  Use case ends.
+#### Use case: UC02 - Delete a regular lesson
 
-* 3a. The given index is invalid.
+**MSS**
 
-    * 3a1. AddressBook shows an error message.
+1. Tutor requests to view all regular lessons.
+2. TutorFlow displays the regular lessons in weekday-and-time order with displayed indices.
+3. Tutor requests to delete a lesson using its displayed index.
+4. TutorFlow deletes the selected lesson and confirms its details.
+5. Use case ends.
 
-      Use case resumes at step 2.
+**Extensions**
 
-*{More to be added}*
+* 2a. There are no regular lessons.
+  * 2a1. TutorFlow informs the tutor that no regular lessons were found.
+  * 2a2. Use case ends.
+* 3a. The supplied index does not identify a displayed lesson.
+  * 3a1. TutorFlow displays an error.
+  * 3a2. Use case resumes at step 3.
+* 4a. TutorFlow cannot save the updated data.
+  * 4a1. TutorFlow leaves the lesson schedule unchanged.
+  * 4a2. TutorFlow informs the tutor that no lesson data was changed.
+  * 4a3. Use case ends.
 
 ### Non-Functional Requirements
 
-1.  Should work on any _mainstream OS_ as long as it has Java `25` or above installed.
-2.  Should be able to hold up to 1000 persons without noticeable sluggishness in performance for typical usage.
-3.  A user with above average typing speed for regular English text (i.e. not code, not system admin commands) should be able to accomplish most of the tasks faster using commands than using the mouse.
-
-*{More to be added}*
+1. TutorFlow should work on Windows, Linux, and macOS on a computer with Java `25` installed.
+2. TutorFlow should be distributed as a single JAR file no larger than 100 MB and should not require an installer or any additional software beyond Java 25.
+3. TutorFlow should support one user, with its data file used only by that user during regular operation.
+4. TutorFlow should store all application data locally in a human-editable UTF-8 text file and should not require a database management system.
+5. TutorFlow's core student and lesson-management features should work without an Internet connection or a team-maintained remote server.
+6. TutorFlow's GUI should work without inconvenience at resolutions of 1920x1080 or higher with 100% or 125% display scaling, and remain usable at resolutions of 1280x720 or higher with 150% display scaling.
+7. TutorFlow should respond to commands within one second when managing up to 100 student profiles with up to 10 regular lessons per student on a computer with a 2.0 GHz dual-core processor, 4 GB of RAM, and solid-state storage.
+8. After reading the User Guide for no more than 15 minutes, a target user should be able to add, list, and delete students and regular lessons without assistance.
+9. Adding, listing, and deleting students and regular lessons should be possible using only the keyboard.
+10. If a save operation fails, TutorFlow should preserve the previously stored data without leaving a partially written data file.
 
 ### Glossary
 
-* **Mainstream OS**: Windows, Linux, Unix, or macOS
-* **Private contact detail**: A contact detail that is not meant to be shared with others
+* **Academic level**: The student's current secondary or junior-college year, such as `S3` or `J1`.
+* **Command-line interface (CLI)**: A text-based interface in which the user performs operations by entering commands.
+* **Displayed index**: A temporary one-based number assigned to an item in the currently displayed list. It is not a permanent identifier.
+* **Guardian**: The person recorded as the primary guardian or contact for a student.
+* **Homework**: Work assigned to a student and recorded in TutorFlow for follow-up.
+* **Lesson clash**: Two regular lessons on the same weekday whose time intervals overlap.
+* **Regular lesson**: A tuition lesson that repeats weekly for a student at a specified weekday and time.
+* **Student profile**: The record containing a student's identity, contact information, academic information, guardian information, and associated regular lessons.
+* **Student roster**: The collection of student profiles managed by TutorFlow.
+* **Tuition subject**: A subject that the tutor teaches to a student, such as Mathematics, Physics, or Chemistry.
 
 --------------------------------------------------------------------------------------------------------------------
 

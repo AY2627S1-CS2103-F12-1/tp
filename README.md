@@ -14,6 +14,10 @@ TutorFlow is designed for independent part-time tutors who teach approximately
 10 to 20 secondary or junior-college students through individual or small-group
 lessons.
 
+TutorFlow focuses on student contacts and related tutoring records. It does not
+deliver lessons, process payments, contact parents directly, or replace a full
+accounting, calendar, or learning-management system.
+
 ## Planned core features
 
 * Add student profiles with student and guardian contact details, academic
@@ -27,6 +31,7 @@ lessons.
 
 ## Documentation
 
+* [Product website](https://ay2627s1-cs2103-f12-1.github.io/tp/)
 * [User Guide](docs/UserGuide.md)
 * [Developer Guide](docs/DeveloperGuide.md)
 

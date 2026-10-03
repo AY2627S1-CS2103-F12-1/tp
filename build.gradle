@@ -20,6 +20,19 @@ repositories {
     maven { url = 'https://oss.sonatype.org/content/repositories/snapshots/' }
 }
 
+def osName = System.getProperty('os.name').toLowerCase(Locale.ROOT)
+def architecture = System.getProperty('os.arch').toLowerCase(Locale.ROOT)
+def javaFxPlatform
+if (osName.contains('win')) {
+    javaFxPlatform = 'win'
+} else if (osName.contains('mac')) {
+    javaFxPlatform = architecture == 'aarch64' ? 'mac-aarch64' : 'mac'
+} else if (osName.contains('linux')) {
+    javaFxPlatform = architecture == 'aarch64' ? 'linux-aarch64' : 'linux'
+} else {
+    throw new GradleException("Unsupported operating system for JavaFX: ${osName}")
+}
+
 checkstyle {
     toolVersion = '14.1.0'
 }
@@ -53,18 +66,10 @@ dependencies {
     String jUnitVersion = '5.14.4'
     String javaFxVersion = '17.0.7'
 
-    implementation "org.openjfx:javafx-base:${javaFxVersion}:win"
-    implementation "org.openjfx:javafx-base:${javaFxVersion}:mac"
-    implementation "org.openjfx:javafx-base:${javaFxVersion}:linux"
-    implementation "org.openjfx:javafx-controls:${javaFxVersion}:win"
-    implementation "org.openjfx:javafx-controls:${javaFxVersion}:mac"
-    implementation "org.openjfx:javafx-controls:${javaFxVersion}:linux"
-    implementation "org.openjfx:javafx-fxml:${javaFxVersion}:win"
-    implementation "org.openjfx:javafx-fxml:${javaFxVersion}:mac"
-    implementation "org.openjfx:javafx-fxml:${javaFxVersion}:linux"
-    implementation "org.openjfx:javafx-graphics:${javaFxVersion}:win"
-    implementation "org.openjfx:javafx-graphics:${javaFxVersion}:mac"
-    implementation "org.openjfx:javafx-graphics:${javaFxVersion}:linux"
+    implementation "org.openjfx:javafx-base:${javaFxVersion}:${javaFxPlatform}"
+    implementation "org.openjfx:javafx-controls:${javaFxVersion}:${javaFxPlatform}"
+    implementation "org.openjfx:javafx-fxml:${javaFxVersion}:${javaFxPlatform}"
+    implementation "org.openjfx:javafx-graphics:${javaFxVersion}:${javaFxPlatform}"
 
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.7.0'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.7.4'

@@ -33,10 +33,21 @@
     -fx-padding: 0 0 0 1;
 }
 
-.tab-pane .tab-header-area {
-    -fx-padding: 0 0 0 0;
-    -fx-min-height: 0;
-    -fx-max-height: 0;
+.roster-tabs .tab-header-area {
+    -fx-min-height: 34;
+    -fx-max-height: 34;
+}
+
+.roster-tabs .tab {
+    -fx-background-color: #343a40;
+}
+
+.roster-tabs .tab:selected {
+    -fx-background-color: #245264;
+}
+
+.roster-tabs .tab-label {
+    -fx-text-fill: white;
 }
 
 .table-view {
@@ -130,6 +141,56 @@
     -fx-font-family: "Segoe UI";
     -fx-font-size: 13px;
     -fx-text-fill: #010504;
+}
+
+.student-list-panel {
+    -fx-background-color: #f4f7f9;
+}
+
+.student-roster-title {
+    -fx-font-size: 18px;
+    -fx-text-fill: #20313a;
+}
+
+.student-count, .student-preview-note {
+    -fx-text-fill: #354a55;
+}
+
+.student-list-panel .list-view,
+.student-list-panel .list-cell:empty,
+.student-list-panel .list-cell:filled:even,
+.student-list-panel .list-cell:filled:odd {
+    -fx-background-color: #f4f7f9;
+}
+
+.student-list-panel .list-cell:filled:selected {
+    -fx-background-color: #dbe7eb;
+}
+
+.student-card {
+    -fx-background-color: #e5eef2;
+    -fx-border-color: #a8c0ca;
+    -fx-border-width: 1;
+}
+
+.student-card-name {
+    -fx-font-size: 16px;
+    -fx-text-fill: #20313a;
+}
+
+.student-card-badge {
+    -fx-background-color: #cadde5;
+    -fx-padding: 2 5 2 5;
+    -fx-text-fill: #20313a;
+}
+
+.student-card-detail {
+    -fx-font-size: 12px;
+    -fx-text-fill: #354a55;
+}
+
+.student-card .label {
+    -fx-text-fill: #20313a;
 }
 
 .stack-pane {

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox spacing="8" styleClass="student-list-panel" xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1">
+  <padding><Insets top="10" right="10" bottom="10" left="10" /></padding>
+  <HBox alignment="CENTER_LEFT" spacing="8">
+    <Label text="Students" styleClass="student-roster-title" />
+    <Region HBox.hgrow="ALWAYS" />
+    <Label fx:id="studentCount" styleClass="student-count" />
+  </HBox>
+  <Label text="Session preview: students added here are not saved yet." styleClass="student-preview-note" />
+  <ListView fx:id="studentListView" VBox.vgrow="ALWAYS" />
+</VBox>

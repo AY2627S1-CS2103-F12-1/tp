@@ -92,6 +92,46 @@ public class StudentFieldsTest {
         assertEquals(student.getPhone(), student.getGuardianPhone());
     }
 
+    @Test
+    public void valueTypes_equalValuesHaveEqualHashCodes() {
+        StudentName name = new StudentName("John   Tan");
+        StudentPhone phone = new StudentPhone(" 91234567 ");
+        TuitionSubjects subjects = new TuitionSubjects("MATH, PHYSICS");
+
+        assertEquals(new StudentName("John Tan"), name);
+        assertEquals(new StudentName("John Tan").hashCode(), name.hashCode());
+        assertEquals(new StudentPhone("91234567"), phone);
+        assertEquals(new StudentPhone("91234567").hashCode(), phone.hashCode());
+        assertEquals(new TuitionSubjects("PHYSICS, MATH"), subjects);
+        assertEquals(new TuitionSubjects("PHYSICS, MATH").hashCode(), subjects.hashCode());
+        assertFalse(name.equals(new StudentName("Jane Tan")));
+        assertFalse(phone.equals(new StudentPhone("81234567")));
+        assertFalse(subjects.equals(new TuitionSubjects("CHEMISTRY")));
+        assertFalse(name.isSameNameIgnoringCase(null));
+    }
+
+    @Test
+    public void student_equalityIncludesAllSixFields() {
+        Student original = student("John Tan", "91234567", "98765432");
+        Student equal = student("John Tan", "91234567", "98765432");
+
+        assertEquals(original, equal);
+        assertEquals(original.hashCode(), equal.hashCode());
+        assertFalse(original.equals(student("John Tan", "91234567", "81234567")));
+        assertFalse(original.equals(student("John Tan", "81234567", "98765432")));
+        assertFalse(original.equals(student("Jane Tan", "91234567", "98765432")));
+        assertFalse(original.equals(new Student(new StudentName("John Tan"), AcademicLevel.S4,
+                new TuitionSubjects("MATH"), new StudentPhone("91234567"), new StudentName("Mary Tan"),
+                new StudentPhone("98765432"))));
+        assertFalse(original.equals(new Student(new StudentName("John Tan"), AcademicLevel.S3,
+                new TuitionSubjects("PHYSICS"), new StudentPhone("91234567"), new StudentName("Mary Tan"),
+                new StudentPhone("98765432"))));
+        assertFalse(original.equals(new Student(new StudentName("John Tan"), AcademicLevel.S3,
+                new TuitionSubjects("MATH"), new StudentPhone("91234567"), new StudentName("Jane Tan"),
+                new StudentPhone("98765432"))));
+        assertFalse(original.equals(null));
+    }
+
     private static Student student(String name, String phone, String guardianPhone) {
         return new Student(new StudentName(name), AcademicLevel.S3, new TuitionSubjects("MATH"),
                 new StudentPhone(phone), new StudentName("Mary Tan"), new StudentPhone(guardianPhone));

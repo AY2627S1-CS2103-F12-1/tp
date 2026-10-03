@@ -45,6 +45,14 @@ public class StudentAddParserTest {
     }
 
     @Test
+    public void parse_blankArguments_reportsAllMissingPrefixes() {
+        String expected = String.format(StudentAddParser.MESSAGE_MISSING_PREFIXES,
+                "n/, l/, s/, p/, gn/, gp/");
+
+        assertParseFailure("   ", expected);
+    }
+
+    @Test
     public void parse_repeatedPrefix_reportsThatPrefix() {
         assertParseFailure(VALID_ARGUMENTS + " gn/Another Guardian",
                 String.format(StudentAddParser.MESSAGE_REPEATED_PREFIX, "gn/"));
@@ -54,6 +62,7 @@ public class StudentAddParserTest {
     public void parse_unknownPrefixOrUnprefixedText_reportsFormat() {
         assertParseFailure(VALID_ARGUMENTS + " x/value", StudentAddParser.MESSAGE_INVALID_FORMAT);
         assertParseFailure(" unexpected" + VALID_ARGUMENTS, StudentAddParser.MESSAGE_INVALID_FORMAT);
+        assertParseFailure("unexpected text", StudentAddParser.MESSAGE_INVALID_FORMAT);
     }
 
     @Test

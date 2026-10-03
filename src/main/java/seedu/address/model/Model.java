@@ -5,6 +5,7 @@ import java.util.function.Predicate;
 import javafx.collections.ObservableList;
 import seedu.address.commons.core.GuiSettings;
 import seedu.address.model.person.Person;
+import seedu.address.model.student.Student;
 
 /**
  * The API of the Model component.
@@ -68,4 +69,13 @@ public interface Model {
      * @throws NullPointerException if {@code predicate} is null.
      */
     void updateFilteredPersonList(Predicate<Person> predicate);
+
+    /** Returns true if a student with the same normalized name and student phone exists. */
+    boolean hasStudent(Student student);
+
+    /** Adds a student to the end of the student roster. The student must not already exist. */
+    void addStudent(Student student);
+
+    /** Returns an unmodifiable observable view of the student roster. */
+    ObservableList<Student> getStudentList();
 }

@@ -6,6 +6,7 @@ import java.util.logging.Logger;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.TabPane;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
@@ -34,6 +35,7 @@ public class MainWindow extends UiPart<Stage> {
 
     // Independent Ui parts residing in this Ui container
     private PersonListPanel personListPanel;
+    private StudentListPanel studentListPanel;
     private ResultDisplay resultDisplay;
     private HelpWindow helpWindow;
 
@@ -45,6 +47,12 @@ public class MainWindow extends UiPart<Stage> {
 
     @FXML
     private StackPane personListPanelPlaceholder;
+
+    @FXML
+    private StackPane studentListPanelPlaceholder;
+
+    @FXML
+    private TabPane rosterTabs;
 
     @FXML
     private StackPane resultDisplayPlaceholder;
@@ -114,6 +122,9 @@ public class MainWindow extends UiPart<Stage> {
      * Fills up all the placeholders of this window.
      */
     void fillInnerParts() {
+        studentListPanel = new StudentListPanel(logic.getStudentList());
+        studentListPanelPlaceholder.getChildren().add(studentListPanel.getRoot());
+
         personListPanel = new PersonListPanel(logic.getFilteredPersonList());
         personListPanelPlaceholder.getChildren().add(personListPanel.getRoot());
 
@@ -122,6 +133,14 @@ public class MainWindow extends UiPart<Stage> {
 
         StatusBarFooter statusBarFooter = new StatusBarFooter(dataFilePath);
         statusbarPlaceholder.getChildren().add(statusBarFooter.getRoot());
+        statusBarFooter.setStatusText("Student roster is in memory only; changes are not saved.");
+        rosterTabs.getSelectionModel().selectedIndexProperty().addListener((unused, oldIndex, newIndex) -> {
+            if (newIndex.intValue() == 0) {
+                statusBarFooter.setStatusText("Student roster is in memory only; changes are not saved.");
+            } else {
+                statusBarFooter.setStatusText(dataFilePath.toString());
+            }
+        });
 
         CommandBox commandBox = new CommandBox(this::executeCommand);
         commandBoxPlaceholder.getChildren().add(commandBox.getRoot());

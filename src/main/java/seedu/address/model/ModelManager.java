@@ -11,6 +11,8 @@ import javafx.collections.transformation.FilteredList;
 import seedu.address.commons.core.GuiSettings;
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.model.person.Person;
+import seedu.address.model.student.Student;
+import seedu.address.model.student.StudentRoster;
 
 /**
  * Represents the in-memory model of the address book data.
@@ -21,6 +23,7 @@ public class ModelManager implements Model {
     private final AddressBook addressBook;
     private final UserPrefs userPrefs;
     private final FilteredList<Person> filteredPersons;
+    private final StudentRoster studentRoster = new StudentRoster();
 
     /**
      * Initializes a ModelManager with the given addressBook and userPrefs.
@@ -111,6 +114,21 @@ public class ModelManager implements Model {
     }
 
     @Override
+    public boolean hasStudent(Student student) {
+        return studentRoster.hasStudent(student);
+    }
+
+    @Override
+    public void addStudent(Student student) {
+        studentRoster.addStudent(student);
+    }
+
+    @Override
+    public ObservableList<Student> getStudentList() {
+        return studentRoster.getStudents();
+    }
+
+    @Override
     public boolean equals(Object other) {
         if (other == this) {
             return true;
@@ -123,7 +141,8 @@ public class ModelManager implements Model {
 
         return addressBook.equals(otherModelManager.addressBook)
                 && userPrefs.equals(otherModelManager.userPrefs)
-                && filteredPersons.equals(otherModelManager.filteredPersons);
+                && filteredPersons.equals(otherModelManager.filteredPersons)
+                && studentRoster.getStudents().equals(otherModelManager.studentRoster.getStudents());
     }
 
 }

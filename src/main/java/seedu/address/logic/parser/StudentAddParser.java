@@ -3,11 +3,8 @@ package seedu.address.logic.parser;
 import static java.util.Objects.requireNonNull;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.student.AcademicLevel;
@@ -25,10 +22,9 @@ public final class StudentAddParser {
             + "gn/GUARDIAN_NAME gp/GUARDIAN_PHONE";
     public static final String MESSAGE_INVALID_FORMAT = "Invalid command format. Usage: " + USAGE;
     public static final String MESSAGE_MISSING_PREFIXES = "Missing required prefix(es): %s Usage: " + USAGE;
-    public static final String MESSAGE_REPEATED_PREFIX = "Prefix %s must be specified exactly once.";
+    public static final String MESSAGE_REPEATED_PREFIX = StrictArgumentTokenizer.MESSAGE_REPEATED_PREFIX;
 
     private static final List<String> REQUIRED_PREFIXES = List.of("n/", "l/", "s/", "p/", "gn/", "gp/");
-    private static final Pattern PREFIX_PATTERN = Pattern.compile("(?<!\\S)([a-z]+/)");
 
     /** Creates a parser for Add Student arguments. */
     public StudentAddParser() {
@@ -43,37 +39,8 @@ public final class StudentAddParser {
      */
     public Student parse(String arguments) throws ParseException {
         requireNonNull(arguments);
-        Matcher matcher = PREFIX_PATTERN.matcher(arguments);
-        Map<String, String> fields = new HashMap<>();
-        int previousValueStart = -1;
-        String previousPrefix = null;
-
-        while (matcher.find()) {
-            if (previousPrefix == null && !arguments.substring(0, matcher.start()).isBlank()) {
-                throw new ParseException(MESSAGE_INVALID_FORMAT);
-            }
-            if (previousPrefix != null) {
-                fields.put(previousPrefix, arguments.substring(previousValueStart, matcher.start()).strip());
-            }
-
-            String prefix = matcher.group(1);
-            if (!REQUIRED_PREFIXES.contains(prefix)) {
-                throw new ParseException(MESSAGE_INVALID_FORMAT);
-            }
-            if (fields.containsKey(prefix) || prefix.equals(previousPrefix)) {
-                throw new ParseException(String.format(MESSAGE_REPEATED_PREFIX, prefix));
-            }
-            previousPrefix = prefix;
-            previousValueStart = matcher.end();
-        }
-
-        if (previousPrefix == null) {
-            if (!arguments.isBlank()) {
-                throw new ParseException(MESSAGE_INVALID_FORMAT);
-            }
-        } else {
-            fields.put(previousPrefix, arguments.substring(previousValueStart).strip());
-        }
+        Map<String, String> fields = StrictArgumentTokenizer
+                .tokenize(arguments, REQUIRED_PREFIXES, MESSAGE_INVALID_FORMAT).values();
 
         List<String> missingPrefixes = new ArrayList<>();
         for (String prefix : REQUIRED_PREFIXES) {

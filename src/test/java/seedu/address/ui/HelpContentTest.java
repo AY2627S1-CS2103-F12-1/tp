@@ -15,15 +15,11 @@ import org.junit.jupiter.api.Test;
 import seedu.address.logic.commands.AddCommand;
 import seedu.address.logic.commands.ClearCommand;
 import seedu.address.logic.commands.Command;
-import seedu.address.logic.commands.DeleteCommand;
-import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.ExitCommand;
-import seedu.address.logic.commands.FindCommand;
 import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
 import seedu.address.logic.commands.HomeworkListCommand;
-import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.parser.AddressBookParser;
 
 public class HelpContentTest {
@@ -71,10 +67,9 @@ public class HelpContentTest {
     }
 
     @Test
-    public void getSections_personAndClearCommands_notListed() {
+    public void getSections_clearCommand_notListed() {
         // clear only resets the old person address book, not the student roster
-        List<String> unlistedCommandWords = List.of(EditCommand.COMMAND_WORD, DeleteCommand.COMMAND_WORD,
-                FindCommand.COMMAND_WORD, ListCommand.COMMAND_WORD, ClearCommand.COMMAND_WORD);
+        List<String> unlistedCommandWords = List.of(ClearCommand.COMMAND_WORD);
         for (HelpContent.Entry entry : getEntries()) {
             String firstWord = entry.format().split(" ")[0];
             assertFalse(unlistedCommandWords.contains(entry.commandWord()), entry.commandWord());

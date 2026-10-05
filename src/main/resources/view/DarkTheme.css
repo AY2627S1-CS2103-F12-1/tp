@@ -33,23 +33,6 @@
     -fx-padding: 0 0 0 1;
 }
 
-.roster-tabs .tab-header-area {
-    -fx-min-height: 34;
-    -fx-max-height: 34;
-}
-
-.roster-tabs .tab {
-    -fx-background-color: #343a40;
-}
-
-.roster-tabs .tab:selected {
-    -fx-background-color: #245264;
-}
-
-.roster-tabs .tab-label {
-    -fx-text-fill: white;
-}
-
 .table-view {
     -fx-base: #1d1d1d;
     -fx-control-inner-background: #1d1d1d;

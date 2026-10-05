@@ -1,7 +1,6 @@
 package seedu.address.ui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import java.time.Clock;
@@ -40,6 +39,7 @@ public class HelpContentTest {
                 "homework list", HomeworkListCommand.MESSAGE_USAGE,
                 "homework delete", HomeworkDeleteCommand.MESSAGE_USAGE,
                 HelpCommand.COMMAND_WORD, HelpCommand.COMMAND_WORD,
+                ClearCommand.COMMAND_WORD, ClearCommand.COMMAND_WORD,
                 ExitCommand.COMMAND_WORD, ExitCommand.COMMAND_WORD);
 
         List<HelpContent.Entry> entries = getEntries();
@@ -57,23 +57,13 @@ public class HelpContentTest {
                 "homework list", HomeworkListCommand.class,
                 "homework delete", HomeworkDeleteCommand.class,
                 HelpCommand.COMMAND_WORD, HelpCommand.class,
+                ClearCommand.COMMAND_WORD, ClearCommand.class,
                 ExitCommand.COMMAND_WORD, ExitCommand.class);
         AddressBookParser parser = new AddressBookParser(FIXED_CLOCK);
 
         for (HelpContent.Entry entry : getEntries()) {
             assertInstanceOf(expectedCommandTypes.get(entry.commandWord()), parser.parseCommand(entry.example()),
                     entry.example());
-        }
-    }
-
-    @Test
-    public void getSections_clearCommand_notListed() {
-        // clear only resets the old person address book, not the student roster
-        List<String> unlistedCommandWords = List.of(ClearCommand.COMMAND_WORD);
-        for (HelpContent.Entry entry : getEntries()) {
-            String firstWord = entry.format().split(" ")[0];
-            assertFalse(unlistedCommandWords.contains(entry.commandWord()), entry.commandWord());
-            assertFalse(unlistedCommandWords.contains(firstWord), entry.format());
         }
     }
 

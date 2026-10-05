@@ -3,6 +3,7 @@ package seedu.address.ui;
 import java.util.List;
 
 import seedu.address.logic.commands.AddCommand;
+import seedu.address.logic.commands.ClearCommand;
 import seedu.address.logic.commands.ExitCommand;
 import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.HomeworkAddCommand;
@@ -51,6 +52,9 @@ public final class HelpContent {
             new Section(SECTION_GENERAL, List.of(
                     new Entry(HelpCommand.COMMAND_WORD, HelpCommand.COMMAND_WORD,
                             "Opens this help window. F1 also opens it, and Esc closes it.", HelpCommand.COMMAND_WORD),
+                    new Entry(ClearCommand.COMMAND_WORD, ClearCommand.COMMAND_WORD,
+                            "Deletes all students and their homework. This cannot be undone.",
+                            ClearCommand.COMMAND_WORD),
                     new Entry(ExitCommand.COMMAND_WORD, ExitCommand.COMMAND_WORD,
                             "Exits the app.", ExitCommand.COMMAND_WORD))));
 

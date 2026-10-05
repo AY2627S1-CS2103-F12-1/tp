@@ -37,6 +37,12 @@ public class StudentBuilder {
         return this;
     }
 
+    /** Returns this builder with a different guardian name. */
+    public StudentBuilder withGuardianName(String guardianName) {
+        this.guardianName = guardianName;
+        return this;
+    }
+
     /** Returns this builder with the given homework, in order. */
     public StudentBuilder withHomeworks(Homework... homeworks) {
         this.homeworks = List.of(homeworks);

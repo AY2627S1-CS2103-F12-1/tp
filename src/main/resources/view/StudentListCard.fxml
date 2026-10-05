@@ -2,24 +2,32 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox id="cardPane" spacing="5" styleClass="student-card" xmlns="http://javafx.com/javafx/17"
+<!-- prefWidth="0" lets the list cell, not the longest name, decide the card width -->
+<VBox id="cardPane" prefWidth="0" spacing="5" styleClass="student-card" xmlns="http://javafx.com/javafx/17"
       xmlns:fx="http://javafx.com/fxml/1">
   <padding><Insets top="10" right="12" bottom="10" left="12" /></padding>
   <HBox alignment="CENTER_LEFT" spacing="8">
-    <Label fx:id="index" styleClass="student-card-name" />
-    <Label fx:id="name" styleClass="student-card-name" />
+    <Label fx:id="index" styleClass="student-card-name">
+      <minWidth><Region fx:constant="USE_PREF_SIZE" /></minWidth>
+    </Label>
+    <Label fx:id="name" styleClass="student-card-name" wrapText="true" />
     <Region HBox.hgrow="ALWAYS" />
-    <Label fx:id="academicLevel" styleClass="student-card-badge" />
-    <Label fx:id="subjects" styleClass="student-card-badge" />
+    <Label fx:id="academicLevel" styleClass="student-card-badge">
+      <minWidth><Region fx:constant="USE_PREF_SIZE" /></minWidth>
+    </Label>
+    <Label fx:id="subjects" styleClass="student-card-badge">
+      <minWidth><Region fx:constant="USE_PREF_SIZE" /></minWidth>
+    </Label>
   </HBox>
-  <HBox alignment="CENTER_LEFT" spacing="16">
+  <FlowPane hgap="16" vgap="4">
     <Label fx:id="studentPhone" styleClass="student-card-detail" />
     <Label fx:id="guardianName" styleClass="student-card-detail" />
     <Label fx:id="guardianPhone" styleClass="student-card-detail" />
-  </HBox>
+  </FlowPane>
   <Label fx:id="assignedHomeworkCount" styleClass="student-card-detail" />
 </VBox>

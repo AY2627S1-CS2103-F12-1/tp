@@ -18,6 +18,8 @@ import org.junit.jupiter.api.io.TempDir;
 
 import seedu.address.logic.commands.ClearCommand;
 import seedu.address.logic.commands.CommandResult;
+import seedu.address.logic.commands.HomeworkAddCommand;
+import seedu.address.logic.commands.HomeworkDeleteCommand;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.AddressBook;
@@ -126,6 +128,31 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_clearSaveFails_restoresStudents() {
+        setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+        String expectedMessage = String.format(LogicManager.FILE_OPS_ERROR_FORMAT, DUMMY_IO_EXCEPTION.getMessage());
+
+        assertCommandFailure(ClearCommand.COMMAND_WORD, CommandException.class, expectedMessage,
+                new ModelManager(getTypicalAddressBook(), new UserPrefs()));
+    }
+
+    @Test
+    public void execute_homeworkAddSaveFails_rollsBackAddition() {
+        setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+
+        assertCommandFailure("hw add 2 t/Trigonometry practice s/MATH due/2026-11-01", CommandException.class,
+                HomeworkAddCommand.MESSAGE_SAVE_FAILURE, new ModelManager(getTypicalAddressBook(), new UserPrefs()));
+    }
+
+    @Test
+    public void execute_homeworkDeleteSaveFails_rollsBackDeletion() {
+        setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_AD_EXCEPTION));
+
+        assertCommandFailure("hw del 1 2", CommandException.class, HomeworkDeleteCommand.MESSAGE_SAVE_FAILURE,
+                new ModelManager(getTypicalAddressBook(), new UserPrefs()));
+    }
+
+    @Test
     public void getStudentList_modifyList_throwsUnsupportedOperationException() {
         assertThrows(UnsupportedOperationException.class, () -> logic.getStudentList().remove(0));
     }
@@ -190,11 +217,11 @@ public class LogicManagerTest {
      * @param expectedMessage the message expected inside exception thrown by the Logic component
      */
     private void assertCommandFailureForExceptionFromStorage(IOException e, String expectedMessage) {
-        setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(e));
+        setUpLogic(new AddressBook(), getStorageThatFailsToSave(e));
 
-        // Clearing the students changes the data, so it is saved
+        // Adding a student changes the data, so it is saved; the failed save undoes the addition
         ModelManager expectedModel = new ModelManager();
-        assertCommandFailure(ClearCommand.COMMAND_WORD, CommandException.class, expectedMessage, expectedModel);
+        assertCommandFailure(ADD_STUDENT_COMMAND, CommandException.class, expectedMessage, expectedModel);
     }
 
     /**

@@ -175,6 +175,14 @@ public class HomeworkAddCommandTest {
     }
 
     @Test
+    public void getSaveFailureMessage_anyDefaultMessage_returnsHomeworkMessage() {
+        String expectedMessage = "The homework could not be added because TutorFlow could not save the updated data. "
+                + "No homework data was changed.";
+        HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(1), ALGEBRA, false);
+        assertEquals(expectedMessage, command.getSaveFailureMessage("Could not save data"));
+    }
+
+    @Test
     public void equals() {
         Index firstIndex = Index.fromOneBased(1);
         HomeworkAddCommand addAlgebraCommand = new HomeworkAddCommand(firstIndex, ALGEBRA, false);

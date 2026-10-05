@@ -141,6 +141,14 @@ public class HomeworkDeleteCommandTest {
     }
 
     @Test
+    public void getSaveFailureMessage_anyDefaultMessage_returnsHomeworkMessage() {
+        String expectedMessage = "The homework could not be deleted because TutorFlow could not save the updated data. "
+                + "No homework data was changed.";
+        HomeworkDeleteCommand command = new HomeworkDeleteCommand(Index.fromOneBased(1), Index.fromOneBased(1));
+        assertEquals(expectedMessage, command.getSaveFailureMessage("Could not save data"));
+    }
+
+    @Test
     public void equals() {
         Index firstIndex = Index.fromOneBased(1);
         Index secondIndex = Index.fromOneBased(2);

@@ -44,7 +44,8 @@ public class LogicManager implements Logic {
 
     /**
      * {@inheritDoc}
-     * The data file is written only if the command changed the data.
+     * The data file is written only if the command changed the data. If writing fails, the change is undone, so the
+     * model again matches the data file, and the command's save failure message is reported.
      */
     @Override
     public CommandResult execute(String commandText) throws CommandException, ParseException {
@@ -61,13 +62,23 @@ public class LogicManager implements Logic {
 
         try {
             storage.saveAddressBook(model.getAddressBook());
-        } catch (AccessDeniedException e) {
-            throw new CommandException(String.format(FILE_OPS_PERMISSION_ERROR_FORMAT, e.getMessage()), e);
         } catch (IOException ioe) {
-            throw new CommandException(String.format(FILE_OPS_ERROR_FORMAT, ioe.getMessage()), ioe);
+            logger.warning("Could not save data, so the command's changes are undone: " + ioe);
+            model.setAddressBook(dataBeforeCommand);
+            throw new CommandException(command.getSaveFailureMessage(getSaveErrorMessage(ioe)), ioe);
         }
 
         return commandResult;
+    }
+
+    /**
+     * Returns the message describing why the data could not be saved.
+     */
+    private static String getSaveErrorMessage(IOException exception) {
+        if (exception instanceof AccessDeniedException) {
+            return String.format(FILE_OPS_PERMISSION_ERROR_FORMAT, exception.getMessage());
+        }
+        return String.format(FILE_OPS_ERROR_FORMAT, exception.getMessage());
     }
 
     @Override

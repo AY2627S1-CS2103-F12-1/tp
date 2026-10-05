@@ -29,6 +29,8 @@ public class HomeworkAddCommand extends Command {
     public static final String MESSAGE_DUPLICATE_HOMEWORK = "This homework already exists for the selected student.";
     public static final String MESSAGE_INTERNAL_ERROR =
             "TutorFlow could not add the homework due to an internal error.";
+    public static final String MESSAGE_SAVE_FAILURE = "The homework could not be added because TutorFlow could not "
+            + "save the updated data. No homework data was changed.";
 
     private static final Logger logger = LogsCenter.getLogger(HomeworkAddCommand.class);
 
@@ -92,6 +94,11 @@ public class HomeworkAddCommand extends Command {
 
         model.setStudent(student, student.withHomeworks(updatedHomeworks));
         return new CommandResult(message);
+    }
+
+    @Override
+    public String getSaveFailureMessage(String defaultMessage) {
+        return MESSAGE_SAVE_FAILURE;
     }
 
     @Override

@@ -6,7 +6,7 @@ title: TutorFlow
 [![CI Status](https://github.com/AY2627S1-CS2103-F12-1/tp/actions/workflows/gradle.yml/badge.svg)](https://github.com/AY2627S1-CS2103-F12-1/tp/actions)
 [![codecov](https://codecov.io/gh/AY2627S1-CS2103-F12-1/tp/graph/badge.svg?token=4MKFVVV8OH)](https://codecov.io/gh/AY2627S1-CS2103-F12-1/tp)
 
-![TutorFlow student roster UI mockup](images/Ui.png)
+![TutorFlow main window](images/Ui.png)
 
 **TutorFlow is a keyboard-friendly student-contact manager for independent tutors in Singapore.** It is designed for tutors managing approximately 10 to 20 secondary or junior-college students. TutorFlow aims to keep student and guardian information and regular lesson records organised through typed commands and a graphical interface.
 

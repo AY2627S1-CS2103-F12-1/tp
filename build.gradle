@@ -39,10 +39,14 @@ checkstyle {
 
 test {
     useJUnitPlatform()
-    systemProperty 'glass.platform', 'Monocle'
-    systemProperty 'monocle.platform', 'Headless'
-    systemProperty 'prism.order', 'sw'
-    systemProperty 'java.awt.headless', 'true'
+    // CI runners have no display, so run JavaFX headless there via Monocle. Locally, use the normal
+    // toolkit: JDKs that bundle JavaFX (e.g. Zulu "fx") cannot load Monocle from the classpath.
+    if (System.getenv('CI')) {
+        systemProperty 'glass.platform', 'Monocle'
+        systemProperty 'monocle.platform', 'Headless'
+        systemProperty 'prism.order', 'sw'
+        systemProperty 'java.awt.headless', 'true'
+    }
     finalizedBy jacocoTestReport
 }
 

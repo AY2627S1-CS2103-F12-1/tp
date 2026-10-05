@@ -1,83 +1,50 @@
 package seedu.address.logic.commands;
 
 import static java.util.Objects.requireNonNull;
-import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
-import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
-import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
-import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
-import static seedu.address.logic.parser.CliSyntax.PREFIX_TAG;
 
 import seedu.address.commons.util.ToStringBuilder;
 import seedu.address.logic.Messages;
 import seedu.address.logic.commands.exceptions.CommandException;
+import seedu.address.logic.parser.StudentAddParser;
 import seedu.address.model.Model;
-import seedu.address.model.person.Person;
+import seedu.address.model.student.Student;
 
 /**
- * Adds a person to the address book.
+ * Adds a student to the student roster.
  */
 public class AddCommand extends Command {
-
     public static final String COMMAND_WORD = "add";
+    public static final String MESSAGE_USAGE = StudentAddParser.USAGE;
+    public static final String MESSAGE_SUCCESS = "New student added: %s";
+    public static final String MESSAGE_DUPLICATE_STUDENT = "This student already exists.";
 
-    public static final String MESSAGE_USAGE = COMMAND_WORD + ": Adds a person to the address book. "
-            + "Parameters: "
-            + PREFIX_NAME + "NAME "
-            + PREFIX_PHONE + "PHONE "
-            + PREFIX_EMAIL + "EMAIL "
-            + PREFIX_ADDRESS + "ADDRESS "
-            + "[" + PREFIX_TAG + "TAG]...\n"
-            + "Example: " + COMMAND_WORD + " "
-            + PREFIX_NAME + "John Doe "
-            + PREFIX_PHONE + "98765432 "
-            + PREFIX_EMAIL + "johnd@example.com "
-            + PREFIX_ADDRESS + "311, Clementi Ave 2, #02-25 "
-            + PREFIX_TAG + "friends "
-            + PREFIX_TAG + "owesMoney";
-
-    public static final String MESSAGE_SUCCESS = "New person added: %1$s";
-    public static final String MESSAGE_DUPLICATE_PERSON = "This person already exists in the address book.";
-
-    private final Person toAdd;
+    private final Student studentToAdd;
 
     /**
-     * Creates an AddCommand to add the specified {@code Person}
+     * Creates a command that adds the specified student.
      */
-    public AddCommand(Person person) {
-        requireNonNull(person);
-        toAdd = person;
+    public AddCommand(Student student) {
+        studentToAdd = requireNonNull(student);
     }
 
     @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
-
-        if (model.hasPerson(toAdd)) {
-            throw new CommandException(MESSAGE_DUPLICATE_PERSON);
+        if (model.hasStudent(studentToAdd)) {
+            throw new CommandException(MESSAGE_DUPLICATE_STUDENT);
         }
 
-        model.addPerson(toAdd);
-        return new CommandResult(String.format(MESSAGE_SUCCESS, Messages.format(toAdd)));
+        model.addStudent(studentToAdd);
+        return new CommandResult(String.format(MESSAGE_SUCCESS, Messages.format(studentToAdd)));
     }
 
     @Override
     public boolean equals(Object other) {
-        if (other == this) {
-            return true;
-        }
-
-        // instanceof handles nulls
-        if (!(other instanceof AddCommand otherAddCommand)) {
-            return false;
-        }
-
-        return toAdd.equals(otherAddCommand.toAdd);
+        return other instanceof AddCommand command && studentToAdd.equals(command.studentToAdd);
     }
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this)
-                .add("toAdd", toAdd)
-                .toString();
+        return new ToStringBuilder(this).add("studentToAdd", studentToAdd).toString();
     }
 }

@@ -25,4 +25,9 @@ public class StatusBarFooter extends UiPart<Region> {
         saveLocationStatus.setText(Paths.get(".").resolve(saveLocation).toString());
     }
 
+    /** Sets the status text shown at the bottom of the application. */
+    public void setStatusText(String statusText) {
+        saveLocationStatus.setText(statusText);
+    }
+
 }

@@ -1,48 +1,41 @@
 package seedu.address.logic.commands;
 
-import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
-import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
-import static seedu.address.testutil.TypicalPersons.getTypicalAddressBook;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import seedu.address.logic.Messages;
-import seedu.address.model.Model;
+import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.ModelManager;
-import seedu.address.model.UserPrefs;
-import seedu.address.model.person.Person;
-import seedu.address.testutil.PersonBuilder;
+import seedu.address.model.student.Student;
+import seedu.address.testutil.StudentBuilder;
 
-/**
- * Contains integration tests (interaction with the Model) for {@code AddCommand}.
- */
+/** Tests Add Student command interaction with the in-memory model. */
 public class AddCommandIntegrationTest {
+    @Test
+    public void execute_newStudent_appendsToRoster() throws CommandException {
+        ModelManager model = new ModelManager();
+        Student first = new StudentBuilder().build();
+        Student second = new StudentBuilder().withName("Nur Aisyah").withPhone("91112222").build();
 
-    private Model model;
+        new AddCommand(first).execute(model);
+        new AddCommand(second).execute(model);
 
-    @BeforeEach
-    public void setUp() {
-        model = new ModelManager(getTypicalAddressBook(), new UserPrefs());
+        assertEquals(2, model.getStudentList().size());
+        assertEquals(first, model.getStudentList().get(0));
+        assertEquals(second, model.getStudentList().get(1));
     }
 
     @Test
-    public void execute_newPerson_success() {
-        Person validPerson = new PersonBuilder().build();
+    public void execute_duplicateStudent_keepsRosterUnchanged() throws CommandException {
+        ModelManager model = new ModelManager();
+        Student original = new StudentBuilder().build();
+        Student duplicate = new StudentBuilder().withName("JOHN TAN").build();
+        new AddCommand(original).execute(model);
 
-        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
-        expectedModel.addPerson(validPerson);
+        assertThrows(CommandException.class, () -> new AddCommand(duplicate).execute(model));
 
-        assertCommandSuccess(new AddCommand(validPerson), model,
-                String.format(AddCommand.MESSAGE_SUCCESS, Messages.format(validPerson)),
-                expectedModel);
+        assertEquals(1, model.getStudentList().size());
+        assertEquals(original, model.getStudentList().getFirst());
     }
-
-    @Test
-    public void execute_duplicatePerson_throwsCommandException() {
-        Person personInList = model.getAddressBook().getPersonList().get(0);
-        assertCommandFailure(new AddCommand(personInList), model,
-                AddCommand.MESSAGE_DUPLICATE_PERSON);
-    }
-
 }

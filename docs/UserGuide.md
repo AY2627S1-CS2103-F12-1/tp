@@ -69,11 +69,15 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
 
 ### Viewing help: `help`
 
-Shows a message explaining how to access the help page.
+Opens the help window, which lists the commands `add` (student), `homework add`, `homework list`, `homework delete`, `help` and `exit`, grouped into Students, Homework and General. Each command is shown with its format, what it does and an example.
 
-![help message](images/helpMessage.png)
+![help window](images/helpMessage.png)
 
 Format: `help`
+
+* Pressing `F1` or choosing **Help** in the menu bar also opens the help window.
+* Use the arrow keys, `Page Up` and `Page Down` to scroll the help window.
+* Press `Esc` to close the help window. The cursor goes back to the command box, so you can type your next command straight away.
 
 
 ### Adding a person: `add`

@@ -43,6 +43,11 @@ test {
     systemProperty 'monocle.platform', 'Headless'
     systemProperty 'prism.order', 'sw'
     systemProperty 'java.awt.headless', 'true'
+    // Keep matching JavaFX natives for tests without narrowing the release jar.
+    classpath = classpath.filter { file ->
+        !(file.name ==~ /javafx-.+-(win|mac|linux)(-aarch64)?\.jar/) ||
+                file.name.endsWith("-${javaFxPlatform}.jar")
+    }
     finalizedBy jacocoTestReport
 }
 
@@ -66,10 +71,12 @@ dependencies {
     String jUnitVersion = '5.14.4'
     String javaFxVersion = '17.0.7'
 
-    implementation "org.openjfx:javafx-base:${javaFxVersion}:${javaFxPlatform}"
-    implementation "org.openjfx:javafx-controls:${javaFxVersion}:${javaFxPlatform}"
-    implementation "org.openjfx:javafx-fxml:${javaFxVersion}:${javaFxPlatform}"
-    implementation "org.openjfx:javafx-graphics:${javaFxVersion}:${javaFxPlatform}"
+    for (String platform : ['win', 'mac', 'linux']) {
+        implementation "org.openjfx:javafx-base:${javaFxVersion}:${platform}"
+        implementation "org.openjfx:javafx-controls:${javaFxVersion}:${platform}"
+        implementation "org.openjfx:javafx-fxml:${javaFxVersion}:${platform}"
+        implementation "org.openjfx:javafx-graphics:${javaFxVersion}:${platform}"
+    }
 
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.7.0'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.7.4'
@@ -79,6 +86,10 @@ dependencies {
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${jUnitVersion}"
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.14.4'
     testRuntimeOnly 'org.testfx:openjfx-monocle:17.0.10'
+    testRuntimeOnly "org.openjfx:javafx-base:${javaFxVersion}:${javaFxPlatform}"
+    testRuntimeOnly "org.openjfx:javafx-controls:${javaFxVersion}:${javaFxPlatform}"
+    testRuntimeOnly "org.openjfx:javafx-fxml:${javaFxVersion}:${javaFxPlatform}"
+    testRuntimeOnly "org.openjfx:javafx-graphics:${javaFxVersion}:${javaFxPlatform}"
 }
 
 shadowJar {

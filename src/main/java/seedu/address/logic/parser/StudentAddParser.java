@@ -49,6 +49,10 @@ public final class StudentAddParser {
         String previousPrefix = null;
 
         while (matcher.find()) {
+            String prefix = matcher.group(1);
+            if (isPartOfName(arguments, matcher.end(), previousPrefix, prefix)) {
+                continue;
+            }
             if (previousPrefix == null && !arguments.substring(0, matcher.start()).isBlank()) {
                 throw new ParseException(MESSAGE_INVALID_FORMAT);
             }
@@ -56,7 +60,6 @@ public final class StudentAddParser {
                 fields.put(previousPrefix, arguments.substring(previousValueStart, matcher.start()).strip());
             }
 
-            String prefix = matcher.group(1);
             if (!REQUIRED_PREFIXES.contains(prefix)) {
                 throw new ParseException(MESSAGE_INVALID_FORMAT);
             }
@@ -92,5 +95,24 @@ public final class StudentAddParser {
         } catch (IllegalArgumentException exception) {
             throw new ParseException(exception.getMessage(), exception);
         }
+    }
+
+    /**
+     * Returns true if a prefix-shaped token belongs to a name rather than the command structure.
+     * Names may contain slashes, and the standalone name token {@code s/o} overlaps the subjects prefix.
+     */
+    private static boolean isPartOfName(String arguments, int prefixEnd, String previousPrefix, String prefix) {
+        if (!"n/".equals(previousPrefix) && !"gn/".equals(previousPrefix)) {
+            return false;
+        }
+        if (!REQUIRED_PREFIXES.contains(prefix)) {
+            return true;
+        }
+        if (!"s/".equals(prefix) || prefixEnd >= arguments.length()
+                || Character.toLowerCase(arguments.charAt(prefixEnd)) != 'o') {
+            return false;
+        }
+        int tokenEnd = prefixEnd + 1;
+        return tokenEnd == arguments.length() || Character.isWhitespace(arguments.charAt(tokenEnd));
     }
 }

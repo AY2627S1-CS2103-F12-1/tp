@@ -1,5 +1,8 @@
 package seedu.address.testutil;
 
+import java.util.List;
+
+import seedu.address.model.homework.Homework;
 import seedu.address.model.student.AcademicLevel;
 import seedu.address.model.student.Student;
 import seedu.address.model.student.StudentName;
@@ -14,6 +17,7 @@ public class StudentBuilder {
     private String phone = "91234567";
     private String guardianName = "Mary Tan";
     private String guardianPhone = "98765432";
+    private List<Homework> homeworks = List.of();
 
     /** Returns this builder with a different student name. */
     public StudentBuilder withName(String name) {
@@ -33,9 +37,15 @@ public class StudentBuilder {
         return this;
     }
 
+    /** Returns this builder with the given homework, in order. */
+    public StudentBuilder withHomeworks(Homework... homeworks) {
+        this.homeworks = List.of(homeworks);
+        return this;
+    }
+
     /** Returns a student using the configured fields. */
     public Student build() {
         return new Student(new StudentName(name), AcademicLevel.parse(academicLevel), new TuitionSubjects(subjects),
-                new StudentPhone(phone), new StudentName(guardianName), new StudentPhone(guardianPhone));
+                new StudentPhone(phone), new StudentName(guardianName), new StudentPhone(guardianPhone), homeworks);
     }
 }

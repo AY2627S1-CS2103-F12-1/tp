@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.model.Model.PREDICATE_SHOW_ALL_PERSONS;
 import static seedu.address.testutil.Assert.assertThrows;
+import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalPersons.ALICE;
 import static seedu.address.testutil.TypicalPersons.BENSON;
 
@@ -14,7 +15,9 @@ import org.junit.jupiter.api.Test;
 
 import seedu.address.commons.core.GuiSettings;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
+import seedu.address.model.student.Student;
 import seedu.address.testutil.AddressBookBuilder;
+import seedu.address.testutil.StudentBuilder;
 
 public class ModelManagerTest {
 
@@ -71,6 +74,28 @@ public class ModelManagerTest {
     @Test
     public void getFilteredPersonList_modifyList_throwsUnsupportedOperationException() {
         assertThrows(UnsupportedOperationException.class, () -> modelManager.getFilteredPersonList().remove(0));
+    }
+
+    @Test
+    public void setStudent_nullArguments_throwsNullPointerException() {
+        Student student = new StudentBuilder().build();
+        modelManager.addStudent(student);
+
+        assertThrows(NullPointerException.class, () -> modelManager.setStudent(null, student));
+        assertThrows(NullPointerException.class, () -> modelManager.setStudent(student, null));
+    }
+
+    @Test
+    public void setStudent_studentInRoster_replacesStudentAtSamePosition() {
+        Student first = new StudentBuilder().withName("Alice Tan").withPhone("91111111").build();
+        Student second = new StudentBuilder().withName("Benson Lim").withPhone("92222222").build();
+        modelManager.addStudent(first);
+        modelManager.addStudent(second);
+        Student editedFirst = first.withHomeworks(List.of(ALGEBRA));
+
+        modelManager.setStudent(first, editedFirst);
+
+        assertEquals(List.of(editedFirst, second), modelManager.getStudentList());
     }
 
     @Test

@@ -12,12 +12,14 @@ import org.junit.jupiter.api.Test;
 
 import seedu.address.commons.core.index.Index;
 import seedu.address.logic.commands.HomeworkAddCommand;
+import seedu.address.logic.commands.HomeworkListCommand;
 
 public class HomeworkCommandParserTest {
     /** Fixed clock at 2026-10-05, so short-form due dates always infer the same year. */
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-05T00:00:00Z"), ZoneOffset.UTC);
     private static final String MESSAGE_INVALID_FORMAT = "Invalid command format.\n"
-            + "Usage: homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD";
+            + "Usage: homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD\n"
+            + "homework|hw list|ls STUDENT_INDEX";
 
     private final HomeworkCommandParser parser = new HomeworkCommandParser(CLOCK);
 
@@ -34,6 +36,16 @@ public class HomeworkCommandParserTest {
     }
 
     @Test
+    public void parse_list_returnsHomeworkListCommand() {
+        assertParseSuccess(parser, " list 1", new HomeworkListCommand(Index.fromOneBased(1)));
+    }
+
+    @Test
+    public void parse_listAlias_returnsHomeworkListCommand() {
+        assertParseSuccess(parser, " ls 5", new HomeworkListCommand(Index.fromOneBased(5)));
+    }
+
+    @Test
     public void parse_missingSubcommand_failure() {
         assertParseFailure(parser, "   ", MESSAGE_INVALID_FORMAT);
     }
@@ -41,5 +53,20 @@ public class HomeworkCommandParserTest {
     @Test
     public void parse_unknownSubcommand_failure() {
         assertParseFailure(parser, " remove 1 2", MESSAGE_INVALID_FORMAT);
+    }
+
+    @Test
+    public void parse_uppercaseSubcommand_failure() {
+        assertParseFailure(parser, " LIST 1", MESSAGE_INVALID_FORMAT);
+    }
+
+    @Test
+    public void parse_subcommandJoinedToArgument_failure() {
+        assertParseFailure(parser, " list1", MESSAGE_INVALID_FORMAT);
+    }
+
+    @Test
+    public void parse_invalidSubcommandArguments_reportsSubcommandError() {
+        assertParseFailure(parser, " list", "Invalid command format.\nUsage: homework|hw list|ls STUDENT_INDEX");
     }
 }

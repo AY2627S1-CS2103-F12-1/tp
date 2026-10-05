@@ -27,6 +27,7 @@ import seedu.address.logic.commands.ExitCommand;
 import seedu.address.logic.commands.FindCommand;
 import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.HomeworkAddCommand;
+import seedu.address.logic.commands.HomeworkListCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.homework.Homework;
@@ -120,6 +121,12 @@ public class AddressBookParserTest {
         HomeworkAddCommand command = (HomeworkAddCommand) parserWithClock.parseCommand(
                 "hw add 1 t/drinkMilk s/physics due/10-5");
         assertEquals(new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, true), command);
+    }
+
+    @Test
+    public void parseCommand_homeworkAliasList() throws Exception {
+        HomeworkListCommand command = (HomeworkListCommand) parser.parseCommand("hw ls 5");
+        assertEquals(new HomeworkListCommand(Index.fromOneBased(5)), command);
     }
 
     @Test

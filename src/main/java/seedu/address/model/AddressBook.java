@@ -3,24 +3,29 @@ package seedu.address.model;
 import static java.util.Objects.requireNonNull;
 
 import java.util.List;
+import java.util.Objects;
 
 import javafx.collections.ObservableList;
 import seedu.address.commons.util.ToStringBuilder;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.UniquePersonList;
+import seedu.address.model.student.Student;
+import seedu.address.model.student.StudentRoster;
 
 /**
- * Wraps all data at the address-book level.
- * Duplicates are not allowed (by .isSamePerson comparison).
+ * Wraps all data at the address-book level: the persons and the student roster, which holds each student's
+ * homework.
+ * Duplicates are not allowed (by .isSamePerson and .isSameStudent comparison).
  */
 public class AddressBook implements ReadOnlyAddressBook {
 
     private final UniquePersonList persons = new UniquePersonList();
+    private final StudentRoster students = new StudentRoster();
 
     public AddressBook() {}
 
     /**
-     * Creates an AddressBook using the Persons in the {@code toBeCopied}
+     * Creates an AddressBook using the Persons and Students in the {@code toBeCopied}
      */
     public AddressBook(ReadOnlyAddressBook toBeCopied) {
         this();
@@ -38,12 +43,21 @@ public class AddressBook implements ReadOnlyAddressBook {
     }
 
     /**
+     * Replaces the contents of the student list with {@code students}.
+     * {@code students} must not contain duplicate students.
+     */
+    public void setStudents(List<Student> students) {
+        this.students.setStudents(students);
+    }
+
+    /**
      * Resets the existing data of this {@code AddressBook} with {@code newData}.
      */
     public void resetData(ReadOnlyAddressBook newData) {
         requireNonNull(newData);
 
         setPersons(newData.getPersonList());
+        setStudents(newData.getStudentList());
     }
 
     //// person-level operations
@@ -83,18 +97,51 @@ public class AddressBook implements ReadOnlyAddressBook {
         persons.remove(key);
     }
 
+    //// student-level operations
+
+    /**
+     * Returns true if a student with the same identity as {@code student} exists in the address book.
+     */
+    public boolean hasStudent(Student student) {
+        requireNonNull(student);
+        return students.hasStudent(student);
+    }
+
+    /**
+     * Adds a student to the end of the student list.
+     * The student must not already exist in the address book.
+     */
+    public void addStudent(Student student) {
+        students.addStudent(student);
+    }
+
+    /**
+     * Replaces the given student {@code target} in the list with {@code editedStudent}, keeping its position.
+     * {@code target} must exist in the address book.
+     * The identity of {@code editedStudent} must not be the same as another existing student in the address book.
+     */
+    public void setStudent(Student target, Student editedStudent) {
+        students.setStudent(target, editedStudent);
+    }
+
     //// util methods
 
     @Override
     public String toString() {
         return new ToStringBuilder(this)
                 .add("persons", persons)
+                .add("students", getStudentList())
                 .toString();
     }
 
     @Override
     public ObservableList<Person> getPersonList() {
         return persons.asUnmodifiableObservableList();
+    }
+
+    @Override
+    public ObservableList<Student> getStudentList() {
+        return students.getStudents();
     }
 
     @Override
@@ -108,11 +155,12 @@ public class AddressBook implements ReadOnlyAddressBook {
             return false;
         }
 
-        return persons.equals(otherAddressBook.persons);
+        return persons.equals(otherAddressBook.persons)
+                && getStudentList().equals(otherAddressBook.getStudentList());
     }
 
     @Override
     public int hashCode() {
-        return persons.hashCode();
+        return Objects.hash(persons, getStudentList());
     }
 }

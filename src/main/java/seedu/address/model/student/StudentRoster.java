@@ -3,6 +3,8 @@ package seedu.address.model.student;
 import static java.util.Objects.requireNonNull;
 import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 
+import java.util.List;
+
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
@@ -52,6 +54,25 @@ public final class StudentRoster {
             throw new IllegalArgumentException(MESSAGE_DUPLICATE_STUDENT);
         }
         students.set(index, editedStudent);
+    }
+
+    /**
+     * Replaces the contents of the roster with {@code replacement}, keeping its order.
+     *
+     * @throws NullPointerException If {@code replacement} or any student in it is null.
+     * @throws IllegalArgumentException If two students in {@code replacement} have the same identity.
+     */
+    public void setStudents(List<Student> replacement) {
+        // Copied first, as replacement may be a view of this roster
+        List<Student> newStudents = List.copyOf(replacement);
+        for (int i = 0; i < newStudents.size(); i++) {
+            for (int j = i + 1; j < newStudents.size(); j++) {
+                if (newStudents.get(i).isSameStudent(newStudents.get(j))) {
+                    throw new IllegalArgumentException(MESSAGE_DUPLICATE_STUDENT);
+                }
+            }
+        }
+        students.setAll(newStudents);
     }
 
     /** Returns an unmodifiable observable view of the roster in insertion order. */

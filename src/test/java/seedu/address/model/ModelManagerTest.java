@@ -8,6 +8,8 @@ import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalPersons.ALICE;
 import static seedu.address.testutil.TypicalPersons.BENSON;
+import static seedu.address.testutil.TypicalStudents.getTypicalAddressBook;
+import static seedu.address.testutil.TypicalStudents.getTypicalStudents;
 
 import java.util.List;
 
@@ -74,6 +76,31 @@ public class ModelManagerTest {
     @Test
     public void getFilteredPersonList_modifyList_throwsUnsupportedOperationException() {
         assertThrows(UnsupportedOperationException.class, () -> modelManager.getFilteredPersonList().remove(0));
+    }
+
+    @Test
+    public void hasStudent_nullStudent_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> modelManager.hasStudent(null));
+    }
+
+    @Test
+    public void addStudent_newStudent_addedToAddressBook() {
+        Student student = new StudentBuilder().build();
+        modelManager.addStudent(student);
+        assertTrue(modelManager.hasStudent(student));
+        assertEquals(List.of(student), modelManager.getAddressBook().getStudentList());
+    }
+
+    @Test
+    public void getStudentList_modifyList_throwsUnsupportedOperationException() {
+        assertThrows(UnsupportedOperationException.class, () -> modelManager.getStudentList().remove(0));
+    }
+
+    @Test
+    public void setAddressBook_typicalAddressBook_replacesStudents() {
+        modelManager.addStudent(new StudentBuilder().build());
+        modelManager.setAddressBook(getTypicalAddressBook());
+        assertEquals(getTypicalStudents(), modelManager.getStudentList());
     }
 
     @Test

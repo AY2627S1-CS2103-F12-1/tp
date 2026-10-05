@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import seedu.address.commons.core.index.Index;
 import seedu.address.logic.commands.HomeworkAddCommand;
+import seedu.address.logic.commands.HomeworkDeleteCommand;
 import seedu.address.logic.commands.HomeworkListCommand;
 
 public class HomeworkCommandParserTest {
@@ -19,7 +20,8 @@ public class HomeworkCommandParserTest {
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-05T00:00:00Z"), ZoneOffset.UTC);
     private static final String MESSAGE_INVALID_FORMAT = "Invalid command format.\n"
             + "Usage: homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD\n"
-            + "homework|hw list|ls STUDENT_INDEX";
+            + "homework|hw list|ls STUDENT_INDEX\n"
+            + "homework|hw delete|del STUDENT_INDEX HOMEWORK_INDEX";
 
     private final HomeworkCommandParser parser = new HomeworkCommandParser(CLOCK);
 
@@ -43,6 +45,18 @@ public class HomeworkCommandParserTest {
     @Test
     public void parse_listAlias_returnsHomeworkListCommand() {
         assertParseSuccess(parser, " ls 5", new HomeworkListCommand(Index.fromOneBased(5)));
+    }
+
+    @Test
+    public void parse_delete_returnsHomeworkDeleteCommand() {
+        assertParseSuccess(parser, " delete 1 2",
+                new HomeworkDeleteCommand(Index.fromOneBased(1), Index.fromOneBased(2)));
+    }
+
+    @Test
+    public void parse_deleteAlias_returnsHomeworkDeleteCommand() {
+        assertParseSuccess(parser, " del 3 1",
+                new HomeworkDeleteCommand(Index.fromOneBased(3), Index.fromOneBased(1)));
     }
 
     @Test

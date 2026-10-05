@@ -23,7 +23,10 @@ public class Messages {
     public static final String MESSAGE_INVALID_FORMAT_WITH_USAGE = "Invalid command format.\nUsage: %s";
     public static final String MESSAGE_INVALID_STUDENT_INDEX_SYNTAX =
             "STUDENT_INDEX must be a positive whole number without leading zeroes.";
+    public static final String MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX =
+            "HOMEWORK_INDEX must be a positive whole number without leading zeroes.";
     public static final String MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX = "The student index provided is invalid.";
+    public static final String MESSAGE_INVALID_HOMEWORK_DISPLAYED_INDEX = "The homework index provided is invalid.";
 
     /**
      * Returns an error message indicating the duplicate prefixes.

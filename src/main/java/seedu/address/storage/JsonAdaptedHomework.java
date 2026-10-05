@@ -24,17 +24,19 @@ class JsonAdaptedHomework {
     private final String subject;
     private final String dueDate;
     private final String status;
-    private final Integer score;
+    private final Object score;
 
     /**
      * Constructs a {@code JsonAdaptedHomework} with the given homework details.
      *
-     * @param score Score received for the homework, or null if none is recorded.
+     * @param score Score received for the homework, or null if none is recorded. It is kept as read from the JSON
+     *     file (e.g. a {@code Double} for {@code 85.5}) so that {@link #toModelType()} can reject a score that is
+     *     not a whole number instead of truncating it.
      */
     @JsonCreator
     public JsonAdaptedHomework(@JsonProperty("title") String title, @JsonProperty("subject") String subject,
             @JsonProperty("dueDate") String dueDate, @JsonProperty("status") String status,
-            @JsonProperty("score") Integer score) {
+            @JsonProperty("score") Object score) {
         this.title = title;
         this.subject = subject;
         this.dueDate = dueDate;
@@ -67,8 +69,24 @@ class JsonAdaptedHomework {
                 DueDate.MESSAGE_FULL_DATE_CONSTRAINTS);
         final HomeworkStatus modelStatus = toModelValue("status", status, HomeworkStatus::parse,
                 HomeworkStatus.MESSAGE_CONSTRAINTS);
-        final Score modelScore = score == null ? null : new Score(score);
+        final Score modelScore = toModelScore(score);
         return new Homework(modelTitle, modelSubject, modelDueDate, modelStatus, modelScore);
+    }
+
+    /**
+     * Returns the model score for the optional field {@code score}, or null if the field is missing.
+     *
+     * @throws IllegalValueException If {@code score} is not a JSON whole number within the {@code int} range.
+     */
+    private static Score toModelScore(Object score) throws IllegalValueException {
+        if (score == null) {
+            return null;
+        }
+        // Jackson reads a whole number within the int range as an Integer, and 85.5 as a Double
+        if (!(score instanceof Integer value)) {
+            throw new IllegalValueException(Score.MESSAGE_CONSTRAINTS);
+        }
+        return new Score(value);
     }
 
     /**

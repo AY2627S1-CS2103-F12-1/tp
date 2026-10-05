@@ -9,9 +9,11 @@ import static seedu.address.testutil.TypicalHomeworks.ATOMIC_STRUCTURE;
 import org.junit.jupiter.api.Test;
 
 import seedu.address.commons.exceptions.IllegalValueException;
+import seedu.address.commons.util.JsonUtil;
 import seedu.address.model.homework.DueDate;
 import seedu.address.model.homework.Homework;
 import seedu.address.model.homework.HomeworkStatus;
+import seedu.address.model.homework.Score;
 import seedu.address.model.homework.Title;
 import seedu.address.model.student.TuitionSubject;
 import seedu.address.testutil.HomeworkBuilder;
@@ -123,6 +125,41 @@ public class JsonAdaptedHomeworkTest {
         JsonAdaptedHomework homework = new JsonAdaptedHomework(VALID_TITLE, VALID_SUBJECT, VALID_DUE_DATE,
                 VALID_STATUS, 0);
         assertEquals(new HomeworkBuilder().withScore(0).build(), homework.toModelType());
+    }
+
+    @Test
+    public void toModelType_wholeNumberScoreInJson_returnsHomeworkWithScore() throws Exception {
+        assertEquals(new HomeworkBuilder().withScore(85).build(), fromJsonWithScore("85").toModelType());
+        assertEquals(new HomeworkBuilder().withScore(Integer.MAX_VALUE).build(),
+                fromJsonWithScore("2147483647").toModelType());
+    }
+
+    @Test
+    public void toModelType_nullOrMissingScoreInJson_returnsHomeworkWithoutScore() throws Exception {
+        assertEquals(new HomeworkBuilder().build(), fromJsonWithScore("null").toModelType());
+        assertEquals(new HomeworkBuilder().build(), JsonUtil.fromJsonString("{\"title\": \"" + VALID_TITLE
+                + "\", \"subject\": \"MATH\", \"dueDate\": \"2026-10-15\", \"status\": \"ASSIGNED\"}",
+                JsonAdaptedHomework.class).toModelType());
+    }
+
+    @Test
+    public void toModelType_invalidScoreInJson_throwsIllegalValueException() throws Exception {
+        assertInvalidScore("85.5"); // decimal, which must not be truncated to 85
+        assertInvalidScore("85.0"); // decimal with a zero fraction
+        assertInvalidScore("2147483648"); // larger than Integer.MAX_VALUE
+        assertInvalidScore("\"85\""); // number written as text
+        assertInvalidScore("\"abc\""); // non-numeric text
+        assertInvalidScore("true"); // boolean
+    }
+
+    private static JsonAdaptedHomework fromJsonWithScore(String score) throws Exception {
+        return JsonUtil.fromJsonString("{\"title\": \"" + VALID_TITLE + "\", \"subject\": \"MATH\", "
+                + "\"dueDate\": \"2026-10-15\", \"status\": \"ASSIGNED\", \"score\": " + score + "}",
+                JsonAdaptedHomework.class);
+    }
+
+    private static void assertInvalidScore(String score) throws Exception {
+        assertThrows(IllegalValueException.class, Score.MESSAGE_CONSTRAINTS, fromJsonWithScore(score)::toModelType);
     }
 
     private static void assertInvalidDueDate(String dueDate) {

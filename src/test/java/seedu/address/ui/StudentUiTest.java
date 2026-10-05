@@ -100,23 +100,27 @@ public class StudentUiTest {
         runOnFxThread(() -> {
             Student student = new StudentBuilder().withName(LONG_NAME).withSubjects("MATH, PHYSICS, CHEMISTRY")
                     .withGuardianName(LONG_NAME).build();
+            // Make the list narrower than the guardian detail on one line, so the card must fit itself to the list
+            // whatever font this platform uses
+            double listWidth = 0.75 * oneLineWidth(student, "guardianName");
             Region panel = new StudentListPanel(FXCollections.observableArrayList(student)).getRoot();
-            new Scene(panel, 600, 400);
+            new Scene(panel, listWidth, 400);
             panel.applyCss();
             panel.layout();
+            // A second pass applies the detail widths bound to the first pass's sizes
             panel.layout();
 
             ListView<?> listView = (ListView<?>) panel.lookup("#studentListView");
-            Region viewport = (Region) listView.lookup(".clipped-container");
-            double viewportRight = rightEdge(viewport);
+            double viewportRight = rightEdge(listView.lookup(".clipped-container"));
             Parent card = (Parent) listView.lookup("#cardPane");
-            assertTrue(rightEdge(card) <= viewportRight);
+            assertEndsBefore(viewportRight, card, "cardPane");
             for (String id : new String[] {"academicLevel", "subjects", "guardianName", "guardianPhone"}) {
-                assertTrue(rightEdge(card.lookup("#" + id)) <= viewportRight, id);
+                assertEndsBefore(viewportRight, card.lookup("#" + id), id);
             }
             for (Node node : listView.lookupAll(".scroll-bar")) {
                 ScrollBar scrollBar = (ScrollBar) node;
-                assertTrue(scrollBar.getOrientation() == Orientation.VERTICAL || !scrollBar.isVisible());
+                assertTrue(scrollBar.getOrientation() == Orientation.VERTICAL || !scrollBar.isVisible(),
+                        "horizontal scroll bar is visible");
             }
         });
     }
@@ -140,6 +144,19 @@ public class StudentUiTest {
 
     private static double rightEdge(Node node) {
         return node.localToScene(node.getLayoutBounds()).getMaxX();
+    }
+
+    private static void assertEndsBefore(double limit, Node node, String id) {
+        double right = rightEdge(node);
+        assertTrue(right <= limit, id + " ends at x=" + right + ", past the visible list edge at x=" + limit);
+    }
+
+    /** Returns the width the given label of the student's card needs to show its text on one line. */
+    private static double oneLineWidth(Student student, String id) {
+        Parent card = (Parent) new StudentCard(student, 1).getRoot();
+        new Scene(card);
+        card.applyCss();
+        return card.lookup("#" + id).prefWidth(-1);
     }
 
     private static void runOnFxThread(Runnable action) throws Exception {

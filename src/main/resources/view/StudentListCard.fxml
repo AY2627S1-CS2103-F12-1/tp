@@ -24,10 +24,11 @@
       <minWidth><Region fx:constant="USE_PREF_SIZE" /></minWidth>
     </Label>
   </HBox>
-  <FlowPane hgap="16" vgap="4">
-    <Label fx:id="studentPhone" styleClass="student-card-detail" />
-    <Label fx:id="guardianName" styleClass="student-card-detail" />
-    <Label fx:id="guardianPhone" styleClass="student-card-detail" />
+  <!-- minWidth="0" and maxWidth="${details.width}" shorten a detail wider than the card instead of widening it -->
+  <FlowPane fx:id="details" minWidth="0" hgap="16" vgap="4">
+    <Label fx:id="studentPhone" maxWidth="${details.width}" styleClass="student-card-detail" />
+    <Label fx:id="guardianName" maxWidth="${details.width}" styleClass="student-card-detail" />
+    <Label fx:id="guardianPhone" maxWidth="${details.width}" styleClass="student-card-detail" />
   </FlowPane>
   <Label fx:id="assignedHomeworkCount" styleClass="student-card-detail" />
 </VBox>

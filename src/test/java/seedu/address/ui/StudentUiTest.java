@@ -3,6 +3,9 @@ package seedu.address.ui;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
+import static seedu.address.testutil.TypicalHomeworks.ATOMIC_STRUCTURE;
+import static seedu.address.testutil.TypicalHomeworks.MECHANICS;
 
 import java.nio.file.Path;
 import java.util.concurrent.FutureTask;
@@ -41,6 +44,18 @@ public class StudentUiTest {
             assertEquals("Student: 91234567", labelText(card, "studentPhone"));
             assertEquals("Guardian: Mary Tan", labelText(card, "guardianName"));
             assertEquals("Guardian phone: 98765432", labelText(card, "guardianPhone"));
+            assertEquals("Assigned homework: 0", labelText(card, "assignedHomeworkCount"));
+        });
+    }
+
+    @Test
+    public void studentCard_countsAssignedHomeworkOnly() throws Exception {
+        runOnFxThread(() -> {
+            // ATOMIC_STRUCTURE is completed, so it is not counted
+            Student student = new StudentBuilder().withHomeworks(ALGEBRA, MECHANICS, ATOMIC_STRUCTURE).build();
+            Parent card = (Parent) new StudentCard(student, 1).getRoot();
+
+            assertEquals("Assigned homework: 2", labelText(card, "assignedHomeworkCount"));
         });
     }
 

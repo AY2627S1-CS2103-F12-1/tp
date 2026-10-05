@@ -27,6 +27,7 @@ public class Messages {
             "HOMEWORK_INDEX must be a positive whole number without leading zeroes.";
     public static final String MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX = "The student index provided is invalid.";
     public static final String MESSAGE_INVALID_HOMEWORK_DISPLAYED_INDEX = "The homework index provided is invalid.";
+    public static final String MESSAGE_NOT_IMPLEMENTED = "This command is not implemented yet.";
 
     /**
      * Returns an error message indicating the duplicate prefixes.

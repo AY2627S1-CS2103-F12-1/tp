@@ -20,7 +20,7 @@ public interface Logic {
      */
     CommandResult execute(String commandText) throws CommandException, ParseException;
 
-    /** Returns the current in-memory student roster for display. */
+    /** Returns an unmodifiable view of the student roster for display. */
     ObservableList<Student> getStudentList();
 
     /**

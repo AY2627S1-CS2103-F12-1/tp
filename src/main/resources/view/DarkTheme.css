@@ -135,7 +135,7 @@
     -fx-text-fill: #20313a;
 }
 
-.student-count, .student-preview-note {
+.student-count {
     -fx-text-fill: #354a55;
 }
 

@@ -3,8 +3,8 @@ package seedu.address.logic.commands;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
-import static seedu.address.logic.commands.CommandTestUtil.assertStudentCommandFailure;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalHomeworks.ATOMIC_STRUCTURE;
@@ -102,28 +102,28 @@ public class HomeworkDeleteCommandTest {
     public void execute_studentIndexAboveListSize_failure() {
         HomeworkDeleteCommand command = new HomeworkDeleteCommand(Index.fromOneBased(4), Index.fromOneBased(1));
 
-        assertStudentCommandFailure(command, model, Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
+        assertCommandFailure(command, model, Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
     }
 
     @Test
     public void execute_bothIndicesOutOfRange_reportsStudentIndex() {
         HomeworkDeleteCommand command = new HomeworkDeleteCommand(Index.fromOneBased(4), Index.fromOneBased(9));
 
-        assertStudentCommandFailure(command, model, Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
+        assertCommandFailure(command, model, Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
     }
 
     @Test
     public void execute_studentWithoutHomework_failure() {
         HomeworkDeleteCommand command = new HomeworkDeleteCommand(Index.fromOneBased(2), Index.fromOneBased(1));
 
-        assertStudentCommandFailure(command, model, HomeworkDeleteCommand.MESSAGE_NO_HOMEWORK);
+        assertCommandFailure(command, model, HomeworkDeleteCommand.MESSAGE_NO_HOMEWORK);
     }
 
     @Test
     public void execute_homeworkIndexAboveListSize_failure() {
         HomeworkDeleteCommand command = new HomeworkDeleteCommand(Index.fromOneBased(1), Index.fromOneBased(4));
 
-        assertStudentCommandFailure(command, model, Messages.MESSAGE_INVALID_HOMEWORK_DISPLAYED_INDEX);
+        assertCommandFailure(command, model, Messages.MESSAGE_INVALID_HOMEWORK_DISPLAYED_INDEX);
     }
 
     @Test
@@ -136,7 +136,7 @@ public class HomeworkDeleteCommandTest {
         };
         getTypicalStudents().forEach(failingModel::addStudent);
 
-        assertStudentCommandFailure(new HomeworkDeleteCommand(Index.fromOneBased(1), Index.fromOneBased(1)),
+        assertCommandFailure(new HomeworkDeleteCommand(Index.fromOneBased(1), Index.fromOneBased(1)),
                 failingModel, HomeworkDeleteCommand.MESSAGE_INTERNAL_ERROR);
     }
 

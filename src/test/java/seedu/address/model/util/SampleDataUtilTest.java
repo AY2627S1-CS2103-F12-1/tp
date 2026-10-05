@@ -1,5 +1,6 @@
 package seedu.address.model.util;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -55,5 +56,10 @@ public class SampleDataUtilTest {
     @Test
     public void getSampleStudents_someStudentWithoutHomework() {
         assertTrue(Arrays.stream(sampleStudents).anyMatch(student -> student.getHomeworks().isEmpty()));
+    }
+
+    @Test
+    public void getSampleAddressBook_holdsSampleStudentsInOrder() {
+        assertEquals(List.of(sampleStudents), SampleDataUtil.getSampleAddressBook().getStudentList());
     }
 }

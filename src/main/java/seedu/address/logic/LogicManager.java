@@ -7,16 +7,14 @@ import java.util.logging.Logger;
 import javafx.collections.ObservableList;
 import seedu.address.commons.core.GuiSettings;
 import seedu.address.commons.core.LogsCenter;
-import seedu.address.logic.commands.AddCommand;
 import seedu.address.logic.commands.Command;
 import seedu.address.logic.commands.CommandResult;
-import seedu.address.logic.commands.HomeworkAddCommand;
-import seedu.address.logic.commands.HomeworkDeleteCommand;
-import seedu.address.logic.commands.HomeworkListCommand;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.logic.parser.AddressBookParser;
 import seedu.address.logic.parser.exceptions.ParseException;
+import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
+import seedu.address.model.ReadOnlyAddressBook;
 import seedu.address.model.student.Student;
 import seedu.address.storage.Storage;
 
@@ -44,17 +42,20 @@ public class LogicManager implements Logic {
         addressBookParser = new AddressBookParser();
     }
 
+    /**
+     * {@inheritDoc}
+     * The data file is written only if the command changed the data.
+     */
     @Override
     public CommandResult execute(String commandText) throws CommandException, ParseException {
         logger.info("----------------[USER COMMAND][" + commandText + "]");
 
-        CommandResult commandResult;
         Command command = addressBookParser.parseCommand(commandText);
-        commandResult = command.execute(model);
+        ReadOnlyAddressBook dataBeforeCommand = new AddressBook(model.getAddressBook());
+        CommandResult commandResult = command.execute(model);
 
-        // Students and their homework are kept in memory only, so these commands do not save the address book.
-        if (command instanceof AddCommand || command instanceof HomeworkAddCommand
-                || command instanceof HomeworkListCommand || command instanceof HomeworkDeleteCommand) {
+        // Read-only commands such as homework list never write the data file
+        if (model.getAddressBook().equals(dataBeforeCommand)) {
             return commandResult;
         }
 

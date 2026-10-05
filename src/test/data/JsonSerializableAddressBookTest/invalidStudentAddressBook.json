@@ -1,0 +1,10 @@
+{
+  "students" : [ {
+    "name" : "Alice Tan",
+    "academicLevel" : "S3",
+    "subjects" : [ "MATH" ],
+    "phone" : "1234",
+    "guardianName" : "Mary Tan",
+    "guardianPhone" : "98765432"
+  } ]
+}

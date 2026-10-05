@@ -9,7 +9,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
 /**
- * Represents the in-memory student roster in insertion order.
+ * Represents the student roster in insertion order.
  * Duplicate identity is defined by {@link Student#isSameStudent(Student)}.
  */
 public final class StudentRoster {

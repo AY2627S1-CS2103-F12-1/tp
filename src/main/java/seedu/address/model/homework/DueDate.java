@@ -15,6 +15,8 @@ import java.util.regex.Pattern;
 public final class DueDate {
     public static final String MESSAGE_CONSTRAINTS = "Due date must be a valid calendar date in YYYY-MM-DD or "
             + "MM-DD format, where the month and day may have 1 or 2 digits.";
+    public static final String MESSAGE_FULL_DATE_CONSTRAINTS = "Due date must be a valid calendar date in "
+            + "YYYY-MM-DD format, where the month and day may have 1 or 2 digits.";
 
     private static final int MAX_YEAR = 9999;
     private static final Pattern FULL_FORM = Pattern.compile("([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})");
@@ -53,6 +55,28 @@ public final class DueDate {
                     Integer.parseInt(shortFormMatcher.group(2)), today));
         }
         throw new IllegalArgumentException(MESSAGE_CONSTRAINTS);
+    }
+
+    /**
+     * Returns the due date represented by a full {@code YYYY-MM-DD} input, ignoring surrounding whitespace.
+     * The month and day may have 1 or 2 digits. Unlike {@link #parse(String, LocalDate)}, the short {@code MM-DD}
+     * form is rejected, so the year is never inferred.
+     *
+     * @throws IllegalArgumentException If the input is not in {@code YYYY-MM-DD} format or does not name a real
+     *         calendar date.
+     */
+    public static DueDate parseFullDate(String rawDate) {
+        requireNonNull(rawDate);
+        Matcher fullFormMatcher = FULL_FORM.matcher(rawDate.strip());
+        if (!fullFormMatcher.matches()) {
+            throw new IllegalArgumentException(MESSAGE_FULL_DATE_CONSTRAINTS);
+        }
+        try {
+            return new DueDate(parseFullForm(Integer.parseInt(fullFormMatcher.group(1)),
+                    Integer.parseInt(fullFormMatcher.group(2)), Integer.parseInt(fullFormMatcher.group(3))));
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException(MESSAGE_FULL_DATE_CONSTRAINTS, exception);
+        }
     }
 
     /**

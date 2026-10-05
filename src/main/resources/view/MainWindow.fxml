@@ -51,7 +51,7 @@
         <TabPane fx:id="rosterTabs" styleClass="roster-tabs" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS"
                  minHeight="230" prefHeight="230">
           <tabs>
-            <Tab text="Students">
+            <Tab fx:id="studentsTab" text="Students">
               <StackPane fx:id="studentListPanelPlaceholder" />
             </Tab>
             <Tab text="Address Book">

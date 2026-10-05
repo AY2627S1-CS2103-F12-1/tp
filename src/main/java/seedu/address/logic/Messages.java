@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import seedu.address.logic.parser.Prefix;
+import seedu.address.model.homework.Homework;
 import seedu.address.model.person.Person;
 import seedu.address.model.student.Student;
 
@@ -19,6 +20,10 @@ public class Messages {
     public static final String MESSAGE_PERSONS_LISTED_OVERVIEW = "%1$d person(s) listed!";
     public static final String MESSAGE_DUPLICATE_FIELDS =
                 "Multiple values specified for the following single-valued field(s): ";
+    public static final String MESSAGE_INVALID_FORMAT_WITH_USAGE = "Invalid command format.\nUsage: %s";
+    public static final String MESSAGE_INVALID_STUDENT_INDEX_SYNTAX =
+            "STUDENT_INDEX must be a positive whole number without leading zeroes.";
+    public static final String MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX = "The student index provided is invalid.";
 
     /**
      * Returns an error message indicating the duplicate prefixes.
@@ -57,6 +62,14 @@ public class Messages {
                 + "; Phone: " + student.getPhone()
                 + "; Guardian: " + student.getGuardianName()
                 + "; Guardian phone: " + student.getGuardianPhone();
+    }
+
+    /** Returns the owner's name and the homework's title, subject and due date in the homework message format. */
+    public static String format(Student student, Homework homework) {
+        return student.getName()
+                + "; Title: " + homework.getTitle()
+                + "; Subject: " + homework.getSubject()
+                + "; Due: " + homework.getDueDate();
     }
 
 }

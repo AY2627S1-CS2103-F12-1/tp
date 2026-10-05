@@ -39,8 +39,8 @@ public final class StudentAddParser {
      */
     public Student parse(String arguments) throws ParseException {
         requireNonNull(arguments);
-        Map<String, String> fields = StrictArgumentTokenizer
-                .tokenize(arguments, REQUIRED_PREFIXES, MESSAGE_INVALID_FORMAT).values();
+        Map<String, String> fields = StrictArgumentTokenizer.tokenize(arguments, REQUIRED_PREFIXES,
+                MESSAGE_INVALID_FORMAT, StudentAddParser::isPartOfName).values();
 
         List<String> missingPrefixes = new ArrayList<>();
         for (String prefix : REQUIRED_PREFIXES) {
@@ -59,5 +59,24 @@ public final class StudentAddParser {
         } catch (IllegalArgumentException exception) {
             throw new ParseException(exception.getMessage(), exception);
         }
+    }
+
+    /**
+     * Returns true if a prefix-shaped token belongs to a name rather than the command structure.
+     * Names may contain slashes, and the standalone name token {@code s/o} overlaps the subjects prefix.
+     */
+    private static boolean isPartOfName(String arguments, int prefixEnd, String previousPrefix, String prefix) {
+        if (!"n/".equals(previousPrefix) && !"gn/".equals(previousPrefix)) {
+            return false;
+        }
+        if (!REQUIRED_PREFIXES.contains(prefix)) {
+            return true;
+        }
+        if (!"s/".equals(prefix) || prefixEnd >= arguments.length()
+                || Character.toLowerCase(arguments.charAt(prefixEnd)) != 'o') {
+            return false;
+        }
+        int tokenEnd = prefixEnd + 1;
+        return tokenEnd == arguments.length() || Character.isWhitespace(arguments.charAt(tokenEnd));
     }
 }

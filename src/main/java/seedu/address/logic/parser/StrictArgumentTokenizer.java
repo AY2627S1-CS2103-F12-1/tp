@@ -22,6 +22,7 @@ public final class StrictArgumentTokenizer {
     public static final String MESSAGE_REPEATED_PREFIX = "Prefix %s must be specified exactly once.";
 
     private static final Pattern PREFIX_PATTERN = Pattern.compile("(?<!\\S)([a-z]+/)");
+    private static final ValueTokenFilter NO_VALUE_TOKENS = (arguments, prefixEnd, previousPrefix, prefix) -> false;
 
     private StrictArgumentTokenizer() {
     }
@@ -37,7 +38,7 @@ public final class StrictArgumentTokenizer {
      */
     public static TokenizedArguments tokenizeWithPreamble(String arguments, List<String> allowedPrefixes,
             String invalidFormatMessage) throws ParseException {
-        return tokenize(arguments, allowedPrefixes, invalidFormatMessage, true);
+        return tokenize(arguments, allowedPrefixes, invalidFormatMessage, true, NO_VALUE_TOKENS);
     }
 
     /**
@@ -51,7 +52,23 @@ public final class StrictArgumentTokenizer {
      */
     public static TokenizedArguments tokenize(String arguments, List<String> allowedPrefixes,
             String invalidFormatMessage) throws ParseException {
-        return tokenize(arguments, allowedPrefixes, invalidFormatMessage, false);
+        return tokenize(arguments, allowedPrefixes, invalidFormatMessage, NO_VALUE_TOKENS);
+    }
+
+    /**
+     * Returns the prefixed values in {@code arguments}, which must not contain any text before the first prefix.
+     * A prefix-shaped token that {@code valueTokenFilter} accepts is kept as part of the preceding value.
+     *
+     * @param arguments Arguments to tokenize.
+     * @param allowedPrefixes Prefixes that may appear, e.g. {@code "n/"}.
+     * @param invalidFormatMessage Message for text before the first prefix or an unknown prefix.
+     * @param valueTokenFilter Decides which prefix-shaped tokens belong to the preceding value.
+     * @return The tokenized arguments, with an empty preamble.
+     * @throws ParseException If there is text before the first prefix, or a prefix is unknown or repeated.
+     */
+    public static TokenizedArguments tokenize(String arguments, List<String> allowedPrefixes,
+            String invalidFormatMessage, ValueTokenFilter valueTokenFilter) throws ParseException {
+        return tokenize(arguments, allowedPrefixes, invalidFormatMessage, false, valueTokenFilter);
     }
 
     /**
@@ -59,8 +76,9 @@ public final class StrictArgumentTokenizer {
      * A non-blank preamble is rejected when {@code isPreambleAllowed} is false.
      */
     private static TokenizedArguments tokenize(String arguments, List<String> allowedPrefixes,
-            String invalidFormatMessage, boolean isPreambleAllowed) throws ParseException {
-        requireAllNonNull(arguments, allowedPrefixes, invalidFormatMessage);
+            String invalidFormatMessage, boolean isPreambleAllowed, ValueTokenFilter valueTokenFilter)
+            throws ParseException {
+        requireAllNonNull(arguments, allowedPrefixes, invalidFormatMessage, valueTokenFilter);
         Matcher matcher = PREFIX_PATTERN.matcher(arguments);
         boolean hasNextPrefix = matcher.find();
         String preamble = arguments.substring(0, hasNextPrefix ? matcher.start() : arguments.length()).strip();
@@ -72,11 +90,15 @@ public final class StrictArgumentTokenizer {
         int previousValueStart = -1;
         String previousPrefix = null;
         while (hasNextPrefix) {
+            String prefix = matcher.group(1);
+            if (valueTokenFilter.isPartOfValue(arguments, matcher.end(), previousPrefix, prefix)) {
+                hasNextPrefix = matcher.find();
+                continue;
+            }
             if (previousPrefix != null) {
                 values.put(previousPrefix, arguments.substring(previousValueStart, matcher.start()).strip());
             }
 
-            String prefix = matcher.group(1);
             if (!allowedPrefixes.contains(prefix)) {
                 throw new ParseException(invalidFormatMessage);
             }
@@ -91,6 +113,18 @@ public final class StrictArgumentTokenizer {
             values.put(previousPrefix, arguments.substring(previousValueStart).strip());
         }
         return new TokenizedArguments(preamble, values);
+    }
+
+    /**
+     * Decides whether a prefix-shaped token belongs to the value of the prefix before it.
+     */
+    @FunctionalInterface
+    public interface ValueTokenFilter {
+        /**
+         * Returns true if {@code prefix}, ending at {@code prefixEnd} in {@code arguments}, is part of the value of
+         * {@code previousPrefix} (null before the first prefix).
+         */
+        boolean isPartOfValue(String arguments, int prefixEnd, String previousPrefix, String prefix);
     }
 
     /**

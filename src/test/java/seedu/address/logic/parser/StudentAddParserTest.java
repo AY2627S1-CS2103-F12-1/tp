@@ -38,6 +38,17 @@ public class StudentAddParserTest {
     }
 
     @Test
+    public void parse_slashSeparatedNames_preservesStudentAndGuardianNames() throws ParseException {
+        Student student = parser.parse(VALID_ARGUMENTS.replace("n/John Tan", "n/Ravi s/o Kumar")
+                .replace("gn/Mary Tan", "gn/Maya d/o Raj"));
+        Student anotherStudent = parser.parse(VALID_ARGUMENTS.replace("n/John Tan", "n/a/p Roe"));
+
+        assertEquals("Ravi s/o Kumar", student.getName().toString());
+        assertEquals("Maya d/o Raj", student.getGuardianName().toString());
+        assertEquals("a/p Roe", anotherStudent.getName().toString());
+    }
+
+    @Test
     public void parse_missingPrefixes_reportsAllInSpecifiedOrder() {
         String expected = String.format(StudentAddParser.MESSAGE_MISSING_PREFIXES, "l/, s/, gn/, gp/");
 

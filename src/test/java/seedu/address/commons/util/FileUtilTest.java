@@ -65,16 +65,29 @@ public class FileUtilTest {
     }
 
     @Test
-    public void writeToFile_writeFails_keepsOldContent() throws IOException {
+    public void writeToFile_existingTempFileName_keepsThatFile() throws IOException {
         Path file = testFolder.resolve("tutorflow.json");
-        Files.writeString(file, OLD_CONTENT);
-        // A folder where the temporary file should be makes writing the new content fail
-        Path blockingFolder = Files.createDirectory(testFolder.resolve("tutorflow.json.tmp"));
+        Path otherFile = testFolder.resolve("tutorflow.json.tmp");
+        Files.writeString(otherFile, OLD_CONTENT);
+
+        FileUtil.writeToFile(file, CONTENT);
+
+        assertEquals(CONTENT, FileUtil.readFromFile(file));
+        assertEquals(OLD_CONTENT, FileUtil.readFromFile(otherFile));
+        assertEquals(Set.of(file, otherFile), Set.copyOf(listFiles(testFolder)));
+    }
+
+    @Test
+    public void writeToFile_replaceFails_deletesOnlyTemporaryFile() throws IOException {
+        // A folder that holds a file cannot be replaced by the data file
+        Path blockingFolder = Files.createDirectory(testFolder.resolve("tutorflow.json"));
         Files.writeString(blockingFolder.resolve("keep.txt"), OLD_CONTENT);
+        Path emptyFolder = Files.createDirectory(testFolder.resolve("tutorflow.json.tmp"));
 
-        assertThrows(IOException.class, () -> FileUtil.writeToFile(file, CONTENT));
+        assertThrows(IOException.class, () -> FileUtil.writeToFile(blockingFolder, CONTENT));
 
-        assertEquals(OLD_CONTENT, FileUtil.readFromFile(file));
+        assertEquals(OLD_CONTENT, FileUtil.readFromFile(blockingFolder.resolve("keep.txt")));
+        assertEquals(Set.of(blockingFolder, emptyFolder), Set.copyOf(listFiles(testFolder)));
     }
 
     @Test
@@ -108,6 +121,16 @@ public class FileUtilTest {
             assertEquals(CONTENT, FileUtil.readFromFile(file));
             assertEquals(expectedPermissions, Files.getPosixFilePermissions(file));
         }
+    }
+
+    @Test
+    public void writeToFile_newFile_onlyOwnerCanReadAndWrite() throws IOException {
+        assumeTrue(isPosix(), "file permissions are POSIX only");
+        Path file = testFolder.resolve("tutorflow.json");
+
+        FileUtil.writeToFile(file, CONTENT);
+
+        assertEquals(PosixFilePermissions.fromString("rw-------"), Files.getPosixFilePermissions(file));
     }
 
     private static boolean isPosix() {

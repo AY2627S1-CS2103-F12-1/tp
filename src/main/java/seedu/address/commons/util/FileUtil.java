@@ -36,9 +36,11 @@ public class FileUtil {
 
     /**
      * Writes given string to a file, creating the file and its missing parent directories if needed.
-     * The content is first written to a temporary file next to {@code file}, which then replaces {@code file}, so
-     * {@code file} is never left partially written: if writing fails, it keeps its previous content.
-     * An existing {@code file} keeps its POSIX file permissions where the file system supports them.
+     * The content is first written to a new temporary file with a unique name next to {@code file}, which then
+     * replaces {@code file}, so {@code file} is never left partially written: if writing fails, it keeps its
+     * previous content. Other files in the folder are never changed.
+     * Where the file system supports POSIX file permissions, an existing {@code file} keeps its permissions, and a
+     * new {@code file} can be read and written only by its owner.
      *
      * @throws AccessDeniedException If {@code file} exists but is read-only, or its folder cannot be written to.
      * @throws IOException If the content cannot be written. An error about the temporary file names {@code file}.
@@ -50,14 +52,16 @@ public class FileUtil {
         }
 
         createParentDirsOfFile(file);
-        Path tempFile = file.resolveSibling(file.getFileName() + TEMP_FILE_SUFFIX);
+        Path folder = file.toAbsolutePath().getParent();
+        Path tempFile = null;
         try {
+            tempFile = Files.createTempFile(folder, file.getFileName().toString(), TEMP_FILE_SUFFIX);
             Files.write(tempFile, content.getBytes(CHARSET));
             copyPosixPermissions(file, tempFile);
             replaceFile(tempFile, file);
         } catch (IOException e) {
             deleteAfterFailure(tempFile, e);
-            throw toErrorAboutFile(e, tempFile, file);
+            throw toErrorAboutFile(e, file);
         } catch (RuntimeException e) {
             deleteAfterFailure(tempFile, e);
             throw e;
@@ -86,9 +90,13 @@ public class FileUtil {
     }
 
     /**
-     * Deletes {@code tempFile} after {@code failure}, adding any error from the deletion to {@code failure}.
+     * Deletes {@code tempFile}, if it was created, after {@code failure}, adding any error from the deletion to
+     * {@code failure}.
      */
     private static void deleteAfterFailure(Path tempFile, Exception failure) {
+        if (tempFile == null) {
+            return;
+        }
         try {
             Files.deleteIfExists(tempFile);
         } catch (IOException deleteException) {
@@ -97,12 +105,14 @@ public class FileUtil {
     }
 
     /**
-     * Returns {@code exception}, or, if it is about {@code tempFile}, an exception of the same kind about
-     * {@code file} caused by {@code exception}, so that error messages name the user's file.
+     * Returns {@code exception}, or, if it is about the temporary file used to write {@code file}, an exception of the
+     * same kind about {@code file} caused by {@code exception}, so that error messages name the user's file.
      */
-    private static IOException toErrorAboutFile(IOException exception, Path tempFile, Path file) {
+    private static IOException toErrorAboutFile(IOException exception, Path file) {
+        // While writing file, an error about any other path is about the temporary file
         if (!(exception instanceof FileSystemException fileException)
-                || !tempFile.toString().equals(fileException.getFile())) {
+                || fileException.getFile() == null
+                || file.toString().equals(fileException.getFile())) {
             return exception;
         }
         FileSystemException errorAboutFile = exception instanceof AccessDeniedException

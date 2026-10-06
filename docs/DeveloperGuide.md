@@ -159,7 +159,7 @@ A missing `homeworks` list or `score` means no homework or no score. Subjects, l
 
 `MainApp#readInitialData` decides what the app starts with: the saved data if the data file is valid, the sample students from `SampleDataUtil#getSampleAddressBook()` if the data file does not exist (the file is not created at startup; the sample students are first saved by the first command that changes the data), and no students if the data file cannot be read or is invalid (a warning is logged). In the last case the invalid file stays on disk until the next command that changes the data overwrites it.
 
-`FileUtil#writeToFile` saves a file atomically: it writes the content to a temporary file next to it (`tutorflow.json.tmp`) and then moves that file over the data file (an atomic move where the file system supports it). If writing fails, the temporary file is deleted and the data file keeps its previous content, so it is never left partially written. A read-only data file is reported as an `AccessDeniedException` before anything is written, because a move could otherwise replace it.
+`FileUtil#writeToFile` saves a file atomically: it writes the content to a new temporary file with a unique name next to it (such as `tutorflow.json123456789.tmp`, created by `Files#createTempFile`) and then moves that file over the data file (an atomic move where the file system supports it). If writing fails, only that temporary file is deleted and the data file keeps its previous content, so it is never left partially written. Other files in the folder, even one named `tutorflow.json.tmp`, are never changed. A read-only data file is reported as an `AccessDeniedException` before anything is written, because a move could otherwise replace it.
 
 ### Common classes
 

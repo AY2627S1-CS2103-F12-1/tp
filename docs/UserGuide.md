@@ -166,9 +166,9 @@ Like students, homework is kept in memory only for now. It is not saved and is l
 
 Examples:
 * `homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15`
-* `hw add 2 t/Attempt mechanics questions 1-5 s/PHYSICS due/2026-10-20`
-* `homework add 3 due/10-18 s/chemistry title/Revise atomic structure` adds homework due on 18 October of this year, or of next year if 18 October has passed.
-* `hw add 2 t/Read chapter 3 s/physics due/10-5` adds homework due on 5 October of this year, or of next year if 5 October has passed.
+* `hw add 1 t/Attempt mechanics questions 1-5 s/PHYSICS due/2026-10-20`
+* `homework add 2 due/10-18 s/chemistry title/Revise atomic structure` adds homework due on 18 October of this year, or of next year if 18 October has passed.
+* `hw add 1 t/Read chapter 3 s/physics due/10-5` adds homework due on 5 October of this year, or of next year if 5 October has passed.
 
 ### Listing a student's homework: `homework list`
 

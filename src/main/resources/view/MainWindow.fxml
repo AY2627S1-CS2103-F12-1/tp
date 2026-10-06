@@ -49,7 +49,7 @@
         </StackPane>
 
         <TabPane fx:id="rosterTabs" styleClass="roster-tabs" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS"
-                 minHeight="230" prefHeight="230">
+                 minHeight="200" prefHeight="230">
           <tabs>
             <Tab fx:id="studentsTab" text="Students">
               <StackPane fx:id="studentListPanelPlaceholder" />

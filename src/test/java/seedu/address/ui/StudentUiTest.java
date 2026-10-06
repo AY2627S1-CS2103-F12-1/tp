@@ -35,7 +35,11 @@ public class StudentUiTest {
 
     @BeforeAll
     public static void startJavaFx() {
-        Platform.startup(() -> { });
+        try {
+            Platform.startup(() -> { });
+        } catch (IllegalStateException e) {
+            // Another UI test class has already started JavaFX in this test JVM
+        }
         Platform.setImplicitExit(false);
     }
 

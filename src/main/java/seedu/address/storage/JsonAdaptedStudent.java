@@ -35,8 +35,14 @@ class JsonAdaptedStudent {
     private final List<JsonAdaptedHomework> homeworks = new ArrayList<>();
 
     /**
-     * Constructs a {@code JsonAdaptedStudent} with the given student details.
+     * Constructs a {@code JsonAdaptedStudent} with the given student details, as read from the JSON file.
      *
+     * @param name Name of the student, or null if the field is missing.
+     * @param academicLevel Academic level of the student, such as {@code S3}, or null if the field is missing.
+     * @param subjects Subjects the student takes, one per entry, or null if the field is missing.
+     * @param phone Phone number of the student, or null if the field is missing.
+     * @param guardianName Name of the student's guardian, or null if the field is missing.
+     * @param guardianPhone Phone number of the student's guardian, or null if the field is missing.
      * @param homeworks Homework of the student in insertion order; null if the student has no homework.
      */
     @JsonCreator

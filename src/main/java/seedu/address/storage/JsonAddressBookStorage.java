@@ -75,6 +75,7 @@ public class JsonAddressBookStorage {
     /**
      * Similar to {@link #saveAddressBook(ReadOnlyAddressBook)}.
      *
+     * @param addressBook Data to save. Cannot be null.
      * @param filePath location of the data. Cannot be null.
      */
     public void saveAddressBook(ReadOnlyAddressBook addressBook, Path filePath) throws IOException {

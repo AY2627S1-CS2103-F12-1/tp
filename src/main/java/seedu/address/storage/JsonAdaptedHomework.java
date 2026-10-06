@@ -27,8 +27,12 @@ class JsonAdaptedHomework {
     private final Object score;
 
     /**
-     * Constructs a {@code JsonAdaptedHomework} with the given homework details.
+     * Constructs a {@code JsonAdaptedHomework} with the given homework details, as read from the JSON file.
      *
+     * @param title Title of the homework, or null if the field is missing.
+     * @param subject Subject of the homework, such as {@code MATH}, or null if the field is missing.
+     * @param dueDate Due date in {@code YYYY-MM-DD} format, or null if the field is missing.
+     * @param status Status of the homework, {@code ASSIGNED} or {@code COMPLETED}, or null if the field is missing.
      * @param score Score received for the homework, or null if none is recorded. It is kept as read from the JSON
      *     file (e.g. a {@code Double} for {@code 85.5}) so that {@link #toModelType()} can reject a score that is
      *     not a whole number instead of truncating it.

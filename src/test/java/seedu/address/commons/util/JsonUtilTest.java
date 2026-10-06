@@ -12,6 +12,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import seedu.address.commons.exceptions.DataLoadingException;
 import seedu.address.testutil.SerializableTestClass;
 import seedu.address.testutil.TestUtil;
 
@@ -72,6 +73,14 @@ public class JsonUtilTest {
         assertThrows(IOException.class, () -> JsonUtil.saveJsonFile(new Object(), file));
 
         assertEquals(OLD_CONTENT, FileUtil.readFromFile(file));
+    }
+
+    @Test
+    public void readJsonFile_nullRoot_throwsDataLoadingException() throws IOException {
+        Path file = testFolder.resolve("serialize.json");
+        Files.writeString(file, "null");
+
+        assertThrows(DataLoadingException.class, () -> JsonUtil.readJsonFile(file, SerializableTestClass.class));
     }
 
     //TODO: @Test jsonUtil_readJsonStringToObjectInstance_correctObject()

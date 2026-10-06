@@ -53,6 +53,14 @@ public class MainAppTest {
         assertEquals(new AddressBook(), new AddressBook(MainApp.readInitialData(getStorage(dataFilePath))));
     }
 
+    @Test
+    public void readInitialData_nullDataFile_returnsNoStudents() throws Exception {
+        Path dataFilePath = temporaryFolder.resolve("tutorflow.json");
+        Files.writeString(dataFilePath, "null");
+
+        assertEquals(new AddressBook(), new AddressBook(MainApp.readInitialData(getStorage(dataFilePath))));
+    }
+
     private Storage getStorage(Path dataFilePath) {
         return new StorageManager(new JsonAddressBookStorage(dataFilePath),
                 new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json")));

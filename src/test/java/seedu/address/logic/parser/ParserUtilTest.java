@@ -11,6 +11,7 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
+import seedu.address.commons.core.index.Index;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.person.Address;
 import seedu.address.model.person.Email;
@@ -33,6 +34,7 @@ public class ParserUtilTest {
     private static final String VALID_TAG_2 = "neighbour";
 
     private static final String WHITESPACE = " \t\r\n";
+    private static final String MESSAGE_INVALID_STRICT_INDEX = "Index must be a positive whole number.";
 
     @Test
     public void parseIndex_invalidInput_throwsParseException() {
@@ -52,6 +54,33 @@ public class ParserUtilTest {
 
         // Leading and trailing whitespaces
         assertEquals(INDEX_FIRST_PERSON, ParserUtil.parseIndex("  1  "));
+    }
+
+    @Test
+    public void parseStrictIndex_validInput_success() throws Exception {
+        assertEquals(Index.fromOneBased(1), ParserUtil.parseStrictIndex("1", MESSAGE_INVALID_STRICT_INDEX));
+        assertEquals(Index.fromOneBased(12), ParserUtil.parseStrictIndex("12", MESSAGE_INVALID_STRICT_INDEX));
+        assertEquals(Index.fromOneBased(1), ParserUtil.parseStrictIndex(" 1 ", MESSAGE_INVALID_STRICT_INDEX));
+        assertEquals(Index.fromOneBased(Integer.MAX_VALUE),
+                ParserUtil.parseStrictIndex("2147483647", MESSAGE_INVALID_STRICT_INDEX));
+    }
+
+    @Test
+    public void parseStrictIndex_invalidInput_throwsParseException() {
+        assertInvalidStrictIndex("0"); // zero
+        assertInvalidStrictIndex("01"); // leading zero
+        assertInvalidStrictIndex("-1"); // negative
+        assertInvalidStrictIndex("+1"); // explicit sign
+        assertInvalidStrictIndex("1.0"); // decimal
+        assertInvalidStrictIndex("one"); // word
+        assertInvalidStrictIndex("1 2"); // two numbers
+        assertInvalidStrictIndex(""); // empty
+        assertInvalidStrictIndex("2147483648"); // larger than Integer.MAX_VALUE
+    }
+
+    @Test
+    public void parseStrictIndex_null_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> ParserUtil.parseStrictIndex(null, MESSAGE_INVALID_STRICT_INDEX));
     }
 
     @Test
@@ -190,5 +219,10 @@ public class ParserUtilTest {
         Set<Tag> expectedTagSet = Set.of(new Tag(VALID_TAG_1), new Tag(VALID_TAG_2));
 
         assertEquals(expectedTagSet, actualTagSet);
+    }
+
+    private static void assertInvalidStrictIndex(String oneBasedIndex) {
+        assertThrows(ParseException.class, MESSAGE_INVALID_STRICT_INDEX, () ->
+                ParserUtil.parseStrictIndex(oneBasedIndex, MESSAGE_INVALID_STRICT_INDEX));
     }
 }

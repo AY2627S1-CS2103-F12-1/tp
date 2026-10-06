@@ -28,7 +28,7 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
 
    * `list` : Lists all contacts.
 
-   * `add n/John Doe p/98765432 e/johnd@example.com a/John street, block 123, #01-01` : Adds a contact named `John Doe` to the Address Book.
+   * `add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777` : Adds a student named `Aaron Koh` to the student list.
 
    * `delete 3` : Deletes the 3rd contact shown in the current list.
 
@@ -52,6 +52,9 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
 * Items in square brackets are optional.<br>
   For example, `n/NAME [t/TAG]` can be used as `n/John Doe t/friend` or as `n/John Doe`.
 
+* Items separated by `|` are alternatives; type any one of them.<br>
+  For example, `homework|hw list|ls STUDENT_INDEX` can be used as `homework list 1` or as `hw ls 1`.
+
 * Items followed by `…`​ can appear zero or more times.<br>
   For example, `[t/TAG]…​` may be omitted, or written as `t/friend` or `t/friend t/family`.
 
@@ -73,19 +76,28 @@ Shows a message explaining how to access the help page.
 Format: `help`
 
 
-### Adding a person: `add`
+### Adding a student: `add`
 
-Adds a person to the address book.
+Adds a student to the end of the student list.
 
-Format: `add n/NAME p/PHONE_NUMBER e/EMAIL a/ADDRESS [t/TAG]…​`
+Format: `add n/STUDENT_NAME l/ACADEMIC_LEVEL s/SUBJECTS p/STUDENT_PHONE gn/GUARDIAN_NAME gp/GUARDIAN_PHONE`
 
-<div markdown="span" class="alert alert-primary">:bulb: **Tip:**
-A person can have any number of tags, including zero.
+* All six fields are required, and each prefix must appear exactly once.
+* `STUDENT_NAME` and `GUARDIAN_NAME` must be 1 to 70 characters long and may contain letters, numbers, spaces, apostrophes, hyphens, periods, parentheses and `/`. Extra spaces are removed, and capitalization is kept.
+* A name may contain words such as `s/o` and `d/o`, but not this command's other prefixes (such as `p/` or `gn/`) after a space.
+* `ACADEMIC_LEVEL` must be one of `S1`, `S2`, `S3`, `S4`, `S5`, `J1` or `J2` (in any case).
+* `SUBJECTS` is one or more of `MATH`, `PHYSICS` and `CHEMISTRY` (in any case), separated by commas, with no subject repeated. The student card shows the subjects in the order you type them.
+* `STUDENT_PHONE` and `GUARDIAN_PHONE` must each be an 8-digit Singapore number starting with 6, 8 or 9, or an international number written as `+` followed by 8 to 15 digits, without spaces.
+* A student cannot be added if a student with the same name (ignoring case) and the same student phone number is already in the list.
+
+<div markdown="span" class="alert alert-warning">:exclamation: **Caution:**
+Students are kept in memory only for now. A student you add is not saved and is lost when you close TutorFlow.
 </div>
 
 Examples:
-* `add n/John Doe p/98765432 e/johnd@example.com a/John street, block 123, #01-01`
-* `add n/Betsy Crowe t/friend e/betsycrowe@example.com a/Newgate Prison p/1234567 t/criminal`
+* `add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777`
+* `add n/Siti Rahmah binte Ismail l/j1 s/math, chemistry, physics p/87654321 gn/Ismail bin Yusof gp/+60123456789` adds a J1 student who takes all three subjects, with a Malaysian number for the guardian.
+* `add gp/96543210 gn/Ramesh s/o Krishnan p/93334444 s/PHYSICS, MATH n/Kavin Ramesh l/S4` gives the fields in a different order. `s/o` in the guardian's name is part of the name, not the `s/` prefix.
 
 ### Listing all persons: `list`
 
@@ -140,6 +152,64 @@ Examples:
 * `list` followed by `delete 2` deletes the 2nd person in the address book.
 * `find Betsy` followed by `delete 1` deletes the 1st person in the results of the `find` command.
 
+### Adding homework to a student: `homework add`
+
+Adds a homework record to the end of a student's homework list.
+
+Format: `homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD`
+
+* `homework` can be shortened to `hw`, and `title/` can be shortened to `t/`.
+* `STUDENT_INDEX` refers to the index number shown in the displayed student list. It **must be a positive whole number without leading zeroes**, such as 1, 2, 3, …​
+* `TITLE` must be 1 to 100 characters long and must not contain line breaks or control characters (such as tabs). Extra spaces are removed, and capitalization is kept.
+* A lowercase word directly followed by `/` in `TITLE` (such as `km/h` or `and/or`) is read as a prefix, so the command is rejected. Write such words with a capital letter or with spaces around the `/` instead, e.g. `And/or`, `and / or` or `km / h`.
+* `SUBJECT` must be `MATH`, `PHYSICS` or `CHEMISTRY` (in any case), and the student must take that subject.
+* The due date must be a real calendar date in `YYYY-MM-DD` format. Past dates are accepted, so you can record homework that was assigned earlier.
+* The due date can also be given as `MM-DD`. The year is then this year, or next year if that date has already passed this year, and the result shows the year used.
+* In both formats, the month and day may have 1 or 2 digits, so `2026-2-5` means 5 February 2026 and `10-5` means 5 October. The year must have 4 digits.
+* A student cannot have two homework records with the same title (ignoring case), subject and due date. The same homework can be added to different students.
+* Each student card shows the number of homework records that are still assigned.
+
+<div markdown="span" class="alert alert-warning">:exclamation: **Caution:**
+Like students, homework is kept in memory only for now. It is not saved and is lost when you close TutorFlow. Each time TutorFlow starts, the student list holds the same sample students with sample homework, which you can try the homework commands on.
+</div>
+
+Examples:
+* `homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15`
+* `hw add 1 t/Attempt mechanics questions 1-5 s/PHYSICS due/2026-10-20`
+* `homework add 2 due/10-18 s/chemistry title/Revise atomic structure` adds homework due on 18 October of this year, or of next year if 18 October has passed.
+* `hw add 1 t/Read chapter 3 s/physics due/10-5` adds homework due on 5 October of this year, or of next year if 5 October has passed.
+
+### Listing a student's homework: `homework list`
+
+Shows all homework of a student in the order it was added, numbered from 1.
+
+Format: `homework|hw list|ls STUDENT_INDEX`
+
+* `homework` can be shortened to `hw`, and `list` can be shortened to `ls`.
+* `STUDENT_INDEX` follows the same rules as in `homework add`.
+* Each homework is shown on one line as its number, title, subject and due date, e.g. `1. Complete algebra worksheet (MATH) - due 2026-10-15`.
+* The numbers shown are the `HOMEWORK_INDEX` values used by `homework delete`. They change when homework is deleted.
+
+Examples:
+* `homework list 1`
+* `hw ls 3`
+
+### Deleting a student's homework: `homework delete`
+
+Deletes one homework record from a student.
+
+Format: `homework|hw delete|del STUDENT_INDEX HOMEWORK_INDEX`
+
+* `homework` can be shortened to `hw`, and `delete` can be shortened to `del`.
+* `STUDENT_INDEX` follows the same rules as in `homework add`.
+* `HOMEWORK_INDEX` refers to the number shown by `homework list STUDENT_INDEX`. It **must be a positive whole number without leading zeroes**.
+* The remaining homework keeps its order and is renumbered.
+* Deletion cannot be undone.
+
+Examples:
+* `homework list 1` followed by `homework delete 1 2` deletes the 2nd homework of the 1st student.
+* `hw del 3 1`
+
 ### Clearing all entries: `clear`
 
 Clears all entries from the address book.
@@ -189,10 +259,13 @@ _Details coming soon ..._
 
 Action | Format, Examples
 --------|------------------
-**Add** | `add n/NAME p/PHONE_NUMBER e/EMAIL a/ADDRESS [t/TAG]…​` <br> e.g., `add n/James Ho p/22224444 e/jamesho@example.com a/123, Clementi Rd, 1234665 t/friend t/colleague`
+**Add** | `add n/STUDENT_NAME l/ACADEMIC_LEVEL s/SUBJECTS p/STUDENT_PHONE gn/GUARDIAN_NAME gp/GUARDIAN_PHONE` <br> e.g., `add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777`
 **Clear** | `clear`
 **Delete** | `delete INDEX`<br> e.g., `delete 3`
 **Edit** | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [e/EMAIL] [a/ADDRESS] [t/TAG]…​`<br> e.g., `edit 2 n/James Lee e/jameslee@example.com`
 **Find** | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
+**Homework add** | <code>homework&#124;hw add STUDENT_INDEX title/&#124;t/TITLE s/SUBJECT due/YYYY-MM-DD&#124;MM-DD</code><br> e.g., `homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15`
+**Homework delete** | <code>homework&#124;hw delete&#124;del STUDENT_INDEX HOMEWORK_INDEX</code><br> e.g., `homework delete 1 2`
+**Homework list** | <code>homework&#124;hw list&#124;ls STUDENT_INDEX</code><br> e.g., `homework list 1`
 **List** | `list`
 **Help** | `help`

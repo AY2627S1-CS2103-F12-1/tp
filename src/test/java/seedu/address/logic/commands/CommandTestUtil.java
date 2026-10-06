@@ -18,6 +18,7 @@ import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
 import seedu.address.model.person.Person;
+import seedu.address.model.student.Student;
 import seedu.address.testutil.EditPersonDescriptorBuilder;
 
 /**
@@ -109,6 +110,18 @@ public class CommandTestUtil {
         assertThrows(CommandException.class, expectedMessage, () -> command.execute(actualModel));
         assertEquals(expectedAddressBook, actualModel.getAddressBook());
         assertEquals(expectedFilteredList, actualModel.getFilteredPersonList());
+    }
+
+    /**
+     * Executes the given {@code command}, confirms that <br>
+     * - a {@code CommandException} is thrown <br>
+     * - the CommandException message matches {@code expectedMessage} <br>
+     * - the student list, address book and filtered person list in {@code actualModel} remain unchanged
+     */
+    public static void assertStudentCommandFailure(Command command, Model actualModel, String expectedMessage) {
+        List<Student> expectedStudents = new ArrayList<>(actualModel.getStudentList());
+        assertCommandFailure(command, actualModel, expectedMessage);
+        assertEquals(expectedStudents, actualModel.getStudentList());
     }
     /**
      * Updates {@code model}'s filtered list to show only the person at the given {@code targetIndex} in the

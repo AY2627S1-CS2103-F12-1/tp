@@ -19,6 +19,7 @@ import seedu.address.model.ModelManager;
 import seedu.address.model.ReadOnlyAddressBook;
 import seedu.address.model.ReadOnlyUserPrefs;
 import seedu.address.model.UserPrefs;
+import seedu.address.model.student.Student;
 import seedu.address.model.util.SampleDataUtil;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
@@ -64,6 +65,7 @@ public class MainApp extends Application {
      * Returns a {@code ModelManager} with the data from {@code storage}'s address book and {@code userPrefs}. <br>
      * The data from the sample address book will be used instead if {@code storage}'s address book is not found,
      * or an empty address book will be used instead if errors occur when reading {@code storage}'s address book.
+     * The student roster always starts with the sample students.
      */
     private Model initModelManager(Storage storage, ReadOnlyUserPrefs userPrefs) {
         logger.info("Using data file : " + storage.getAddressBookFilePath());
@@ -83,7 +85,13 @@ public class MainApp extends Application {
             initialData = new AddressBook();
         }
 
-        return new ModelManager(initialData, userPrefs);
+        Model initializedModel = new ModelManager(initialData, userPrefs);
+        // Students are not saved yet, so every launch starts with the sample students.
+        // TODO: Once students are saved, use the sample students only when no data file exists, like sample persons.
+        for (Student sampleStudent : SampleDataUtil.getSampleStudents()) {
+            initializedModel.addStudent(sampleStudent);
+        }
+        return initializedModel;
     }
 
     /**

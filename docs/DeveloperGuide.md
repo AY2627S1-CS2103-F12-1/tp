@@ -155,6 +155,45 @@ Classes used by multiple components are in the `seedu.address.commons` package.
 
 This section describes some noteworthy details on how certain features are implemented.
 
+### Homework management
+
+Homework is managed with three commands: `homework add`, `homework list` and `homework delete`. `hw` is an alias for `homework`.
+
+**Parsing.** `AddressBookParser` passes the arguments of both `homework` and `hw` to `HomeworkCommandParser`. This dispatcher reads the first word as the subcommand and hands the rest to `HomeworkAddCommandParser` (`add`), `HomeworkListCommandParser` (`list` or `ls`) or `HomeworkDeleteCommandParser` (`delete` or `del`). A missing or unknown subcommand produces an "Invalid command format." error that lists the usage of all three subcommands. Usage messages show alternatives (aliases and the short date form) separated by `|`, e.g. `homework|hw list|ls STUDENT_INDEX`. This keeps one `AddressBookParser` case per command word, and future subcommands (edit, status, score; their classes exist as placeholders) only need a new case in the dispatcher.
+
+The subcommand parsers use `StrictArgumentTokenizer`, which rejects unknown and repeated prefixes, and `ParserUtil#parseStrictIndex`, which rejects signs and leading zeroes. They use `StrictArgumentTokenizer` with plain string prefixes instead of AB3's `ArgumentTokenizer` with `CliSyntax` prefixes because the specification requires unknown prefixes to be rejected, which `ArgumentTokenizer` cannot do: it only splits on prefixes it is given, so an unknown prefix silently becomes part of the previous value. `StudentAddParser` shares the same tokenizer for the same reason. `HomeworkAddCommandParser` reports only the first error it finds, in this order:
+
+1. An unknown or repeated prefix, in the order the prefixes appear.
+1. Both `title/` and `t/` given, reported as a repeated `title/`. This is checked only after all prefixes are tokenized, so an unknown or repeated prefix anywhere in the input is reported first. For example, `t/A title/B x/C` reports an invalid command format because of `x/`.
+1. A student index that is missing or is not a single word.
+1. Missing prefixes, all listed in the order `title/, s/, due/`.
+1. Student index syntax.
+1. The title, then the subject, then the due date.
+
+**Model.** `Student` is immutable and holds its `Homework` records in insertion order. To add or delete homework, a command copies the student's homework list, changes the copy, and calls `Model#setStudent(target, target.withHomeworks(updatedList))`, which replaces the student at the same position in the roster. The change to the observable student list refreshes the student card, which shows `Student#getAssignedHomeworkCount()`. `homework list` is read-only and returns the list as text in the result display, one line per record in the format of `HomeworkListCommand#MESSAGE_HOMEWORK_LINE` (e.g. `1. Complete algebra worksheet (MATH) - due 2026-10-15`).
+
+The student index refers to `Model#getStudentList()`. The homework index is the one-based position in that student's homework list; it is not stored and changes when earlier homework is deleted. Two homework records of the same student are duplicates when `Homework#isSameHomework` holds: same title ignoring case, same subject and same due date.
+
+**Due date forms.** A due date is given as `YYYY-MM-DD` or `MM-DD`, and in both forms the month and day may have 1 or 2 digits (`2026-2-5`, `10-5`). `DueDate` matches each form with a regular expression that allows only 4-digit years and 1- or 2-digit months and days, then builds the date with `LocalDate#of`, which rejects dates that do not exist (such as `2-30`). The stored date is a `LocalDate`, so it is always shown padded (`2026-02-05`), and `10-5` and `10-05` give equal due dates.
+
+**Year inference.** For a due date given as `MM-DD`, `DueDate#parse(rawDate, today)` picks this year, or next year if the date has passed. If the date does not exist this year (29 February in a non-leap year), next year is used; if it does not exist next year either, the date is invalid. A next year after 9999 is also invalid. `HomeworkAddCommandParser` holds a `java.time.Clock` (`Clock.systemDefaultZone()` in production) and computes `today` as `LocalDate.now(clock)`, so tests pass a fixed clock and never depend on the real date. The parser tells `HomeworkAddCommand` whether the year was inferred, so the success message can show it.
+
+**Unexpected errors.** Each homework command catches any unexpected `RuntimeException` in `execute`, logs it with its stack trace, and throws a `CommandException` with a short internal-error message instead, so the user never sees a stack trace. `Model#setStudent` is the last step of `homework add` and `homework delete`, so such an error leaves the student's homework unchanged.
+
+**Persistence.** Homework, like the student roster, is kept in memory only: `StudentRoster` lives in `ModelManager` and is not written by `Storage`. `LogicManager` therefore does not save the address book after `add` or a homework command, so a failed save cannot report an error for a change that was already made. Because nothing is saved, `MainApp#initModelManager` adds `SampleDataUtil#getSampleStudents()` (students with sample homework) to the model at every launch. This happens outside the `ModelManager` constructor so that tests start with an empty roster. Once students are saved, the sample students should be used only when no data file exists, as with the sample persons.
+
+#### Design considerations:
+
+**Aspect: Where homework is stored:**
+
+* **Alternative 1 (current choice):** Each `Student` holds its own homework list.
+  * Pros: A student and their homework stay together, and a student index plus a homework index identify one record without separate homework IDs.
+  * Cons: Every change to homework builds a new `Student`.
+
+* **Alternative 2:** One homework list in the model, with each record referring to its student.
+  * Pros: Easy to show all homework across students.
+  * Cons: Homework must be kept consistent when a student is edited or deleted, and per-student indices must be computed.
+
 ### \[Proposed\] Undo/redo feature
 
 #### Proposed Implementation

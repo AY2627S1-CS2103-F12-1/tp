@@ -124,6 +124,12 @@ public class ModelManager implements Model {
     }
 
     @Override
+    public void setStudent(Student target, Student editedStudent) {
+        requireAllNonNull(target, editedStudent);
+        studentRoster.setStudent(target, editedStudent);
+    }
+
+    @Override
     public ObservableList<Student> getStudentList() {
         return studentRoster.getStudents();
     }

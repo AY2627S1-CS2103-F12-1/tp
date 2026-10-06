@@ -74,6 +74,29 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_homeworkCommands_doNotSaveAddressBook() throws Exception {
+        // Saving fails, so a homework command that saved would throw instead of succeeding
+        JsonAddressBookStorage addressBookStorage =
+                new JsonAddressBookStorage(temporaryFolder.resolve("addressBook.json")) {
+                    @Override
+                    public void saveAddressBook(ReadOnlyAddressBook addressBook) throws IOException {
+                        throw DUMMY_IO_EXCEPTION;
+                    }
+                };
+        JsonUserPrefsStorage userPrefsStorage = new JsonUserPrefsStorage(temporaryFolder.resolve("userPrefs.json"));
+        logic = new LogicManager(model, new StorageManager(addressBookStorage, userPrefsStorage));
+        logic.execute("add n/John Tan l/S3 s/MATH p/91234567 gn/Mary Tan gp/98765432");
+
+        logic.execute("hw add 1 t/Complete algebra worksheet s/MATH due/2026-10-15");
+        assertEquals(1, logic.getStudentList().get(0).getHomeworks().size());
+
+        logic.execute("hw ls 1");
+
+        logic.execute("hw del 1 1");
+        assertEquals(0, logic.getStudentList().get(0).getHomeworks().size());
+    }
+
+    @Test
     public void execute_storageThrowsIoException_throwsCommandException() {
         assertCommandFailureForExceptionFromStorage(DUMMY_IO_EXCEPTION, String.format(
                 LogicManager.FILE_OPS_ERROR_FORMAT, DUMMY_IO_EXCEPTION.getMessage()));

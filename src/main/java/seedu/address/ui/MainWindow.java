@@ -6,6 +6,7 @@ import java.util.logging.Logger;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.input.KeyCombination;
@@ -38,6 +39,7 @@ public class MainWindow extends UiPart<Stage> {
     private StudentListPanel studentListPanel;
     private ResultDisplay resultDisplay;
     private HelpWindow helpWindow;
+    private CommandBox commandBox;
 
     @FXML
     private StackPane commandBoxPlaceholder;
@@ -53,6 +55,9 @@ public class MainWindow extends UiPart<Stage> {
 
     @FXML
     private TabPane rosterTabs;
+
+    @FXML
+    private Tab studentsTab;
 
     @FXML
     private StackPane resultDisplayPlaceholder;
@@ -134,6 +139,8 @@ public class MainWindow extends UiPart<Stage> {
         StatusBarFooter statusBarFooter = new StatusBarFooter(dataFilePath);
         statusbarPlaceholder.getChildren().add(statusBarFooter.getRoot());
         statusBarFooter.setStatusText("Student roster is in memory only; changes are not saved.");
+        // The Students tab is the default page; no command changes the selected tab afterwards.
+        rosterTabs.getSelectionModel().select(studentsTab);
         rosterTabs.getSelectionModel().selectedIndexProperty().addListener((unused, oldIndex, newIndex) -> {
             if (newIndex.intValue() == 0) {
                 statusBarFooter.setStatusText("Student roster is in memory only; changes are not saved.");
@@ -142,8 +149,9 @@ public class MainWindow extends UiPart<Stage> {
             }
         });
 
-        CommandBox commandBox = new CommandBox(this::executeCommand);
+        commandBox = new CommandBox(this::executeCommand);
         commandBoxPlaceholder.getChildren().add(commandBox.getRoot());
+        helpWindow.getRoot().setOnHidden(unused -> focusCommandBox());
     }
 
     /**
@@ -168,6 +176,15 @@ public class MainWindow extends UiPart<Stage> {
         } else {
             helpWindow.focus();
         }
+    }
+
+    /**
+     * Moves keyboard focus back to the command box so that the next command typed after closing the help window
+     * is not lost.
+     */
+    private void focusCommandBox() {
+        primaryStage.requestFocus();
+        commandBox.requestFocus();
     }
 
     void show() {

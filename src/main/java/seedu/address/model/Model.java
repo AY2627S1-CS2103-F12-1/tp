@@ -76,6 +76,13 @@ public interface Model {
     /** Adds a student to the end of the student roster. The student must not already exist. */
     void addStudent(Student student);
 
+    /**
+     * Replaces the given student {@code target} with {@code editedStudent}, keeping its position in the roster.
+     * {@code target} must exist in the roster.
+     * The identity of {@code editedStudent} must not be the same as another existing student in the roster.
+     */
+    void setStudent(Student target, Student editedStudent);
+
     /** Returns an unmodifiable observable view of the student roster. */
     ObservableList<Student> getStudentList();
 }

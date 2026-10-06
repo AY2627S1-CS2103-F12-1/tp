@@ -10,6 +10,9 @@ import seedu.address.commons.core.LogsCenter;
 import seedu.address.logic.commands.AddCommand;
 import seedu.address.logic.commands.Command;
 import seedu.address.logic.commands.CommandResult;
+import seedu.address.logic.commands.HomeworkAddCommand;
+import seedu.address.logic.commands.HomeworkDeleteCommand;
+import seedu.address.logic.commands.HomeworkListCommand;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.logic.parser.AddressBookParser;
 import seedu.address.logic.parser.exceptions.ParseException;
@@ -50,7 +53,9 @@ public class LogicManager implements Logic {
         Command command = addressBookParser.parseCommand(commandText);
         commandResult = command.execute(model);
 
-        if (command instanceof AddCommand) {
+        // Students and their homework are kept in memory only, so these commands do not save the address book.
+        if (command instanceof AddCommand || command instanceof HomeworkAddCommand
+                || command instanceof HomeworkListCommand || command instanceof HomeworkDeleteCommand) {
             return commandResult;
         }
 

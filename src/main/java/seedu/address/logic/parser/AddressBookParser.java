@@ -1,8 +1,10 @@
 package seedu.address.logic.parser;
 
+import static java.util.Objects.requireNonNull;
 import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 import static seedu.address.logic.Messages.MESSAGE_UNKNOWN_COMMAND;
 
+import java.time.Clock;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -29,6 +31,18 @@ public class AddressBookParser {
      */
     private static final Pattern BASIC_COMMAND_FORMAT = Pattern.compile("(?<commandWord>\\S+)(?<arguments>.*)");
     private static final Logger logger = LogsCenter.getLogger(AddressBookParser.class);
+
+    private final Clock clock;
+
+    /** Creates a parser whose {@code homework add} command infers due date years from the system clock. */
+    public AddressBookParser() {
+        this(Clock.systemDefaultZone());
+    }
+
+    /** Creates a parser whose {@code homework add} command infers due date years from {@code clock}. */
+    public AddressBookParser(Clock clock) {
+        this.clock = requireNonNull(clock);
+    }
 
     /**
      * Parses user input into command for execution.
@@ -60,6 +74,8 @@ public class AddressBookParser {
             case ListCommand.COMMAND_WORD -> new ListCommand();
             case ExitCommand.COMMAND_WORD -> new ExitCommand();
             case HelpCommand.COMMAND_WORD -> new HelpCommand();
+            case HomeworkCommandParser.COMMAND_WORD, HomeworkCommandParser.COMMAND_ALIAS ->
+                new HomeworkCommandParser(clock).parse(arguments);
             default -> {
                 logger.finer("This user input caused a ParseException: " + userInput);
                 throw new ParseException(MESSAGE_UNKNOWN_COMMAND);

@@ -50,6 +50,13 @@ public class CommandBox extends UiPart<Region> {
     }
 
     /**
+     * Moves keyboard focus to the command text field.
+     */
+    public void requestFocus() {
+        commandTextField.requestFocus();
+    }
+
+    /**
      * Sets the command box style to use the default style.
      */
     private void setStyleToDefault() {

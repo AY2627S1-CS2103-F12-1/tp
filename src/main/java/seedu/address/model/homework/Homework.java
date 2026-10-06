@@ -31,6 +31,10 @@ public final class Homework {
     /**
      * Creates homework with every field given.
      *
+     * @param title Title of the homework.
+     * @param subject Subject the homework is for.
+     * @param dueDate Date the homework is due.
+     * @param status Whether the homework is still assigned or completed.
      * @param score Score received for the homework, or null if none is recorded.
      * @throws NullPointerException If {@code title}, {@code subject}, {@code dueDate} or {@code status} is null.
      */

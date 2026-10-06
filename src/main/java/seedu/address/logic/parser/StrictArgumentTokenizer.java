@@ -74,6 +74,12 @@ public final class StrictArgumentTokenizer {
     /**
      * Returns the preamble and prefixed values in {@code arguments}, checking each prefix in the order it appears.
      * A non-blank preamble is rejected when {@code isPreambleAllowed} is false.
+     *
+     * @param arguments Arguments to tokenize.
+     * @param allowedPrefixes Prefixes that may appear.
+     * @param invalidFormatMessage Message for a rejected preamble or an unknown prefix.
+     * @param isPreambleAllowed Whether text may appear before the first prefix.
+     * @param valueTokenFilter Decides which prefix-shaped tokens belong to the preceding value.
      */
     private static TokenizedArguments tokenize(String arguments, List<String> allowedPrefixes,
             String invalidFormatMessage, boolean isPreambleAllowed, ValueTokenFilter valueTokenFilter)

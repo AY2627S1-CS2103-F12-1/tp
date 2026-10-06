@@ -37,8 +37,8 @@ public class StudentUiTest {
     public static void startJavaFx() {
         try {
             Platform.startup(() -> { });
-        } catch (IllegalStateException exception) {
-            // Another UI test class in this JVM has already started the toolkit
+        } catch (IllegalStateException e) {
+            // Another UI test class has already started JavaFX in this test JVM
         }
         Platform.setImplicitExit(false);
     }

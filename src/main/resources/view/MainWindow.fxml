@@ -45,7 +45,7 @@
           </padding>
         </StackPane>
 
-        <StackPane fx:id="studentListPanelPlaceholder" VBox.vgrow="ALWAYS" minHeight="230" prefHeight="230" />
+        <StackPane fx:id="studentListPanelPlaceholder" VBox.vgrow="ALWAYS" minHeight="200" prefHeight="230" />
 
         <StackPane fx:id="statusbarPlaceholder" VBox.vgrow="NEVER" />
       </VBox>

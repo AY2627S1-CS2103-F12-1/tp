@@ -35,6 +35,9 @@ public class HomeworkDeleteCommand extends Command {
 
     /**
      * Creates a command that deletes the homework at {@code homeworkIndex} of the student at {@code studentIndex}.
+     *
+     * @param studentIndex Index of the student in the displayed student list.
+     * @param homeworkIndex Index of the homework in that student's homework list.
      */
     public HomeworkDeleteCommand(Index studentIndex, Index homeworkIndex) {
         requireAllNonNull(studentIndex, homeworkIndex);

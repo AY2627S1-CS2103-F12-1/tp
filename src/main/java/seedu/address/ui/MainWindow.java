@@ -6,8 +6,6 @@ import java.util.logging.Logger;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.MenuItem;
-import javafx.scene.control.Tab;
-import javafx.scene.control.TabPane;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
@@ -35,7 +33,6 @@ public class MainWindow extends UiPart<Stage> {
     private Path dataFilePath;
 
     // Independent Ui parts residing in this Ui container
-    private PersonListPanel personListPanel;
     private StudentListPanel studentListPanel;
     private ResultDisplay resultDisplay;
     private HelpWindow helpWindow;
@@ -48,16 +45,7 @@ public class MainWindow extends UiPart<Stage> {
     private MenuItem helpMenuItem;
 
     @FXML
-    private StackPane personListPanelPlaceholder;
-
-    @FXML
     private StackPane studentListPanelPlaceholder;
-
-    @FXML
-    private TabPane rosterTabs;
-
-    @FXML
-    private Tab studentsTab;
 
     @FXML
     private StackPane resultDisplayPlaceholder;
@@ -130,24 +118,11 @@ public class MainWindow extends UiPart<Stage> {
         studentListPanel = new StudentListPanel(logic.getStudentList());
         studentListPanelPlaceholder.getChildren().add(studentListPanel.getRoot());
 
-        personListPanel = new PersonListPanel(logic.getFilteredPersonList());
-        personListPanelPlaceholder.getChildren().add(personListPanel.getRoot());
-
         resultDisplay = new ResultDisplay();
         resultDisplayPlaceholder.getChildren().add(resultDisplay.getRoot());
 
         StatusBarFooter statusBarFooter = new StatusBarFooter(dataFilePath);
         statusbarPlaceholder.getChildren().add(statusBarFooter.getRoot());
-        statusBarFooter.setStatusText("Student roster is in memory only; changes are not saved.");
-        // The Students tab is the default page; no command changes the selected tab afterwards.
-        rosterTabs.getSelectionModel().select(studentsTab);
-        rosterTabs.getSelectionModel().selectedIndexProperty().addListener((unused, oldIndex, newIndex) -> {
-            if (newIndex.intValue() == 0) {
-                statusBarFooter.setStatusText("Student roster is in memory only; changes are not saved.");
-            } else {
-                statusBarFooter.setStatusText(dataFilePath.toString());
-            }
-        });
 
         commandBox = new CommandBox(this::executeCommand);
         commandBoxPlaceholder.getChildren().add(commandBox.getRoot());
@@ -201,10 +176,6 @@ public class MainWindow extends UiPart<Stage> {
         logic.setGuiSettings(guiSettings);
         helpWindow.hide();
         primaryStage.hide();
-    }
-
-    public PersonListPanel getPersonListPanel() {
-        return personListPanel;
     }
 
     /**

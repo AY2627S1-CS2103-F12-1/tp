@@ -152,6 +152,33 @@ public class DueDateTest {
     }
 
     @Test
+    public void parseFullDate_null_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> DueDate.parseFullDate(null));
+    }
+
+    @Test
+    public void parseFullDate_validFullForm_success() {
+        assertEquals(LocalDate.of(2026, 10, 15), DueDate.parseFullDate("2026-10-15").getDate());
+        assertEquals(LocalDate.of(2026, 2, 5), DueDate.parseFullDate(" 2026-2-5 ").getDate()); // padded, stripped
+        assertEquals(LocalDate.of(1, 1, 1), DueDate.parseFullDate("0001-01-01").getDate()); // smallest year
+        assertEquals(LocalDate.of(9999, 12, 31), DueDate.parseFullDate("9999-12-31").getDate()); // largest year
+        assertEquals(LocalDate.of(2028, 2, 29), DueDate.parseFullDate("2028-02-29").getDate()); // leap day
+    }
+
+    @Test
+    public void parseFullDate_invalidOrShortForm_throwsIllegalArgumentException() {
+        assertInvalidFullDate("10-15"); // short form, whose year would be inferred
+        assertInvalidFullDate("1-5"); // single-digit short form
+        assertInvalidFullDate("0000-01-01"); // year 0000
+        assertInvalidFullDate("2026-02-30"); // not a calendar date
+        assertInvalidFullDate("2027-02-29"); // leap day in a non-leap year
+        assertInvalidFullDate("2026-13-01"); // month 13
+        assertInvalidFullDate("2026-010-05"); // three-digit month
+        assertInvalidFullDate("15/10/2026"); // wrong separator
+        assertInvalidFullDate(""); // empty
+    }
+
+    @Test
     public void isShortForm() {
         assertTrue(DueDate.isShortForm("10-15"));
         assertTrue(DueDate.isShortForm(" 10-15 "));
@@ -200,6 +227,11 @@ public class DueDateTest {
         assertEquals("0001-01-01", DueDate.parse("0001-01-01", TODAY).toString());
         assertEquals("2026-10-05", DueDate.parse("10-5", TODAY).toString()); // padded month and day
         assertEquals("2026-02-05", DueDate.parse("2026-2-5", TODAY).toString());
+    }
+
+    private static void assertInvalidFullDate(String rawDate) {
+        assertThrows(IllegalArgumentException.class, DueDate.MESSAGE_FULL_DATE_CONSTRAINTS, () ->
+                DueDate.parseFullDate(rawDate));
     }
 
     private static void assertParsed(String rawDate, LocalDate today, LocalDate expectedDate) {

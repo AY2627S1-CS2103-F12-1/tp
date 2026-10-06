@@ -1,0 +1,105 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+
+box Logic LOGIC_COLOR_T1
+participant ":LogicManager" as LogicManager LOGIC_COLOR
+participant ":AddressBookParser" as AddressBookParser LOGIC_COLOR
+participant ":HomeworkCommandParser" as HomeworkCommandParser LOGIC_COLOR
+participant ":HomeworkDeleteCommandParser" as HomeworkDeleteCommandParser LOGIC_COLOR
+participant "d:HomeworkDeleteCommand" as HomeworkDeleteCommand LOGIC_COLOR
+participant "r:CommandResult" as CommandResult LOGIC_COLOR
+end box
+
+box Model MODEL_COLOR_T1
+participant "m:Model" as Model MODEL_COLOR
+end box
+
+box Storage STORAGE_COLOR_T1
+participant ":Storage" as Storage STORAGE_COLOR
+end box
+
+[-> LogicManager : execute("hw del 1 2")
+activate LogicManager
+
+LogicManager -> AddressBookParser : parseCommand("hw del 1 2")
+activate AddressBookParser
+
+create HomeworkCommandParser
+AddressBookParser -> HomeworkCommandParser
+activate HomeworkCommandParser
+
+HomeworkCommandParser --> AddressBookParser
+deactivate HomeworkCommandParser
+
+AddressBookParser -> HomeworkCommandParser : parse("del 1 2")
+activate HomeworkCommandParser
+
+create HomeworkDeleteCommandParser
+HomeworkCommandParser -> HomeworkDeleteCommandParser
+activate HomeworkDeleteCommandParser
+
+HomeworkDeleteCommandParser --> HomeworkCommandParser
+deactivate HomeworkDeleteCommandParser
+
+HomeworkCommandParser -> HomeworkDeleteCommandParser : parse("1 2")
+activate HomeworkDeleteCommandParser
+
+create HomeworkDeleteCommand
+HomeworkDeleteCommandParser -> HomeworkDeleteCommand
+activate HomeworkDeleteCommand
+
+HomeworkDeleteCommand --> HomeworkDeleteCommandParser
+deactivate HomeworkDeleteCommand
+
+HomeworkDeleteCommandParser --> HomeworkCommandParser : d
+deactivate HomeworkDeleteCommandParser
+'Hidden arrow to position the destroy marker below the end of the activation bar.
+HomeworkDeleteCommandParser -[hidden]-> HomeworkCommandParser
+destroy HomeworkDeleteCommandParser
+
+HomeworkCommandParser --> AddressBookParser : d
+deactivate HomeworkCommandParser
+'Hidden arrow to position the destroy marker below the end of the activation bar.
+HomeworkCommandParser -[hidden]-> AddressBookParser
+destroy HomeworkCommandParser
+
+AddressBookParser --> LogicManager : d
+deactivate AddressBookParser
+
+LogicManager -> HomeworkDeleteCommand : execute(m)
+activate HomeworkDeleteCommand
+
+HomeworkDeleteCommand -> Model : getStudentList()
+activate Model
+
+Model --> HomeworkDeleteCommand : students
+deactivate Model
+
+HomeworkDeleteCommand -> Model : setStudent(s, s.withHomeworks(remaining))
+activate Model
+
+Model --> HomeworkDeleteCommand
+deactivate Model
+
+create CommandResult
+HomeworkDeleteCommand -> CommandResult
+activate CommandResult
+
+CommandResult --> HomeworkDeleteCommand
+deactivate CommandResult
+
+HomeworkDeleteCommand --> LogicManager : r
+deactivate HomeworkDeleteCommand
+
+opt data changed
+LogicManager -> Storage : saveAddressBook(m.getAddressBook())
+activate Storage
+
+Storage --> LogicManager
+deactivate Storage
+end
+
+[<--LogicManager
+deactivate LogicManager
+@enduml

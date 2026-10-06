@@ -1,7 +1,6 @@
 package seedu.address.ui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import java.time.Clock;
@@ -15,15 +14,11 @@ import org.junit.jupiter.api.Test;
 import seedu.address.logic.commands.AddCommand;
 import seedu.address.logic.commands.ClearCommand;
 import seedu.address.logic.commands.Command;
-import seedu.address.logic.commands.DeleteCommand;
-import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.ExitCommand;
-import seedu.address.logic.commands.FindCommand;
 import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
 import seedu.address.logic.commands.HomeworkListCommand;
-import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.parser.AddressBookParser;
 
 public class HelpContentTest {
@@ -44,6 +39,7 @@ public class HelpContentTest {
                 "homework list", HomeworkListCommand.MESSAGE_USAGE,
                 "homework delete", HomeworkDeleteCommand.MESSAGE_USAGE,
                 HelpCommand.COMMAND_WORD, HelpCommand.COMMAND_WORD,
+                ClearCommand.COMMAND_WORD, ClearCommand.COMMAND_WORD,
                 ExitCommand.COMMAND_WORD, ExitCommand.COMMAND_WORD);
 
         List<HelpContent.Entry> entries = getEntries();
@@ -61,24 +57,13 @@ public class HelpContentTest {
                 "homework list", HomeworkListCommand.class,
                 "homework delete", HomeworkDeleteCommand.class,
                 HelpCommand.COMMAND_WORD, HelpCommand.class,
+                ClearCommand.COMMAND_WORD, ClearCommand.class,
                 ExitCommand.COMMAND_WORD, ExitCommand.class);
         AddressBookParser parser = new AddressBookParser(FIXED_CLOCK);
 
         for (HelpContent.Entry entry : getEntries()) {
             assertInstanceOf(expectedCommandTypes.get(entry.commandWord()), parser.parseCommand(entry.example()),
                     entry.example());
-        }
-    }
-
-    @Test
-    public void getSections_personAndClearCommands_notListed() {
-        // clear only resets the old person address book, not the student roster
-        List<String> unlistedCommandWords = List.of(EditCommand.COMMAND_WORD, DeleteCommand.COMMAND_WORD,
-                FindCommand.COMMAND_WORD, ListCommand.COMMAND_WORD, ClearCommand.COMMAND_WORD);
-        for (HelpContent.Entry entry : getEntries()) {
-            String firstWord = entry.format().split(" ")[0];
-            assertFalse(unlistedCommandWords.contains(entry.commandWord()), entry.commandWord());
-            assertFalse(unlistedCommandWords.contains(firstWord), entry.format());
         }
     }
 

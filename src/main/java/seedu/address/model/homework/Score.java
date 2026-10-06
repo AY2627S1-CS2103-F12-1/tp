@@ -6,6 +6,9 @@ package seedu.address.model.homework;
  * TODO: Add validation rules together with the record-score feature; any int is accepted for now.
  */
 public final class Score {
+    /** Message for a score that is not a whole number. */
+    public static final String MESSAGE_CONSTRAINTS = "Homework score must be a whole number.";
+
     private final int value;
 
     /** Creates a score holding {@code value}. */

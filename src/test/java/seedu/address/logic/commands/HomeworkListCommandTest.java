@@ -3,8 +3,8 @@ package seedu.address.logic.commands;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
-import static seedu.address.logic.commands.CommandTestUtil.assertStudentCommandFailure;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalStudents.getModelWithStudents;
 import static seedu.address.testutil.TypicalStudents.getModelWithTypicalStudents;
@@ -59,13 +59,13 @@ public class HomeworkListCommandTest {
 
     @Test
     public void execute_studentIndexAboveListSize_failure() {
-        assertStudentCommandFailure(new HomeworkListCommand(Index.fromOneBased(4)), model,
+        assertCommandFailure(new HomeworkListCommand(Index.fromOneBased(4)), model,
                 Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
     }
 
     @Test
     public void execute_emptyRoster_failure() {
-        assertStudentCommandFailure(new HomeworkListCommand(Index.fromOneBased(1)), getModelWithStudents(List.of()),
+        assertCommandFailure(new HomeworkListCommand(Index.fromOneBased(1)), getModelWithStudents(List.of()),
                 Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
     }
 

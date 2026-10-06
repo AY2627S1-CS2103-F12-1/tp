@@ -3,8 +3,8 @@ package seedu.address.logic.commands;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
-import static seedu.address.logic.commands.CommandTestUtil.assertStudentCommandFailure;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalHomeworks.ATOMIC_STRUCTURE;
@@ -116,14 +116,14 @@ public class HomeworkAddCommandTest {
     public void execute_studentIndexAboveListSize_failure() {
         HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(4), ALGEBRA, false);
 
-        assertStudentCommandFailure(command, model, Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
+        assertCommandFailure(command, model, Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
     }
 
     @Test
     public void execute_emptyRoster_failure() {
         HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(1), ALGEBRA, false);
 
-        assertStudentCommandFailure(command, getModelWithStudents(List.of()),
+        assertCommandFailure(command, getModelWithStudents(List.of()),
                 Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
     }
 
@@ -132,14 +132,14 @@ public class HomeworkAddCommandTest {
         // CARL takes PHYSICS only
         HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(3), ALGEBRA, false);
 
-        assertStudentCommandFailure(command, model, HomeworkAddCommand.MESSAGE_SUBJECT_NOT_TAKEN);
+        assertCommandFailure(command, model, HomeworkAddCommand.MESSAGE_SUBJECT_NOT_TAKEN);
     }
 
     @Test
     public void execute_duplicateHomework_failure() {
         HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(1), ALGEBRA, false);
 
-        assertStudentCommandFailure(command, model, HomeworkAddCommand.MESSAGE_DUPLICATE_HOMEWORK);
+        assertCommandFailure(command, model, HomeworkAddCommand.MESSAGE_DUPLICATE_HOMEWORK);
     }
 
     @Test
@@ -147,7 +147,7 @@ public class HomeworkAddCommandTest {
         Homework shoutedAlgebra = new HomeworkBuilder(ALGEBRA).withTitle("COMPLETE   algebra WORKSHEET").build();
         HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(1), shoutedAlgebra, false);
 
-        assertStudentCommandFailure(command, model, HomeworkAddCommand.MESSAGE_DUPLICATE_HOMEWORK);
+        assertCommandFailure(command, model, HomeworkAddCommand.MESSAGE_DUPLICATE_HOMEWORK);
     }
 
     @Test
@@ -157,7 +157,7 @@ public class HomeworkAddCommandTest {
                 .withSubject("CHEMISTRY").withDueDate("2026-10-18").build();
         HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(1), assignedAtomicStructure, false);
 
-        assertStudentCommandFailure(command, model, HomeworkAddCommand.MESSAGE_DUPLICATE_HOMEWORK);
+        assertCommandFailure(command, model, HomeworkAddCommand.MESSAGE_DUPLICATE_HOMEWORK);
     }
 
     @Test
@@ -170,8 +170,16 @@ public class HomeworkAddCommandTest {
         };
         getTypicalStudents().forEach(failingModel::addStudent);
 
-        assertStudentCommandFailure(new HomeworkAddCommand(Index.fromOneBased(2), ALGEBRA, false), failingModel,
+        assertCommandFailure(new HomeworkAddCommand(Index.fromOneBased(2), ALGEBRA, false), failingModel,
                 HomeworkAddCommand.MESSAGE_INTERNAL_ERROR);
+    }
+
+    @Test
+    public void getSaveFailureMessage_anyDefaultMessage_returnsHomeworkMessage() {
+        String expectedMessage = "The homework could not be added because TutorFlow could not save the updated data. "
+                + "No homework data was changed.";
+        HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(1), ALGEBRA, false);
+        assertEquals(expectedMessage, command.getSaveFailureMessage("Could not save data"));
     }
 
     @Test

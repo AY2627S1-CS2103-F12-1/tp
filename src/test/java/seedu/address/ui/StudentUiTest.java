@@ -130,15 +130,12 @@ public class StudentUiTest {
     }
 
     @Test
-    public void statusBarFooter_updatesPreviewStatus() throws Exception {
+    public void statusBarFooter_showsDataFilePath() throws Exception {
         runOnFxThread(() -> {
-            StatusBarFooter footer = new StatusBarFooter(Path.of("students.json"));
-            Parent root = (Parent) footer.getRoot();
+            Path dataFilePath = Path.of("data", "tutorflow.json");
+            Parent root = (Parent) new StatusBarFooter(dataFilePath).getRoot();
 
-            footer.setStatusText("Student roster is in memory only; changes are not saved.");
-
-            assertEquals("Student roster is in memory only; changes are not saved.",
-                    labelText(root, "saveLocationStatus"));
+            assertEquals(Path.of(".").resolve(dataFilePath).toString(), labelText(root, "saveLocationStatus"));
         });
     }
 

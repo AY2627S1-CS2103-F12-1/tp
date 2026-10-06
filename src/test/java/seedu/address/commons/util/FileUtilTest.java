@@ -11,6 +11,10 @@ import java.nio.file.AccessDeniedException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.AclEntry;
+import java.nio.file.attribute.AclEntryPermission;
+import java.nio.file.attribute.AclEntryType;
+import java.nio.file.attribute.AclFileAttributeView;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
@@ -131,6 +135,27 @@ public class FileUtilTest {
         FileUtil.writeToFile(file, CONTENT);
 
         assertEquals(PosixFilePermissions.fromString("rw-------"), Files.getPosixFilePermissions(file));
+    }
+
+    @Test
+    public void writeToFile_existingFileWithOwnerOnlyAcl_keepsAcl() throws IOException {
+        assumeTrue(FileSystems.getDefault().supportedFileAttributeViews().contains("acl"),
+                "access control lists are supported on Windows only");
+        Path file = testFolder.resolve("tutorflow.json");
+        Files.writeString(file, OLD_CONTENT);
+        AclEntry ownerOnly = AclEntry.newBuilder()
+                .setType(AclEntryType.ALLOW)
+                .setPrincipal(Files.getOwner(file))
+                .setPermissions(AclEntryPermission.values())
+                .build();
+        AclFileAttributeView aclView = Files.getFileAttributeView(file, AclFileAttributeView.class);
+        aclView.setAcl(List.of(ownerOnly));
+        List<AclEntry> expectedAcl = aclView.getAcl();
+
+        FileUtil.writeToFile(file, CONTENT);
+
+        assertEquals(CONTENT, FileUtil.readFromFile(file));
+        assertEquals(expectedAcl, Files.getFileAttributeView(file, AclFileAttributeView.class).getAcl());
     }
 
     private static boolean isPosix() {

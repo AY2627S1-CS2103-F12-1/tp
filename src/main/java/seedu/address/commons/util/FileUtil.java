@@ -7,6 +7,10 @@ import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.AclEntry;
+import java.nio.file.attribute.AclFileAttributeView;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Writes and reads files
@@ -39,8 +43,9 @@ public class FileUtil {
      * The content is first written to a new temporary file with a unique name next to {@code file}, which then
      * replaces {@code file}, so {@code file} is never left partially written: if writing fails, it keeps its
      * previous content. Other files in the folder are never changed.
-     * Where the file system supports POSIX file permissions, an existing {@code file} keeps its permissions, and a
-     * new {@code file} can be read and written only by its owner.
+     * An existing {@code file} keeps its POSIX file permissions or its access control list (on Windows), whichever
+     * the file system supports. Where the file system supports POSIX file permissions, a new {@code file} can be
+     * read and written only by its owner.
      *
      * @throws AccessDeniedException If {@code file} exists but is read-only, or its folder cannot be written to.
      * @throws IOException If the content cannot be written. An error about the temporary file names {@code file}.
@@ -56,8 +61,9 @@ public class FileUtil {
         Path tempFile = null;
         try {
             tempFile = Files.createTempFile(folder, file.getFileName().toString(), TEMP_FILE_SUFFIX);
+            // Give the temporary file the data file's permissions before it holds the user's data
+            copyPermissions(file, tempFile);
             Files.write(tempFile, content.getBytes(CHARSET));
-            copyPosixPermissions(file, tempFile);
             replaceFile(tempFile, file);
         } catch (IOException e) {
             deleteAfterFailure(tempFile, e);
@@ -69,12 +75,20 @@ public class FileUtil {
     }
 
     /**
-     * Gives {@code target} the POSIX file permissions of {@code source} if {@code source} exists and the file system
-     * supports POSIX file permissions.
+     * Gives {@code target} the POSIX file permissions and the access control list of {@code source}, each if
+     * {@code source} exists and the file system supports it.
      */
-    private static void copyPosixPermissions(Path source, Path target) throws IOException {
-        if (Files.exists(source) && source.getFileSystem().supportedFileAttributeViews().contains("posix")) {
+    private static void copyPermissions(Path source, Path target) throws IOException {
+        if (!Files.exists(source)) {
+            return;
+        }
+        Set<String> attributeViews = source.getFileSystem().supportedFileAttributeViews();
+        if (attributeViews.contains("posix")) {
             Files.setPosixFilePermissions(target, Files.getPosixFilePermissions(source));
+        }
+        if (attributeViews.contains("acl")) {
+            List<AclEntry> acl = Files.getFileAttributeView(source, AclFileAttributeView.class).getAcl();
+            Files.getFileAttributeView(target, AclFileAttributeView.class).setAcl(acl);
         }
     }
 

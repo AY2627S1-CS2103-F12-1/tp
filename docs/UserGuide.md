@@ -30,7 +30,7 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
 
    * `add n/John Doe p/98765432 e/johnd@example.com a/John street, block 123, #01-01` : Adds a contact named `John Doe` to the Address Book.
 
-   * `delete 3` : Deletes the 3rd contact shown in the current list.
+   * `delete 3` : Deletes the 3rd student shown in the Students tab.
 
    * `clear` : Deletes all contacts.
 
@@ -126,19 +126,21 @@ Examples:
 * `find alex david` returns `Alex Yeoh`, `David Li`<br>
   ![result for 'find alex david'](images/findAlexDavidResult.png)
 
-### Deleting a person: `delete`
+### Deleting a student: `delete`
 
-Deletes the specified person from the address book.
+Deletes the specified student from the in-memory roster.
 
 Format: `delete INDEX`
 
-* Deletes the person at the specified `INDEX`.
-* The index refers to the index number shown in the displayed person list.
+* Deletes the student at the specified `INDEX`.
+* The index refers to the index number shown in the Students tab, starting at 1.
 * The index **must be a positive integer** 1, 2, 3, …​
+* If the roster is empty or the index is larger than the number of students, no student is deleted.
+* Student changes are not saved between sessions until persistence is implemented.
 
 Examples:
-* `list` followed by `delete 2` deletes the 2nd person in the address book.
-* `find Betsy` followed by `delete 1` deletes the 1st person in the results of the `find` command.
+* `delete 2` deletes the 2nd student shown in the Students tab.
+* After deletion, the remaining students are renumbered.
 
 ### Clearing all entries: `clear`
 

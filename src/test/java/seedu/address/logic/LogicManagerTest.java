@@ -2,7 +2,7 @@ package seedu.address.logic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static seedu.address.logic.Messages.MESSAGE_INVALID_PERSON_DISPLAYED_INDEX;
+import static seedu.address.logic.Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX;
 import static seedu.address.logic.Messages.MESSAGE_UNKNOWN_COMMAND;
 import static seedu.address.testutil.Assert.assertThrows;
 
@@ -56,7 +56,7 @@ public class LogicManagerTest {
     @Test
     public void execute_commandExecutionError_throwsCommandException() {
         String deleteCommand = "delete 9";
-        assertCommandException(deleteCommand, MESSAGE_INVALID_PERSON_DISPLAYED_INDEX);
+        assertCommandException(deleteCommand, MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
     }
 
     @Test
@@ -70,6 +70,16 @@ public class LogicManagerTest {
         logic.execute("add n/John Tan l/S3 s/MATH p/91234567 gn/Mary Tan gp/98765432");
 
         assertEquals(1, logic.getStudentList().size());
+        assertFalse(Files.exists(temporaryFolder.resolve("addressBook.json")));
+    }
+
+    @Test
+    public void execute_deleteStudent_updatesRosterWithoutSavingAddressBook() throws Exception {
+        logic.execute("add n/John Tan l/S3 s/MATH p/91234567 gn/Mary Tan gp/98765432");
+
+        logic.execute("delete 1");
+
+        assertEquals(0, logic.getStudentList().size());
         assertFalse(Files.exists(temporaryFolder.resolve("addressBook.json")));
     }
 

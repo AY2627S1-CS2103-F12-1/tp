@@ -32,6 +32,14 @@ public final class StudentRoster {
         students.add(student);
     }
 
+    /** Removes a student from the roster. The student must be present. */
+    public void deleteStudent(Student student) {
+        requireNonNull(student);
+        if (!students.remove(student)) {
+            throw new IllegalArgumentException("Student does not exist in the roster.");
+        }
+    }
+
     /** Returns an unmodifiable observable view of the roster in insertion order. */
     public ObservableList<Student> getStudents() {
         return unmodifiableStudents;

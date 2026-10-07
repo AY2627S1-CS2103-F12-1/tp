@@ -51,7 +51,7 @@ The bulk of the app's work is done by the following four components:
 
 **How the architecture components interact with each other**
 
-The *Sequence Diagram* below shows how the components interact with each other for the scenario where the user issues the command `delete 1`.
+The *Sequence Diagram* below shows how the components interact with each other for the scenario where the user issues the command `hw del 1 2`.
 
 <img src="images/ArchitectureSequenceDiagram.png" width="574" />
 
@@ -72,7 +72,9 @@ The **API** of this component is specified in [`Ui.java`](https://github.com/se-
 
 ![Structure of the UI Component](images/UiClassDiagram.png)
 
-The UI consists of a `MainWindow` and its parts, such as `CommandBox`, `ResultDisplay`, `PersonListPanel`, and `StatusBarFooter`. All of these, including `MainWindow`, inherit from the abstract `UiPart` class, which captures common behavior among classes that represent visible GUI parts.
+The UI consists of a `MainWindow` and its parts, such as `CommandBox`, `ResultDisplay`, `StudentListPanel`, and `StatusBarFooter`. All of these, including `MainWindow`, inherit from the abstract `UiPart` class, which captures common behavior among classes that represent visible GUI parts.
+
+The `HelpWindow` lists the commands from `HelpContent`, a plain Java class that groups the commands into sections. Each command format in `HelpContent` is the usage constant of the command (e.g. `HomeworkAddCommand.MESSAGE_USAGE`), so the help window shows the same format as the parser error messages, and `HelpContentTest` checks that every example in it parses into the listed command.
 
 The `UI` component uses the JavaFX UI framework. The layouts of these UI parts are defined in matching `.fxml` files in `src/main/resources/view`. For example, [`MainWindow.fxml`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/resources/view/MainWindow.fxml) specifies the layout of [`MainWindow`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/ui/MainWindow.java).
 
@@ -81,7 +83,9 @@ The `UI` component,
 * executes user commands using the `Logic` component.
 * listens for changes to `Model` data so that the UI can be updated with the modified data.
 * keeps a reference to the `Logic` component, because the `UI` relies on the `Logic` to execute commands.
-* depends on some classes in the `Model` component because it displays `Person` objects from the model.
+* depends on some classes in the `Model` component because it displays `Student` objects from the model.
+
+`MainWindow` shows one `StudentListPanel`, which lists every student as a `StudentCard`, and a `StatusBarFooter` that shows the path of the data file.
 
 ### Logic component
 
@@ -91,19 +95,20 @@ Here's a (partial) class diagram of the `Logic` component:
 
 <img src="images/LogicClassDiagram.png" width="550"/>
 
-The sequence diagram below illustrates the interactions within the `Logic` component, taking `execute("delete 1")` API call as an example.
+The sequence diagram below illustrates the interactions within the `Logic` component, taking `execute("hw del 1 2")` API call as an example.
 
-![Interactions Inside the Logic Component for the `delete 1` Command](images/DeleteSequenceDiagram.png)
+![Interactions Inside the Logic Component for the `hw del 1 2` Command](images/HomeworkDeleteSequenceDiagram.png)
 
-<div markdown="span" class="alert alert-info">:information_source: **Note:** The lifeline for `DeleteCommandParser` should end at the destroy marker (X), but due to a limitation of PlantUML, it continues to the end of the diagram.
+<div markdown="span" class="alert alert-info">:information_source: **Note:** The lifelines for `HomeworkCommandParser` and `HomeworkDeleteCommandParser` should end at the destroy markers (X), but due to a limitation of PlantUML, they continue to the end of the diagram.
 </div>
 
 How the `Logic` component works:
 
-1. When `Logic` is called upon to execute a command, the command is passed to an `AddressBookParser` object, which in turn creates a parser that matches the command (e.g., `DeleteCommandParser`) and uses it to parse the command.
-1. This results in a `Command` object (more precisely, an object of one of its subclasses e.g., `DeleteCommand`) which is executed by the `LogicManager`.
-1. The command can communicate with the `Model` when it is executed (e.g. to delete a person).<br>
+1. When `Logic` is called upon to execute a command, the command is passed to an `AddressBookParser` object, which in turn creates a parser that matches the command (e.g., `HomeworkCommandParser`, which passes the rest of the command to `HomeworkDeleteCommandParser`) and uses it to parse the command.
+1. This results in a `Command` object (more precisely, an object of one of its subclasses e.g., `HomeworkDeleteCommand`) which is executed by the `LogicManager`.
+1. The command can communicate with the `Model` when it is executed (e.g. to add homework to a student).<br>
    Note that although this is shown as a single step in the diagram above for simplicity, the code can require several interactions between the command object and the `Model` to complete the operation.
+1. If the command changed the data, `LogicManager` saves the data through the `Storage` component. Commands that leave the data unchanged, such as `homework list` and `help`, do not write the data file. If saving fails, `LogicManager` undoes the change (see [Saving after a command](#saving-after-a-command)).
 1. The result of the command execution is encapsulated as a `CommandResult` object which is returned from `Logic`.
 
 Here are the other classes in `Logic` (omitted from the class diagram above) that are used for parsing a user command:
@@ -112,7 +117,7 @@ Here are the other classes in `Logic` (omitted from the class diagram above) tha
 
 How the parsing works:
 * When called upon to parse a user command, the `AddressBookParser` class creates an `XYZCommandParser` (`XYZ` is a placeholder for the specific command name, e.g., `AddCommandParser`). The parser uses the other classes shown above to parse the user command and create an `XYZCommand` object (e.g., `AddCommand`). The `AddressBookParser` returns that object as a `Command` object.
-* All `XYZCommandParser` classes, such as `AddCommandParser` and `DeleteCommandParser`, implement the `Parser` interface so they can be treated similarly where appropriate, for example during testing.
+* All `XYZCommandParser` classes, such as `AddCommandParser` and `HomeworkAddCommandParser`, implement the `Parser` interface so they can be treated similarly where appropriate, for example during testing.
 
 ### Model component
 **API** : [`Model.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/model/Model.java)
@@ -122,17 +127,12 @@ How the parsing works:
 
 The `Model` component,
 
-* stores the address book data i.e., all `Person` objects (which are contained in a `UniquePersonList` object).
-* stores the `Person` objects selected by the current filter, such as search results, in a separate _filtered_ list. It exposes this list as an unmodifiable `ObservableList<Person>` that the UI can observe and bind to, so the UI updates when the list changes.
+* stores all app data in an `AddressBook` object: the student roster (a `StudentRoster` of `Student` objects in insertion order), in which each `Student` holds its own `Homework` records. Lessons are not implemented yet; when they are, they can be added to `Student` or `AddressBook` in the same way.
+* exposes the students as an unmodifiable `ObservableList<Student>` that the UI can observe and bind to, so the UI updates when the list changes. `ModelManager` passes every student operation (`hasStudent`, `addStudent`, `setStudent`, `getStudentList`) to its `AddressBook`.
 * stores a `UserPrefs` object that represents the user’s preferences (currently, just the GUI settings). This is exposed to the outside as a `ReadOnlyUserPrefs` object.
 * does not depend on any of the other three components (as the `Model` represents data entities of the domain, they should make sense on their own without depending on other components)
 
-<div markdown="span" class="alert alert-info">:information_source: **Note:** The alternative, arguably more object-oriented, design below keeps a unique list of tags in `AddressBook`, and each `Person` references tags from that list. This lets `AddressBook` maintain one `Tag` object per unique tag instead of each `Person` holding its own `Tag` objects.<br>
-
-<img src="images/BetterModelClassDiagram.png" width="450" />
-
-</div>
-
+The classes keep AB3's names (`AddressBook`, `ReadOnlyAddressBook`, `JsonAddressBookStorage`) to keep the change from AB3 small, but they now hold TutorFlow's students and homework.
 
 ### Storage component
 
@@ -141,9 +141,25 @@ The `Model` component,
 <img src="images/StorageClassDiagram.png" width="550" />
 
 The `Storage` component,
-* can save both address book data and user preference data in JSON format, and read them back into corresponding objects.
+* can save both the app data (students and their homework) and user preference data in JSON format, and read them back into corresponding objects.
 * is implemented by `StorageManager`, which delegates the actual JSON file access to `JsonAddressBookStorage` and `JsonUserPrefsStorage` (one class per data file).
 * depends on some classes in the `Model` component (because the `Storage` component's job is to save/retrieve objects that belong to the `Model`)
+
+The app data is saved in `data/tutorflow.json`. `JsonSerializableAddressBook` holds a `students` list of `JsonAdaptedStudent`, and each `JsonAdaptedStudent` holds a `homeworks` list of `JsonAdaptedHomework`. Jackson reads and writes the fields of these classes directly, so the JSON keys are the field names (`name`, `academicLevel`, `subjects`, `phone`, `guardianName`, `guardianPhone`, `homeworks`; and `title`, `subject`, `dueDate`, `status`, `score` for homework). Every value is a string, except `subjects` (a list of strings) and `score` (a whole number or `null`), so that a user can edit the file by hand.
+
+Each adapted class checks its values in `toModelType()` with the same value classes that commands use, and throws an `IllegalValueException` with the `MISSING_FIELD_MESSAGE_FORMAT` message for a missing field or the value class's `MESSAGE_CONSTRAINTS` for an invalid one. Loading also rejects:
+
+* a missing `students` list, or an empty (`null`) student or homework entry.
+* two students that are the same by `Student#isSameStudent`.
+* homework for a subject the student does not take, and two homework records of one student that are the same by `Homework#isSameHomework`.
+* a due date that is not a full `YYYY-MM-DD` date. `JsonAdaptedHomework` uses `DueDate#parseFullDate`, so the year of a saved date is never inferred from today's date. Dates are saved padded (`2026-02-05`).
+* a score that is not a JSON whole number within the `int` range (e.g. `85.5`, `"85"`), with `Score#MESSAGE_CONSTRAINTS`. `JsonAdaptedHomework` keeps `score` as the `Object` Jackson reads (an `Integer` only for such a whole number), because a field of type `Integer` would make Jackson silently truncate `85.5` to `85`.
+
+A missing `homeworks` list or `score` means no homework or no score. Subjects, levels and statuses are accepted in any case and saved in upper case.
+
+`MainApp#readInitialData` decides what the app starts with: the saved data if the data file is valid, the sample students from `SampleDataUtil#getSampleAddressBook()` if the data file does not exist (the file is not created at startup; the sample students are first saved by the first command that changes the data), and no students if the data file cannot be read or is invalid (a warning is logged). In the last case the invalid file stays on disk until the next command that changes the data overwrites it.
+
+`FileUtil#writeToFile` saves a file atomically: it writes the content to a new temporary file with a unique name next to it (such as `tutorflow.json123456789.tmp`, created by `Files#createTempFile`) and then moves that file over the data file (an atomic move where the file system supports it). If writing fails, only that temporary file is deleted and the data file keeps its previous content, so it is never left partially written. Other files in the folder, even one named `tutorflow.json.tmp`, are never changed. Before the data is written to it, the temporary file gets the data file's POSIX file permissions or, on Windows, its access control list, so saving never changes who can read the data file. A read-only data file is reported as an `AccessDeniedException` before anything is written, because a move could otherwise replace it.
 
 ### Common classes
 
@@ -154,6 +170,76 @@ Classes used by multiple components are in the `seedu.address.commons` package.
 ## **Implementation**
 
 This section describes some noteworthy details on how certain features are implemented.
+
+### Homework management
+
+Homework is managed with three commands: `homework add`, `homework list` and `homework delete`. `hw` is an alias for `homework`.
+
+**Parsing.** `AddressBookParser` passes the arguments of both `homework` and `hw` to `HomeworkCommandParser`. This dispatcher reads the first word as the subcommand and hands the rest to `HomeworkAddCommandParser` (`add`), `HomeworkListCommandParser` (`list` or `ls`) or `HomeworkDeleteCommandParser` (`delete` or `del`). A missing or unknown subcommand produces an "Invalid command format." error that lists the usage of all three subcommands. Usage messages show alternatives (aliases and the short date form) separated by `|`, e.g. `homework|hw list|ls STUDENT_INDEX`. This keeps one `AddressBookParser` case per command word, and future subcommands (edit, status, score; their classes exist as placeholders) only need a new case in the dispatcher.
+
+The subcommand parsers use `StrictArgumentTokenizer`, which rejects unknown and repeated prefixes, and `ParserUtil#parseStrictIndex`, which rejects signs and leading zeroes. They use `StrictArgumentTokenizer` with plain string prefixes instead of AB3's `ArgumentTokenizer` with `CliSyntax` prefixes (both since removed) because the specification requires unknown prefixes to be rejected, which `ArgumentTokenizer` cannot do: it only splits on prefixes it is given, so an unknown prefix silently becomes part of the previous value. `StudentAddParser` shares the same tokenizer for the same reason. `HomeworkAddCommandParser` reports only the first error it finds, in this order:
+
+1. An unknown or repeated prefix, in the order the prefixes appear.
+1. Both `title/` and `t/` given, reported as a repeated `title/`. This is checked only after all prefixes are tokenized, so an unknown or repeated prefix anywhere in the input is reported first. For example, `t/A title/B x/C` reports an invalid command format because of `x/`.
+1. A student index that is missing or is not a single word.
+1. Missing prefixes, all listed in the order `title/, s/, due/`.
+1. Student index syntax.
+1. The title, then the subject, then the due date.
+
+**Model.** `Student` is immutable and holds its `Homework` records in insertion order. To add or delete homework, a command copies the student's homework list, changes the copy, and calls `Model#setStudent(target, target.withHomeworks(updatedList))`, which replaces the student at the same position in the roster. The change to the observable student list refreshes the student card, which shows `Student#getAssignedHomeworkCount()`. `homework list` is read-only and returns the list as text in the result display, one line per record in the format of `HomeworkListCommand#MESSAGE_HOMEWORK_LINE` (e.g. `1. Complete algebra worksheet (MATH) - due 2026-10-15`).
+
+The student index refers to `Model#getStudentList()`. The homework index is the one-based position in that student's homework list; it is not stored and changes when earlier homework is deleted. Two homework records of the same student are duplicates when `Homework#isSameHomework` holds: same title ignoring case, same subject and same due date.
+
+**Due date forms.** A due date is given as `YYYY-MM-DD` or `MM-DD`, and in both forms the month and day may have 1 or 2 digits (`2026-2-5`, `10-5`). `DueDate` matches each form with a regular expression that allows only 4-digit years and 1- or 2-digit months and days, then builds the date with `LocalDate#of`, which rejects dates that do not exist (such as `2-30`). The stored date is a `LocalDate`, so it is always shown padded (`2026-02-05`), and `10-5` and `10-05` give equal due dates.
+
+**Year inference.** For a due date given as `MM-DD`, `DueDate#parse(rawDate, today)` picks this year, or next year if the date has passed. If the date does not exist this year (29 February in a non-leap year), next year is used; if it does not exist next year either, the date is invalid. A next year after 9999 is also invalid. `HomeworkAddCommandParser` holds a `java.time.Clock` (`Clock.systemDefaultZone()` in production) and computes `today` as `LocalDate.now(clock)`, so tests pass a fixed clock and never depend on the real date. The parser tells `HomeworkAddCommand` whether the year was inferred, so the success message can show it.
+
+**Unexpected errors.** Each homework command catches any unexpected `RuntimeException` in `execute`, logs it with its stack trace, and throws a `CommandException` with a short internal-error message instead, so the user never sees a stack trace. `Model#setStudent` is the last step of `homework add` and `homework delete`, so such an error leaves the student's homework unchanged.
+
+**Persistence.** Homework is saved as part of each student (see [Storage component](#storage-component)). `homework add` and `homework delete` change the data, so `LogicManager` saves it after them; `homework list` changes nothing and never writes the data file. If saving fails, the change is undone and the error message is the one from the specification, e.g. `HomeworkAddCommand#MESSAGE_SAVE_FAILURE` ("The homework could not be added because TutorFlow could not save the updated data. No homework data was changed."), as described in [Saving after a command](#saving-after-a-command).
+
+#### Design considerations:
+
+**Aspect: Where homework is stored:**
+
+* **Alternative 1 (current choice):** Each `Student` holds its own homework list.
+  * Pros: A student and their homework stay together, and a student index plus a homework index identify one record without separate homework IDs.
+  * Cons: Every change to homework builds a new `Student`.
+
+* **Alternative 2:** One homework list in the model, with each record referring to its student.
+  * Pros: Easy to show all homework across students.
+  * Cons: Homework must be kept consistent when a student is edited or deleted, and per-student indices must be computed.
+
+### Saving after a command
+
+`LogicManager#execute` saves the data after each command that changes it, and undoes the change if the data cannot be saved, so the data shown in the app always matches the data file.
+
+1. Before executing the command, `LogicManager` copies the current data: `new AddressBook(model.getAddressBook())`. The copy is cheap because `Student` and `Homework` are immutable, so only the list is copied.
+1. After the command succeeds, `LogicManager` compares the data with the copy. If they are equal, the command changed nothing (e.g. `homework list`, `help`, `exit`, or `clear` with no students), and nothing is saved.
+1. Otherwise, `LogicManager` calls `Storage#saveAddressBook`. If this throws an `IOException`, `LogicManager` restores the copy with `Model#setAddressBook` and throws a `CommandException` whose message comes from `Command#getSaveFailureMessage(defaultMessage)`.
+1. By default, `getSaveFailureMessage` returns the AB3 message (`LogicManager#FILE_OPS_ERROR_FORMAT`, or `FILE_OPS_PERMISSION_ERROR_FORMAT` when access is denied). `HomeworkAddCommand` and `HomeworkDeleteCommand` override it to return the messages from the specification. A new command that needs its own message only overrides this method.
+
+#### Design considerations:
+
+**Aspect: When to save:**
+
+* **Alternative 1 (current choice):** Save only when the command changed the data.
+  * Pros: Read-only commands such as `homework list` never write the data file, as the specification requires, and cannot fail because of a save error.
+  * Cons: Each command copies and compares the data. This is fast for the number of students one tutor has.
+
+* **Alternative 2 (AB3):** Save after every successful command.
+  * Pros: Simpler.
+  * Cons: A read-only command can fail with a save error, and it rewrites the data file even though nothing changed.
+
+**Aspect: How to handle a failed save:**
+
+* **Alternative 1 (current choice):** Undo the change by restoring the copy taken before the command.
+  * Pros: Works for every command without command-specific undo code, and the app never shows data that is not in the data file.
+  * Cons: The copy is taken even when saving succeeds.
+
+* **Alternative 2 (AB3):** Report the error but keep the change in memory.
+  * Pros: No copy is needed.
+  * Cons: The message says the data could not be saved, but the change is still shown and is lost when the app closes, so the user cannot tell what is saved.
 
 ### \[Proposed\] Undo/redo feature
 
@@ -412,7 +498,7 @@ testers are expected to do more *exploratory* testing.
    1. Download the JAR file and copy it into an empty folder.
 
    1. Double-click the JAR file.<br>
-      Expected: The GUI opens with a set of sample contacts. The window size may not be optimal.
+      Expected: The GUI opens with a set of sample students with sample homework. The window size may not be optimal.
 
 1. Saving window preferences
 
@@ -423,27 +509,43 @@ testers are expected to do more *exploratory* testing.
 
 1. _{ more test cases …​ }_
 
-### Deleting a person
+### Deleting homework
 
-1. Deleting a person while all persons are being shown
+1. Deleting homework of a student who has homework
 
-   1. Prerequisites: List all persons using the `list` command, with multiple persons in the list.
+   1. Prerequisites: The 1st student has at least 2 homework records. Check with `homework list 1`.
 
-   1. Test case: `delete 1`<br>
-      Expected: The first contact is deleted from the list. The status message shows the deleted contact's details.
+   1. Test case: `homework delete 1 2`<br>
+      Expected: The 2nd homework of the 1st student is deleted. The result display shows the deleted homework. The student card shows the new number of assigned homework.
 
-   1. Test case: `delete 0`<br>
-      Expected: No person is deleted. The status message shows error details.
+   1. Test case: `homework delete 1 0`<br>
+      Expected: No homework is deleted. The result display shows an error message.
 
-   1. Other incorrect delete commands to try: `delete`, `delete x`, `...` (where x is larger than the list size)<br>
+   1. Other incorrect delete commands to try: `homework delete`, `homework delete 1`, `homework delete 1 x` (where x is larger than the number of homework of the student)<br>
       Expected: Similar to previous.
 
 1. _{ more test cases …​ }_
 
 ### Saving data
 
-1. Dealing with missing/corrupted data files
+1. Saving students and homework
 
-   1. _{Explain how to simulate missing or corrupted data files and state the expected behavior.}_
+   1. Add a student with `add`, and add homework to that student with `homework add`. Close the app and launch it again.<br>
+      Expected: The student and the homework are still shown.
+
+1. Dealing with a missing data file
+
+   1. Close the app and delete `data/tutorflow.json`. Launch the app.<br>
+      Expected: The app shows the sample students. A new data file is created after the first command that changes the data, e.g. `clear`.
+
+1. Dealing with a corrupted data file
+
+   1. Close the app. In `data/tutorflow.json`, change the `dueDate` of a homework to `10-15` (no year), or delete the closing `}`. Launch the app.<br>
+      Expected: The app shows no students, and a warning is logged. The data file is unchanged until a command changes the data.
+
+1. Dealing with a data file that cannot be written
+
+   1. Make `data/tutorflow.json` read-only, then run `homework add 1 t/Test s/MATH due/2026-12-01` (the 1st student must take MATH).<br>
+      Expected: An error message says that the homework could not be added and that no homework data was changed. `homework list 1` does not show the homework.
 
 1. _{ more test cases …​ }_

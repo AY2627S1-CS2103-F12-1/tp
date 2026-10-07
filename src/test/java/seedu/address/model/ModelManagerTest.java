@@ -3,18 +3,21 @@ package seedu.address.model;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static seedu.address.model.Model.PREDICATE_SHOW_ALL_PERSONS;
 import static seedu.address.testutil.Assert.assertThrows;
-import static seedu.address.testutil.TypicalPersons.ALICE;
-import static seedu.address.testutil.TypicalPersons.BENSON;
+import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
+import static seedu.address.testutil.TypicalStudents.ALICE;
+import static seedu.address.testutil.TypicalStudents.BENSON;
+import static seedu.address.testutil.TypicalStudents.getTypicalAddressBook;
+import static seedu.address.testutil.TypicalStudents.getTypicalStudents;
 
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
 import seedu.address.commons.core.GuiSettings;
-import seedu.address.model.person.NameContainsKeywordsPredicate;
+import seedu.address.model.student.Student;
 import seedu.address.testutil.AddressBookBuilder;
+import seedu.address.testutil.StudentBuilder;
 
 public class ModelManagerTest {
 
@@ -53,29 +56,59 @@ public class ModelManagerTest {
     }
 
     @Test
-    public void hasPerson_nullPerson_throwsNullPointerException() {
-        assertThrows(NullPointerException.class, () -> modelManager.hasPerson(null));
+    public void hasStudent_nullStudent_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> modelManager.hasStudent(null));
     }
 
     @Test
-    public void hasPerson_personNotInAddressBook_returnsFalse() {
-        assertFalse(modelManager.hasPerson(ALICE));
+    public void hasStudent_studentNotInAddressBook_returnsFalse() {
+        assertFalse(modelManager.hasStudent(ALICE));
     }
 
     @Test
-    public void hasPerson_personInAddressBook_returnsTrue() {
-        modelManager.addPerson(ALICE);
-        assertTrue(modelManager.hasPerson(ALICE));
+    public void addStudent_newStudent_addedToAddressBook() {
+        modelManager.addStudent(ALICE);
+        assertTrue(modelManager.hasStudent(ALICE));
+        assertEquals(List.of(ALICE), modelManager.getAddressBook().getStudentList());
     }
 
     @Test
-    public void getFilteredPersonList_modifyList_throwsUnsupportedOperationException() {
-        assertThrows(UnsupportedOperationException.class, () -> modelManager.getFilteredPersonList().remove(0));
+    public void getStudentList_modifyList_throwsUnsupportedOperationException() {
+        assertThrows(UnsupportedOperationException.class, () -> modelManager.getStudentList().remove(0));
+    }
+
+    @Test
+    public void setAddressBook_typicalAddressBook_replacesStudents() {
+        modelManager.addStudent(new StudentBuilder().build());
+        modelManager.setAddressBook(getTypicalAddressBook());
+        assertEquals(getTypicalStudents(), modelManager.getStudentList());
+    }
+
+    @Test
+    public void setStudent_nullArguments_throwsNullPointerException() {
+        Student student = new StudentBuilder().build();
+        modelManager.addStudent(student);
+
+        assertThrows(NullPointerException.class, () -> modelManager.setStudent(null, student));
+        assertThrows(NullPointerException.class, () -> modelManager.setStudent(student, null));
+    }
+
+    @Test
+    public void setStudent_studentInRoster_replacesStudentAtSamePosition() {
+        Student first = new StudentBuilder().withName("Alice Tan").withPhone("91111111").build();
+        Student second = new StudentBuilder().withName("Benson Lim").withPhone("92222222").build();
+        modelManager.addStudent(first);
+        modelManager.addStudent(second);
+        Student editedFirst = first.withHomeworks(List.of(ALGEBRA));
+
+        modelManager.setStudent(first, editedFirst);
+
+        assertEquals(List.of(editedFirst, second), modelManager.getStudentList());
     }
 
     @Test
     public void equals() {
-        AddressBook addressBook = new AddressBookBuilder().withPerson(ALICE).withPerson(BENSON).build();
+        AddressBook addressBook = new AddressBookBuilder().withStudent(ALICE).withStudent(BENSON).build();
         AddressBook differentAddressBook = new AddressBook();
         UserPrefs userPrefs = new UserPrefs();
 
@@ -96,13 +129,9 @@ public class ModelManagerTest {
         // different addressBook -> returns false
         assertFalse(modelManager.equals(new ModelManager(differentAddressBook, userPrefs)));
 
-        // different filteredList -> returns false
-        String[] keywords = ALICE.getName().fullName.split("\\s+");
-        modelManager.updateFilteredPersonList(new NameContainsKeywordsPredicate(List.of(keywords)));
-        assertFalse(modelManager.equals(new ModelManager(addressBook, userPrefs)));
-
-        // resets modelManager to initial state for upcoming tests
-        modelManager.updateFilteredPersonList(PREDICATE_SHOW_ALL_PERSONS);
+        // different homework of a student -> returns false
+        modelManagerCopy.setStudent(BENSON, BENSON.withHomeworks(List.of(ALGEBRA)));
+        assertFalse(modelManager.equals(modelManagerCopy));
 
         // different userPrefs -> returns false
         UserPrefs differentUserPrefs = new UserPrefs();

@@ -6,21 +6,21 @@ import java.util.List;
 
 import javafx.collections.ObservableList;
 import seedu.address.commons.util.ToStringBuilder;
-import seedu.address.model.person.Person;
-import seedu.address.model.person.UniquePersonList;
+import seedu.address.model.student.Student;
+import seedu.address.model.student.StudentRoster;
 
 /**
- * Wraps all data at the address-book level.
- * Duplicates are not allowed (by .isSamePerson comparison).
+ * Wraps all data at the address-book level: the student roster, which holds each student's homework.
+ * Duplicates are not allowed (by .isSameStudent comparison).
  */
 public class AddressBook implements ReadOnlyAddressBook {
 
-    private final UniquePersonList persons = new UniquePersonList();
+    private final StudentRoster students = new StudentRoster();
 
     public AddressBook() {}
 
     /**
-     * Creates an AddressBook using the Persons in the {@code toBeCopied}
+     * Creates an AddressBook using the Students in the {@code toBeCopied}
      */
     public AddressBook(ReadOnlyAddressBook toBeCopied) {
         this();
@@ -30,11 +30,11 @@ public class AddressBook implements ReadOnlyAddressBook {
     //// list overwrite operations
 
     /**
-     * Replaces the contents of the person list with {@code persons}.
-     * {@code persons} must not contain duplicate persons.
+     * Replaces the contents of the student list with {@code students}.
+     * {@code students} must not contain duplicate students.
      */
-    public void setPersons(List<Person> persons) {
-        this.persons.setPersons(persons);
+    public void setStudents(List<Student> students) {
+        this.students.setStudents(students);
     }
 
     /**
@@ -43,44 +43,34 @@ public class AddressBook implements ReadOnlyAddressBook {
     public void resetData(ReadOnlyAddressBook newData) {
         requireNonNull(newData);
 
-        setPersons(newData.getPersonList());
+        setStudents(newData.getStudentList());
     }
 
-    //// person-level operations
+    //// student-level operations
 
     /**
-     * Returns true if a person with the same identity as {@code person} exists in the address book.
+     * Returns true if a student with the same identity as {@code student} exists in the address book.
      */
-    public boolean hasPerson(Person person) {
-        requireNonNull(person);
-        return persons.contains(person);
+    public boolean hasStudent(Student student) {
+        requireNonNull(student);
+        return students.hasStudent(student);
     }
 
     /**
-     * Adds a person to the address book.
-     * The person must not already exist in the address book.
+     * Adds a student to the end of the student list.
+     * The student must not already exist in the address book.
      */
-    public void addPerson(Person p) {
-        persons.add(p);
+    public void addStudent(Student student) {
+        students.addStudent(student);
     }
 
     /**
-     * Replaces the given person {@code target} in the list with {@code editedPerson}.
+     * Replaces the given student {@code target} in the list with {@code editedStudent}, keeping its position.
      * {@code target} must exist in the address book.
-     * The person identity of {@code editedPerson} must not be the same as another existing person in the address book.
+     * The identity of {@code editedStudent} must not be the same as another existing student in the address book.
      */
-    public void setPerson(Person target, Person editedPerson) {
-        requireNonNull(editedPerson);
-
-        persons.setPerson(target, editedPerson);
-    }
-
-    /**
-     * Removes {@code key} from this {@code AddressBook}.
-     * {@code key} must exist in the address book.
-     */
-    public void removePerson(Person key) {
-        persons.remove(key);
+    public void setStudent(Student target, Student editedStudent) {
+        students.setStudent(target, editedStudent);
     }
 
     //// util methods
@@ -88,13 +78,13 @@ public class AddressBook implements ReadOnlyAddressBook {
     @Override
     public String toString() {
         return new ToStringBuilder(this)
-                .add("persons", persons)
+                .add("students", getStudentList())
                 .toString();
     }
 
     @Override
-    public ObservableList<Person> getPersonList() {
-        return persons.asUnmodifiableObservableList();
+    public ObservableList<Student> getStudentList() {
+        return students.getStudents();
     }
 
     @Override
@@ -108,11 +98,11 @@ public class AddressBook implements ReadOnlyAddressBook {
             return false;
         }
 
-        return persons.equals(otherAddressBook.persons);
+        return getStudentList().equals(otherAddressBook.getStudentList());
     }
 
     @Override
     public int hashCode() {
-        return persons.hashCode();
+        return getStudentList().hashCode();
     }
 }

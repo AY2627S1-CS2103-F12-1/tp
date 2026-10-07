@@ -36,7 +36,7 @@ public class MainApp extends Application {
 
     private static final Logger logger = LogsCenter.getLogger(MainApp.class);
     private static final Path USER_PREFS_FILE_PATH = Paths.get("preferences.json");
-    private static final Path ADDRESS_BOOK_FILE_PATH = Paths.get("data", "addressbook.json");
+    private static final Path ADDRESS_BOOK_FILE_PATH = Paths.get("data", "tutorflow.json");
 
     protected Ui ui;
     protected Logic logic;
@@ -61,11 +61,20 @@ public class MainApp extends Application {
     }
 
     /**
-     * Returns a {@code ModelManager} with the data from {@code storage}'s address book and {@code userPrefs}. <br>
-     * The data from the sample address book will be used instead if {@code storage}'s address book is not found,
-     * or an empty address book will be used instead if errors occur when reading {@code storage}'s address book.
+     * Returns a {@code ModelManager} with the data from {@code storage}'s address book and {@code userPrefs}.
+     *
+     * @see #readInitialData(Storage)
      */
     private Model initModelManager(Storage storage, ReadOnlyUserPrefs userPrefs) {
+        return new ModelManager(readInitialData(storage), userPrefs);
+    }
+
+    /**
+     * Returns the data in {@code storage}'s data file. <br>
+     * The sample students will be used instead if the data file is not found,
+     * or an empty address book will be used instead if errors occur when reading the data file.
+     */
+    static ReadOnlyAddressBook readInitialData(Storage storage) {
         logger.info("Using data file : " + storage.getAddressBookFilePath());
 
         Optional<ReadOnlyAddressBook> addressBookOptional;
@@ -73,17 +82,16 @@ public class MainApp extends Application {
         try {
             addressBookOptional = storage.readAddressBook();
             if (addressBookOptional.isEmpty()) {
-                logger.info("Creating a new data file " + storage.getAddressBookFilePath()
-                        + " populated with a sample AddressBook.");
+                logger.info("Data file " + storage.getAddressBookFilePath() + " not found. Starting with the"
+                        + " sample students; the file will be created at the first change to the data.");
             }
             initialData = addressBookOptional.orElseGet(SampleDataUtil::getSampleAddressBook);
         } catch (DataLoadingException e) {
             logger.warning("Data file at " + storage.getAddressBookFilePath() + " could not be loaded."
-                    + " Will be starting with an empty AddressBook.");
+                    + " Will be starting with no students.");
             initialData = new AddressBook();
         }
-
-        return new ModelManager(initialData, userPrefs);
+        return initialData;
     }
 
     /**

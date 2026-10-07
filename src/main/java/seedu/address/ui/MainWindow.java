@@ -189,6 +189,10 @@ public class MainWindow extends UiPart<Stage> {
             logger.info("Result: " + commandResult.getFeedbackToUser());
             resultDisplay.setFeedbackToUser(commandResult.getFeedbackToUser());
 
+            if (commandResult.isShowStudentList()) {
+                studentListPanel.showFromTop();
+            }
+
             if (commandResult.isShowHelp()) {
                 handleHelp();
             }

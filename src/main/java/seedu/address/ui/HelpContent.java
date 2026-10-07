@@ -10,6 +10,7 @@ import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
 import seedu.address.logic.commands.HomeworkListCommand;
+import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.parser.HomeworkCommandParser;
 import seedu.address.model.homework.DueDate;
 import seedu.address.model.student.AcademicLevel;
@@ -35,7 +36,9 @@ public final class HelpContent {
                                     + TuitionSubjects.MESSAGE_CONSTRAINTS,
                             "add n/John Tan l/S3 s/MATH, PHYSICS p/91234567 gn/Mary Tan gp/98765432"),
                     new Entry(DeleteCommand.COMMAND_WORD, DeleteCommand.MESSAGE_USAGE,
-                            "Deletes the student at INDEX and all of their homework.", "delete 1"))),
+                            "Deletes the student at INDEX and all of their homework.", "delete 1"),
+                    new Entry(ListCommand.COMMAND_WORD, ListCommand.MESSAGE_USAGE,
+                            "Shows all students in roster order, starting from the top.", ListCommand.COMMAND_WORD))),
             new Section(SECTION_HOMEWORK, List.of(
                     new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_ADD,
                             HomeworkAddCommand.MESSAGE_USAGE,

@@ -20,6 +20,7 @@ import seedu.address.logic.commands.ClearCommand;
 import seedu.address.logic.commands.CommandResult;
 import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
+import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.AddressBook;
@@ -70,6 +71,12 @@ public class LogicManagerTest {
     public void execute_validCommand_success() throws Exception {
         String clearCommand = ClearCommand.COMMAND_WORD;
         assertCommandSuccess(clearCommand, ClearCommand.MESSAGE_SUCCESS, model);
+    }
+
+    @Test
+    public void execute_listCommand_doesNotSaveData() throws Exception {
+        assertCommandSuccess(ListCommand.COMMAND_WORD, ListCommand.MESSAGE_EMPTY, model);
+        assertFalse(Files.exists(dataFilePath));
     }
 
     @Test

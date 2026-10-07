@@ -28,6 +28,8 @@ TutorFlow is a **desktop application for private tutors to manage their students
 
    * `add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777` : Adds a student named `Aaron Koh` to the student list.
 
+   * `list` : Lists all students.
+
    * `homework list 1` : Lists the homework of the 1st student shown in the student list.
 
    * `hw add 1 t/Algebra worksheet s/MATH due/2026-10-15` : Adds homework to the 1st student.
@@ -63,7 +65,7 @@ TutorFlow is a **desktop application for private tutors to manage their students
 * Parameters can be in any order.<br>
   For example, if the command specifies `n/NAME p/PHONE_NUMBER`, `p/PHONE_NUMBER n/NAME` is also acceptable.
 
-* Extraneous parameters for commands that take no parameters, such as `help`, `exit`, and `clear`, are ignored.<br>
+* Extraneous parameters for commands that take no parameters, such as `help`, `exit`, and `clear`, are ignored. The `list` command rejects extra parameters.<br>
   For example, `help 123` is interpreted as `help`.
 
 * If you are using a PDF version of this document, be careful when copying and pasting commands that span multiple lines as space characters surrounding line-breaks may be omitted when copied over to the application.
@@ -71,7 +73,7 @@ TutorFlow is a **desktop application for private tutors to manage their students
 
 ### Viewing help: `help`
 
-Opens the help window, which lists the commands `add` (student), `delete` (student), `homework add`, `homework list`, `homework delete`, `help`, `clear` and `exit`, grouped into Students, Homework and General. Each command is shown with its format, what it does and an example.
+Opens the help window, which lists the commands `add`, `list`, `delete`, `homework add`, `homework list`, `homework delete`, `help`, `clear` and `exit`, grouped into Students, Homework and General. Each command is shown with its format, what it does and an example.
 
 ![help window](images/helpMessage.png)
 
@@ -100,6 +102,13 @@ Examples:
 * `add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777`
 * `add n/Siti Rahmah binte Ismail l/j1 s/math, chemistry, physics p/87654321 gn/Ismail bin Yusof gp/+60123456789` adds a J1 student who takes all three subjects, with a Malaysian number for the guardian.
 * `add gp/96543210 gn/Ramesh s/o Krishnan p/93334444 s/PHYSICS, MATH n/Kavin Ramesh l/S4` gives the fields in a different order. `s/o` in the guardian's name is part of the name, not the `s/` prefix.
+
+### Listing all students: `list`
+
+Shows all students in roster order, starting from the top. The displayed indexes start at 1.
+If the roster is empty, the app shows `No students found.` This command does not change the roster.
+
+Format: `list` or `ls` (no parameters)
 
 ### Adding homework to a student: `homework add`
 
@@ -262,6 +271,7 @@ Action | Format, Examples
 **Add** | `add n/STUDENT_NAME l/ACADEMIC_LEVEL s/SUBJECTS p/STUDENT_PHONE gn/GUARDIAN_NAME gp/GUARDIAN_PHONE` <br> e.g., `add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777`
 **Clear** | `clear`
 **Delete student** | `delete INDEX`<br> e.g., `delete 2`
+**List** | `list` or `ls`
 **Homework add** | <code>homework&#124;hw add STUDENT_INDEX title/&#124;t/TITLE s/SUBJECT due/YYYY-MM-DD&#124;MM-DD</code><br> e.g., `homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15`
 **Homework delete** | <code>homework&#124;hw delete&#124;del STUDENT_INDEX HOMEWORK_INDEX</code><br> e.g., `homework delete 1 2`
 **Homework list** | <code>homework&#124;hw list&#124;ls STUDENT_INDEX</code><br> e.g., `homework list 1`

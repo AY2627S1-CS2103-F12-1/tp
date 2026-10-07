@@ -1,0 +1,17 @@
+{
+  "students" : [ {
+    "name" : "Alice Tan",
+    "academicLevel" : "S3",
+    "subjects" : [ "MATH" ],
+    "phone" : "91111111",
+    "guardianName" : "Mary Tan",
+    "guardianPhone" : "98765432"
+  }, {
+    "name" : "ALICE TAN",
+    "academicLevel" : "J1",
+    "subjects" : [ "PHYSICS" ],
+    "phone" : "91111111",
+    "guardianName" : "Other Guardian",
+    "guardianPhone" : "81234567"
+  } ]
+}

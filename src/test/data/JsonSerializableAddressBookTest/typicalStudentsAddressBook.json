@@ -1,0 +1,52 @@
+{
+  "_comment": "TutorFlow save file which contains the same Student values as in TypicalStudents#getTypicalAddressBook()",
+  "students" : [ {
+    "name" : "Alice Tan",
+    "academicLevel" : "S3",
+    "subjects" : [ "MATH", "PHYSICS", "CHEMISTRY" ],
+    "phone" : "91111111",
+    "guardianName" : "Mary Tan",
+    "guardianPhone" : "98765432",
+    "homeworks" : [ {
+      "title" : "Complete algebra worksheet",
+      "subject" : "MATH",
+      "dueDate" : "2026-10-15",
+      "status" : "ASSIGNED",
+      "score" : null
+    }, {
+      "title" : "Attempt mechanics questions 1-5",
+      "subject" : "PHYSICS",
+      "dueDate" : "2026-10-20",
+      "status" : "ASSIGNED",
+      "score" : null
+    }, {
+      "title" : "Revise atomic structure",
+      "subject" : "CHEMISTRY",
+      "dueDate" : "2026-10-18",
+      "status" : "COMPLETED",
+      "score" : 85
+    } ]
+  }, {
+    "name" : "Benson Lim",
+    "academicLevel" : "S3",
+    "subjects" : [ "MATH" ],
+    "phone" : "92222222",
+    "guardianName" : "Mary Tan",
+    "guardianPhone" : "98765432",
+    "homeworks" : [ ]
+  }, {
+    "name" : "Carl Ng",
+    "academicLevel" : "S3",
+    "subjects" : [ "PHYSICS" ],
+    "phone" : "93333333",
+    "guardianName" : "Mary Tan",
+    "guardianPhone" : "98765432",
+    "homeworks" : [ {
+      "title" : "Attempt mechanics questions 1-5",
+      "subject" : "PHYSICS",
+      "dueDate" : "2026-10-20",
+      "status" : "ASSIGNED",
+      "score" : null
+    } ]
+  } ]
+}

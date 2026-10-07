@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static seedu.address.logic.Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX;
 import static seedu.address.logic.Messages.MESSAGE_UNKNOWN_COMMAND;
 import static seedu.address.testutil.Assert.assertThrows;
+import static seedu.address.testutil.TypicalStudents.getTypicalAddressBook;
 
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
@@ -17,9 +18,11 @@ import org.junit.jupiter.api.io.TempDir;
 
 import seedu.address.logic.commands.ClearCommand;
 import seedu.address.logic.commands.CommandResult;
-import seedu.address.logic.commands.ListCommand;
+import seedu.address.logic.commands.HomeworkAddCommand;
+import seedu.address.logic.commands.HomeworkDeleteCommand;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.logic.parser.exceptions.ParseException;
+import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.ReadOnlyAddressBook;
@@ -31,17 +34,20 @@ import seedu.address.storage.StorageManager;
 public class LogicManagerTest {
     private static final IOException DUMMY_IO_EXCEPTION = new IOException("dummy IO exception");
     private static final IOException DUMMY_AD_EXCEPTION = new AccessDeniedException("dummy access denied exception");
+    private static final String ADD_STUDENT_COMMAND = "add n/John Tan l/S3 s/MATH p/91234567 gn/Mary Tan gp/98765432";
 
     @TempDir
     public Path temporaryFolder;
 
     private Model model = new ModelManager();
     private Logic logic;
+    private Path dataFilePath;
+    private JsonAddressBookStorage addressBookStorage;
 
     @BeforeEach
     public void setUp() {
-        JsonAddressBookStorage addressBookStorage =
-                new JsonAddressBookStorage(temporaryFolder.resolve("addressBook.json"));
+        dataFilePath = temporaryFolder.resolve("tutorflow.json");
+        addressBookStorage = new JsonAddressBookStorage(dataFilePath);
         JsonUserPrefsStorage userPrefsStorage = new JsonUserPrefsStorage(temporaryFolder.resolve("userPrefs.json"));
         StorageManager storage = new StorageManager(addressBookStorage, userPrefsStorage);
         logic = new LogicManager(model, storage);
@@ -55,32 +61,78 @@ public class LogicManagerTest {
 
     @Test
     public void execute_commandExecutionError_throwsCommandException() {
-        String deleteCommand = "delete 9";
-        assertCommandException(deleteCommand, MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
+        String homeworkListCommand = "hw ls 9";
+        assertCommandException(homeworkListCommand, MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
+        assertCommandException("delete 9", MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
     }
 
     @Test
     public void execute_validCommand_success() throws Exception {
-        String listCommand = ListCommand.COMMAND_WORD;
-        assertCommandSuccess(listCommand, ListCommand.MESSAGE_SUCCESS, model);
+        String clearCommand = ClearCommand.COMMAND_WORD;
+        assertCommandSuccess(clearCommand, ClearCommand.MESSAGE_SUCCESS, model);
     }
 
     @Test
-    public void execute_addStudent_updatesRosterWithoutSavingAddressBook() throws Exception {
-        logic.execute("add n/John Tan l/S3 s/MATH p/91234567 gn/Mary Tan gp/98765432");
+    public void execute_addStudent_savesStudent() throws Exception {
+        logic.execute(ADD_STUDENT_COMMAND);
 
         assertEquals(1, logic.getStudentList().size());
-        assertFalse(Files.exists(temporaryFolder.resolve("addressBook.json")));
+        assertEquals(model.getAddressBook(), new AddressBook(addressBookStorage.readAddressBook().get()));
     }
 
     @Test
-    public void execute_deleteStudent_updatesRosterWithoutSavingAddressBook() throws Exception {
-        logic.execute("add n/John Tan l/S3 s/MATH p/91234567 gn/Mary Tan gp/98765432");
+    public void execute_homeworkAddAndDelete_savesHomework() throws Exception {
+        logic.execute(ADD_STUDENT_COMMAND);
+
+        logic.execute("hw add 1 t/Complete algebra worksheet s/MATH due/2026-10-15");
+        ReadOnlyAddressBook savedData = addressBookStorage.readAddressBook().get();
+        assertEquals(1, savedData.getStudentList().get(0).getHomeworks().size());
+        assertEquals(model.getAddressBook(), new AddressBook(savedData));
+
+        logic.execute("hw del 1 1");
+        savedData = addressBookStorage.readAddressBook().get();
+        assertEquals(0, savedData.getStudentList().get(0).getHomeworks().size());
+        assertEquals(model.getAddressBook(), new AddressBook(savedData));
+    }
+
+    @Test
+    public void execute_clear_savesNoStudents() throws Exception {
+        setUpLogic(getTypicalAddressBook(), addressBookStorage);
+
+        logic.execute(ClearCommand.COMMAND_WORD);
+
+        assertEquals(new AddressBook(), new AddressBook(addressBookStorage.readAddressBook().get()));
+    }
+
+    @Test
+    public void execute_commandsNotChangingData_doNotSave() throws Exception {
+        // Saving fails, so a command that saved would throw instead of succeeding
+        setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+
+        logic.execute("hw ls 1");
+        logic.execute("help");
+
+        assertEquals(new ModelManager(getTypicalAddressBook(), new UserPrefs()), model);
+        assertFalse(Files.exists(dataFilePath));
+    }
+
+    @Test
+    public void execute_deleteStudent_savesRemainingStudents() throws Exception {
+        setUpLogic(getTypicalAddressBook(), addressBookStorage);
 
         logic.execute("delete 1");
 
-        assertEquals(0, logic.getStudentList().size());
-        assertFalse(Files.exists(temporaryFolder.resolve("addressBook.json")));
+        assertEquals(getTypicalAddressBook().getStudentList().size() - 1, logic.getStudentList().size());
+        assertEquals(model.getAddressBook(), new AddressBook(addressBookStorage.readAddressBook().get()));
+    }
+
+    @Test
+    public void execute_deleteStudentSaveFails_restoresStudentAndHomework() {
+        setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+        String expectedMessage = String.format(LogicManager.FILE_OPS_ERROR_FORMAT, DUMMY_IO_EXCEPTION.getMessage());
+
+        assertCommandFailure("delete 1", CommandException.class, expectedMessage,
+                new ModelManager(getTypicalAddressBook(), new UserPrefs()));
     }
 
     @Test
@@ -96,8 +148,33 @@ public class LogicManagerTest {
     }
 
     @Test
-    public void getFilteredPersonList_modifyList_throwsUnsupportedOperationException() {
-        assertThrows(UnsupportedOperationException.class, () -> logic.getFilteredPersonList().remove(0));
+    public void execute_clearSaveFails_restoresStudents() {
+        setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+        String expectedMessage = String.format(LogicManager.FILE_OPS_ERROR_FORMAT, DUMMY_IO_EXCEPTION.getMessage());
+
+        assertCommandFailure(ClearCommand.COMMAND_WORD, CommandException.class, expectedMessage,
+                new ModelManager(getTypicalAddressBook(), new UserPrefs()));
+    }
+
+    @Test
+    public void execute_homeworkAddSaveFails_rollsBackAddition() {
+        setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+
+        assertCommandFailure("hw add 2 t/Trigonometry practice s/MATH due/2026-11-01", CommandException.class,
+                HomeworkAddCommand.MESSAGE_SAVE_FAILURE, new ModelManager(getTypicalAddressBook(), new UserPrefs()));
+    }
+
+    @Test
+    public void execute_homeworkDeleteSaveFails_rollsBackDeletion() {
+        setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_AD_EXCEPTION));
+
+        assertCommandFailure("hw del 1 2", CommandException.class, HomeworkDeleteCommand.MESSAGE_SAVE_FAILURE,
+                new ModelManager(getTypicalAddressBook(), new UserPrefs()));
+    }
+
+    @Test
+    public void getStudentList_modifyList_throwsUnsupportedOperationException() {
+        assertThrows(UnsupportedOperationException.class, () -> logic.getStudentList().remove(0));
     }
 
     /**
@@ -160,25 +237,31 @@ public class LogicManagerTest {
      * @param expectedMessage the message expected inside exception thrown by the Logic component
      */
     private void assertCommandFailureForExceptionFromStorage(IOException e, String expectedMessage) {
-        Path prefPath = temporaryFolder.resolve("ExceptionUserPrefs.json");
+        setUpLogic(new AddressBook(), getStorageThatFailsToSave(e));
 
-        // Inject LogicManager with a JsonAddressBookStorage that throws the IOException e when saving
-        JsonAddressBookStorage addressBookStorage = new JsonAddressBookStorage(prefPath) {
+        // Adding a student changes the data, so it is saved; the failed save undoes the addition
+        ModelManager expectedModel = new ModelManager();
+        assertCommandFailure(ADD_STUDENT_COMMAND, CommandException.class, expectedMessage, expectedModel);
+    }
+
+    /**
+     * Replaces {@code model} with one holding {@code data}, and {@code logic} with one using {@code storage}.
+     */
+    private void setUpLogic(ReadOnlyAddressBook data, JsonAddressBookStorage storage) {
+        model = new ModelManager(data, new UserPrefs());
+        JsonUserPrefsStorage userPrefsStorage = new JsonUserPrefsStorage(temporaryFolder.resolve("userPrefs.json"));
+        logic = new LogicManager(model, new StorageManager(storage, userPrefsStorage));
+    }
+
+    /**
+     * Returns a storage for the data file that throws {@code e} whenever it saves.
+     */
+    private JsonAddressBookStorage getStorageThatFailsToSave(IOException e) {
+        return new JsonAddressBookStorage(dataFilePath) {
             @Override
             public void saveAddressBook(ReadOnlyAddressBook addressBook) throws IOException {
                 throw e;
             }
         };
-
-        JsonUserPrefsStorage userPrefsStorage =
-                new JsonUserPrefsStorage(temporaryFolder.resolve("ExceptionUserPrefs.json"));
-        StorageManager storage = new StorageManager(addressBookStorage, userPrefsStorage);
-
-        logic = new LogicManager(model, storage);
-
-        // Clear still uses the existing AddressBook storage path.
-        String clearCommand = ClearCommand.COMMAND_WORD;
-        ModelManager expectedModel = new ModelManager();
-        assertCommandFailure(clearCommand, CommandException.class, expectedMessage, expectedModel);
     }
 }

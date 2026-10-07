@@ -6,7 +6,7 @@ import javafx.scene.layout.Region;
 import seedu.address.model.student.Student;
 
 /**
- * Displays the six fields of a student in the roster.
+ * Displays the six fields of a student in the roster and the number of homework records still assigned.
  */
 public class StudentCard extends UiPart<Region> {
     private static final String FXML = "StudentListCard.fxml";
@@ -25,6 +25,8 @@ public class StudentCard extends UiPart<Region> {
     private Label guardianName;
     @FXML
     private Label guardianPhone;
+    @FXML
+    private Label assignedHomeworkCount;
 
     /**
      * Creates a card for the student at the specified one-based displayed index.
@@ -38,5 +40,6 @@ public class StudentCard extends UiPart<Region> {
         studentPhone.setText("Student: " + student.getPhone());
         guardianName.setText("Guardian: " + student.getGuardianName());
         guardianPhone.setText("Guardian phone: " + student.getGuardianPhone());
+        assignedHomeworkCount.setText("Assigned homework: " + student.getAssignedHomeworkCount());
     }
 }

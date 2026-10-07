@@ -4,9 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_PERSON;
-import static seedu.address.testutil.TypicalIndexes.INDEX_SECOND_PERSON;
-import static seedu.address.testutil.TypicalPersons.getTypicalAddressBook;
+import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_STUDENT;
+import static seedu.address.testutil.TypicalIndexes.INDEX_SECOND_STUDENT;
+import static seedu.address.testutil.TypicalStudents.ALICE;
+import static seedu.address.testutil.TypicalStudents.BENSON;
 
 import java.util.List;
 
@@ -16,11 +17,10 @@ import seedu.address.commons.core.index.Index;
 import seedu.address.logic.Messages;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.ModelManager;
-import seedu.address.model.UserPrefs;
 import seedu.address.model.student.Student;
 import seedu.address.testutil.StudentBuilder;
 
-/** Tests deletion from the in-memory student roster. */
+/** Tests deletion from the student roster. */
 public class DeleteCommandTest {
 
     @Test
@@ -31,14 +31,14 @@ public class DeleteCommandTest {
         model.addStudent(first);
         model.addStudent(second);
 
-        CommandResult result = new DeleteCommand(INDEX_FIRST_PERSON).execute(model);
+        CommandResult result = new DeleteCommand(INDEX_FIRST_STUDENT).execute(model);
 
         assertEquals(String.format(DeleteCommand.MESSAGE_DELETE_STUDENT_SUCCESS, Messages.format(first)),
                 result.getFeedbackToUser());
         assertEquals(List.of(second), model.getStudentList());
 
         // The remaining student is now shown at index 1.
-        new DeleteCommand(INDEX_FIRST_PERSON).execute(model);
+        new DeleteCommand(INDEX_FIRST_STUDENT).execute(model);
         assertTrue(model.getStudentList().isEmpty());
     }
 
@@ -50,7 +50,7 @@ public class DeleteCommandTest {
         model.addStudent(first);
         model.addStudent(second);
 
-        new DeleteCommand(INDEX_SECOND_PERSON).execute(model);
+        new DeleteCommand(INDEX_SECOND_STUDENT).execute(model);
 
         assertEquals(List.of(first), model.getStudentList());
     }
@@ -60,7 +60,7 @@ public class DeleteCommandTest {
         ModelManager model = new ModelManager();
 
         CommandException exception = assertThrows(CommandException.class, () ->
-                new DeleteCommand(INDEX_FIRST_PERSON).execute(model));
+                new DeleteCommand(INDEX_FIRST_STUDENT).execute(model));
 
         assertEquals(Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX, exception.getMessage());
         assertTrue(model.getStudentList().isEmpty());
@@ -73,32 +73,30 @@ public class DeleteCommandTest {
         model.addStudent(student);
 
         CommandException exception = assertThrows(CommandException.class, () ->
-                new DeleteCommand(INDEX_SECOND_PERSON).execute(model));
+                new DeleteCommand(INDEX_SECOND_STUDENT).execute(model));
 
         assertEquals(Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX, exception.getMessage());
         assertEquals(List.of(student), model.getStudentList());
     }
 
     @Test
-    public void execute_validIndex_doesNotDeleteAddressBookPerson() throws CommandException {
-        ModelManager model = new ModelManager(getTypicalAddressBook(), new UserPrefs());
-        Student student = new StudentBuilder().build();
-        model.addStudent(student);
-        int personCount = model.getFilteredPersonList().size();
+    public void execute_studentWithHomework_deletesHomeworkToo() throws CommandException {
+        ModelManager model = new ModelManager();
+        model.addStudent(ALICE);
+        model.addStudent(BENSON);
 
-        new DeleteCommand(INDEX_FIRST_PERSON).execute(model);
+        new DeleteCommand(INDEX_FIRST_STUDENT).execute(model);
 
-        assertTrue(model.getStudentList().isEmpty());
-        assertEquals(personCount, model.getFilteredPersonList().size());
+        assertEquals(List.of(BENSON), model.getStudentList());
     }
 
     @Test
     public void equals() {
-        DeleteCommand deleteFirstCommand = new DeleteCommand(INDEX_FIRST_PERSON);
-        DeleteCommand deleteSecondCommand = new DeleteCommand(INDEX_SECOND_PERSON);
+        DeleteCommand deleteFirstCommand = new DeleteCommand(INDEX_FIRST_STUDENT);
+        DeleteCommand deleteSecondCommand = new DeleteCommand(INDEX_SECOND_STUDENT);
 
         assertTrue(deleteFirstCommand.equals(deleteFirstCommand));
-        assertTrue(deleteFirstCommand.equals(new DeleteCommand(INDEX_FIRST_PERSON)));
+        assertTrue(deleteFirstCommand.equals(new DeleteCommand(INDEX_FIRST_STUDENT)));
         assertFalse(deleteFirstCommand.equals(1));
         assertFalse(deleteFirstCommand.equals(null));
         assertFalse(deleteFirstCommand.equals(deleteSecondCommand));

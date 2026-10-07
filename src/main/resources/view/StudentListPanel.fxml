@@ -15,6 +15,5 @@
     <Region HBox.hgrow="ALWAYS" />
     <Label fx:id="studentCount" styleClass="student-count" />
   </HBox>
-  <Label text="Session preview: students added here are not saved yet." styleClass="student-preview-note" />
   <ListView fx:id="studentListView" VBox.vgrow="ALWAYS" />
 </VBox>

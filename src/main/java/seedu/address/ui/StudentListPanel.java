@@ -35,6 +35,12 @@ public class StudentListPanel extends UiPart<Region> {
         studentCount.setText(count == 1 ? "1 student" : count + " students");
     }
 
+    /** Clears the current selection and returns to the first student. */
+    public void showFromTop() {
+        studentListView.getSelectionModel().clearSelection();
+        studentListView.scrollTo(0);
+    }
+
     /** Displays a student card with its current one-based roster index. */
     private static class StudentListViewCell extends ListCell<Student> {
         @Override

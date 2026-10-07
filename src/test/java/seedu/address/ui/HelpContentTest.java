@@ -19,6 +19,7 @@ import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
 import seedu.address.logic.commands.HomeworkListCommand;
+import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.parser.AddressBookParser;
 
 public class HelpContentTest {
@@ -35,6 +36,7 @@ public class HelpContentTest {
     public void getSections_listedCommands_useUsageConstants() {
         Map<String, String> expectedFormats = Map.of(
                 AddCommand.COMMAND_WORD, AddCommand.MESSAGE_USAGE,
+                ListCommand.COMMAND_WORD, ListCommand.MESSAGE_USAGE,
                 "homework add", HomeworkAddCommand.MESSAGE_USAGE,
                 "homework list", HomeworkListCommand.MESSAGE_USAGE,
                 "homework delete", HomeworkDeleteCommand.MESSAGE_USAGE,
@@ -53,6 +55,7 @@ public class HelpContentTest {
     public void getSections_examples_parseIntoListedCommand() throws Exception {
         Map<String, Class<? extends Command>> expectedCommandTypes = Map.of(
                 AddCommand.COMMAND_WORD, AddCommand.class,
+                ListCommand.COMMAND_WORD, ListCommand.class,
                 "homework add", HomeworkAddCommand.class,
                 "homework list", HomeworkListCommand.class,
                 "homework delete", HomeworkDeleteCommand.class,

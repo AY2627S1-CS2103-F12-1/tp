@@ -23,6 +23,7 @@ import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
 import seedu.address.logic.commands.HomeworkListCommand;
+import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.homework.Homework;
 import seedu.address.model.student.Student;
@@ -57,6 +58,15 @@ public class AddressBookParserTest {
     public void parseCommand_help() throws Exception {
         assertTrue(parser.parseCommand(HelpCommand.COMMAND_WORD) instanceof HelpCommand);
         assertTrue(parser.parseCommand(HelpCommand.COMMAND_WORD + " 3") instanceof HelpCommand);
+    }
+
+    @Test
+    public void parseCommand_list() throws Exception {
+        assertTrue(parser.parseCommand(ListCommand.COMMAND_WORD) instanceof ListCommand);
+        assertTrue(parser.parseCommand(ListCommand.SHORT_COMMAND_WORD) instanceof ListCommand);
+        assertTrue(parser.parseCommand(ListCommand.COMMAND_WORD + "   ") instanceof ListCommand);
+        assertThrows(ParseException.class, ListCommand.MESSAGE_INVALID_FORMAT, () -> parser.parseCommand("list 3"));
+        assertThrows(ParseException.class, ListCommand.MESSAGE_INVALID_FORMAT, () -> parser.parseCommand("ls all"));
     }
 
     @Test
@@ -113,7 +123,7 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_removedAddressBookCommands_throwsParseException() {
-        for (String userInput : List.of("list", "find Alice", "edit 1 n/Alice", "delete 1")) {
+        for (String userInput : List.of("find Alice", "edit 1 n/Alice", "delete 1")) {
             assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand(userInput));
         }
     }

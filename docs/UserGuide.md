@@ -3,7 +3,7 @@ layout: page
 title: User Guide
 ---
 
-TutorFlow is a **desktop application for private tutors to manage their students and homework, optimized for use through a Command Line Interface (CLI)** while retaining the benefits of a Graphical User Interface (GUI). If you type quickly, TutorFlow can help you manage your students faster than traditional GUI applications.
+TutorFlow is a **desktop application for private tutors to manage their students, homework and regular lessons, optimized for use through a Command Line Interface (CLI)** while retaining the benefits of a Graphical User Interface (GUI). If you type quickly, TutorFlow can help you manage your students faster than traditional GUI applications.
 
 * Table of Contents
 {:toc}
@@ -36,7 +36,9 @@ TutorFlow is a **desktop application for private tutors to manage their students
 
    * `delete 3` : Deletes the 3rd student shown in the student list.
 
-   * `clear` : Deletes all students and their homework.
+   * `lesson list` : Lists all regular lessons in weekly chronological order.
+
+   * `clear` : Deletes all students together with their homework and regular lessons.
 
    * `exit` : Exits the app.
 
@@ -73,7 +75,7 @@ TutorFlow is a **desktop application for private tutors to manage their students
 
 ### Viewing help: `help`
 
-Opens the help window, which lists the commands `add`, `list`, `delete`, `homework add`, `homework list`, `homework delete`, `help`, `clear` and `exit`, grouped into Students, Homework and General. Each command is shown with its format, what it does and an example.
+Opens the help window, which lists the commands `add`, `list`, `delete`, `homework add`, `homework list`, `homework delete`, `lesson add`, `lesson list`, `help`, `clear` and `exit`, grouped into Students, Homework, Lessons and General. Each command is shown with its format, what it does and an example.
 
 ![help window](images/helpMessage.png)
 
@@ -178,7 +180,7 @@ Examples:
 
 ### Clearing all students: `clear`
 
-Deletes all students and their homework.
+Deletes all students together with their homework and regular lessons.
 
 Format: `clear`
 
@@ -207,13 +209,32 @@ Example: `lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00`
 
 On success, TutorFlow shows `New lesson added: John Tan; MATH; MONDAY; 16:00-18:00` and saves the lesson automatically. The student's position, profile and homework remain unchanged. If saving fails, the addition is undone and TutorFlow reports that no lesson data was changed.
 
-Lesson listing and deletion will be added in a later increment. Currently, the success message confirms the new lesson, and saved lessons can be inspected in the data file.
+Lesson deletion will be added in a later increment.
+
+### Listing all regular lessons: `lesson list`
+
+Lists every student's regular lessons in one weekly schedule.
+
+Format: `lesson list`
+
+* Lessons are ordered from Monday to Sunday, then by start time.
+* Lessons with the same weekday and start time are ordered by student name.
+* Each row shows the student name, subject, abbreviated weekday and time range.
+* If no lessons have been added, TutorFlow reports `No regular lessons found.`
+
+Example output:
+
+```text
+Listed 2 regular lessons.
+1. Ethan Lim; MATH; MON; 17:00-18:30
+2. Priya Nair; CHEMISTRY; SAT; 15:00-16:30
+```
 
 ### Saving the data
 
 TutorFlow saves your students, homework and regular lessons automatically after every command that changes them. You do not need to save manually.
 
-* Commands that do not change the data, such as `homework list`, `help` and `exit`, do not write to the data file.
+* Commands that do not change the data, such as `homework list`, `lesson list`, `help` and `exit`, do not write to the data file.
 * If TutorFlow cannot save the data (for example, because the data file is read-only), the command is cancelled: its changes are undone and an error message is shown. For `homework add` and `homework delete`, the message says that no homework data was changed.
 
 ### Editing the data file
@@ -222,7 +243,7 @@ TutorFlow data is saved automatically as a JSON file `[JAR file location]/data/t
 
 If the data file does not exist when TutorFlow starts, for example the first time you run it, TutorFlow starts with some sample students and saves them to a new data file after the first command that changes the data. To get the sample students back, close TutorFlow, delete the data file and start TutorFlow again.
 
-The data file holds a list of `students`. Each student holds a list of `homeworks`, in the order shown by `homework list`. For example:
+The data file holds a list of `students`. Each student can hold `homeworks` and `lessons`. For example:
 
 ```json
 {
@@ -239,6 +260,12 @@ The data file holds a list of `students`. Each student holds a list of `homework
       "dueDate" : "2026-10-23",
       "status" : "ASSIGNED",
       "score" : null
+    } ],
+    "lessons" : [ {
+      "subject" : "MATH",
+      "dayOfWeek" : "MONDAY",
+      "startTime" : "17:00",
+      "endTime" : "18:30"
     } ]
   } ]
 }
@@ -295,5 +322,7 @@ Action | Format, Examples
 **Homework add** | <code>homework&#124;hw add STUDENT_INDEX title/&#124;t/TITLE s/SUBJECT due/YYYY-MM-DD&#124;MM-DD</code><br> e.g., `homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15`
 **Homework delete** | <code>homework&#124;hw delete&#124;del STUDENT_INDEX HOMEWORK_INDEX</code><br> e.g., `homework delete 1 2`
 **Homework list** | <code>homework&#124;hw list&#124;ls STUDENT_INDEX</code><br> e.g., `homework list 1`
+**Lesson add** | `lesson add INDEX s/SUBJECT d/DAY st/START_TIME et/END_TIME`<br> e.g., `lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00`
+**Lesson list** | `lesson list`
 **Help** | `help`
 **Exit** | `exit`

@@ -1,6 +1,7 @@
 package seedu.address.logic;
 
 import seedu.address.model.homework.Homework;
+import seedu.address.model.lesson.RegularLesson;
 import seedu.address.model.student.Student;
 
 /**
@@ -35,6 +36,14 @@ public class Messages {
                 + "; Title: " + homework.getTitle()
                 + "; Subject: " + homework.getSubject()
                 + "; Due: " + homework.getDueDate();
+    }
+
+    /** Returns the owner's name and the regular lesson's subject, weekday and time range. */
+    public static String format(Student student, RegularLesson lesson) {
+        return student.getName()
+                + "; " + lesson.getSubject()
+                + "; " + lesson.getDayOfWeek().name().substring(0, 3)
+                + "; " + lesson.getStartTime() + "-" + lesson.getEndTime();
     }
 
 }

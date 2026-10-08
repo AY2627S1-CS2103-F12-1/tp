@@ -37,6 +37,9 @@ public interface Model {
     /** Adds a student to the end of the student roster. The student must not already exist. */
     void addStudent(Student student);
 
+    /** Deletes a student from the student roster. The student must be present. */
+    void deleteStudent(Student student);
+
     /**
      * Replaces the given student {@code target} with {@code editedStudent}, keeping its position in the roster.
      * {@code target} must exist in the roster.

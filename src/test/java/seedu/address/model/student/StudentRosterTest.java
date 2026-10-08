@@ -56,6 +56,36 @@ public class StudentRosterTest {
     }
 
     @Test
+    public void deleteStudent_removesOnlyTargetAndPreservesOrder() {
+        StudentRoster roster = new StudentRoster();
+        Student first = new StudentBuilder().build();
+        Student second = new StudentBuilder().withName("Jane Tan").build();
+        Student third = new StudentBuilder().withName("Alex Tan").build();
+        roster.addStudent(first);
+        roster.addStudent(second);
+        roster.addStudent(third);
+
+        roster.deleteStudent(second);
+
+        assertEquals(2, roster.getStudents().size());
+        assertEquals(first, roster.getStudents().get(0));
+        assertEquals(third, roster.getStudents().get(1));
+        assertFalse(roster.hasStudent(second));
+    }
+
+    @Test
+    public void deleteStudent_missingStudent_keepsRosterUnchanged() {
+        StudentRoster roster = new StudentRoster();
+        Student first = new StudentBuilder().build();
+        Student missing = new StudentBuilder().withName("Jane Tan").build();
+        roster.addStudent(first);
+
+        assertThrows(IllegalArgumentException.class, () -> roster.deleteStudent(missing));
+        assertEquals(first, roster.getStudents().get(0));
+        assertEquals(1, roster.getStudents().size());
+    }
+
+    @Test
     public void setStudent_existingTarget_replacesAtSamePosition() {
         StudentRoster roster = new StudentRoster();
         Student first = new StudentBuilder().build();

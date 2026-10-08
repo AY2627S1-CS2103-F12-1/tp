@@ -64,6 +64,11 @@ public class AddressBook implements ReadOnlyAddressBook {
         students.addStudent(student);
     }
 
+    /** Removes {@code student} and its homework from the address book. The student must exist. */
+    public void deleteStudent(Student student) {
+        students.deleteStudent(student);
+    }
+
     /**
      * Replaces the given student {@code target} in the list with {@code editedStudent}, keeping its position.
      * {@code target} must exist in the address book.

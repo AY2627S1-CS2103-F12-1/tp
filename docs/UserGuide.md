@@ -34,6 +34,8 @@ TutorFlow is a **desktop application for private tutors to manage their students
 
    * `hw add 1 t/Algebra worksheet s/MATH due/2026-10-15` : Adds homework to the 1st student.
 
+   * `delete 3` : Deletes the 3rd student shown in the student list.
+
    * `clear` : Deletes all students and their homework.
 
    * `exit` : Exits the app.
@@ -71,7 +73,7 @@ TutorFlow is a **desktop application for private tutors to manage their students
 
 ### Viewing help: `help`
 
-Opens the help window, which lists the commands `add` (student), `list` (student), `homework add`, `homework list`, `homework delete`, `help`, `clear` and `exit`, grouped into Students, Homework and General. Each command is shown with its format, what it does and an example.
+Opens the help window, which lists the commands `add`, `list`, `delete`, `homework add`, `homework list`, `homework delete`, `help`, `clear` and `exit`, grouped into Students, Homework and General. Each command is shown with its format, what it does and an example.
 
 ![help window](images/helpMessage.png)
 
@@ -145,6 +147,18 @@ Format: `homework|hw list|ls STUDENT_INDEX`
 Examples:
 * `homework list 1`
 * `hw ls 3`
+
+### Deleting a student: `delete`
+
+Deletes the specified student and their homework from the student list. The change is saved automatically.
+
+Format: `delete INDEX`
+
+* `INDEX` is the number shown next to the student, starting at 1. It must be a positive whole number without leading zeroes.
+* If the list is empty or the index exceeds its size, no student is deleted.
+* Remaining students retain their order and are renumbered. Deletion cannot be undone.
+
+Example: `delete 2` deletes the second student and their homework.
 
 ### Deleting a student's homework: `homework delete`
 
@@ -256,6 +270,7 @@ Action | Format, Examples
 --------|------------------
 **Add** | `add n/STUDENT_NAME l/ACADEMIC_LEVEL s/SUBJECTS p/STUDENT_PHONE gn/GUARDIAN_NAME gp/GUARDIAN_PHONE` <br> e.g., `add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777`
 **Clear** | `clear`
+**Delete student** | `delete INDEX`<br> e.g., `delete 2`
 **List** | `list` or `ls`
 **Homework add** | <code>homework&#124;hw add STUDENT_INDEX title/&#124;t/TITLE s/SUBJECT due/YYYY-MM-DD&#124;MM-DD</code><br> e.g., `homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15`
 **Homework delete** | <code>homework&#124;hw delete&#124;del STUDENT_INDEX HOMEWORK_INDEX</code><br> e.g., `homework delete 1 2`

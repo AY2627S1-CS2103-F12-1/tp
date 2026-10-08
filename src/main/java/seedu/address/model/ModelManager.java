@@ -85,6 +85,11 @@ public class ModelManager implements Model {
     }
 
     @Override
+    public void deleteStudent(Student student) {
+        addressBook.deleteStudent(student);
+    }
+
+    @Override
     public ObservableList<Student> getStudentList() {
         return addressBook.getStudentList();
     }

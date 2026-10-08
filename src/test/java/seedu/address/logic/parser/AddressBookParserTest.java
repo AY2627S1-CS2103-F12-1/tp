@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import seedu.address.commons.core.index.Index;
 import seedu.address.logic.commands.AddCommand;
 import seedu.address.logic.commands.ClearCommand;
+import seedu.address.logic.commands.DeleteCommand;
 import seedu.address.logic.commands.ExitCommand;
 import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.HomeworkAddCommand;
@@ -46,6 +47,11 @@ public class AddressBookParserTest {
     public void parseCommand_clear() throws Exception {
         assertTrue(parser.parseCommand(ClearCommand.COMMAND_WORD) instanceof ClearCommand);
         assertTrue(parser.parseCommand(ClearCommand.COMMAND_WORD + " 3") instanceof ClearCommand);
+    }
+
+    @Test
+    public void parseCommand_deleteStudent() throws Exception {
+        assertEquals(new DeleteCommand(Index.fromOneBased(2)), parser.parseCommand("delete 2"));
     }
 
     @Test
@@ -123,7 +129,7 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_removedAddressBookCommands_throwsParseException() {
-        for (String userInput : List.of("find Alice", "edit 1 n/Alice", "delete 1")) {
+        for (String userInput : List.of("find Alice", "edit 1 n/Alice")) {
             assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand(userInput));
         }
     }

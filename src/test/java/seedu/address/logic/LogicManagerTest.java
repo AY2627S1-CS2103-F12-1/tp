@@ -64,6 +64,7 @@ public class LogicManagerTest {
     public void execute_commandExecutionError_throwsCommandException() {
         String homeworkListCommand = "hw ls 9";
         assertCommandException(homeworkListCommand, MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
+        assertCommandException("delete 9", MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
     }
 
     @Test
@@ -120,6 +121,25 @@ public class LogicManagerTest {
 
         assertEquals(new ModelManager(getTypicalAddressBook(), new UserPrefs()), model);
         assertFalse(Files.exists(dataFilePath));
+    }
+
+    @Test
+    public void execute_deleteStudent_savesRemainingStudents() throws Exception {
+        setUpLogic(getTypicalAddressBook(), addressBookStorage);
+
+        logic.execute("delete 1");
+
+        assertEquals(getTypicalAddressBook().getStudentList().size() - 1, logic.getStudentList().size());
+        assertEquals(model.getAddressBook(), new AddressBook(addressBookStorage.readAddressBook().get()));
+    }
+
+    @Test
+    public void execute_deleteStudentSaveFails_restoresStudentAndHomework() {
+        setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+        String expectedMessage = String.format(LogicManager.FILE_OPS_ERROR_FORMAT, DUMMY_IO_EXCEPTION.getMessage());
+
+        assertCommandFailure("delete 1", CommandException.class, expectedMessage,
+                new ModelManager(getTypicalAddressBook(), new UserPrefs()));
     }
 
     @Test

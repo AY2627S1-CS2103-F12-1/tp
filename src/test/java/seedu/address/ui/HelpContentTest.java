@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import seedu.address.logic.commands.AddCommand;
 import seedu.address.logic.commands.ClearCommand;
 import seedu.address.logic.commands.Command;
+import seedu.address.logic.commands.DeleteCommand;
 import seedu.address.logic.commands.ExitCommand;
 import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.HomeworkAddCommand;
@@ -36,6 +37,7 @@ public class HelpContentTest {
     public void getSections_listedCommands_useUsageConstants() {
         Map<String, String> expectedFormats = Map.of(
                 AddCommand.COMMAND_WORD, AddCommand.MESSAGE_USAGE,
+                DeleteCommand.COMMAND_WORD, DeleteCommand.MESSAGE_USAGE,
                 ListCommand.COMMAND_WORD, ListCommand.MESSAGE_USAGE,
                 "homework add", HomeworkAddCommand.MESSAGE_USAGE,
                 "homework list", HomeworkListCommand.MESSAGE_USAGE,
@@ -55,6 +57,7 @@ public class HelpContentTest {
     public void getSections_examples_parseIntoListedCommand() throws Exception {
         Map<String, Class<? extends Command>> expectedCommandTypes = Map.of(
                 AddCommand.COMMAND_WORD, AddCommand.class,
+                DeleteCommand.COMMAND_WORD, DeleteCommand.class,
                 ListCommand.COMMAND_WORD, ListCommand.class,
                 "homework add", HomeworkAddCommand.class,
                 "homework list", HomeworkListCommand.class,

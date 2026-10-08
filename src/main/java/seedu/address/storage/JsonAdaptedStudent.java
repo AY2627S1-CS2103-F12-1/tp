@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.model.homework.Homework;
+import seedu.address.model.lesson.RegularLesson;
 import seedu.address.model.student.AcademicLevel;
 import seedu.address.model.student.Student;
 import seedu.address.model.student.StudentName;
@@ -33,6 +34,7 @@ class JsonAdaptedStudent {
     private final String guardianName;
     private final String guardianPhone;
     private final List<JsonAdaptedHomework> homeworks = new ArrayList<>();
+    private final List<JsonAdaptedLesson> lessons = new ArrayList<>();
 
     /**
      * Constructs a {@code JsonAdaptedStudent} with the given student details, as read from the JSON file.
@@ -45,11 +47,18 @@ class JsonAdaptedStudent {
      * @param guardianPhone Phone number of the student's guardian, or null if the field is missing.
      * @param homeworks Homework of the student in insertion order; null if the student has no homework.
      */
+    public JsonAdaptedStudent(String name, String academicLevel, List<String> subjects, String phone,
+            String guardianName, String guardianPhone, List<JsonAdaptedHomework> homeworks) {
+        this(name, academicLevel, subjects, phone, guardianName, guardianPhone, homeworks, null);
+    }
+
+    /** Creates a student adapter, treating an absent lessons field as an empty list for older data files. */
     @JsonCreator
     public JsonAdaptedStudent(@JsonProperty("name") String name, @JsonProperty("academicLevel") String academicLevel,
             @JsonProperty("subjects") List<String> subjects, @JsonProperty("phone") String phone,
             @JsonProperty("guardianName") String guardianName, @JsonProperty("guardianPhone") String guardianPhone,
-            @JsonProperty("homeworks") List<JsonAdaptedHomework> homeworks) {
+            @JsonProperty("homeworks") List<JsonAdaptedHomework> homeworks,
+            @JsonProperty("lessons") List<JsonAdaptedLesson> lessons) {
         this.name = name;
         this.academicLevel = academicLevel;
         this.subjects = subjects == null ? null : new ArrayList<>(subjects);
@@ -58,6 +67,9 @@ class JsonAdaptedStudent {
         this.guardianPhone = guardianPhone;
         if (homeworks != null) {
             this.homeworks.addAll(homeworks);
+        }
+        if (lessons != null) {
+            this.lessons.addAll(lessons);
         }
     }
 
@@ -72,6 +84,7 @@ class JsonAdaptedStudent {
         guardianName = source.getGuardianName().toString();
         guardianPhone = source.getGuardianPhone().toString();
         homeworks.addAll(source.getHomeworks().stream().map(JsonAdaptedHomework::new).toList());
+        lessons.addAll(source.getLessons().stream().map(JsonAdaptedLesson::new).toList());
     }
 
     /**
@@ -108,8 +121,22 @@ class JsonAdaptedStudent {
             modelHomeworks.add(homework);
         }
 
+        List<RegularLesson> modelLessons = new ArrayList<>();
+        for (JsonAdaptedLesson adapted : lessons) {
+            if (adapted == null) {
+                throw new IllegalValueException("Student's lessons list contains an empty entry.");
+            }
+            RegularLesson lesson = adapted.toModelType();
+            if (!modelSubjects.getSubjects().contains(lesson.getSubject())) {
+                throw new IllegalValueException("Lesson subject must be one of the student's subjects.");
+            }
+            if (modelLessons.contains(lesson)) {
+                throw new IllegalValueException("Student's lessons list contains duplicate lessons.");
+            }
+            modelLessons.add(lesson);
+        }
         return new Student(modelName, modelAcademicLevel, modelSubjects, modelPhone, modelGuardianName,
-                modelGuardianPhone, modelHomeworks);
+                modelGuardianPhone, modelHomeworks, modelLessons);
     }
 
     /**

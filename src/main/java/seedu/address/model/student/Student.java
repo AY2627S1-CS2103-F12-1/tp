@@ -6,9 +6,10 @@ import java.util.List;
 import java.util.Objects;
 
 import seedu.address.model.homework.Homework;
+import seedu.address.model.lesson.RegularLesson;
 
 /**
- * Represents a student profile with the six fields required by Add Student and the student's homework.
+ * Represents a student profile with six required fields, homework and regular weekly lessons.
  * Guarantees: immutable; all fields are present and validated by their value types.
  */
 public final class Student {
@@ -19,6 +20,7 @@ public final class Student {
     private final StudentName guardianName;
     private final StudentPhone guardianPhone;
     private final List<Homework> homeworks;
+    private final List<RegularLesson> lessons;
 
     /**
      * Creates a student with all six required Add Student fields and no homework.
@@ -37,6 +39,13 @@ public final class Student {
      */
     public Student(StudentName name, AcademicLevel academicLevel, TuitionSubjects subjects, StudentPhone phone,
             StudentName guardianName, StudentPhone guardianPhone, List<Homework> homeworks) {
+        this(name, academicLevel, subjects, phone, guardianName, guardianPhone, homeworks, List.of());
+    }
+
+    /** Creates a student with homework and weekly lessons in insertion order. */
+    public Student(StudentName name, AcademicLevel academicLevel, TuitionSubjects subjects, StudentPhone phone,
+            StudentName guardianName, StudentPhone guardianPhone, List<Homework> homeworks,
+            List<RegularLesson> lessons) {
         requireAllNonNull(name, academicLevel, subjects, phone, guardianName, guardianPhone, homeworks);
         this.name = name;
         this.academicLevel = academicLevel;
@@ -45,6 +54,7 @@ public final class Student {
         this.guardianName = guardianName;
         this.guardianPhone = guardianPhone;
         this.homeworks = List.copyOf(homeworks);
+        this.lessons = List.copyOf(lessons);
     }
 
     public StudentName getName() {
@@ -95,7 +105,17 @@ public final class Student {
      * @throws NullPointerException If {@code homeworks} or any homework in it is null.
      */
     public Student withHomeworks(List<Homework> homeworks) {
-        return new Student(name, academicLevel, subjects, phone, guardianName, guardianPhone, homeworks);
+        return new Student(name, academicLevel, subjects, phone, guardianName, guardianPhone, homeworks, lessons);
+    }
+
+    /** Returns this student's unmodifiable weekly lesson list. */
+    public List<RegularLesson> getLessons() {
+        return lessons;
+    }
+
+    /** Returns a copy with the given lessons, preserving all profile fields and homework. */
+    public Student withLessons(List<RegularLesson> lessons) {
+        return new Student(name, academicLevel, subjects, phone, guardianName, guardianPhone, homeworks, lessons);
     }
 
     /**
@@ -117,11 +137,12 @@ public final class Student {
                 && phone.equals(student.phone)
                 && guardianName.equals(student.guardianName)
                 && guardianPhone.equals(student.guardianPhone)
-                && homeworks.equals(student.homeworks);
+                && homeworks.equals(student.homeworks)
+                && lessons.equals(student.lessons);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, academicLevel, subjects, phone, guardianName, guardianPhone, homeworks);
+        return Objects.hash(name, academicLevel, subjects, phone, guardianName, guardianPhone, homeworks, lessons);
     }
 }

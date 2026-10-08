@@ -10,6 +10,7 @@ import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
 import seedu.address.logic.commands.HomeworkListCommand;
+import seedu.address.logic.commands.LessonAddCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.parser.HomeworkCommandParser;
 import seedu.address.model.homework.DueDate;
@@ -25,6 +26,7 @@ import seedu.address.model.student.TuitionSubjects;
 public final class HelpContent {
     public static final String SECTION_STUDENTS = "Students";
     public static final String SECTION_HOMEWORK = "Homework";
+    public static final String SECTION_LESSONS = "Lessons";
     public static final String SECTION_GENERAL = "General";
     public static final String FORMAT_NOTE = "In each format, items separated by | are alternatives; type any one"
             + " of them.";
@@ -36,7 +38,7 @@ public final class HelpContent {
                                     + TuitionSubjects.MESSAGE_CONSTRAINTS,
                             "add n/John Tan l/S3 s/MATH, PHYSICS p/91234567 gn/Mary Tan gp/98765432"),
                     new Entry(DeleteCommand.COMMAND_WORD, DeleteCommand.MESSAGE_USAGE,
-                            "Deletes the student at INDEX and all of their homework.", "delete 1"),
+                            "Deletes the student at INDEX and all of their homework and lessons.", "delete 1"),
                     new Entry(ListCommand.COMMAND_WORD, ListCommand.MESSAGE_USAGE,
                             "Shows all students in roster order, starting from the top.", ListCommand.COMMAND_WORD))),
             new Section(SECTION_HOMEWORK, List.of(
@@ -55,11 +57,15 @@ public final class HelpContent {
                             "Deletes homework number HOMEWORK_INDEX, as numbered by homework list, from the student"
                                     + " at STUDENT_INDEX.",
                             "hw del 1 2"))),
+            new Section(SECTION_LESSONS, List.of(
+                    new Entry("lesson add", LessonAddCommand.MESSAGE_USAGE,
+                            "Adds a weekly lesson to a student. Use a full weekday name and 24-hour HH:mm times.",
+                            "lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00"))),
             new Section(SECTION_GENERAL, List.of(
                     new Entry(HelpCommand.COMMAND_WORD, HelpCommand.COMMAND_WORD,
                             "Opens this help window. F1 also opens it, and Esc closes it.", HelpCommand.COMMAND_WORD),
                     new Entry(ClearCommand.COMMAND_WORD, ClearCommand.COMMAND_WORD,
-                            "Deletes all students and their homework. This cannot be undone.",
+                            "Deletes all students, homework and lessons. This cannot be undone.",
                             ClearCommand.COMMAND_WORD),
                     new Entry(ExitCommand.COMMAND_WORD, ExitCommand.COMMAND_WORD,
                             "Exits the app.", ExitCommand.COMMAND_WORD))));

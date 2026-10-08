@@ -70,6 +70,7 @@ public class AddressBookParser {
             case ListCommand.COMMAND_WORD, ListCommand.SHORT_COMMAND_WORD -> new ListCommandParser().parse(arguments);
             case ExitCommand.COMMAND_WORD -> new ExitCommand();
             case HelpCommand.COMMAND_WORD -> new HelpCommand();
+            case LessonCommandParser.COMMAND_WORD -> new LessonCommandParser().parse(arguments);
             case HomeworkCommandParser.COMMAND_WORD, HomeworkCommandParser.COMMAND_ALIAS ->
                 new HomeworkCommandParser(clock).parse(arguments);
             default -> {

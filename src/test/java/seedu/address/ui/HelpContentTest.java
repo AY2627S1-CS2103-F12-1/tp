@@ -20,6 +20,7 @@ import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
 import seedu.address.logic.commands.HomeworkListCommand;
+import seedu.address.logic.commands.LessonAddCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.parser.AddressBookParser;
 
@@ -30,7 +31,7 @@ public class HelpContentTest {
     public void getSections_sectionTitles_inDisplayOrder() {
         List<String> titles = HelpContent.getSections().stream().map(HelpContent.Section::title).toList();
         assertEquals(List.of(HelpContent.SECTION_STUDENTS, HelpContent.SECTION_HOMEWORK,
-                HelpContent.SECTION_GENERAL), titles);
+                HelpContent.SECTION_LESSONS, HelpContent.SECTION_GENERAL), titles);
     }
 
     @Test
@@ -42,6 +43,7 @@ public class HelpContentTest {
                 "homework add", HomeworkAddCommand.MESSAGE_USAGE,
                 "homework list", HomeworkListCommand.MESSAGE_USAGE,
                 "homework delete", HomeworkDeleteCommand.MESSAGE_USAGE,
+                "lesson add", LessonAddCommand.MESSAGE_USAGE,
                 HelpCommand.COMMAND_WORD, HelpCommand.COMMAND_WORD,
                 ClearCommand.COMMAND_WORD, ClearCommand.COMMAND_WORD,
                 ExitCommand.COMMAND_WORD, ExitCommand.COMMAND_WORD);
@@ -62,6 +64,7 @@ public class HelpContentTest {
                 "homework add", HomeworkAddCommand.class,
                 "homework list", HomeworkListCommand.class,
                 "homework delete", HomeworkDeleteCommand.class,
+                "lesson add", LessonAddCommand.class,
                 HelpCommand.COMMAND_WORD, HelpCommand.class,
                 ClearCommand.COMMAND_WORD, ClearCommand.class,
                 ExitCommand.COMMAND_WORD, ExitCommand.class);

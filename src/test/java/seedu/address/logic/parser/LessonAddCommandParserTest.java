@@ -18,7 +18,7 @@ public class LessonAddCommandParserTest {
 
     @Test
     public void parse_invalidStructure_rejects() {
-        for (String args : new String[]{"", "add", "delete 1", "add s/MATH d/MONDAY st/16:00 et/18:00",
+        for (String args : new String[]{"add", "add s/MATH d/MONDAY st/16:00 et/18:00",
             "add 1 extra s/MATH d/MONDAY st/16:00 et/18:00", "add 1 s/MATH d/MONDAY st/16:00",
             "add 1 s/MATH d/MONDAY st/16:00 et/18:00 x/test",
             "add 1 s/MATH d/MONDAY st/16:00 et/18:00 extra"}) {

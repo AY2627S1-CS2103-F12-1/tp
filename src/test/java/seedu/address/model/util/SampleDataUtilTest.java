@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import seedu.address.logic.parser.AddressBookParser;
 import seedu.address.model.Model;
 import seedu.address.model.homework.Homework;
+import seedu.address.model.lesson.RegularLesson;
 import seedu.address.model.student.Student;
 
 public class SampleDataUtilTest {
@@ -68,13 +69,23 @@ public class SampleDataUtilTest {
     }
 
     @Test
+    public void getSampleStudents_regularLessonSubjectsTakenByStudent() {
+        for (Student student : sampleStudents) {
+            for (RegularLesson lesson : student.getLessons()) {
+                assertTrue(student.getSubjects().getSubjects().contains(lesson.getSubject()),
+                        student.getName() + ": " + lesson.getSubject());
+            }
+        }
+    }
+
+    @Test
     public void getSampleAddressBook_holdsSampleStudentsInOrder() {
         assertEquals(List.of(sampleStudents), SampleDataUtil.getSampleAddressBook().getStudentList());
     }
 
     @Test
-    public void getSampleStudents_userGuideHomeworkExamples_succeed() {
-        // Each example in the User Guide's homework sections, tried on the roster that TutorFlow starts with
+    public void getSampleStudents_userGuideCommandExamples_succeed() {
+        // Each example below is tried on the roster that TutorFlow starts with
         String[][] examples = {
             {"homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15"},
             {"hw add 1 t/Attempt mechanics questions 1-5 s/PHYSICS due/2026-10-20"},
@@ -83,7 +94,8 @@ public class SampleDataUtilTest {
             {"homework list 1"},
             {"hw ls 3"},
             {"homework list 1", "homework delete 1 2"},
-            {"hw del 3 1"}
+            {"hw del 3 1"},
+            {"lesson list"}
         };
         AddressBookParser parser = new AddressBookParser(CLOCK);
         for (String[] example : examples) {

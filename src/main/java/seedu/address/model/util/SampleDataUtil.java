@@ -1,5 +1,7 @@
 package seedu.address.model.util;
 
+import java.time.DayOfWeek;
+import java.time.LocalTime;
 import java.util.List;
 
 import seedu.address.model.AddressBook;
@@ -8,6 +10,7 @@ import seedu.address.model.homework.DueDate;
 import seedu.address.model.homework.Homework;
 import seedu.address.model.homework.HomeworkStatus;
 import seedu.address.model.homework.Title;
+import seedu.address.model.lesson.RegularLesson;
 import seedu.address.model.student.AcademicLevel;
 import seedu.address.model.student.Student;
 import seedu.address.model.student.StudentName;
@@ -16,7 +19,7 @@ import seedu.address.model.student.TuitionSubject;
 import seedu.address.model.student.TuitionSubjects;
 
 /**
- * Contains utility methods for populating {@code AddressBook} with sample students and their homework.
+ * Contains utility methods for populating {@code AddressBook} with sample students, homework and regular lessons.
  */
 public class SampleDataUtil {
     /**
@@ -28,13 +31,15 @@ public class SampleDataUtil {
             new Student(new StudentName("Ethan Lim"), AcademicLevel.S3, new TuitionSubjects("MATH, PHYSICS"),
                 new StudentPhone("91234567"), new StudentName("Grace Lim"), new StudentPhone("98765432"),
                 List.of(getHomework("Quadratic equations worksheet", TuitionSubject.MATH, "2026-10-23"),
-                    getHomework("Kinematics practice set", TuitionSubject.PHYSICS, "2026-10-28"))),
+                    getHomework("Kinematics practice set", TuitionSubject.PHYSICS, "2026-10-28")),
+                List.of(getRegularLesson(TuitionSubject.MATH, DayOfWeek.MONDAY, "17:00", "18:30"))),
             new Student(new StudentName("Priya Nair"), AcademicLevel.J1, new TuitionSubjects("MATH, CHEMISTRY"),
                 new StudentPhone("82345671"), new StudentName("Ravi Nair"), new StudentPhone("96543218"),
                 List.of(getHomework("Integration by parts exercise", TuitionSubject.MATH, "2026-10-26",
                         HomeworkStatus.COMPLETED),
                     getHomework("Organic reaction pathways map", TuitionSubject.CHEMISTRY, "2026-11-02"),
-                    getHomework("Chemical equilibrium past paper", TuitionSubject.CHEMISTRY, "2026-11-09"))),
+                    getHomework("Chemical equilibrium past paper", TuitionSubject.CHEMISTRY, "2026-11-09")),
+                List.of(getRegularLesson(TuitionSubject.CHEMISTRY, DayOfWeek.SATURDAY, "15:00", "16:30"))),
             new Student(new StudentName("Marcus Tan"), AcademicLevel.S1, new TuitionSubjects("MATH"),
                 new StudentPhone("87654329"), new StudentName("Tan Mei Ling"), new StudentPhone("91827364"),
                 List.of(getHomework("Algebraic expansion worksheet", TuitionSubject.MATH, "2026-10-30"))),
@@ -76,6 +81,14 @@ public class SampleDataUtil {
     private static Homework getHomework(String title, TuitionSubject subject, String dueDate,
             HomeworkStatus status) {
         return new Homework(new Title(title), subject, DueDate.parseFullDate(dueDate), status, null);
+    }
+
+    /**
+     * Returns a regular lesson whose start and end times use {@code HH:mm} format.
+     */
+    private static RegularLesson getRegularLesson(TuitionSubject subject, DayOfWeek dayOfWeek, String startTime,
+            String endTime) {
+        return new RegularLesson(subject, dayOfWeek, LocalTime.parse(startTime), LocalTime.parse(endTime));
     }
 
 }

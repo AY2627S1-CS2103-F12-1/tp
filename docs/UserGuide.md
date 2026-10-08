@@ -190,9 +190,28 @@ Exits the program.
 
 Format: `exit`
 
+### Adding a regular lesson: `lesson add`
+
+Adds a weekly lesson to the student at the displayed student index.
+
+Format: `lesson add INDEX s/SUBJECT d/DAY st/START_TIME et/END_TIME`
+
+Example: `lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00`
+
+* Use a positive student index without leading zeroes. Use `list` to see the current indices.
+* Supply each prefix exactly once, in any order. Unknown prefixes are rejected.
+* `SUBJECT` must be MATH, PHYSICS or CHEMISTRY and must be one of the student's tuition subjects.
+* `DAY` must be a full weekday name, such as MONDAY. Subjects and days ignore case and surrounding spaces.
+* Times must use the 24-hour `HH:mm` format, such as `09:00`. End time must be later than start time on the same day; overnight lessons are not supported.
+* An identical lesson for the same student is rejected. Overlapping lessons across any students are rejected with the conflicting student's name and lesson details. Lessons that meet exactly at an endpoint are allowed.
+
+On success, TutorFlow shows `New lesson added: John Tan; MATH; MONDAY; 16:00-18:00` and saves the lesson automatically. The student's position, profile and homework remain unchanged. If saving fails, the addition is undone and TutorFlow reports that no lesson data was changed.
+
+Lesson listing and deletion will be added in a later increment. Currently, the success message confirms the new lesson, and saved lessons can be inspected in the data file.
+
 ### Saving the data
 
-TutorFlow saves your students and their homework automatically after every command that changes them. You do not need to save manually.
+TutorFlow saves your students, homework and regular lessons automatically after every command that changes them. You do not need to save manually.
 
 * Commands that do not change the data, such as `homework list`, `help` and `exit`, do not write to the data file.
 * If TutorFlow cannot save the data (for example, because the data file is read-only), the command is cancelled: its changes are undone and an error message is shown. For `homework add` and `homework delete`, the message says that no homework data was changed.
@@ -230,6 +249,7 @@ When editing the file, follow these rules:
 * Students are shown in the app in the order they appear in the file.
 * Each student needs `name`, `academicLevel`, `subjects`, `phone`, `guardianName` and `guardianPhone`, with the same rules as in [`add`](#adding-a-student-add). `subjects` is a list with one subject per entry. No two students may have the same name (ignoring case) and the same `phone`.
 * `homeworks` may be left out, or written as `[ ]`, for a student with no homework.
+* `lessons` may be left out, or written as `[ ]`, for a student with no regular lessons. Each lesson has `subject`, `dayOfWeek`, `startTime` and `endTime`, for example `{"subject":"MATH","dayOfWeek":"MONDAY","startTime":"16:00","endTime":"18:00"}`. The same subject, weekday, time and overlap rules as `lesson add` apply. Older files without `lessons` continue to work.
 * Each homework needs `title`, `subject`, `dueDate` and `status`. `title` follows the same rules as in [`homework add`](#adding-homework-to-a-student-homework-add), and `subject` must be one of the student's `subjects`.
 * `dueDate` must be a full date in `YYYY-MM-DD` format, such as `2026-10-23`. The short `MM-DD` form is not accepted in the data file, as TutorFlow never guesses the year of a saved date.
 * `status` is `ASSIGNED` or `COMPLETED`. `score` is a whole number such as `85` (not `85.5` or `"85"`), or `null` (or left out) if the homework has no score.

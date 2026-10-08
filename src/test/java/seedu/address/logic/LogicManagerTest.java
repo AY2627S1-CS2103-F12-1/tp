@@ -20,6 +20,7 @@ import seedu.address.logic.commands.ClearCommand;
 import seedu.address.logic.commands.CommandResult;
 import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
+import seedu.address.logic.commands.LessonAddCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.logic.parser.exceptions.ParseException;
@@ -52,6 +53,30 @@ public class LogicManagerTest {
         JsonUserPrefsStorage userPrefsStorage = new JsonUserPrefsStorage(temporaryFolder.resolve("userPrefs.json"));
         StorageManager storage = new StorageManager(addressBookStorage, userPrefsStorage);
         logic = new LogicManager(model, storage);
+    }
+
+    @Test
+    public void execute_lessonAdd_savesAndPreservesHomeworkAcrossReload() throws Exception {
+        logic.execute(ADD_STUDENT_COMMAND);
+        logic.execute("hw add 1 t/Algebra s/MATH due/2026-10-15");
+        logic.execute("lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00");
+        ReadOnlyAddressBook saved = addressBookStorage.readAddressBook().get();
+        assertEquals(model.getAddressBook(), new AddressBook(saved));
+        assertEquals(1, saved.getStudentList().get(0).getLessons().size());
+        logic.execute("hw del 1 1");
+        assertEquals(1, addressBookStorage.readAddressBook().get().getStudentList().get(0).getLessons().size());
+    }
+
+    @Test
+    public void execute_lessonSaveFails_rollsBackAndPreservesFile() throws Exception {
+        logic.execute(ADD_STUDENT_COMMAND);
+        String beforeFile = Files.readString(dataFilePath);
+        AddressBook before = new AddressBook(model.getAddressBook());
+        setUpLogic(before, getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+        assertCommandException("lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00",
+                LessonAddCommand.MESSAGE_SAVE_FAILURE);
+        assertEquals(before, model.getAddressBook());
+        assertEquals(beforeFile, Files.readString(dataFilePath));
     }
 
     @Test

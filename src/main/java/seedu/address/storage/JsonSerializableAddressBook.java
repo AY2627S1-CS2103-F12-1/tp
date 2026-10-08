@@ -63,6 +63,14 @@ class JsonSerializableAddressBook {
             if (addressBook.hasStudent(student)) {
                 throw new IllegalValueException(MESSAGE_DUPLICATE_STUDENT);
             }
+            for (var lesson : student.getLessons()) {
+                long overlaps = student.getLessons().stream().filter(lesson::clashesWith).count();
+                boolean clashesWithOthers = addressBook.getStudentList().stream()
+                        .flatMap(existing -> existing.getLessons().stream()).anyMatch(lesson::clashesWith);
+                if (overlaps > 1 || clashesWithOthers) {
+                    throw new IllegalValueException("The data file contains overlapping lessons.");
+                }
+            }
             addressBook.addStudent(student);
         }
         return addressBook;

@@ -41,12 +41,16 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
 
     private final Clock clock;
 
-    /** Creates a parser that infers the year of short-form due dates from the system clock. */
+    /**
+     * Creates a parser that infers the year of short-form due dates from the system clock.
+     */
     public HomeworkAddCommandParser() {
         this(Clock.systemDefaultZone());
     }
 
-    /** Creates a parser that infers the year of short-form due dates from {@code clock}. */
+    /**
+     * Creates a parser that infers the year of short-form due dates from {@code clock}.
+     */
     public HomeworkAddCommandParser(Clock clock) {
         this.clock = requireNonNull(clock);
     }
@@ -62,16 +66,54 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
         StrictArgumentTokenizer.TokenizedArguments tokenizedArguments =
                 StrictArgumentTokenizer.tokenizeWithPreamble(args, ALLOWED_PREFIXES, MESSAGE_INVALID_FORMAT);
         Map<String, String> values = tokenizedArguments.values();
+        validateTitlePrefixes(values);
+
+        String preamble = tokenizedArguments.preamble();
+        validateStudentIndexStructure(preamble);
+
+        String rawTitle = values.getOrDefault(PREFIX_TITLE, values.get(PREFIX_TITLE_ALIAS));
+        validateRequiredPrefixes(values, rawTitle);
+
+        Index studentIndex = ParserUtil.parseStrictIndex(preamble, Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
+        String rawDueDate = values.get(PREFIX_DUE_DATE);
+        try {
+            Homework homework = new Homework(new Title(rawTitle), TuitionSubject.parse(values.get(PREFIX_SUBJECT)),
+                    DueDate.parse(rawDueDate, LocalDate.now(clock)));
+            return new HomeworkAddCommand(studentIndex, homework, DueDate.isShortForm(rawDueDate));
+        } catch (IllegalArgumentException exception) {
+            throw new ParseException(exception.getMessage(), exception);
+        }
+    }
+
+    /**
+     * Checks that the title prefix and its alias are not both present in {@code values}.
+     *
+     * @throws ParseException If both title prefixes are present.
+     */
+    private static void validateTitlePrefixes(Map<String, String> values) throws ParseException {
         if (values.containsKey(PREFIX_TITLE) && values.containsKey(PREFIX_TITLE_ALIAS)) {
             throw new ParseException(String.format(StrictArgumentTokenizer.MESSAGE_REPEATED_PREFIX, PREFIX_TITLE));
         }
+    }
 
-        String preamble = tokenizedArguments.preamble();
+    /**
+     * Checks that {@code preamble} contains exactly one word for the student index.
+     *
+     * @throws ParseException If the index is missing or the preamble contains extra words.
+     */
+    private static void validateStudentIndexStructure(String preamble) throws ParseException {
         if (preamble.isEmpty() || preamble.split("\\s+").length != 1) {
             throw new ParseException(MESSAGE_INVALID_FORMAT);
         }
+    }
 
-        String rawTitle = values.getOrDefault(PREFIX_TITLE, values.get(PREFIX_TITLE_ALIAS));
+    /**
+     * Checks that {@code values} contains all required prefixes, accepting either title prefix.
+     * A null {@code rawTitle} means neither title prefix is present; an empty title is validated later.
+     *
+     * @throws ParseException If prefixes are missing, listed in the order title, subject, and due date.
+     */
+    private static void validateRequiredPrefixes(Map<String, String> values, String rawTitle) throws ParseException {
         List<String> missingPrefixes = new ArrayList<>();
         if (rawTitle == null) {
             missingPrefixes.add(PREFIX_TITLE);
@@ -84,16 +126,6 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
         }
         if (!missingPrefixes.isEmpty()) {
             throw new ParseException(String.format(MESSAGE_MISSING_PREFIXES, String.join(", ", missingPrefixes)));
-        }
-
-        Index studentIndex = ParserUtil.parseStrictIndex(preamble, Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
-        String rawDueDate = values.get(PREFIX_DUE_DATE);
-        try {
-            Homework homework = new Homework(new Title(rawTitle), TuitionSubject.parse(values.get(PREFIX_SUBJECT)),
-                    DueDate.parse(rawDueDate, LocalDate.now(clock)));
-            return new HomeworkAddCommand(studentIndex, homework, DueDate.isShortForm(rawDueDate));
-        } catch (IllegalArgumentException exception) {
-            throw new ParseException(exception.getMessage(), exception);
         }
     }
 }

@@ -125,9 +125,10 @@ Format: `homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|M
 * `SUBJECT` must be `MATH`, `PHYSICS` or `CHEMISTRY` (in any case), and the student must take that subject.
 * The due date must be a real calendar date in `YYYY-MM-DD` format. Past dates are accepted, so you can record homework that was assigned earlier.
 * The due date can also be given as `MM-DD`. The year is then this year, or next year if that date has already passed this year, and the result shows the year used.
+* For 29 February (`02-29` or `2-29`), the year is this year only if this year is a leap year and 29 February has not passed yet. Otherwise it is next year, and if next year is not a leap year, the date is rejected. For example, `due/2-29` is rejected throughout 2026, and gives `2028-02-29` throughout 2027.
 * In both formats, the month and day may have 1 or 2 digits, so `2026-2-5` means 5 February 2026 and `10-5` means 5 October. The year must have 4 digits.
 * A student cannot have two homework records with the same title (ignoring case), subject and due date. The same homework can be added to different students.
-* Each student card shows the number of homework records that are still assigned.
+* Each student card shows the number of homework records that are still assigned. Completed homework is not counted, but it still appears in `homework list`.
 
 Examples:
 * `homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15`
@@ -143,7 +144,9 @@ Format: `homework|hw list|ls STUDENT_INDEX`
 
 * `homework` can be shortened to `hw`, and `list` can be shortened to `ls`.
 * `STUDENT_INDEX` follows the same rules as in `homework add`.
-* Each homework is shown on one line as its number, title, subject and due date, e.g. `1. Complete algebra worksheet (MATH) - due 2026-10-15`.
+* The result starts with `Listed N homework records for NAME.` (`record` when there is only one) and `Homework for NAME:`, followed by one line per homework with its number, title, subject and due date, e.g. `1. Complete algebra worksheet (MATH) - due 2026-10-15`.
+* Completed homework is listed too. The list does not show whether a homework is assigned or completed.
+* If the student has no homework, the result is `No homework found for NAME.`
 * The numbers shown are the `HOMEWORK_INDEX` values used by `homework delete`. They change when homework is deleted.
 
 Examples:
@@ -152,7 +155,7 @@ Examples:
 
 ### Deleting a student: `delete`
 
-Deletes the specified student and their homework from the student list. The change is saved automatically.
+Deletes the specified student, together with their homework and regular lessons, from the student list. The change is saved automatically.
 
 Format: `delete INDEX`
 
@@ -160,7 +163,7 @@ Format: `delete INDEX`
 * If the list is empty or the index exceeds its size, no student is deleted.
 * Remaining students retain their order and are renumbered. Deletion cannot be undone.
 
-Example: `delete 2` deletes the second student and their homework.
+Example: `delete 2` deletes the second student and their homework and regular lessons.
 
 ### Deleting a student's homework: `homework delete`
 
@@ -282,6 +285,7 @@ When editing the file, follow these rules:
 * `status` is `ASSIGNED` or `COMPLETED`. `score` is a whole number such as `85` (not `85.5` or `"85"`), or `null` (or left out) if the homework has no score.
 * A student cannot have two homework records with the same title (ignoring case), subject and due date.
 * Values such as `math` or `s3` are accepted in any case, and extra spaces in names and titles are removed. TutorFlow writes them in its own format the next time it saves.
+* Spell every key exactly as shown above. A misspelled key that may be left out (`homeworks`, `lessons` or `score`) is ignored without an error: for example, with `homework` instead of `homeworks`, the student loads with no homework, and the next command that changes the data removes that homework from the file. A misspelled required key, such as `phne` instead of `phone`, makes the data file invalid (see the caution below).
 
 <div markdown="span" class="alert alert-warning">:exclamation: **Caution:**
 If your changes make the data file invalid, TutorFlow starts with no students at the next run (not with the sample students). The invalid file remains on disk until you run a command that changes the data, which overwrites it. So if TutorFlow starts with no students after you edit the file, close it without changing anything, fix the file and start TutorFlow again. Still, we recommend backing up the file before editing it.<br>

@@ -127,12 +127,12 @@ How the parsing works:
 
 The `Model` component,
 
-* stores all app data in an `AddressBook` object: the student roster (a `StudentRoster` of `Student` objects in insertion order), in which each `Student` holds its own `Homework` records. Lessons are not implemented yet; when they are, they can be added to `Student` or `AddressBook` in the same way.
+* stores all app data in an `AddressBook` object: the student roster (a `StudentRoster` of `Student` objects in insertion order), in which each `Student` holds its own `Homework` records and its own regular lessons (`RegularLesson` objects).
 * exposes the students as an unmodifiable `ObservableList<Student>` that the UI can observe and bind to, so the UI updates when the list changes. `ModelManager` passes every student operation (`hasStudent`, `addStudent`, `setStudent`, `getStudentList`) to its `AddressBook`.
 * stores a `UserPrefs` object that represents the user’s preferences (currently, just the GUI settings). This is exposed to the outside as a `ReadOnlyUserPrefs` object.
 * does not depend on any of the other three components (as the `Model` represents data entities of the domain, they should make sense on their own without depending on other components)
 
-The classes keep AB3's names (`AddressBook`, `ReadOnlyAddressBook`, `JsonAddressBookStorage`) to keep the change from AB3 small, but they now hold TutorFlow's students and homework.
+The classes keep AB3's names (`AddressBook`, `ReadOnlyAddressBook`, `JsonAddressBookStorage`) to keep the change from AB3 small, but they now hold TutorFlow's students, homework and lessons.
 
 ### Storage component
 
@@ -141,11 +141,11 @@ The classes keep AB3's names (`AddressBook`, `ReadOnlyAddressBook`, `JsonAddress
 <img src="images/StorageClassDiagram.png" width="550" />
 
 The `Storage` component,
-* can save both the app data (students and their homework) and user preference data in JSON format, and read them back into corresponding objects.
+* can save both the app data (students with their homework and lessons) and user preference data in JSON format, and read them back into corresponding objects.
 * is implemented by `StorageManager`, which delegates the actual JSON file access to `JsonAddressBookStorage` and `JsonUserPrefsStorage` (one class per data file).
 * depends on some classes in the `Model` component (because the `Storage` component's job is to save/retrieve objects that belong to the `Model`)
 
-The app data is saved in `data/tutorflow.json`. `JsonSerializableAddressBook` holds a `students` list of `JsonAdaptedStudent`, and each `JsonAdaptedStudent` holds a `homeworks` list of `JsonAdaptedHomework`. Jackson reads and writes the fields of these classes directly, so the JSON keys are the field names (`name`, `academicLevel`, `subjects`, `phone`, `guardianName`, `guardianPhone`, `homeworks`; and `title`, `subject`, `dueDate`, `status`, `score` for homework). Every value is a string, except `subjects` (a list of strings) and `score` (a whole number or `null`), so that a user can edit the file by hand.
+The app data is saved in `data/tutorflow.json`. `JsonSerializableAddressBook` holds a `students` list of `JsonAdaptedStudent`, and each `JsonAdaptedStudent` holds a `homeworks` list of `JsonAdaptedHomework` and a `lessons` list of `JsonAdaptedLesson`. Jackson reads and writes the fields of these classes directly, so the JSON keys are the field names (`name`, `academicLevel`, `subjects`, `phone`, `guardianName`, `guardianPhone`, `homeworks`, `lessons`; `title`, `subject`, `dueDate`, `status`, `score` for homework; and `subject`, `dayOfWeek`, `startTime`, `endTime` for lessons). Apart from the `homeworks` and `lessons` lists, every value is a string, except `subjects` (a list of strings) and `score` (a whole number or `null`), so that a user can edit the file by hand.
 
 Each adapted class checks its values in `toModelType()` with the same value classes that commands use, and throws an `IllegalValueException` with the `MISSING_FIELD_MESSAGE_FORMAT` message for a missing field or the value class's `MESSAGE_CONSTRAINTS` for an invalid one. Loading also rejects:
 
@@ -218,7 +218,7 @@ The student index refers to `Model#getStudentList()`. The homework index is the 
 
 `JsonAdaptedLesson` stores the four lesson fields inside each student's `lessons` array. A missing array is read as empty so existing data files remain compatible. Loading rejects invalid lesson fields, subject mismatches, duplicates and overlapping schedules. The existing `LogicManager` change detection and save rollback apply to lessons because `Student.equals` includes its lessons. The command supplies the lesson-specific save-failure message.
 
-Lesson listing and deletion are separate increments owned by Noel. They can use `Student.getLessons()` and `Student.withLessons()` without changing this storage format.
+Lesson listing is implemented by `LessonListCommand`, which reads each student's lessons through `Student.getLessons()`. Lesson deletion is a separate increment; it can use `Student.withLessons()` without changing this storage format.
 
 Manual check: add a MATH student, run `lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00`, and restart. Inspect `data/tutorflow.json` to confirm that the lesson remains. Try the same lesson again, an overlapping slot, and an adjacent slot; the first two should fail and the last should succeed. With the data file read-only, a new lesson should fail without changing either the file or the in-memory lessons.
 
@@ -229,7 +229,7 @@ Manual check: add a MATH student, run `lesson add 1 s/MATH d/MONDAY st/16:00 et/
 1. Before executing the command, `LogicManager` copies the current data: `new AddressBook(model.getAddressBook())`. The copy is cheap because `Student` and `Homework` are immutable, so only the list is copied.
 1. After the command succeeds, `LogicManager` compares the data with the copy. If they are equal, the command changed nothing (e.g. `homework list`, `help`, `exit`, or `clear` with no students), and nothing is saved.
 1. Otherwise, `LogicManager` calls `Storage#saveAddressBook`. If this throws an `IOException`, `LogicManager` restores the copy with `Model#setAddressBook` and throws a `CommandException` whose message comes from `Command#getSaveFailureMessage(defaultMessage)`.
-1. By default, `getSaveFailureMessage` returns the AB3 message (`LogicManager#FILE_OPS_ERROR_FORMAT`, or `FILE_OPS_PERMISSION_ERROR_FORMAT` when access is denied). `HomeworkAddCommand` and `HomeworkDeleteCommand` override it to return the messages from the specification. A new command that needs its own message only overrides this method.
+1. By default, `getSaveFailureMessage` returns the AB3 message (`LogicManager#FILE_OPS_ERROR_FORMAT`, or `FILE_OPS_PERMISSION_ERROR_FORMAT` when access is denied). `HomeworkAddCommand`, `HomeworkDeleteCommand` and `LessonAddCommand` override it to return their own messages (the homework messages are from the specification). A new command that needs its own message only overrides this method.
 
 #### Design considerations:
 
@@ -540,10 +540,10 @@ testers are expected to do more *exploratory* testing.
 
 ### Saving data
 
-1. Saving students and homework
+1. Saving students, homework and lessons
 
-   1. Add a student with `add`, and add homework to that student with `homework add`. Close the app and launch it again.<br>
-      Expected: The student and the homework are still shown.
+   1. Add a student with `add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777`. With the sample students, Aaron Koh is student 7, so run `homework add 7 t/Algebra worksheet s/MATH due/2026-12-01` and `lesson add 7 s/MATH d/SUNDAY st/20:00 et/21:00` (use Aaron Koh's index if it is not 7). Close the app and launch it again.<br>
+      Expected: The student, the homework and the lesson are still shown: `homework list 7` shows `1. Algebra worksheet (MATH) - due 2026-12-01`, and `lesson list` shows the lesson as `Aaron Koh; MATH; SUN; 20:00-21:00`.
 
 1. Dealing with a missing data file
 

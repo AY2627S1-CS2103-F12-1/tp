@@ -306,6 +306,23 @@ public class HomeworkAddCommandParserTest {
     }
 
     @Test
+    public void parse_unknownPrefixAndTitleAliasConflict_reportsInvalidFormat() {
+        assertParseFailure(parser, "1 t/Algebra title/Mechanics x/extra", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 x/extra t/Algebra title/Mechanics", MESSAGE_INVALID_FORMAT);
+    }
+
+    @Test
+    public void parse_repeatedPrefixAndTitleAliasConflict_reportsRepeatedPrefix() {
+        assertParseFailure(parser, "1 t/Algebra title/Mechanics s/MATH s/PHYSICS",
+                "Prefix s/ must be specified exactly once.");
+    }
+
+    @Test
+    public void parse_titleAliasConflictAndMissingIndex_reportsTitleRepeated() {
+        assertParseFailure(parser, "t/Algebra title/Mechanics", "Prefix title/ must be specified exactly once.");
+    }
+
+    @Test
     public void parse_repeatedPrefixAndInvalidIndex_reportsRepeatedPrefix() {
         assertParseFailure(parser, "0" + VALID_FIELDS + " due/2026-10-16",
                 "Prefix due/ must be specified exactly once.");

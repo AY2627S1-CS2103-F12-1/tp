@@ -11,6 +11,7 @@ import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
 import seedu.address.logic.commands.HomeworkListCommand;
 import seedu.address.logic.commands.LessonAddCommand;
+import seedu.address.logic.commands.LessonDeleteCommand;
 import seedu.address.logic.commands.LessonListCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.parser.HomeworkCommandParser;
@@ -66,7 +67,11 @@ public final class HelpContent {
                     new Entry(LessonCommandParser.COMMAND_WORD + " " + LessonCommandParser.SUBCOMMAND_LIST,
                             LessonListCommand.MESSAGE_USAGE,
                             "Lists every regular lesson in weekly chronological order.",
-                            LessonListCommand.MESSAGE_USAGE))),
+                            LessonListCommand.MESSAGE_USAGE),
+                    new Entry(LessonCommandParser.COMMAND_WORD + " " + LessonCommandParser.SUBCOMMAND_DELETE,
+                            LessonDeleteCommand.MESSAGE_USAGE,
+                            "Deletes the lesson numbered by lesson list.",
+                            "lesson delete 1"))),
             new Section(SECTION_GENERAL, List.of(
                     new Entry(HelpCommand.COMMAND_WORD, HelpCommand.COMMAND_WORD,
                             "Opens this help window. F1 also opens it, and Esc closes it.", HelpCommand.COMMAND_WORD),

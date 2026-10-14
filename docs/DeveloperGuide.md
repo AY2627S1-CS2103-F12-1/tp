@@ -218,7 +218,7 @@ The student index refers to `Model#getStudentList()`. The homework index is the 
 
 `JsonAdaptedLesson` stores the four lesson fields inside each student's `lessons` array. A missing array is read as empty so existing data files remain compatible. Loading rejects invalid lesson fields, subject mismatches, duplicates and overlapping schedules. The existing `LogicManager` change detection and save rollback apply to lessons because `Student.equals` includes its lessons. The command supplies the lesson-specific save-failure message.
 
-Lesson listing is implemented by `LessonListCommand`, which reads each student's lessons through `Student.getLessons()`. Lesson deletion is a separate increment; it can use `Student.withLessons()` without changing this storage format.
+`LessonListCommand` and `LessonDeleteCommand` use `LessonSchedule` to flatten lessons into the same weekday, start-time and student-name order. Therefore, the one-based index accepted by `lesson delete` always identifies the corresponding row from `lesson list`. Deletion replaces only that lesson's owner through `Student.withLessons()`, without changing the storage format.
 
 Manual check: add a MATH student, run `lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00`, and restart. Inspect `data/tutorflow.json` to confirm that the lesson remains. Try the same lesson again, an overlapping slot, and an adjacent slot; the first two should fail and the last should succeed. With the data file read-only, a new lesson should fail without changing either the file or the in-memory lessons.
 
@@ -537,6 +537,23 @@ testers are expected to do more *exploratory* testing.
       Expected: Similar to previous.
 
 1. _{ more test cases …​ }_
+
+### Deleting regular lessons
+
+1. Deleting a lesson from the weekly schedule
+
+   1. Prerequisites: At least two regular lessons exist. Check with `lesson list`.
+
+   1. Test case: `lesson delete 2`<br>
+      Expected: The second lesson shown by `lesson list` is deleted, its owner retains any other lessons, and the
+      result display shows the deleted lesson's details.
+
+   1. Test case: `lesson delete 0`<br>
+      Expected: No lesson is deleted. The result display shows an error message.
+
+   1. Other incorrect delete commands to try: `lesson delete`, `lesson delete 1 2`, `lesson delete x` (where x is
+      larger than the number of displayed lessons)<br>
+      Expected: Similar to previous.
 
 ### Saving data
 

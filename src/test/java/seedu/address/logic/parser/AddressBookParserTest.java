@@ -24,6 +24,7 @@ import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
 import seedu.address.logic.commands.HomeworkListCommand;
+import seedu.address.logic.commands.LessonDeleteCommand;
 import seedu.address.logic.commands.LessonListCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
@@ -120,6 +121,11 @@ public class AddressBookParserTest {
     @Test
     public void parseCommand_lessonList() throws Exception {
         assertEquals(new LessonListCommand(), parser.parseCommand("lesson list"));
+    }
+
+    @Test
+    public void parseCommand_lessonDelete() throws Exception {
+        assertEquals(new LessonDeleteCommand(Index.fromOneBased(2)), parser.parseCommand("lesson delete 2"));
     }
 
     @Test

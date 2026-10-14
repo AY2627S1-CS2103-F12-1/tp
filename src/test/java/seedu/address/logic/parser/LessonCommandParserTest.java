@@ -5,6 +5,8 @@ import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSucces
 
 import org.junit.jupiter.api.Test;
 
+import seedu.address.commons.core.index.Index;
+import seedu.address.logic.commands.LessonDeleteCommand;
 import seedu.address.logic.commands.LessonListCommand;
 
 public class LessonCommandParserTest {
@@ -13,6 +15,11 @@ public class LessonCommandParserTest {
     @Test
     public void parse_list_returnsLessonListCommand() {
         assertParseSuccess(parser, " list", new LessonListCommand());
+    }
+
+    @Test
+    public void parse_delete_returnsLessonDeleteCommand() {
+        assertParseSuccess(parser, " delete 2", new LessonDeleteCommand(Index.fromOneBased(2)));
     }
 
     @Test

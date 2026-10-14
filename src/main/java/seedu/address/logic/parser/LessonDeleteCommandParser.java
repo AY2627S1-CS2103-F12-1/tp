@@ -9,12 +9,16 @@ import seedu.address.logic.Messages;
 import seedu.address.logic.commands.LessonDeleteCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 
-/** Parses the arguments of {@code lesson delete} into a {@link LessonDeleteCommand}. */
+/**
+ * Parses the arguments of {@code lesson delete} into a {@link LessonDeleteCommand}.
+ */
 public class LessonDeleteCommandParser implements Parser<LessonDeleteCommand> {
     private static final String MESSAGE_INVALID_FORMAT = String.format(Messages.MESSAGE_INVALID_FORMAT_WITH_USAGE,
             LessonDeleteCommand.MESSAGE_USAGE);
 
-    /** Parses exactly one non-prefix lesson index. */
+    /**
+     * Parses exactly one non-prefix lesson index.
+     */
     @Override
     public LessonDeleteCommand parse(String args) throws ParseException {
         requireNonNull(args);

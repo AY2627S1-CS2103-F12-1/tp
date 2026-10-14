@@ -17,7 +17,9 @@ import seedu.address.model.lesson.LessonSchedule;
 import seedu.address.model.lesson.RegularLesson;
 import seedu.address.model.student.Student;
 
-/** Deletes a regular lesson identified by its one-based index in the lesson schedule. */
+/**
+ * Deletes a regular lesson identified by its one-based index in the lesson schedule.
+ */
 public class LessonDeleteCommand extends Command {
     public static final String MESSAGE_USAGE = "lesson delete LESSON_INDEX";
     public static final String MESSAGE_SUCCESS = "Deleted regular lesson:\n%s";
@@ -31,12 +33,16 @@ public class LessonDeleteCommand extends Command {
 
     private final Index displayedLessonIndex;
 
-    /** Creates a command that deletes the lesson at {@code displayedLessonIndex} in the displayed schedule. */
+    /**
+     * Creates a command that deletes the lesson at {@code displayedLessonIndex} in the displayed schedule.
+     */
     public LessonDeleteCommand(Index displayedLessonIndex) {
         this.displayedLessonIndex = requireNonNull(displayedLessonIndex);
     }
 
-    /** Deletes the selected lesson, logging unexpected errors without exposing implementation details. */
+    /**
+     * Deletes the selected lesson, logging unexpected errors without exposing implementation details.
+     */
     @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
@@ -48,7 +54,9 @@ public class LessonDeleteCommand extends Command {
         }
     }
 
-    /** Resolves the displayed index from the same sorted schedule used by {@link LessonListCommand}. */
+    /**
+     * Resolves the displayed index from the same sorted schedule used by {@link LessonListCommand}.
+     */
     private CommandResult deleteSelectedLesson(Model model) throws CommandException {
         List<LessonSchedule.Entry> orderedLessonSchedule = LessonSchedule.from(model.getStudentList());
         if (orderedLessonSchedule.isEmpty()) {

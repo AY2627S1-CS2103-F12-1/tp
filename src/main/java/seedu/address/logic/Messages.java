@@ -49,7 +49,9 @@ public class Messages {
                 + "; " + lesson.getStartTime() + "-" + lesson.getEndTime();
     }
 
-    /** Returns the deleted lesson in the detailed deletion-result format. */
+    /**
+     * Returns the deleted lesson in the detailed deletion-result format.
+     */
     public static String formatDeletedLesson(Student student, RegularLesson lesson) {
         return student.getName()
                 + "; Subject: " + lesson.getSubject()

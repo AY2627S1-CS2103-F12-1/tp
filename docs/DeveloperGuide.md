@@ -130,7 +130,7 @@ The `Model` component,
 
 * stores all app data in an `AddressBook` object: the student roster (a `StudentRoster` of `Student` objects in insertion order), in which each immutable `Student` holds its own `Homework` records and `RegularLesson` entries.
 * uses `LessonSchedule#from` to provide a view of all regular lessons ordered by weekday, start time, and student name without changing roster order.
-* exposes the students as an unmodifiable `ObservableList<Student>` that the UI can observe and bind to, so the UI updates when the list changes. `ModelManager` passes every student operation (`hasStudent`, `addStudent`, `setStudent`, `getStudentList`) to its `AddressBook`.
+* exposes the students as an unmodifiable `ObservableList<Student>` that the UI can observe and bind to, so the UI updates when the list changes. `ModelManager` passes every student operation (`hasStudent`, `addStudent`, `setStudent`, `deleteStudent`, `getStudentList`) to its `AddressBook`.
 * stores a `UserPrefs` object that represents the user’s preferences (currently, just the GUI settings). This is exposed to the outside as a `ReadOnlyUserPrefs` object.
 * does not depend on any of the other three components (as the `Model` represents data entities of the domain, they should make sense on their own without depending on other components)
 
@@ -182,6 +182,12 @@ Classes used by multiple components are in the `seedu.address.commons` package.
 ## **Implementation**
 
 This section describes some noteworthy details on how certain features are implemented.
+
+### Listing and deleting students
+
+`AddressBookParser` routes `list` and its alias `ls` to `ListCommandParser`, which rejects non-blank arguments. `ListCommand` reads `Model#getStudentList()` without changing it and asks the UI to show the roster from the top. It reports `No students found.` for an empty roster, `Listed 1 student.` for one student, and `Listed N students.` otherwise. Because the model is unchanged, `LogicManager` does not save the data file.
+
+`AddressBookParser` routes `delete INDEX` to `DeleteCommandParser`. It uses `ParserUtil#parseStrictIndex`, so zero, signs, leading zeroes, extra arguments, and numbers beyond the supported integer range are rejected before execution. `DeleteCommand` checks the one-based index against the current roster, then calls `Model#deleteStudent` for that student. The remaining students retain their order and receive new displayed indexes. Homework and regular lessons belong to the deleted `Student`, so they are removed with it. `LogicManager` saves the changed roster; if saving fails, it restores the previous roster, including that student's homework and lessons.
 
 ### Homework management
 
@@ -443,6 +449,24 @@ testers are expected to do more *exploratory* testing.
        Expected: The most recent window size and location are retained.
 
 1. _{ more test cases …​ }_
+
+### Listing and deleting students
+
+1. Listing students
+
+   1. In a fresh test folder, launch the app and run `list` (or `ls`).<br>
+      Expected: The student cards are shown from the top in roster order and the result says `Listed 6 students.` for the six sample students. `list 1` should instead show a format error without changing the roster.
+
+   1. In a test copy of the data, leave exactly one student and run `list`. Then delete that student and run `list` again.<br>
+      Expected: The first result says `Listed 1 student.` and the second says `No students found.`
+
+1. Deleting a student with related records
+
+   1. In a fresh test folder, add a student taking MATH. Use the index shown on their card to add a homework record and a regular lesson, then run `delete INDEX` using that student's index.<br>
+      Expected: Only that student disappears; the remaining students retain their order and are renumbered. Restart the app and run `list`: the deleted student is still absent. Their homework and lesson are absent from `data/tutorflow.json`.
+
+   1. Try `delete 0`, `delete 01`, and an index larger than the roster size.<br>
+      Expected: Each shows an error and leaves the roster unchanged.
 
 ### Deleting homework
 

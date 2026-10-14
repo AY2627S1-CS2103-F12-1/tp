@@ -109,6 +109,7 @@ Examples:
 
 Shows all students in roster order, starting from the top. The displayed indexes start at 1.
 If the roster is empty, the app shows `No students found.` This command does not change the roster.
+With one student, the result says `Listed 1 student.`; with more students, it says `Listed N students.` using the actual count.
 
 Format: `list` or `ls` (no parameters)
 
@@ -161,6 +162,7 @@ Format: `delete INDEX`
 
 * `INDEX` is the number shown next to the student, starting at 1. It must be a positive whole number without leading zeroes.
 * If the list is empty or the index exceeds its size, no student is deleted.
+  The app shows `The student index provided is invalid.`
 * Remaining students retain their order and are renumbered. Deletion cannot be undone.
 
 Example: `delete 2` deletes the second student and their homework and regular lessons.

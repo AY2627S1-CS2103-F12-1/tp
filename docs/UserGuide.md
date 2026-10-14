@@ -75,7 +75,7 @@ TutorFlow is a **desktop application for private tutors to manage their students
 
 ### Viewing help: `help`
 
-Opens the help window, which lists the commands `add`, `list`, `delete`, `homework add`, `homework list`, `homework delete`, `lesson add`, `lesson list`, `help`, `clear` and `exit`, grouped into Students, Homework, Lessons and General. Each command is shown with its format, what it does and an example.
+Opens the help window, which lists the commands `add`, `list`, `delete`, `homework add`, `homework list`, `homework delete`, `lesson add`, `lesson list`, `lesson delete`, `help`, `clear` and `exit`, grouped into Students, Homework, Lessons and General. Each command is shown with its format, what it does and an example.
 
 ![help window](images/helpMessage.png)
 
@@ -212,7 +212,19 @@ Example: `lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00`
 
 On success, TutorFlow shows `New lesson added: John Tan; MATH; MONDAY; 16:00-18:00` and saves the lesson automatically. The student's position, profile and homework remain unchanged. If saving fails, the addition is undone and TutorFlow reports that no lesson data was changed.
 
-Lesson deletion will be added in a later increment.
+### Deleting a regular lesson: `lesson delete`
+
+Deletes a regular lesson from the weekly schedule. Use `lesson list` first to see the displayed lesson indices.
+
+Format: `lesson delete LESSON_INDEX`
+
+* `LESSON_INDEX` must be a positive whole number without leading zeroes.
+* The lesson index is the number shown by `lesson list`, rather than a student index.
+* The remaining lessons keep their weekly order and are renumbered.
+* If there are no lessons, TutorFlow reports `There are no regular lessons to delete.`
+* Deletion cannot be undone.
+
+Example: `lesson delete 2`
 
 ### Listing all regular lessons: `lesson list`
 
@@ -238,7 +250,7 @@ Listed 2 regular lessons.
 TutorFlow saves your students, homework and regular lessons automatically after every command that changes them. You do not need to save manually.
 
 * Commands that do not change the data, such as `homework list`, `lesson list`, `help` and `exit`, do not write to the data file.
-* If TutorFlow cannot save the data (for example, because the data file is read-only), the command is cancelled: its changes are undone and an error message is shown. For `homework add` and `homework delete`, the message says that no homework data was changed.
+* If TutorFlow cannot save the data (for example, because the data file is read-only), the command is cancelled: its changes are undone and an error message is shown. Homework and lesson commands state that their respective data was not changed.
 
 ### Editing the data file
 
@@ -328,5 +340,6 @@ Action | Format, Examples
 **Homework list** | <code>homework&#124;hw list&#124;ls STUDENT_INDEX</code><br> e.g., `homework list 1`
 **Lesson add** | `lesson add INDEX s/SUBJECT d/DAY st/START_TIME et/END_TIME`<br> e.g., `lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00`
 **Lesson list** | `lesson list`
+**Lesson delete** | `lesson delete LESSON_INDEX`<br> e.g., `lesson delete 2`
 **Help** | `help`
 **Exit** | `exit`

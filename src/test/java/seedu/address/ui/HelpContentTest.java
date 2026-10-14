@@ -21,6 +21,7 @@ import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
 import seedu.address.logic.commands.HomeworkListCommand;
 import seedu.address.logic.commands.LessonAddCommand;
+import seedu.address.logic.commands.LessonDeleteCommand;
 import seedu.address.logic.commands.LessonListCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.parser.AddressBookParser;
@@ -46,6 +47,7 @@ public class HelpContentTest {
                 Map.entry("homework delete", HomeworkDeleteCommand.MESSAGE_USAGE),
                 Map.entry("lesson add", LessonAddCommand.MESSAGE_USAGE),
                 Map.entry("lesson list", LessonListCommand.MESSAGE_USAGE),
+                Map.entry("lesson delete", LessonDeleteCommand.MESSAGE_USAGE),
                 Map.entry(HelpCommand.COMMAND_WORD, HelpCommand.COMMAND_WORD),
                 Map.entry(ClearCommand.COMMAND_WORD, ClearCommand.COMMAND_WORD),
                 Map.entry(ExitCommand.COMMAND_WORD, ExitCommand.COMMAND_WORD));
@@ -68,6 +70,7 @@ public class HelpContentTest {
                 Map.entry("homework delete", HomeworkDeleteCommand.class),
                 Map.entry("lesson add", LessonAddCommand.class),
                 Map.entry("lesson list", LessonListCommand.class),
+                Map.entry("lesson delete", LessonDeleteCommand.class),
                 Map.entry(HelpCommand.COMMAND_WORD, HelpCommand.class),
                 Map.entry(ClearCommand.COMMAND_WORD, ClearCommand.class),
                 Map.entry(ExitCommand.COMMAND_WORD, ExitCommand.class));

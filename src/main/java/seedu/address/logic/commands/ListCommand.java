@@ -14,13 +14,21 @@ public class ListCommand extends Command {
     public static final String MESSAGE_USAGE = "Usage: list";
     public static final String MESSAGE_INVALID_FORMAT = "Invalid command format.\n" + MESSAGE_USAGE;
     public static final String MESSAGE_EMPTY = "No students found.";
+    public static final String MESSAGE_SUCCESS_SINGULAR = "Listed 1 student.";
     public static final String MESSAGE_SUCCESS = "Listed %d students.";
 
     @Override
     public CommandResult execute(Model model) {
         requireNonNull(model);
         int count = model.getStudentList().size();
-        String feedback = count == 0 ? MESSAGE_EMPTY : String.format(MESSAGE_SUCCESS, count);
+        String feedback;
+        if (count == 0) {
+            feedback = MESSAGE_EMPTY;
+        } else if (count == 1) {
+            feedback = MESSAGE_SUCCESS_SINGULAR;
+        } else {
+            feedback = String.format(MESSAGE_SUCCESS, count);
+        }
         return new CommandResult(feedback, false, false, true);
     }
 }

@@ -5,12 +5,17 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static seedu.address.logic.Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX;
 import static seedu.address.logic.Messages.MESSAGE_UNKNOWN_COMMAND;
 import static seedu.address.testutil.Assert.assertThrows;
+import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
+import static seedu.address.testutil.TypicalHomeworks.MECHANICS;
+import static seedu.address.testutil.TypicalRegularLessons.MONDAY_MATH;
+import static seedu.address.testutil.TypicalRegularLessons.TUESDAY_PHYSICS;
 import static seedu.address.testutil.TypicalStudents.getTypicalAddressBook;
 
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,6 +37,7 @@ import seedu.address.model.UserPrefs;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
 import seedu.address.storage.StorageManager;
+import seedu.address.testutil.StudentBuilder;
 
 public class LogicManagerTest {
     private static final IOException DUMMY_IO_EXCEPTION = new IOException("dummy IO exception");
@@ -159,12 +165,30 @@ public class LogicManagerTest {
     }
 
     @Test
-    public void execute_deleteStudentSaveFails_restoresStudentAndHomework() {
-        setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+    public void execute_deleteStudentWithHomeworkAndLesson_removesDataAcrossReload() throws Exception {
+        AddressBook initial = new AddressBook();
+        initial.addStudent(new StudentBuilder().withHomeworks(ALGEBRA).withLessons(MONDAY_MATH).build());
+        initial.addStudent(new StudentBuilder().withName("Jane Tan").withPhone("92345678")
+                .withSubjects("PHYSICS").withHomeworks(MECHANICS).withLessons(TUESDAY_PHYSICS).build());
+        setUpLogic(initial, addressBookStorage);
+
+        logic.execute("delete 1");
+
+        ReadOnlyAddressBook reloaded = addressBookStorage.readAddressBook().get();
+        assertEquals(List.of(initial.getStudentList().get(1)), reloaded.getStudentList());
+        assertEquals(reloaded.getStudentList(), logic.getStudentList());
+    }
+
+    @Test
+    public void execute_deleteStudentSaveFails_restoresStudentHomeworkAndLesson() {
+        AddressBook initial = getTypicalAddressBook();
+        initial.setStudent(initial.getStudentList().get(0),
+                initial.getStudentList().get(0).withLessons(List.of(MONDAY_MATH)));
+        setUpLogic(initial, getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
         String expectedMessage = String.format(LogicManager.FILE_OPS_ERROR_FORMAT, DUMMY_IO_EXCEPTION.getMessage());
 
         assertCommandFailure("delete 1", CommandException.class, expectedMessage,
-                new ModelManager(getTypicalAddressBook(), new UserPrefs()));
+                new ModelManager(initial, new UserPrefs()));
     }
 
     @Test

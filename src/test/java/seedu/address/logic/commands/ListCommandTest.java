@@ -26,6 +26,19 @@ public class ListCommandTest {
     }
 
     @Test
+    public void execute_oneStudent_usesSingularMessageAndPreservesRoster() {
+        ModelManager model = new ModelManager();
+        Student student = new StudentBuilder().build();
+        model.addStudent(student);
+
+        CommandResult result = new ListCommand().execute(model);
+
+        assertEquals(ListCommand.MESSAGE_SUCCESS_SINGULAR, result.getFeedbackToUser());
+        assertEquals(student, model.getStudentList().get(0));
+        assertTrue(result.isShowStudentList());
+    }
+
+    @Test
     public void execute_studentsPresent_preservesRosterOrder() {
         ModelManager model = new ModelManager();
         Student first = new StudentBuilder().build();

@@ -7,8 +7,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalHomeworks.ATOMIC_STRUCTURE;
 import static seedu.address.testutil.TypicalHomeworks.MECHANICS;
+import static seedu.address.testutil.TypicalRegularLessons.MONDAY_MATH;
+import static seedu.address.testutil.TypicalRegularLessons.TUESDAY_PHYSICS;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 
@@ -126,6 +129,36 @@ public class StudentUiTest {
                 assertTrue(scrollBar.getOrientation() == Orientation.VERTICAL || !scrollBar.isVisible(),
                         "horizontal scroll bar is visible");
             }
+        });
+    }
+
+    @Test
+    public void upcomingPanel_displaysSortedLessonsAndOutstandingHomework() throws Exception {
+        runOnFxThread(() -> {
+            ObservableList<Student> students = FXCollections.observableArrayList(
+                    new StudentBuilder().withName("Zoe Tan").withLessons(TUESDAY_PHYSICS)
+                            .withHomeworks(MECHANICS, ATOMIC_STRUCTURE).build(),
+                    new StudentBuilder().withName("Amy Lim").withPhone("91234568").withLessons(MONDAY_MATH)
+                            .withHomeworks(ALGEBRA).build());
+            Parent panel = (Parent) new UpcomingPanel(students).getRoot();
+            @SuppressWarnings("unchecked")
+            ListView<String> lessonListView = (ListView<String>) panel.lookup("#lessonListView");
+            @SuppressWarnings("unchecked")
+            ListView<String> homeworkListView = (ListView<String>) panel.lookup("#homeworkListView");
+
+            assertEquals(List.of("MON 17:00 - 18:30\nAmy Lim \u00b7 MATH",
+                    "TUE 19:00 - 20:30\nZoe Tan \u00b7 PHYSICS"), lessonListView.getItems());
+            assertEquals(List.of("Complete algebra worksheet\nAmy Lim \u00b7 MATH \u00b7 Due 2026-10-15",
+                    "Attempt mechanics questions 1-5\nZoe Tan \u00b7 PHYSICS \u00b7 Due 2026-10-20"),
+                    homeworkListView.getItems());
+            assertEquals("2 lessons", labelText(panel, "lessonCount"));
+            assertEquals("2 tasks", labelText(panel, "homeworkCount"));
+
+            students.set(0, students.get(0).withLessons(List.of()).withHomeworks(List.of()));
+
+            assertEquals(List.of("MON 17:00 - 18:30\nAmy Lim \u00b7 MATH"), lessonListView.getItems());
+            assertEquals(List.of("Complete algebra worksheet\nAmy Lim \u00b7 MATH \u00b7 Due 2026-10-15"),
+                    homeworkListView.getItems());
         });
     }
 

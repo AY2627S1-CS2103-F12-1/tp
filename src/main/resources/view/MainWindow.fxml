@@ -7,6 +7,7 @@
 <?import javafx.scene.control.MenuBar?>
 <?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.image.Image?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
@@ -45,7 +46,10 @@
           </padding>
         </StackPane>
 
-        <StackPane fx:id="studentListPanelPlaceholder" VBox.vgrow="ALWAYS" minHeight="200" prefHeight="230" />
+        <HBox VBox.vgrow="ALWAYS" minHeight="200" prefHeight="230">
+          <StackPane fx:id="studentListPanelPlaceholder" minWidth="300" HBox.hgrow="ALWAYS" />
+          <StackPane fx:id="upcomingPanelPlaceholder" minWidth="220" prefWidth="280" />
+        </HBox>
 
         <StackPane fx:id="statusbarPlaceholder" VBox.vgrow="NEVER" />
       </VBox>

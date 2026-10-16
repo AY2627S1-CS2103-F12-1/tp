@@ -176,6 +176,43 @@
     -fx-text-fill: #20313a;
 }
 
+.upcoming-panel {
+    -fx-background-color: #edf3f5;
+}
+
+.upcoming-title {
+    -fx-font-size: 18px;
+    -fx-text-fill: #20313a;
+}
+
+.upcoming-section-title {
+    -fx-font-size: 13px;
+    -fx-text-fill: #354a55;
+}
+
+.upcoming-count {
+    -fx-font-size: 12px;
+    -fx-text-fill: #5c727d;
+}
+
+.upcoming-panel .list-view,
+.upcoming-panel .list-cell:empty,
+.upcoming-panel .list-cell:filled:even,
+.upcoming-panel .list-cell:filled:odd {
+    -fx-background-color: #edf3f5;
+}
+
+.upcoming-panel .list-cell:filled:selected {
+    -fx-background-color: #dbe7eb;
+}
+
+.upcoming-panel .upcoming-entry {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+    -fx-text-fill: #20313a;
+    -fx-padding: 5 8 5 8;
+}
+
 .stack-pane {
      -fx-background-color: derive(#1d1d1d, 20%);
 }

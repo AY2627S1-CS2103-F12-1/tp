@@ -1,6 +1,7 @@
 package seedu.address.ui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -11,6 +12,9 @@ import static seedu.address.testutil.TypicalRegularLessons.MONDAY_MATH;
 import static seedu.address.testutil.TypicalRegularLessons.TUESDAY_PHYSICS;
 
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
@@ -140,7 +144,8 @@ public class StudentUiTest {
                             .withHomeworks(MECHANICS, ATOMIC_STRUCTURE).build(),
                     new StudentBuilder().withName("Amy Lim").withPhone("91234568").withLessons(MONDAY_MATH)
                             .withHomeworks(ALGEBRA).build());
-            Parent panel = (Parent) new UpcomingPanel(students).getRoot();
+            Parent panel = (Parent) new UpcomingPanel(students,
+                    Clock.fixed(Instant.parse("2026-10-16T00:00:00Z"), ZoneOffset.UTC)).getRoot();
             @SuppressWarnings("unchecked")
             ListView<String> lessonListView = (ListView<String>) panel.lookup("#lessonListView");
             @SuppressWarnings("unchecked")
@@ -148,16 +153,26 @@ public class StudentUiTest {
 
             assertEquals(List.of("MON 17:00 - 18:30\nAmy Lim \u00b7 MATH",
                     "TUE 19:00 - 20:30\nZoe Tan \u00b7 PHYSICS"), lessonListView.getItems());
-            assertEquals(List.of("Complete algebra worksheet\nAmy Lim \u00b7 MATH \u00b7 Due 2026-10-15",
+            assertEquals(List.of("Complete algebra worksheet (overdue)\nAmy Lim \u00b7 MATH \u00b7 Due 2026-10-15",
                     "Attempt mechanics questions 1-5\nZoe Tan \u00b7 PHYSICS \u00b7 Due 2026-10-20"),
                     homeworkListView.getItems());
             assertEquals("2 lessons", labelText(panel, "lessonCount"));
             assertEquals("2 tasks", labelText(panel, "homeworkCount"));
 
+            ListCell<String> firstHomeworkCell = homeworkListView.getCellFactory().call(homeworkListView);
+            firstHomeworkCell.updateListView(homeworkListView);
+            firstHomeworkCell.updateIndex(0);
+            assertTrue(firstHomeworkCell.getGraphic().getStyleClass().contains("overdue-homework"));
+
+            ListCell<String> secondHomeworkCell = homeworkListView.getCellFactory().call(homeworkListView);
+            secondHomeworkCell.updateListView(homeworkListView);
+            secondHomeworkCell.updateIndex(1);
+            assertFalse(secondHomeworkCell.getGraphic().getStyleClass().contains("overdue-homework"));
+
             students.set(0, students.get(0).withLessons(List.of()).withHomeworks(List.of()));
 
             assertEquals(List.of("MON 17:00 - 18:30\nAmy Lim \u00b7 MATH"), lessonListView.getItems());
-            assertEquals(List.of("Complete algebra worksheet\nAmy Lim \u00b7 MATH \u00b7 Due 2026-10-15"),
+            assertEquals(List.of("Complete algebra worksheet (overdue)\nAmy Lim \u00b7 MATH \u00b7 Due 2026-10-15"),
                     homeworkListView.getItems());
         });
     }

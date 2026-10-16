@@ -218,6 +218,11 @@
     -fx-padding: 5 8 5 8;
 }
 
+.upcoming-panel .overdue-homework {
+    -fx-font-weight: bold;
+    -fx-text-fill: #b00020;
+}
+
 .stack-pane {
      -fx-background-color: derive(#1d1d1d, 20%);
 }

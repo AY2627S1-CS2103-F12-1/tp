@@ -13,7 +13,9 @@ import org.junit.jupiter.api.io.TempDir;
 
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
+import javafx.geometry.Orientation;
 import javafx.scene.control.ListView;
+import javafx.scene.control.SplitPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.Region;
@@ -82,6 +84,7 @@ public class MainWindowTest {
         runOnFxThread(() -> {
             Stage stage = new Stage();
             new MainWindow(stage, logic, Path.of("data", "tutorflow.json")).fillInnerParts();
+            stage.getScene().getRoot().applyCss();
             @SuppressWarnings("unchecked")
             ListView<Student> listView = (ListView<Student>) stage.getScene().getRoot().lookup("#studentListView");
             TextField commandBox = (TextField) stage.getScene().getRoot().lookup("#commandTextField");
@@ -94,6 +97,28 @@ public class MainWindowTest {
             assertEquals(-1, listView.getSelectionModel().getSelectedIndex());
             assertEquals("Listed 2 students.", resultDisplay.getText());
             assertEquals("", commandBox.getText());
+        });
+    }
+
+    @Test
+    public void fillInnerParts_sectionsCanBeResized() throws Exception {
+        StorageManager storage = new StorageManager(
+                new JsonAddressBookStorage(temporaryFolder.resolve("addressBook.json")),
+                new JsonUserPrefsStorage(temporaryFolder.resolve("userPrefs.json")));
+        Logic logic = new LogicManager(new ModelManager(), storage);
+
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+            new MainWindow(stage, logic, Path.of("data", "tutorflow.json")).fillInnerParts();
+            Region root = (Region) stage.getScene().getRoot();
+            root.applyCss();
+
+            SplitPane verticalPane = (SplitPane) root.lookup("#verticalSplitPane");
+            SplitPane contentPane = (SplitPane) root.lookup("#contentSplitPane");
+
+            assertEquals(Orientation.VERTICAL, verticalPane.getOrientation());
+            assertEquals(3, verticalPane.getItems().size());
+            assertEquals(2, contentPane.getItems().size());
         });
     }
 

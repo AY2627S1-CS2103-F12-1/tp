@@ -16,8 +16,11 @@ public class Messages {
             "STUDENT_INDEX must be a positive whole number without leading zeroes.";
     public static final String MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX =
             "HOMEWORK_INDEX must be a positive whole number without leading zeroes.";
+    public static final String MESSAGE_INVALID_LESSON_INDEX_SYNTAX =
+            "LESSON_INDEX must be a positive whole number without leading zeroes.";
     public static final String MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX = "The student index provided is invalid.";
     public static final String MESSAGE_INVALID_HOMEWORK_DISPLAYED_INDEX = "The homework index provided is invalid.";
+    public static final String MESSAGE_INVALID_LESSON_DISPLAYED_INDEX = "The lesson index provided is invalid.";
     public static final String MESSAGE_NOT_IMPLEMENTED = "This command is not implemented yet.";
 
     /** Returns all six student fields in the Add Student success-message format. */
@@ -44,6 +47,16 @@ public class Messages {
                 + "; " + lesson.getSubject()
                 + "; " + lesson.getDayOfWeek().name().substring(0, 3)
                 + "; " + lesson.getStartTime() + "-" + lesson.getEndTime();
+    }
+
+    /**
+     * Returns the deleted lesson in the detailed deletion-result format.
+     */
+    public static String formatDeletedLesson(Student student, RegularLesson lesson) {
+        return student.getName()
+                + "; Subject: " + lesson.getSubject()
+                + "; Day: " + lesson.getDayOfWeek().name().substring(0, 3)
+                + "; Time: " + lesson.getStartTime() + "-" + lesson.getEndTime();
     }
 
 }

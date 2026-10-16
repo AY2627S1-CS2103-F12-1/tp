@@ -13,6 +13,7 @@ import seedu.address.commons.core.index.Index;
 import seedu.address.logic.Messages;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.Model;
+import seedu.address.model.lesson.LessonSchedule;
 import seedu.address.model.lesson.RegularLesson;
 import seedu.address.model.student.Student;
 
@@ -22,6 +23,7 @@ public class LessonAddCommand extends Command {
     public static final String MESSAGE_SUBJECT = "The selected student is not registered for this subject.";
     public static final String MESSAGE_DUPLICATE = "This lesson already exists.";
     public static final String MESSAGE_CLASH = "This lesson clashes with an existing lesson: ";
+    public static final String MESSAGE_MULTIPLE_CLASHES = "This lesson clashes with the following existing lessons:\n";
     public static final String MESSAGE_INTERNAL = "TutorFlow could not add the lesson due to an internal error.";
     public static final String MESSAGE_SAVE_FAILURE = "The lesson could not be added because TutorFlow could not "
             + "save the updated data. No lesson data was changed.";
@@ -61,12 +63,15 @@ public class LessonAddCommand extends Command {
         if (student.getLessons().contains(lesson)) {
             throw new CommandException(MESSAGE_DUPLICATE);
         }
-        for (Student other : students) {
-            for (RegularLesson existing : other.getLessons()) {
-                if (lesson.clashesWith(existing)) {
-                    throw new CommandException(MESSAGE_CLASH + other.getName() + "; " + existing);
-                }
-            }
+        List<String> clashingLessons = LessonSchedule.from(students).stream()
+                .filter(entry -> lesson.clashesWith(entry.lesson()))
+                .map(entry -> entry.student().getName() + "; " + entry.lesson())
+                .toList();
+        if (!clashingLessons.isEmpty()) {
+            String message = clashingLessons.size() == 1
+                    ? MESSAGE_CLASH + clashingLessons.get(0)
+                    : MESSAGE_MULTIPLE_CLASHES + String.join("\n", clashingLessons);
+            throw new CommandException(message);
         }
         List<RegularLesson> updated = new ArrayList<>(student.getLessons());
         updated.add(lesson);

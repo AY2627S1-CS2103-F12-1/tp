@@ -191,9 +191,9 @@ This section describes some noteworthy details on how certain features are imple
 
 ### Homework management
 
-Homework is managed with five commands: `homework add`, `homework list`, `homework edit`, `homework marks` and `homework delete`. `hw` is an alias for `homework`.
+Homework is managed with six commands: `homework add`, `homework list`, `homework upcoming`, `homework edit`, `homework marks` and `homework delete`. `hw` is an alias for `homework`.
 
-**Parsing.** `AddressBookParser` passes the arguments of both `homework` and `hw` to `HomeworkCommandParser`. This dispatcher reads the first word as the subcommand and hands the rest to `HomeworkAddCommandParser` (`add`), `HomeworkListCommandParser` (`list` or `ls`), `HomeworkEditCommandParser` (`edit` or `e`), `HomeworkMarksCommandParser` (`marks` or `m`) or `HomeworkDeleteCommandParser` (`delete` or `del`). A missing or unknown subcommand produces an "Invalid command format." error that lists the usage of all five subcommands. Usage messages show alternatives (aliases and the short date form) separated by `|` and optional parts in `[ ]`, e.g. `homework|hw list|ls STUDENT_INDEX [all]`. This keeps one `AddressBookParser` case per command word, and a new subcommand only needs a new case in the dispatcher.
+**Parsing.** `AddressBookParser` passes the arguments of both `homework` and `hw` to `HomeworkCommandParser`. This dispatcher reads the first word as the subcommand and hands the rest to `HomeworkAddCommandParser` (`add`), `HomeworkListCommandParser` (`list` or `ls`), `HomeworkUpcomingCommandParser` (`upcoming` or `up`), `HomeworkEditCommandParser` (`edit` or `e`), `HomeworkMarksCommandParser` (`marks` or `m`) or `HomeworkDeleteCommandParser` (`delete` or `del`). A missing or unknown subcommand produces an "Invalid command format." error that lists the usage of all six subcommands. Usage messages show alternatives (aliases and the short date form) separated by `|` and optional parts in `[ ]`, e.g. `homework|hw list|ls STUDENT_INDEX [all]`. This keeps one `AddressBookParser` case per command word, and a new subcommand only needs a new case in the dispatcher.
 
 The subcommand parsers use `StrictArgumentTokenizer`, which rejects unknown and repeated prefixes, and `ParserUtil#parseStrictIndex`, which rejects signs and leading zeroes. They use `StrictArgumentTokenizer` with plain string prefixes instead of AB3's `ArgumentTokenizer` with `CliSyntax` prefixes (both since removed) because the specification requires unknown prefixes to be rejected, which `ArgumentTokenizer` cannot do: it only splits on prefixes it is given, so an unknown prefix silently becomes part of the previous value. `StudentAddParser` shares the same tokenizer for the same reason. `HomeworkAddCommandParser` reports only the first error it finds, in this order:
 
@@ -212,6 +212,8 @@ The student index refers to `Model#getStudentList()`. The homework index is the 
 
 **Listing.** `homework list` is read-only and returns the list as text in the result display. `HomeworkListCommandParser` accepts a student index optionally followed by the word `all`, and passes `LocalDate.now(clock)` and whether `all` was given to `HomeworkListCommand`. `HomeworkListCommand#formatHomeworkList(student, today, isAllShown)` keeps the zero-based positions of the homework to show (all of them, or only the upcoming ones), sorts the positions by due date with the stable `Stream#sorted`, so homework due on the same date stays in insertion order, and prints each record in the format of `HomeworkListCommand#MESSAGE_HOMEWORK_LINE` with its insertion-order number, e.g. `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score 5/10`. Printing the insertion-order number, not the position in the sorted list, keeps the numbers valid as `HOMEWORK_INDEX` for the other homework commands.
 
+**Upcoming homework across students.** `homework upcoming` is also read-only and returns text in the result display. `HomeworkUpcomingCommandParser` accepts no preamble and at most one `due/` prefix, whose value here is a number of days, not a date. It checks the value against `0|[1-9][0-9]{0,2}` and then against the maximum of 365 (at most three digits, so the value always fits in an `int`), uses 7 if `due/` is left out, and passes `LocalDate.now(clock)` and the number of days to `HomeworkUpcomingCommand`. The command searches `model.getAddressBook().getStudentList()`, the whole roster, rather than relying on the displayed list, so a future filtered student list would not hide any homework. It pairs each homework with its student in roster order and insertion order, keeps the pairs for which `Homework#isUpcoming(today)` holds and the due date is not after `today.plusDays(days)`, and sorts them by due date with the stable `Stream#sorted`, so homework due on the same date stays in roster order, then insertion order. Each pair is printed in the format of `HomeworkUpcomingCommand#MESSAGE_HOMEWORK_LINE`, e.g. `Ethan Lim; Quadratic equations worksheet; MATH; Due: 2026-10-23; Score: 5/10`. The lines are not numbered, because a position in this list is not a `HOMEWORK_INDEX`.
+
 **Editing.** `HomeworkEditCommandParser` uses the prefixes of `homework add`, all optional, and reports errors in this order: an unknown or repeated prefix, both `title/` and `t/` given (reported as a repeated `title/`), indices that are not exactly two words or no field to edit (both reported as an invalid command format), the student index syntax, the homework index syntax, and then the title, subject and due date. It stores the new values in a `HomeworkEditCommand.EditHomeworkDescriptor`, a record in which `null` means "unchanged". `HomeworkEditCommand` checks, in order, the student index, that the student has homework, the homework index, that the student takes the (possibly new) subject, that the edit changes something (`Homework#equals`), and that the edited homework is not the same as any *other* homework of the student. `EditHomeworkDescriptor#applyTo` copies the score, so editing never changes it. On success, the command shows the edited record followed by `HomeworkListCommand#formatHomeworkList(editedStudent, today, false)`, so the tutor sees the upcoming list as `homework list` would show it after the edit.
 
 The sequence diagram below shows how `hw e 1 2 t/Algebra` is executed. `h` is the 2nd homework of the 1st student `s`, and `s2` is `s.withHomeworks(updated)`, a copy of `s` whose homework list holds `edited` in place of `h`. The checks that can reject the edit are left out.
@@ -229,11 +231,11 @@ The sequence diagram below shows how `hw m 1 2 score/5/10` is executed. The pars
 
 **Due date forms.** A due date is given as `YYYY-MM-DD` or `MM-DD`, and in both forms the month and day may have 1 or 2 digits (`2026-2-5`, `10-5`). `DueDate` matches each form with a regular expression that allows only 4-digit years and 1- or 2-digit months and days, then builds the date with `LocalDate#of`, which rejects dates that do not exist (such as `2-30`). The stored date is a `LocalDate`, so it is always shown padded (`2026-02-05`), and `10-5` and `10-05` give equal due dates.
 
-**Year inference.** For a due date given as `MM-DD`, `DueDate#parse(rawDate, today)` picks this year, or next year if the date has passed. If the date does not exist this year (29 February in a non-leap year), next year is used; if it does not exist next year either, the date is invalid. A next year after 9999 is also invalid. `HomeworkAddCommandParser` and `HomeworkEditCommandParser` hold a `java.time.Clock` (`Clock.systemDefaultZone()` in production, passed down from `AddressBookParser` through `HomeworkCommandParser`) and compute `today` as `LocalDate.now(clock)`, so tests pass a fixed clock and never depend on the real date. `HomeworkListCommandParser` uses the same clock to decide which homework is upcoming. The parsers tell `HomeworkAddCommand` and `HomeworkEditCommand` whether the year was inferred, so the success message can show it.
+**Year inference.** For a due date given as `MM-DD`, `DueDate#parse(rawDate, today)` picks this year, or next year if the date has passed. If the date does not exist this year (29 February in a non-leap year), next year is used; if it does not exist next year either, the date is invalid. A next year after 9999 is also invalid. `HomeworkAddCommandParser` and `HomeworkEditCommandParser` hold a `java.time.Clock` (`Clock.systemDefaultZone()` in production, passed down from `AddressBookParser` through `HomeworkCommandParser`) and compute `today` as `LocalDate.now(clock)`, so tests pass a fixed clock and never depend on the real date. `HomeworkListCommandParser` and `HomeworkUpcomingCommandParser` use the same clock to decide which homework is upcoming. Because the parsers run for every command entered, today is recomputed each time. The parsers tell `HomeworkAddCommand` and `HomeworkEditCommand` whether the year was inferred, so the success message can show it.
 
 **Unexpected errors.** Each homework command catches any unexpected `RuntimeException` in `execute`, logs it with its stack trace, and throws a `CommandException` with a short internal-error message instead, so the user never sees a stack trace. `Model#setStudent` is the last step of `homework add`, `homework edit`, `homework marks` and `homework delete`, so such an error leaves the student's homework unchanged.
 
-**Persistence.** Homework is saved as part of each student (see [Storage component](#storage-component)). `homework add`, `homework edit`, `homework marks` and `homework delete` change the data, so `LogicManager` saves it after them; `homework list` changes nothing and never writes the data file. If saving fails, the change is undone and the error message is the one from the specification, e.g. `HomeworkAddCommand#MESSAGE_SAVE_FAILURE` ("The homework could not be added because TutorFlow could not save the updated data. No homework data was changed."), as described in [Saving after a command](#saving-after-a-command).
+**Persistence.** Homework is saved as part of each student (see [Storage component](#storage-component)). `homework add`, `homework edit`, `homework marks` and `homework delete` change the data, so `LogicManager` saves it after them; `homework list` and `homework upcoming` change nothing and never write the data file. If saving fails, the change is undone and the error message is the one from the specification, e.g. `HomeworkAddCommand#MESSAGE_SAVE_FAILURE` ("The homework could not be added because TutorFlow could not save the updated data. No homework data was changed."), as described in [Saving after a command](#saving-after-a-command).
 
 #### Design considerations:
 
@@ -241,7 +243,7 @@ The sequence diagram below shows how `hw m 1 2 score/5/10` is executed. The pars
 
 * **Alternative 1 (current choice):** Each `Student` holds its own homework list.
   * Pros: A student and their homework stay together, and a student index plus a homework index identify one record without separate homework IDs.
-  * Cons: Every change to homework builds a new `Student`.
+  * Cons: Every change to homework builds a new `Student`, and listing homework across students, as `homework upcoming` does, has to go through every student's list.
 
 * **Alternative 2:** One homework list in the model, with each record referring to its student.
   * Pros: Easy to show all homework across students.
@@ -264,7 +266,7 @@ Manual check: add a MATH student, run `lesson add 1 s/MATH d/MONDAY st/16:00 et/
 `LogicManager#execute` saves the data after each command that changes it, and undoes the change if the data cannot be saved, so the data shown in the app always matches the data file.
 
 1. Before executing the command, `LogicManager` copies the current data: `new AddressBook(model.getAddressBook())`. The copy is cheap because `Student` and `Homework` are immutable, so only the list is copied.
-1. After the command succeeds, `LogicManager` compares the data with the copy. If they are equal, the command changed nothing (e.g. `homework list`, `help`, `exit`, or `clear` with no students), and nothing is saved.
+1. After the command succeeds, `LogicManager` compares the data with the copy. If they are equal, the command changed nothing (e.g. `homework list`, `homework upcoming`, `help`, `exit`, or `clear` with no students), and nothing is saved.
 1. Otherwise, `LogicManager` calls `Storage#saveAddressBook`. If this throws an `IOException`, `LogicManager` restores the copy with `Model#setAddressBook` and throws a `CommandException` whose message comes from `Command#getSaveFailureMessage(defaultMessage)`.
 1. By default, `getSaveFailureMessage` returns the AB3 message (`LogicManager#FILE_OPS_ERROR_FORMAT`, or `FILE_OPS_PERMISSION_ERROR_FORMAT` when access is denied). The homework commands that change data (`HomeworkAddCommand`, `HomeworkEditCommand`, `HomeworkMarksCommand`, `HomeworkDeleteCommand`), `LessonAddCommand` and `LessonDeleteCommand` override it to return their own messages (the homework messages are from the specification). A new command that needs its own message only overrides this method.
 
@@ -575,6 +577,25 @@ testers are expected to do more *exploratory* testing.
 
    1. Test case: `hw ls 5 ALL`<br>
       Expected: An invalid command format error, as `all` must be in lowercase.
+
+1. Listing upcoming homework of all students
+
+   1. Prerequisites: Start with the sample students. Run `hw add 3 t/Today drill s/MATH due/TODAY`, then `hw add 1 t/Today forces s/PHYSICS due/TODAY` and `hw add 5 t/Old worksheet s/MATH due/2026-10-01`, replacing `TODAY` with today's date in `YYYY-MM-DD` form.
+
+   1. Test case: `hw up due/0`<br>
+      Expected: `Found 2 homework records due from TODAY to TODAY.`, then Ethan Lim's `Today forces` line before Marcus Tan's `Today drill` line (roster order, not the order they were added). `Old worksheet` is not shown, as it is overdue.
+
+   1. Test case: `hw up`<br>
+      Expected: The summary ends with the date 7 days after today, and the lines are sorted by due date. The data file is not modified.
+
+   1. Test case: `hw up due/365`, then `hw ls 1`<br>
+      Expected: Every homework due today or later is shown. The order in `hw up` is not the numbering in `hw ls 1`.
+
+   1. Incorrect commands to try: `hw up due/366`, `hw up due/007`, `hw up due/-1`, `hw up due/1.5`, `hw up due/2026-10-20`, `hw up due/`<br>
+      Expected: `Days must be a whole number from 0 to 365 without leading zeroes.`
+
+   1. Other incorrect commands to try: `hw up 3`, `hw up x/3`, `hw up due/3 due/7`<br>
+      Expected: An invalid command format error with the usage `homework|hw upcoming|up [due/DAYS]`, or, for the last one, `Prefix due/ must be specified exactly once.`
 
 1. Editing homework
 

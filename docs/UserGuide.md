@@ -75,7 +75,7 @@ TutorFlow is a **desktop application for private tutors to manage their students
 
 ### Viewing help: `help`
 
-Opens the help window, which lists the commands `add`, `list`, `delete`, `homework add`, `homework list`, `homework edit`, `homework marks`, `homework delete`, `lesson add`, `lesson list`, `lesson delete`, `help`, `clear` and `exit`, grouped into Students, Homework, Lessons and General. Each command is shown with its format, what it does and an example.
+Opens the help window, which lists the commands `add`, `list`, `delete`, `homework add`, `homework list`, `homework upcoming`, `homework edit`, `homework marks`, `homework delete`, `lesson add`, `lesson list`, `lesson delete`, `help`, `clear` and `exit`, grouped into Students, Homework, Lessons and General. Each command is shown with its format, what it does and an example.
 
 ![help window](images/helpMessage.png)
 
@@ -154,6 +154,35 @@ Format: `homework|hw list|ls STUDENT_INDEX [all]`
 Examples:
 * `homework list 1`
 * `hw ls 2 all` lists all homework of the 2nd student, including overdue homework.
+
+### Listing upcoming homework of all students: `homework upcoming`
+
+Shows the homework of all students that is due in the next few days, earliest due date first, with the score of each.
+
+Format: `homework|hw upcoming|up [due/DAYS]`
+
+* `homework` can be shortened to `hw`, and `upcoming` can be shortened to `up`.
+* `DAYS` is a **number of days, not a date**: the homework shown is due from today to `DAYS` days after today, both days included. For example, on 2026-10-17, `due/3` shows homework due from 2026-10-17 to 2026-10-20, and `due/0` shows homework due today only.
+* `DAYS` must be a whole number from 0 to 365 without signs, decimals, spaces or leading zeroes (`0` itself is accepted). If `due/` is left out, `DAYS` is 7.
+* Homework due before today is left out. Homework is shown whether or not it has marks.
+* The homework of every student is searched, not only the students shown in the student list.
+* Homework is sorted by due date, earliest first. Homework due on the same date is shown in the order of the students in the student list, and then in the order it was added.
+* The result starts with `Found N homework records due from START to END.` (`record` when there is only one), followed by one line per homework with the student's name, title, subject, due date and score, e.g. `Ethan Lim; Quadratic equations worksheet; MATH; Due: 2026-10-23; Score: 5/10`. Homework without marks shows `Score: Not recorded`.
+* If no homework is due in that period, the result is `No homework due from START to END.`
+* The lines are not numbered, and their order is not the `HOMEWORK_INDEX` used by other homework commands. To edit, score or delete a record shown here, find its number with [`homework list STUDENT_INDEX`](#listing-a-students-homework-homework-list).
+* This command does not change your data.
+
+Examples:
+* `hw up` shows the homework due in the next 7 days. With the sample students on 2026-10-17, the result is:
+
+  ```
+  Found 1 homework record due from 2026-10-17 to 2026-10-24.
+  Ethan Lim; Quadratic equations worksheet; MATH; Due: 2026-10-23; Score: Not recorded
+  ```
+* `hw up due/3` shows the homework due from today to 3 days later. With the sample students on 2026-10-17, the result is `No homework due from 2026-10-17 to 2026-10-20.`
+* `hw up due/7` is the same as `hw up`.
+* `hw up due/0` shows the homework due today.
+* `hw upcoming due/7` is the same as `hw up due/7`.
 
 ### Editing a student's homework: `homework edit`
 
@@ -308,7 +337,7 @@ Listed 2 regular lessons.
 
 TutorFlow saves your students, homework and regular lessons automatically after every command that changes them. You do not need to save manually.
 
-* Commands that do not change the data, such as `homework list`, `lesson list`, `help` and `exit`, do not write to the data file.
+* Commands that do not change the data, such as `homework list`, `homework upcoming`, `lesson list`, `help` and `exit`, do not write to the data file.
 * If TutorFlow cannot save the data (for example, because the data file is read-only), the command is cancelled: its changes are undone and an error message is shown. Homework and lesson commands state that their respective data was not changed.
 
 ### Editing the data file
@@ -399,6 +428,7 @@ Action | Format, Examples
 **Homework edit** | <code>homework&#124;hw edit&#124;e STUDENT_INDEX HOMEWORK_INDEX [title/&#124;t/TITLE] [s/SUBJECT] [due/YYYY-MM-DD&#124;MM-DD]</code><br> e.g., `hw edit 1 2 t/Revise mechanics s/PHYSICS due/2026-11-10`
 **Homework list** | <code>homework&#124;hw list&#124;ls STUDENT_INDEX [all]</code><br> e.g., `homework list 1`, `hw ls 2 all`
 **Homework marks** | <code>homework&#124;hw marks&#124;m STUDENT_INDEX HOMEWORK_INDEX score/[SCORE]</code><br> e.g., `hw m 1 2 score/5/10`, `hw m 1 2 score/17`, `hw m 1 2 score/`
+**Homework upcoming** | <code>homework&#124;hw upcoming&#124;up [due/DAYS]</code><br> e.g., `hw up`, `hw up due/3`
 **Lesson add** | `lesson add INDEX s/SUBJECT d/DAY st/START_TIME et/END_TIME`<br> e.g., `lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00`
 **Lesson list** | `lesson list`
 **Lesson delete** | `lesson delete LESSON_INDEX`<br> e.g., `lesson delete 2`

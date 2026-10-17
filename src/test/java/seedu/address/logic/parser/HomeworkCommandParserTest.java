@@ -18,6 +18,7 @@ import seedu.address.logic.commands.HomeworkEditCommand;
 import seedu.address.logic.commands.HomeworkEditCommand.EditHomeworkDescriptor;
 import seedu.address.logic.commands.HomeworkListCommand;
 import seedu.address.logic.commands.HomeworkMarksCommand;
+import seedu.address.logic.commands.HomeworkUpcomingCommand;
 import seedu.address.model.homework.Score;
 import seedu.address.model.student.TuitionSubject;
 
@@ -28,6 +29,7 @@ public class HomeworkCommandParserTest {
     private static final String MESSAGE_INVALID_FORMAT = "Invalid command format.\n"
             + "Usage: homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD\n"
             + "homework|hw list|ls STUDENT_INDEX [all]\n"
+            + "homework|hw upcoming|up [due/DAYS]\n"
             + "homework|hw edit|e STUDENT_INDEX HOMEWORK_INDEX [title/|t/TITLE] [s/SUBJECT] "
             + "[due/YYYY-MM-DD|MM-DD]\n"
             + "homework|hw marks|m STUDENT_INDEX HOMEWORK_INDEX score/[SCORE]\n"
@@ -55,6 +57,16 @@ public class HomeworkCommandParserTest {
     @Test
     public void parse_listAlias_returnsHomeworkListCommand() {
         assertParseSuccess(parser, " ls 5 all", new HomeworkListCommand(Index.fromOneBased(5), TODAY, true));
+    }
+
+    @Test
+    public void parse_upcoming_returnsHomeworkUpcomingCommand() {
+        assertParseSuccess(parser, " upcoming due/3", new HomeworkUpcomingCommand(TODAY, 3));
+    }
+
+    @Test
+    public void parse_upcomingAlias_returnsHomeworkUpcomingCommand() {
+        assertParseSuccess(parser, " up", new HomeworkUpcomingCommand(TODAY, 7));
     }
 
     @Test
@@ -117,5 +129,11 @@ public class HomeworkCommandParserTest {
     public void parse_invalidSubcommandArguments_reportsSubcommandError() {
         assertParseFailure(parser, " list",
                 "Invalid command format.\nUsage: homework|hw list|ls STUDENT_INDEX [all]");
+    }
+
+    @Test
+    public void parse_invalidUpcomingArguments_reportsSubcommandError() {
+        assertParseFailure(parser, " up 3",
+                "Invalid command format.\nUsage: homework|hw upcoming|up [due/DAYS]");
     }
 }

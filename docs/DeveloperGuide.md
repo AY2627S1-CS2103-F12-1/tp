@@ -191,9 +191,9 @@ This section describes some noteworthy details on how certain features are imple
 
 ### Homework management
 
-Homework is managed with three commands: `homework add`, `homework list` and `homework delete`. `hw` is an alias for `homework`.
+Homework is managed with five commands: `homework add`, `homework list`, `homework edit`, `homework marks` and `homework delete`. `hw` is an alias for `homework`.
 
-**Parsing.** `AddressBookParser` passes the arguments of both `homework` and `hw` to `HomeworkCommandParser`. This dispatcher reads the first word as the subcommand and hands the rest to `HomeworkAddCommandParser` (`add`), `HomeworkListCommandParser` (`list` or `ls`) or `HomeworkDeleteCommandParser` (`delete` or `del`). A missing or unknown subcommand produces an "Invalid command format." error that lists the usage of all three subcommands. Usage messages show alternatives (aliases and the short date form) separated by `|`, e.g. `homework|hw list|ls STUDENT_INDEX`. This keeps one `AddressBookParser` case per command word, and future subcommands (edit, score; their classes exist as placeholders) only need a new case in the dispatcher.
+**Parsing.** `AddressBookParser` passes the arguments of both `homework` and `hw` to `HomeworkCommandParser`. This dispatcher reads the first word as the subcommand and hands the rest to `HomeworkAddCommandParser` (`add`), `HomeworkListCommandParser` (`list` or `ls`), `HomeworkEditCommandParser` (`edit` or `e`), `HomeworkMarksCommandParser` (`marks` or `m`) or `HomeworkDeleteCommandParser` (`delete` or `del`). A missing or unknown subcommand produces an "Invalid command format." error that lists the usage of all five subcommands. Usage messages show alternatives (aliases and the short date form) separated by `|` and optional parts in `[ ]`, e.g. `homework|hw list|ls STUDENT_INDEX [all]`. This keeps one `AddressBookParser` case per command word, and a new subcommand only needs a new case in the dispatcher.
 
 The subcommand parsers use `StrictArgumentTokenizer`, which rejects unknown and repeated prefixes, and `ParserUtil#parseStrictIndex`, which rejects signs and leading zeroes. They use `StrictArgumentTokenizer` with plain string prefixes instead of AB3's `ArgumentTokenizer` with `CliSyntax` prefixes (both since removed) because the specification requires unknown prefixes to be rejected, which `ArgumentTokenizer` cannot do: it only splits on prefixes it is given, so an unknown prefix silently becomes part of the previous value. `StudentAddParser` shares the same tokenizer for the same reason. `HomeworkAddCommandParser` reports only the first error it finds, in this order:
 
@@ -204,17 +204,25 @@ The subcommand parsers use `StrictArgumentTokenizer`, which rejects unknown and 
 1. Student index syntax.
 1. The title, then the subject, then the due date.
 
-**Model.** `Student` is immutable and holds its `Homework` records in insertion order. To add or delete homework, a command copies the student's homework list, changes the copy, and calls `Model#setStudent(target, target.withHomeworks(updatedList))`, which replaces the student at the same position in the roster. The change to the observable student list refreshes the student card, which shows `Student#getUpcomingHomeworkCount(today)`, the number of homework records due today or later. `homework list` is read-only and returns the list as text in the result display, one line per record in the format of `HomeworkListCommand#MESSAGE_HOMEWORK_LINE` (e.g. `1. Complete algebra worksheet (MATH) - due 2026-10-15`).
+**Model.** `Student` is immutable and holds its `Homework` records in insertion order. A `Homework` has a title, subject and due date, and an optional `Score`. To add, edit, score or delete homework, a command copies the student's homework list, changes the copy (`add`, `set` or `remove`), and calls `Model#setStudent(target, target.withHomeworks(updatedList))`, which replaces the student at the same position in the roster. The change to the observable student list refreshes the student card, which shows `Student#getUpcomingHomeworkCount(today)`, the number of homework records for which `Homework#isUpcoming(today)` holds (due today or later). `StudentListPanel` passes `LocalDate.now()` as `today` when it creates a card.
 
-The student index refers to `Model#getStudentList()`. The homework index is the one-based position in that student's homework list; it is not stored and changes when earlier homework is deleted. Two homework records of the same student are duplicates when `Homework#isSameHomework` holds: same title ignoring case, same subject and same due date.
+The student index refers to `Model#getStudentList()`. The homework index is the one-based position in that student's homework list (insertion order); it is not stored and changes only when earlier homework is deleted. Editing or scoring homework replaces it at the same position, so its index stays the same. Two homework records of the same student are duplicates when `Homework#isSameHomework` holds: same title ignoring case, same subject and same due date. The score is not part of this identity.
+
+**Score.** `Score` holds the marks obtained and the total marks as two `int`s and keeps the ratio as given (`5/10` is not simplified). `Score#parse` accepts `MARKS_OBTAINED/TOTAL_MARKS` only: it matches the whole input against `(0|[1-9][0-9]*)/(0|[1-9][0-9]*)`, so signs, decimals, spaces and leading zeroes are rejected with `Score#MESSAGE_CONSTRAINTS`. A number that matches but does not fit in an `int` is reported with `Score#MESSAGE_TOO_LARGE`, and the constructor then rejects a total of 0 and marks above the total. The data file stores a score as this text, e.g. `"5/10"`. `Messages#formatScore` shows a missing score as `Not recorded`.
+
+**Listing.** `homework list` is read-only and returns the list as text in the result display. `HomeworkListCommandParser` accepts a student index optionally followed by the word `all`, and passes `LocalDate.now(clock)` and whether `all` was given to `HomeworkListCommand`. `HomeworkListCommand#formatHomeworkList(student, today, isAllShown)` keeps the zero-based positions of the homework to show (all of them, or only the upcoming ones), sorts the positions by due date with the stable `Stream#sorted`, so homework due on the same date stays in insertion order, and prints each record in the format of `HomeworkListCommand#MESSAGE_HOMEWORK_LINE` with its insertion-order number, e.g. `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score 5/10`. Printing the insertion-order number, not the position in the sorted list, keeps the numbers valid as `HOMEWORK_INDEX` for the other homework commands.
+
+**Editing.** `HomeworkEditCommandParser` uses the prefixes of `homework add`, all optional, and reports errors in this order: an unknown or repeated prefix, both `title/` and `t/` given (reported as a repeated `title/`), indices that are not exactly two words or no field to edit (both reported as an invalid command format), the student index syntax, the homework index syntax, and then the title, subject and due date. It stores the new values in a `HomeworkEditCommand.EditHomeworkDescriptor`, a record in which `null` means "unchanged". `HomeworkEditCommand` checks, in order, the student index, that the student has homework, the homework index, that the student takes the (possibly new) subject, that the edit changes something (`Homework#equals`), and that the edited homework is not the same as any *other* homework of the student. `EditHomeworkDescriptor#applyTo` copies the score, so editing never changes it. On success, the command shows the edited record followed by `HomeworkListCommand#formatHomeworkList(editedStudent, today, false)`, so the tutor sees the upcoming list as `homework list` would show it after the edit.
+
+**Recording marks.** `HomeworkMarksCommandParser` takes two indices and the required `score/` prefix; a missing `score/` is reported with the same "Missing required prefix(es)" message as in `homework add`. `HomeworkMarksCommand` checks the student index, that the student has homework, the homework index, and that the new score differs from the recorded one, then replaces the homework with a copy holding the new score.
 
 **Due date forms.** A due date is given as `YYYY-MM-DD` or `MM-DD`, and in both forms the month and day may have 1 or 2 digits (`2026-2-5`, `10-5`). `DueDate` matches each form with a regular expression that allows only 4-digit years and 1- or 2-digit months and days, then builds the date with `LocalDate#of`, which rejects dates that do not exist (such as `2-30`). The stored date is a `LocalDate`, so it is always shown padded (`2026-02-05`), and `10-5` and `10-05` give equal due dates.
 
-**Year inference.** For a due date given as `MM-DD`, `DueDate#parse(rawDate, today)` picks this year, or next year if the date has passed. If the date does not exist this year (29 February in a non-leap year), next year is used; if it does not exist next year either, the date is invalid. A next year after 9999 is also invalid. `HomeworkAddCommandParser` holds a `java.time.Clock` (`Clock.systemDefaultZone()` in production) and computes `today` as `LocalDate.now(clock)`, so tests pass a fixed clock and never depend on the real date. The parser tells `HomeworkAddCommand` whether the year was inferred, so the success message can show it.
+**Year inference.** For a due date given as `MM-DD`, `DueDate#parse(rawDate, today)` picks this year, or next year if the date has passed. If the date does not exist this year (29 February in a non-leap year), next year is used; if it does not exist next year either, the date is invalid. A next year after 9999 is also invalid. `HomeworkAddCommandParser` and `HomeworkEditCommandParser` hold a `java.time.Clock` (`Clock.systemDefaultZone()` in production, passed down from `AddressBookParser` through `HomeworkCommandParser`) and compute `today` as `LocalDate.now(clock)`, so tests pass a fixed clock and never depend on the real date. `HomeworkListCommandParser` uses the same clock to decide which homework is upcoming. The parsers tell `HomeworkAddCommand` and `HomeworkEditCommand` whether the year was inferred, so the success message can show it.
 
-**Unexpected errors.** Each homework command catches any unexpected `RuntimeException` in `execute`, logs it with its stack trace, and throws a `CommandException` with a short internal-error message instead, so the user never sees a stack trace. `Model#setStudent` is the last step of `homework add` and `homework delete`, so such an error leaves the student's homework unchanged.
+**Unexpected errors.** Each homework command catches any unexpected `RuntimeException` in `execute`, logs it with its stack trace, and throws a `CommandException` with a short internal-error message instead, so the user never sees a stack trace. `Model#setStudent` is the last step of `homework add`, `homework edit`, `homework marks` and `homework delete`, so such an error leaves the student's homework unchanged.
 
-**Persistence.** Homework is saved as part of each student (see [Storage component](#storage-component)). `homework add` and `homework delete` change the data, so `LogicManager` saves it after them; `homework list` changes nothing and never writes the data file. If saving fails, the change is undone and the error message is the one from the specification, e.g. `HomeworkAddCommand#MESSAGE_SAVE_FAILURE` ("The homework could not be added because TutorFlow could not save the updated data. No homework data was changed."), as described in [Saving after a command](#saving-after-a-command).
+**Persistence.** Homework is saved as part of each student (see [Storage component](#storage-component)). `homework add`, `homework edit`, `homework marks` and `homework delete` change the data, so `LogicManager` saves it after them; `homework list` changes nothing and never writes the data file. If saving fails, the change is undone and the error message is the one from the specification, e.g. `HomeworkAddCommand#MESSAGE_SAVE_FAILURE` ("The homework could not be added because TutorFlow could not save the updated data. No homework data was changed."), as described in [Saving after a command](#saving-after-a-command).
 
 #### Design considerations:
 
@@ -247,7 +255,7 @@ Manual check: add a MATH student, run `lesson add 1 s/MATH d/MONDAY st/16:00 et/
 1. Before executing the command, `LogicManager` copies the current data: `new AddressBook(model.getAddressBook())`. The copy is cheap because `Student` and `Homework` are immutable, so only the list is copied.
 1. After the command succeeds, `LogicManager` compares the data with the copy. If they are equal, the command changed nothing (e.g. `homework list`, `help`, `exit`, or `clear` with no students), and nothing is saved.
 1. Otherwise, `LogicManager` calls `Storage#saveAddressBook`. If this throws an `IOException`, `LogicManager` restores the copy with `Model#setAddressBook` and throws a `CommandException` whose message comes from `Command#getSaveFailureMessage(defaultMessage)`.
-1. By default, `getSaveFailureMessage` returns the AB3 message (`LogicManager#FILE_OPS_ERROR_FORMAT`, or `FILE_OPS_PERMISSION_ERROR_FORMAT` when access is denied). `HomeworkAddCommand`, `HomeworkDeleteCommand` and `LessonAddCommand` override it to return their own messages (the homework messages are from the specification). A new command that needs its own message only overrides this method.
+1. By default, `getSaveFailureMessage` returns the AB3 message (`LogicManager#FILE_OPS_ERROR_FORMAT`, or `FILE_OPS_PERMISSION_ERROR_FORMAT` when access is denied). The homework commands that change data (`HomeworkAddCommand`, `HomeworkEditCommand`, `HomeworkMarksCommand`, `HomeworkDeleteCommand`), `LessonAddCommand` and `LessonDeleteCommand` override it to return their own messages (the homework messages are from the specification). A new command that needs its own message only overrides this method.
 
 #### Design considerations:
 
@@ -466,6 +474,55 @@ testers are expected to do more *exploratory* testing.
 
    1. Try `delete 0`, `delete 01`, and an index larger than the roster size.<br>
       Expected: Each shows an error and leaves the roster unchanged.
+
+### Listing, editing and scoring homework
+
+1. Listing upcoming and overdue homework
+
+   1. Prerequisites: Start with the sample students (delete `data/tutorflow.json` first). Run `hw add 5 t/Old worksheet s/MATH due/2026-10-01`, which gives Daniel Wong (student 5) homework that is already overdue.
+
+   1. Test case: `hw ls 5`<br>
+      Expected: `No upcoming homework found for Daniel Wong.` Daniel Wong's card shows `Upcoming homework: 0`.
+
+   1. Test case: `hw ls 5 all`<br>
+      Expected: `Listed 1 homework record for Daniel Wong.` followed by `1. Old worksheet (MATH) - due 2026-10-01 - score Not recorded`.
+
+   1. Test case: `hw ls 5 ALL`<br>
+      Expected: An invalid command format error, as `all` must be in lowercase.
+
+1. Editing homework
+
+   1. Prerequisites: Start with the sample students.
+
+   1. Test case: `hw e 2 1 due/2026-11-05`<br>
+      Expected: The result shows the edited homework, then Priya Nair's upcoming homework in the order 2, 1, 3, as homework 1 is now due after homework 2.
+
+   1. Test case: `hw e 1 1 t/Quadratic equations worksheet`<br>
+      Expected: `No changes made; the supplied values are identical to the existing homework details.`
+
+   1. Test case: `hw e 1 2 t/quadratic EQUATIONS worksheet s/MATH due/2026-10-23`<br>
+      Expected: `This edit would make the homework a duplicate of an existing homework record.`
+
+   1. Other incorrect edit commands to try: `hw e 1 2` (no field), `hw e 1 1 t/A title/B`, `hw e 6 1 s/PHYSICS` (subject not taken), `hw e 1 1 score/5/10`<br>
+      Expected: An error message each time; `hw ls 1` and `hw ls 2` are unchanged.
+
+1. Recording homework marks
+
+   1. Prerequisites: Start with the sample students.
+
+   1. Test case: `hw m 1 2 score/5/10`, then `hw ls 1`<br>
+      Expected: The result shows `Score: 5/10`, and the list shows `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score 5/10`. Restart the app: `hw ls 1` still shows the score.
+
+   1. Test case: `hw m 1 2 score/5/10` again<br>
+      Expected: `No changes made; the homework already has this score.`
+
+   1. Other incorrect commands to try: `hw m 1 2 score/11/10`, `hw m 1 2 score/5/0`, `hw m 1 2 score/5.5/10`, `hw m 1 2 score/2147483648/10`, `hw m 1 2`<br>
+      Expected: An error message each time, and the score is unchanged.
+
+1. Saving fails
+
+   1. Make `data/tutorflow.json` read-only, then run `hw e 1 1 t/Changed title` and `hw m 1 1 score/9/10`.<br>
+      Expected: Each shows that the homework could not be edited, or that its marks could not be recorded, and that no homework data was changed. `hw ls 1` is unchanged.
 
 ### Deleting homework
 

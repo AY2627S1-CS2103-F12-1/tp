@@ -14,6 +14,7 @@ import seedu.address.logic.commands.LessonAddCommand;
 import seedu.address.logic.commands.LessonDeleteCommand;
 import seedu.address.logic.commands.LessonListCommand;
 import seedu.address.logic.commands.ListCommand;
+import seedu.address.logic.commands.SearchCommand;
 import seedu.address.logic.parser.HomeworkCommandParser;
 import seedu.address.logic.parser.LessonCommandParser;
 import seedu.address.model.homework.DueDate;
@@ -43,7 +44,9 @@ public final class HelpContent {
                     new Entry(DeleteCommand.COMMAND_WORD, DeleteCommand.MESSAGE_USAGE,
                             "Deletes the student at INDEX and all of their homework and lessons.", "delete 1"),
                     new Entry(ListCommand.COMMAND_WORD, ListCommand.MESSAGE_USAGE,
-                            "Shows all students in roster order, starting from the top.", ListCommand.COMMAND_WORD))),
+                            "Shows all students in roster order, starting from the top.", ListCommand.COMMAND_WORD),
+                    new Entry(SearchCommand.COMMAND_WORD, SearchCommand.MESSAGE_USAGE,
+                            "Finds students by student or guardian name or phone number.", "search Tan"))),
             new Section(SECTION_HOMEWORK, List.of(
                     new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_ADD,
                             HomeworkAddCommand.MESSAGE_USAGE,

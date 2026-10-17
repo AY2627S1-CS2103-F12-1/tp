@@ -111,6 +111,19 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_searchFiltersDisplayWithoutSavingData() throws Exception {
+        setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+        AddressBook before = new AddressBook(model.getAddressBook());
+
+        CommandResult result = logic.execute("search Alice");
+
+        assertEquals("Found 1 matching student.", result.getFeedbackToUser());
+        assertEquals(1, logic.getStudentList().size());
+        assertEquals(before, model.getAddressBook());
+        assertFalse(Files.exists(dataFilePath));
+    }
+
+    @Test
     public void execute_addStudent_savesStudent() throws Exception {
         logic.execute(ADD_STUDENT_COMMAND);
 

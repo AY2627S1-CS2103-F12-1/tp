@@ -27,6 +27,7 @@ import seedu.address.logic.commands.HomeworkListCommand;
 import seedu.address.logic.commands.LessonDeleteCommand;
 import seedu.address.logic.commands.LessonListCommand;
 import seedu.address.logic.commands.ListCommand;
+import seedu.address.logic.commands.SearchCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.homework.Homework;
 import seedu.address.model.student.Student;
@@ -75,6 +76,13 @@ public class AddressBookParserTest {
         assertTrue(parser.parseCommand(ListCommand.COMMAND_WORD + "   ") instanceof ListCommand);
         assertThrows(ParseException.class, ListCommand.MESSAGE_INVALID_FORMAT, () -> parser.parseCommand("list 3"));
         assertThrows(ParseException.class, ListCommand.MESSAGE_INVALID_FORMAT, () -> parser.parseCommand("ls all"));
+    }
+
+    @Test
+    public void parseCommand_search() throws Exception {
+        assertEquals(new SearchCommand("Mary Tan"), parser.parseCommand("search Mary Tan"));
+        assertThrows(ParseException.class, SearchCommand.MESSAGE_INVALID_FORMAT, () ->
+                parser.parseCommand("search   "));
     }
 
     @Test

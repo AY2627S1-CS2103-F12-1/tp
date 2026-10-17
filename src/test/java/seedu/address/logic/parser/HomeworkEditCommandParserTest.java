@@ -82,6 +82,15 @@ public class HomeworkEditCommandParserTest {
     }
 
     @Test
+    public void parse_quotedValues_success() {
+        HomeworkEditCommand expectedCommand = editCommand(new EditHomeworkDescriptor(new Title("Speed in km/h"),
+                TuitionSubject.PHYSICS, DueDate.parseFullDate("2026-11-10")), false);
+
+        assertParseSuccess(parser, "1 2 title/\"Speed in km/h\" s/\"PHYSICS\" due/\"2026-11-10\"",
+                expectedCommand);
+    }
+
+    @Test
     public void parse_noIndices_failure() {
         assertParseFailure(parser, "", MESSAGE_INVALID_FORMAT);
         assertParseFailure(parser, "t/Algebra", MESSAGE_INVALID_FORMAT);

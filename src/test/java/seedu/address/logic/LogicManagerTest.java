@@ -161,6 +161,17 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_homeworkMarksClear_savesClearedScore() throws Exception {
+        setUpLogic(getTypicalAddressBook(), addressBookStorage);
+
+        logic.execute("hw m 1 3 score/");
+
+        ReadOnlyAddressBook savedData = addressBookStorage.readAddressBook().get();
+        assertEquals(Optional.empty(), savedData.getStudentList().get(0).getHomeworks().get(2).getScore());
+        assertEquals(model.getAddressBook(), new AddressBook(savedData));
+    }
+
+    @Test
     public void execute_clear_savesNoStudents() throws Exception {
         setUpLogic(getTypicalAddressBook(), addressBookStorage);
 
@@ -269,6 +280,15 @@ public class LogicManagerTest {
         setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_AD_EXCEPTION));
 
         assertCommandFailure("hw marks 1 3 score/0/10", CommandException.class,
+                HomeworkMarksCommand.MESSAGE_SAVE_FAILURE, new ModelManager(getTypicalAddressBook(), new UserPrefs()));
+        assertFalse(Files.exists(dataFilePath));
+    }
+
+    @Test
+    public void execute_homeworkMarksClearSaveFails_keepsScore() {
+        setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_AD_EXCEPTION));
+
+        assertCommandFailure("hw m 1 3 score/", CommandException.class,
                 HomeworkMarksCommand.MESSAGE_SAVE_FAILURE, new ModelManager(getTypicalAddressBook(), new UserPrefs()));
         assertFalse(Files.exists(dataFilePath));
     }

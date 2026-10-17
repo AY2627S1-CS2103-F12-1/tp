@@ -16,6 +16,7 @@ import seedu.address.model.homework.Score;
  * Errors are checked in this order, and only the first one found is reported:
  * unknown or repeated prefix, indices that are missing or not exactly two words, a missing {@code score/} prefix,
  * student index syntax, homework index syntax, and the score.
+ * An empty {@code score/} value clears the recorded marks.
  */
 public class HomeworkMarksCommandParser implements Parser<HomeworkMarksCommand> {
     public static final String PREFIX_SCORE = "score/";
@@ -26,7 +27,8 @@ public class HomeworkMarksCommandParser implements Parser<HomeworkMarksCommand> 
             HomeworkMarksCommand.MESSAGE_USAGE);
 
     /**
-     * Returns a command that records the score given in {@code args} for the homework identified by its indices.
+     * Returns a command that records the score given in {@code args} for the homework identified by its indices, or
+     * clears its marks if the score is empty.
      *
      * @throws ParseException If the command structure, either index or the score is invalid.
      */
@@ -47,6 +49,9 @@ public class HomeworkMarksCommandParser implements Parser<HomeworkMarksCommand> 
 
         Index studentIndex = ParserUtil.parseStrictIndex(indices[0], Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
         Index homeworkIndex = ParserUtil.parseStrictIndex(indices[1], Messages.MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX);
+        if (values.get(PREFIX_SCORE).isBlank()) {
+            return new HomeworkMarksCommand(studentIndex, homeworkIndex);
+        }
         try {
             return new HomeworkMarksCommand(studentIndex, homeworkIndex, Score.parse(values.get(PREFIX_SCORE)));
         } catch (IllegalArgumentException exception) {

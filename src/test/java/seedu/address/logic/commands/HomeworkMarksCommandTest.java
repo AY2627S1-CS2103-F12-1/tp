@@ -41,6 +41,8 @@ public class HomeworkMarksCommandTest {
         assertThrows(NullPointerException.class, () -> new HomeworkMarksCommand(null, FIRST, FIVE_OUT_OF_TEN));
         assertThrows(NullPointerException.class, () -> new HomeworkMarksCommand(FIRST, null, FIVE_OUT_OF_TEN));
         assertThrows(NullPointerException.class, () -> new HomeworkMarksCommand(FIRST, FIRST, null));
+        assertThrows(NullPointerException.class, () -> new HomeworkMarksCommand(null, FIRST));
+        assertThrows(NullPointerException.class, () -> new HomeworkMarksCommand(FIRST, null));
     }
 
     @Test
@@ -75,6 +77,37 @@ public class HomeworkMarksCommandTest {
 
         assertCommandSuccess(new HomeworkMarksCommand(THIRD, FIRST, new Score(0, 10)), model, expectedMessage,
                 expectedModel);
+    }
+
+    @Test
+    public void execute_homeworkWithScore_clearsScore() {
+        String expectedMessage = "Cleared homework marks:\n"
+                + "Alice Tan; Title: Revise atomic structure; Subject: CHEMISTRY; Due: 2026-10-18; Score: Not recorded";
+        Model expectedModel = getModelWithStudents(List.of(ALICE.withHomeworks(List.of(ALGEBRA, MECHANICS,
+                new HomeworkBuilder(ATOMIC_STRUCTURE).withoutScore().build())), BENSON, CARL));
+
+        assertCommandSuccess(new HomeworkMarksCommand(FIRST, THIRD), model, expectedMessage, expectedModel);
+    }
+
+    @Test
+    public void execute_clearHomeworkWithoutScore_failure() {
+        assertCommandFailure(new HomeworkMarksCommand(FIRST, SECOND), model,
+                HomeworkMarksCommand.MESSAGE_NO_MARKS_TO_CLEAR);
+    }
+
+    @Test
+    public void execute_clearIndicesOutOfRange_failure() {
+        // student index
+        assertCommandFailure(new HomeworkMarksCommand(Index.fromOneBased(4), FIRST), model,
+                Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
+
+        // student without homework
+        assertCommandFailure(new HomeworkMarksCommand(SECOND, FIRST), model,
+                HomeworkMarksCommand.MESSAGE_NO_HOMEWORK);
+
+        // homework index
+        assertCommandFailure(new HomeworkMarksCommand(FIRST, Index.fromOneBased(4)), model,
+                Messages.MESSAGE_INVALID_HOMEWORK_DISPLAYED_INDEX);
     }
 
     @Test
@@ -160,6 +193,14 @@ public class HomeworkMarksCommandTest {
 
         // different score -> returns false
         assertFalse(marksCommand.equals(new HomeworkMarksCommand(FIRST, SECOND, new Score(1, 2))));
+
+        // clearing instead of recording -> returns false
+        HomeworkMarksCommand clearCommand = new HomeworkMarksCommand(FIRST, SECOND);
+        assertFalse(marksCommand.equals(clearCommand));
+        assertFalse(clearCommand.equals(marksCommand));
+
+        // both clearing the same homework -> returns true
+        assertTrue(clearCommand.equals(new HomeworkMarksCommand(FIRST, SECOND)));
     }
 
     @Test
@@ -167,5 +208,9 @@ public class HomeworkMarksCommandTest {
         String expected = HomeworkMarksCommand.class.getCanonicalName() + "{studentIndex=" + FIRST
                 + ", homeworkIndex=" + SECOND + ", score=5/10}";
         assertEquals(expected, new HomeworkMarksCommand(FIRST, SECOND, FIVE_OUT_OF_TEN).toString());
+
+        String expectedClear = HomeworkMarksCommand.class.getCanonicalName() + "{studentIndex=" + FIRST
+                + ", homeworkIndex=" + SECOND + ", score=null}";
+        assertEquals(expectedClear, new HomeworkMarksCommand(FIRST, SECOND).toString());
     }
 }

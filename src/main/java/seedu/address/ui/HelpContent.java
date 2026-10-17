@@ -69,7 +69,8 @@ public final class HelpContent {
                             HomeworkMarksCommand.MESSAGE_USAGE,
                             "Records the marks of homework number HOMEWORK_INDEX of the student at STUDENT_INDEX,"
                                     + " replacing any marks recorded before. SCORE is MARKS_OBTAINED/TOTAL_MARKS,"
-                                    + " e.g. 5/10, with whole numbers and marks obtained from 0 to the total.",
+                                    + " e.g. 5/10, with whole numbers and marks obtained from 0 to the total."
+                                    + " Leave SCORE empty to clear the recorded marks.",
                             "hw m 1 2 score/5/10"),
                     new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_DELETE,
                             HomeworkDeleteCommand.MESSAGE_USAGE,

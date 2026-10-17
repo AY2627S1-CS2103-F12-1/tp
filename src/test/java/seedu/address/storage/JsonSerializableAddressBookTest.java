@@ -23,7 +23,8 @@ public class JsonSerializableAddressBookTest {
     private static final Path TYPICAL_STUDENTS_FILE = TEST_DATA_FOLDER.resolve("typicalStudentsAddressBook.json");
     private static final Path INVALID_STUDENT_FILE = TEST_DATA_FOLDER.resolve("invalidStudentAddressBook.json");
     private static final Path INVALID_HOMEWORK_FILE = TEST_DATA_FOLDER.resolve("invalidHomeworkAddressBook.json");
-    private static final Path DECIMAL_SCORE_FILE = TEST_DATA_FOLDER.resolve("decimalScoreAddressBook.json");
+    private static final Path SINGLE_NUMBER_SCORE_FILE =
+            TEST_DATA_FOLDER.resolve("singleNumberScoreAddressBook.json");
     private static final Path DUPLICATE_STUDENT_FILE = TEST_DATA_FOLDER.resolve("duplicateStudentAddressBook.json");
     private static final Path MISSING_STUDENTS_FILE = TEST_DATA_FOLDER.resolve("missingStudentsAddressBook.json");
 
@@ -51,8 +52,9 @@ public class JsonSerializableAddressBookTest {
     }
 
     @Test
-    public void toModelType_decimalScore_throwsIllegalValueException() throws Exception {
-        JsonSerializableAddressBook dataFromFile = JsonUtil.readJsonFile(DECIMAL_SCORE_FILE,
+    public void toModelType_singleNumberScore_throwsIllegalValueException() throws Exception {
+        // A score saved before scores had a total, such as 85, is rejected
+        JsonSerializableAddressBook dataFromFile = JsonUtil.readJsonFile(SINGLE_NUMBER_SCORE_FILE,
                 JsonSerializableAddressBook.class).get();
         assertThrows(IllegalValueException.class, Score.MESSAGE_CONSTRAINTS, dataFromFile::toModelType);
     }

@@ -16,6 +16,7 @@ import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,6 +26,8 @@ import seedu.address.logic.commands.ClearCommand;
 import seedu.address.logic.commands.CommandResult;
 import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
+import seedu.address.logic.commands.HomeworkEditCommand;
+import seedu.address.logic.commands.HomeworkMarksCommand;
 import seedu.address.logic.commands.LessonAddCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.exceptions.CommandException;
@@ -34,6 +37,7 @@ import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.ReadOnlyAddressBook;
 import seedu.address.model.UserPrefs;
+import seedu.address.model.homework.Score;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
 import seedu.address.storage.StorageManager;
@@ -134,6 +138,40 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_homeworkEdit_savesEditedHomework() throws Exception {
+        setUpLogic(getTypicalAddressBook(), addressBookStorage);
+
+        logic.execute("hw e 1 1 t/Complete algebra questions 1-10");
+
+        ReadOnlyAddressBook savedData = addressBookStorage.readAddressBook().get();
+        assertEquals("Complete algebra questions 1-10",
+                savedData.getStudentList().get(0).getHomeworks().get(0).getTitle().toString());
+        assertEquals(model.getAddressBook(), new AddressBook(savedData));
+    }
+
+    @Test
+    public void execute_homeworkMarks_savesScore() throws Exception {
+        setUpLogic(getTypicalAddressBook(), addressBookStorage);
+
+        logic.execute("hw m 1 2 score/5/10");
+
+        ReadOnlyAddressBook savedData = addressBookStorage.readAddressBook().get();
+        assertEquals(Optional.of(new Score(5, 10)), savedData.getStudentList().get(0).getHomeworks().get(1).getScore());
+        assertEquals(model.getAddressBook(), new AddressBook(savedData));
+    }
+
+    @Test
+    public void execute_homeworkMarksClear_savesClearedScore() throws Exception {
+        setUpLogic(getTypicalAddressBook(), addressBookStorage);
+
+        logic.execute("hw m 1 3 score/");
+
+        ReadOnlyAddressBook savedData = addressBookStorage.readAddressBook().get();
+        assertEquals(Optional.empty(), savedData.getStudentList().get(0).getHomeworks().get(2).getScore());
+        assertEquals(model.getAddressBook(), new AddressBook(savedData));
+    }
+
+    @Test
     public void execute_clear_savesNoStudents() throws Exception {
         setUpLogic(getTypicalAddressBook(), addressBookStorage);
 
@@ -226,6 +264,33 @@ public class LogicManagerTest {
 
         assertCommandFailure("hw del 1 2", CommandException.class, HomeworkDeleteCommand.MESSAGE_SAVE_FAILURE,
                 new ModelManager(getTypicalAddressBook(), new UserPrefs()));
+    }
+
+    @Test
+    public void execute_homeworkEditSaveFails_rollsBackEdit() {
+        setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+
+        assertCommandFailure("hw edit 1 2 t/Revise mechanics s/PHYSICS due/2026-11-10", CommandException.class,
+                HomeworkEditCommand.MESSAGE_SAVE_FAILURE, new ModelManager(getTypicalAddressBook(), new UserPrefs()));
+        assertFalse(Files.exists(dataFilePath));
+    }
+
+    @Test
+    public void execute_homeworkMarksSaveFails_rollsBackScore() {
+        setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_AD_EXCEPTION));
+
+        assertCommandFailure("hw marks 1 3 score/0/10", CommandException.class,
+                HomeworkMarksCommand.MESSAGE_SAVE_FAILURE, new ModelManager(getTypicalAddressBook(), new UserPrefs()));
+        assertFalse(Files.exists(dataFilePath));
+    }
+
+    @Test
+    public void execute_homeworkMarksClearSaveFails_keepsScore() {
+        setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_AD_EXCEPTION));
+
+        assertCommandFailure("hw m 1 3 score/", CommandException.class,
+                HomeworkMarksCommand.MESSAGE_SAVE_FAILURE, new ModelManager(getTypicalAddressBook(), new UserPrefs()));
+        assertFalse(Files.exists(dataFilePath));
     }
 
     @Test

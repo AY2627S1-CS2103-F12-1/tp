@@ -10,6 +10,7 @@ import static seedu.address.testutil.TypicalStudents.getModelWithStudents;
 import static seedu.address.testutil.TypicalStudents.getModelWithTypicalStudents;
 import static seedu.address.testutil.TypicalStudents.getTypicalStudents;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -21,52 +22,126 @@ import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.student.Student;
+import seedu.address.testutil.HomeworkBuilder;
+import seedu.address.testutil.StudentBuilder;
 
+/**
+ * Tests {@code HomeworkListCommand}. ALICE's homework is due on 2026-10-15 (1, no score), 2026-10-20 (2, no score)
+ * and 2026-10-18 (3, score 17/20).
+ */
 public class HomeworkListCommandTest {
+    private static final LocalDate BEFORE_ALL_DUE_DATES = LocalDate.of(2026, 10, 5);
+    private static final LocalDate AFTER_ALL_DUE_DATES = LocalDate.of(2026, 10, 21);
+    private static final Index FIRST = Index.fromOneBased(1);
+
     private final Model model = getModelWithTypicalStudents();
     private final Model expectedModel = getModelWithTypicalStudents();
 
     @Test
-    public void constructor_nullStudentIndex_throwsNullPointerException() {
-        assertThrows(NullPointerException.class, () -> new HomeworkListCommand(null));
+    public void constructor_nullArgument_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> new HomeworkListCommand(null, BEFORE_ALL_DUE_DATES, false));
+        assertThrows(NullPointerException.class, () -> new HomeworkListCommand(FIRST, null, false));
     }
 
     @Test
-    public void execute_studentWithManyHomework_listsInInsertionOrder() {
+    public void execute_allUpcoming_listsByDueDateWithInsertionIndices() {
+        String expectedMessage = "Listed 3 upcoming homework records for Alice Tan.\n"
+                + "Homework for Alice Tan:\n"
+                + "1. Complete algebra worksheet (MATH) - due 2026-10-15 - score Not recorded\n"
+                + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20\n"
+                + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded";
+
+        assertCommandSuccess(new HomeworkListCommand(FIRST, BEFORE_ALL_DUE_DATES, false), model, expectedMessage,
+                expectedModel);
+    }
+
+    @Test
+    public void execute_someOverdue_listsHomeworkDueTodayOrLater() {
+        // homework 1 is overdue, homework 3 is due today
+        String expectedMessage = "Listed 2 upcoming homework records for Alice Tan.\n"
+                + "Homework for Alice Tan:\n"
+                + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20\n"
+                + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded";
+
+        assertCommandSuccess(new HomeworkListCommand(FIRST, LocalDate.of(2026, 10, 18), false), model,
+                expectedMessage, expectedModel);
+    }
+
+    @Test
+    public void execute_oneUpcoming_listsSingleRecord() {
+        String expectedMessage = "Listed 1 upcoming homework record for Alice Tan.\n"
+                + "Homework for Alice Tan:\n"
+                + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded";
+
+        assertCommandSuccess(new HomeworkListCommand(FIRST, LocalDate.of(2026, 10, 19), false), model,
+                expectedMessage, expectedModel);
+    }
+
+    @Test
+    public void execute_allOverdue_showsNoUpcomingHomework() {
+        assertCommandSuccess(new HomeworkListCommand(FIRST, AFTER_ALL_DUE_DATES, false), model,
+                "No upcoming homework found for Alice Tan.", expectedModel);
+    }
+
+    @Test
+    public void execute_allKeyword_listsOverdueHomeworkToo() {
         String expectedMessage = "Listed 3 homework records for Alice Tan.\n"
                 + "Homework for Alice Tan:\n"
-                + "1. Complete algebra worksheet (MATH) - due 2026-10-15\n"
-                + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20\n"
-                + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18";
+                + "1. Complete algebra worksheet (MATH) - due 2026-10-15 - score Not recorded\n"
+                + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20\n"
+                + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded";
 
-        assertCommandSuccess(new HomeworkListCommand(Index.fromOneBased(1)), model, expectedMessage, expectedModel);
+        assertCommandSuccess(new HomeworkListCommand(FIRST, AFTER_ALL_DUE_DATES, true), model, expectedMessage,
+                expectedModel);
     }
 
     @Test
-    public void execute_lastStudentWithOneHomework_listsSingleRecord() {
+    public void execute_allKeywordOneRecord_listsSingleRecord() {
         String expectedMessage = "Listed 1 homework record for Carl Ng.\n"
                 + "Homework for Carl Ng:\n"
-                + "1. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20";
+                + "1. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded";
 
-        assertCommandSuccess(new HomeworkListCommand(Index.fromOneBased(3)), model, expectedMessage, expectedModel);
+        assertCommandSuccess(new HomeworkListCommand(Index.fromOneBased(3), AFTER_ALL_DUE_DATES, true), model,
+                expectedMessage, expectedModel);
+    }
+
+    @Test
+    public void execute_sameDueDate_keepsInsertionOrder() {
+        Student student = new StudentBuilder().withSubjects("MATH, PHYSICS").withHomeworks(
+                new HomeworkBuilder().withTitle("Late A").withDueDate("2026-10-20").build(),
+                new HomeworkBuilder().withTitle("Early").withDueDate("2026-10-15").withScore("5/10").build(),
+                new HomeworkBuilder().withTitle("Late B").withSubject("PHYSICS").withDueDate("2026-10-20").build())
+                .build();
+        String expectedMessage = "Listed 3 upcoming homework records for John Tan.\n"
+                + "Homework for John Tan:\n"
+                + "2. Early (MATH) - due 2026-10-15 - score 5/10\n"
+                + "1. Late A (MATH) - due 2026-10-20 - score Not recorded\n"
+                + "3. Late B (PHYSICS) - due 2026-10-20 - score Not recorded";
+
+        assertCommandSuccess(new HomeworkListCommand(FIRST, BEFORE_ALL_DUE_DATES, false),
+                getModelWithStudents(List.of(student)), expectedMessage, getModelWithStudents(List.of(student)));
     }
 
     @Test
     public void execute_studentWithoutHomework_showsNoHomeworkFound() {
-        assertCommandSuccess(new HomeworkListCommand(Index.fromOneBased(2)), model,
+        Index secondIndex = Index.fromOneBased(2);
+
+        assertCommandSuccess(new HomeworkListCommand(secondIndex, BEFORE_ALL_DUE_DATES, false), model,
+                "No homework found for Benson Lim.", expectedModel);
+        assertCommandSuccess(new HomeworkListCommand(secondIndex, BEFORE_ALL_DUE_DATES, true), model,
                 "No homework found for Benson Lim.", expectedModel);
     }
 
     @Test
     public void execute_studentIndexAboveListSize_failure() {
-        assertCommandFailure(new HomeworkListCommand(Index.fromOneBased(4)), model,
+        assertCommandFailure(new HomeworkListCommand(Index.fromOneBased(4), BEFORE_ALL_DUE_DATES, false), model,
                 Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
     }
 
     @Test
     public void execute_emptyRoster_failure() {
-        assertCommandFailure(new HomeworkListCommand(Index.fromOneBased(1)), getModelWithStudents(List.of()),
-                Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
+        assertCommandFailure(new HomeworkListCommand(FIRST, BEFORE_ALL_DUE_DATES, true),
+                getModelWithStudents(List.of()), Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
     }
 
     @Test
@@ -80,20 +155,21 @@ public class HomeworkListCommandTest {
         getTypicalStudents().forEach(failingModel::addStudent);
 
         assertThrows(CommandException.class, HomeworkListCommand.MESSAGE_INTERNAL_ERROR, ()
-                -> new HomeworkListCommand(Index.fromOneBased(1)).execute(failingModel));
+                -> new HomeworkListCommand(FIRST, BEFORE_ALL_DUE_DATES, false).execute(failingModel));
         // ModelManager#equals compares the stored rosters directly, not through getStudentList()
         assertEquals(expectedModel, failingModel);
     }
 
     @Test
     public void equals() {
-        HomeworkListCommand listFirstCommand = new HomeworkListCommand(Index.fromOneBased(1));
+        HomeworkListCommand listFirstCommand = new HomeworkListCommand(FIRST, BEFORE_ALL_DUE_DATES, false);
 
         // same object -> returns true
         assertTrue(listFirstCommand.equals(listFirstCommand));
 
         // same values -> returns true
-        assertTrue(listFirstCommand.equals(new HomeworkListCommand(Index.fromOneBased(1))));
+        assertTrue(listFirstCommand.equals(new HomeworkListCommand(Index.fromOneBased(1), LocalDate.of(2026, 10, 5),
+                false)));
 
         // null -> returns false
         assertFalse(listFirstCommand.equals(null));
@@ -102,13 +178,20 @@ public class HomeworkListCommandTest {
         assertFalse(listFirstCommand.equals(1));
 
         // different student index -> returns false
-        assertFalse(listFirstCommand.equals(new HomeworkListCommand(Index.fromOneBased(2))));
+        assertFalse(listFirstCommand.equals(new HomeworkListCommand(Index.fromOneBased(2), BEFORE_ALL_DUE_DATES,
+                false)));
+
+        // different date -> returns false
+        assertFalse(listFirstCommand.equals(new HomeworkListCommand(FIRST, AFTER_ALL_DUE_DATES, false)));
+
+        // all homework listed -> returns false
+        assertFalse(listFirstCommand.equals(new HomeworkListCommand(FIRST, BEFORE_ALL_DUE_DATES, true)));
     }
 
     @Test
     public void toStringMethod() {
-        Index index = Index.fromOneBased(1);
-        String expected = HomeworkListCommand.class.getCanonicalName() + "{studentIndex=" + index + "}";
-        assertEquals(expected, new HomeworkListCommand(index).toString());
+        String expected = HomeworkListCommand.class.getCanonicalName() + "{studentIndex=" + FIRST
+                + ", today=2026-10-05, isAllShown=true}";
+        assertEquals(expected, new HomeworkListCommand(FIRST, BEFORE_ALL_DUE_DATES, true).toString());
     }
 }

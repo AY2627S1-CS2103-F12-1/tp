@@ -8,7 +8,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.model.homework.DueDate;
 import seedu.address.model.homework.Homework;
-import seedu.address.model.homework.HomeworkStatus;
 import seedu.address.model.homework.Score;
 import seedu.address.model.homework.Title;
 import seedu.address.model.student.TuitionSubject;
@@ -23,7 +22,6 @@ class JsonAdaptedHomework {
     private final String title;
     private final String subject;
     private final String dueDate;
-    private final String status;
     private final Object score;
 
     /**
@@ -32,19 +30,16 @@ class JsonAdaptedHomework {
      * @param title Title of the homework, or null if the field is missing.
      * @param subject Subject of the homework, such as {@code MATH}, or null if the field is missing.
      * @param dueDate Due date in {@code YYYY-MM-DD} format, or null if the field is missing.
-     * @param status Status of the homework, {@code ASSIGNED} or {@code COMPLETED}, or null if the field is missing.
      * @param score Score received for the homework, or null if none is recorded. It is kept as read from the JSON
      *     file (e.g. a {@code Double} for {@code 85.5}) so that {@link #toModelType()} can reject a score that is
      *     not a whole number instead of truncating it.
      */
     @JsonCreator
     public JsonAdaptedHomework(@JsonProperty("title") String title, @JsonProperty("subject") String subject,
-            @JsonProperty("dueDate") String dueDate, @JsonProperty("status") String status,
-            @JsonProperty("score") Object score) {
+            @JsonProperty("dueDate") String dueDate, @JsonProperty("score") Object score) {
         this.title = title;
         this.subject = subject;
         this.dueDate = dueDate;
-        this.status = status;
         this.score = score;
     }
 
@@ -55,7 +50,6 @@ class JsonAdaptedHomework {
         title = source.getTitle().toString();
         subject = source.getSubject().name();
         dueDate = source.getDueDate().toString();
-        status = source.getStatus().name();
         score = source.getScore().map(Score::getValue).orElse(null);
     }
 
@@ -71,10 +65,8 @@ class JsonAdaptedHomework {
                 TuitionSubject.MESSAGE_CONSTRAINTS);
         final DueDate modelDueDate = toModelValue("dueDate", dueDate, DueDate::parseFullDate,
                 DueDate.MESSAGE_FULL_DATE_CONSTRAINTS);
-        final HomeworkStatus modelStatus = toModelValue("status", status, HomeworkStatus::parse,
-                HomeworkStatus.MESSAGE_CONSTRAINTS);
         final Score modelScore = toModelScore(score);
-        return new Homework(modelTitle, modelSubject, modelDueDate, modelStatus, modelScore);
+        return new Homework(modelTitle, modelSubject, modelDueDate, modelScore);
     }
 
     /**

@@ -152,10 +152,10 @@ The `Storage` component,
 The app data is saved in `data/tutorflow.json`. `JsonSerializableAddressBook` holds a `students` list of `JsonAdaptedStudent`. Each student adapter holds a `homeworks` list of `JsonAdaptedHomework` and a `lessons` list of `JsonAdaptedLesson`. Jackson reads and writes the fields of these classes directly:
 
 * Student fields: `name`, `academicLevel`, `subjects`, `phone`, `guardianName`, `guardianPhone`, `homeworks`, and `lessons`.
-* Homework fields: `title`, `subject`, `dueDate`, `status`, and `score`.
+* Homework fields: `title`, `subject`, `dueDate`, and `score`.
 * Lesson fields: `subject`, `dayOfWeek`, `startTime`, and `endTime`.
 
-Contact and academic fields, homework titles, dates and statuses, and lesson fields are strings. `subjects` is a list of strings, `homeworks` and `lessons` are lists of objects, and `score` is a whole number or `null`. Lessons store weekdays by name and times in `HH:mm` format.
+Contact and academic fields, homework titles and dates, and lesson fields are strings. `subjects` is a list of strings, `homeworks` and `lessons` are lists of objects, and `score` is a whole number or `null`. Lessons store weekdays by name and times in `HH:mm` format.
 
 Each adapted class checks its values in `toModelType()` with the same value classes that commands use. Student and homework adapters report missing fields with `MISSING_FIELD_MESSAGE_FORMAT` and invalid values with the value class's `MESSAGE_CONSTRAINTS`. `JsonAdaptedLesson` reports missing lesson fields together and delegates value validation to `TuitionSubject` and `RegularLesson`. Invalid data produces an `IllegalValueException`. Loading also rejects:
 
@@ -167,7 +167,7 @@ Each adapted class checks its values in `toModelType()` with the same value clas
 * a due date that is not a full `YYYY-MM-DD` date. `JsonAdaptedHomework` uses `DueDate#parseFullDate`, so the year of a saved date is never inferred from today's date. Dates are saved padded (`2026-02-05`).
 * a score that is not a JSON whole number within the `int` range (e.g. `85.5`, `"85"`), with `Score#MESSAGE_CONSTRAINTS`. `JsonAdaptedHomework` keeps `score` as the `Object` Jackson reads (an `Integer` only for such a whole number), because a field of type `Integer` would make Jackson silently truncate `85.5` to `85`.
 
-A missing `homeworks` list, `lessons` list, or `score` means no homework, no lessons, or no score. This allows older student data without a `lessons` field to load. Subjects, levels, statuses, and weekdays are accepted in any case and saved in upper case.
+A missing `homeworks` list, `lessons` list, or `score` means no homework, no lessons, or no score. This allows older student data without a `lessons` field to load. Subjects, levels, and weekdays are accepted in any case and saved in upper case.
 
 `MainApp#readInitialData` decides what the app starts with: the saved data if the data file is valid, the sample students from `SampleDataUtil#getSampleAddressBook()` if the data file does not exist (the file is not created at startup; the sample students are first saved by the first command that changes the data), and no students if the data file cannot be read or is invalid (a warning is logged). In the last case the invalid file stays on disk until the next command that changes the data overwrites it.
 
@@ -193,7 +193,7 @@ This section describes some noteworthy details on how certain features are imple
 
 Homework is managed with three commands: `homework add`, `homework list` and `homework delete`. `hw` is an alias for `homework`.
 
-**Parsing.** `AddressBookParser` passes the arguments of both `homework` and `hw` to `HomeworkCommandParser`. This dispatcher reads the first word as the subcommand and hands the rest to `HomeworkAddCommandParser` (`add`), `HomeworkListCommandParser` (`list` or `ls`) or `HomeworkDeleteCommandParser` (`delete` or `del`). A missing or unknown subcommand produces an "Invalid command format." error that lists the usage of all three subcommands. Usage messages show alternatives (aliases and the short date form) separated by `|`, e.g. `homework|hw list|ls STUDENT_INDEX`. This keeps one `AddressBookParser` case per command word, and future subcommands (edit, status, score; their classes exist as placeholders) only need a new case in the dispatcher.
+**Parsing.** `AddressBookParser` passes the arguments of both `homework` and `hw` to `HomeworkCommandParser`. This dispatcher reads the first word as the subcommand and hands the rest to `HomeworkAddCommandParser` (`add`), `HomeworkListCommandParser` (`list` or `ls`) or `HomeworkDeleteCommandParser` (`delete` or `del`). A missing or unknown subcommand produces an "Invalid command format." error that lists the usage of all three subcommands. Usage messages show alternatives (aliases and the short date form) separated by `|`, e.g. `homework|hw list|ls STUDENT_INDEX`. This keeps one `AddressBookParser` case per command word, and future subcommands (edit, score; their classes exist as placeholders) only need a new case in the dispatcher.
 
 The subcommand parsers use `StrictArgumentTokenizer`, which rejects unknown and repeated prefixes, and `ParserUtil#parseStrictIndex`, which rejects signs and leading zeroes. They use `StrictArgumentTokenizer` with plain string prefixes instead of AB3's `ArgumentTokenizer` with `CliSyntax` prefixes (both since removed) because the specification requires unknown prefixes to be rejected, which `ArgumentTokenizer` cannot do: it only splits on prefixes it is given, so an unknown prefix silently becomes part of the previous value. `StudentAddParser` shares the same tokenizer for the same reason. `HomeworkAddCommandParser` reports only the first error it finds, in this order:
 
@@ -204,7 +204,7 @@ The subcommand parsers use `StrictArgumentTokenizer`, which rejects unknown and 
 1. Student index syntax.
 1. The title, then the subject, then the due date.
 
-**Model.** `Student` is immutable and holds its `Homework` records in insertion order. To add or delete homework, a command copies the student's homework list, changes the copy, and calls `Model#setStudent(target, target.withHomeworks(updatedList))`, which replaces the student at the same position in the roster. The change to the observable student list refreshes the student card, which shows `Student#getAssignedHomeworkCount()`. `homework list` is read-only and returns the list as text in the result display, one line per record in the format of `HomeworkListCommand#MESSAGE_HOMEWORK_LINE` (e.g. `1. Complete algebra worksheet (MATH) - due 2026-10-15`).
+**Model.** `Student` is immutable and holds its `Homework` records in insertion order. To add or delete homework, a command copies the student's homework list, changes the copy, and calls `Model#setStudent(target, target.withHomeworks(updatedList))`, which replaces the student at the same position in the roster. The change to the observable student list refreshes the student card, which shows `Student#getUpcomingHomeworkCount(today)`, the number of homework records due today or later. `homework list` is read-only and returns the list as text in the result display, one line per record in the format of `HomeworkListCommand#MESSAGE_HOMEWORK_LINE` (e.g. `1. Complete algebra worksheet (MATH) - due 2026-10-15`).
 
 The student index refers to `Model#getStudentList()`. The homework index is the one-based position in that student's homework list; it is not stored and changes when earlier homework is deleted. Two homework records of the same student are duplicates when `Homework#isSameHomework` holds: same title ignoring case, same subject and same due date.
 
@@ -327,10 +327,9 @@ Priorities: High (must-have) - `* * *`, Medium (should-have) - `* *`, Low (nice-
 | US23 | `*` | independent tutor | search for a student by phone number | identify a student from an unfamiliar contact number |
 | US24 | `*` | independent tutor | view available periods in my regular lesson schedule | propose lesson times without checking each lesson manually |
 | US25 | `*` | independent tutor | add homework to a student | record the work assigned to that student |
-| US26 | `*` | independent tutor | view and filter homework by student, due date, subject, or completion status | find homework that requires my attention |
+| US26 | `*` | independent tutor | view and filter homework by student, due date, or subject | find homework that requires my attention |
 | US27 | `*` | independent tutor | edit recorded homework | correct or update an assignment's details |
 | US28 | `*` | independent tutor | delete recorded homework | remove assignments entered incorrectly or no longer required |
-| US29 | `*` | independent tutor | update a homework assignment's completion status | track which assignments remain unfinished |
 | US30 | `*` | independent tutor | record a student's homework score | keep track of the student's performance |
 
 ### Use cases
@@ -475,7 +474,7 @@ testers are expected to do more *exploratory* testing.
    1. Prerequisites: The 1st student has at least 2 homework records. Check with `homework list 1`.
 
    1. Test case: `homework delete 1 2`<br>
-      Expected: The 2nd homework of the 1st student is deleted. The result display shows the deleted homework. The student card shows the new number of assigned homework.
+      Expected: The 2nd homework of the 1st student is deleted. The result display shows the deleted homework. The student card shows the new number of upcoming homework.
 
    1. Test case: `homework delete 1 0`<br>
       Expected: No homework is deleted. The result display shows an error message.

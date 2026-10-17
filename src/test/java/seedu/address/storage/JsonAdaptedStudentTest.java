@@ -155,8 +155,7 @@ public class JsonAdaptedStudentTest {
 
     @Test
     public void toModelType_invalidHomework_throwsIllegalValueException() {
-        List<JsonAdaptedHomework> homeworks = List.of(new JsonAdaptedHomework("Algebra", "MATH", "10-15",
-                "ASSIGNED", null));
+        List<JsonAdaptedHomework> homeworks = List.of(new JsonAdaptedHomework("Algebra", "MATH", "10-15", null));
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
                 VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, homeworks);
         assertThrows(IllegalValueException.class, DueDate.MESSAGE_FULL_DATE_CONSTRAINTS, student::toModelType);
@@ -184,9 +183,9 @@ public class JsonAdaptedStudentTest {
 
     @Test
     public void toModelType_duplicateHomework_throwsIllegalValueException() {
-        // Same title ignoring case, subject and due date; status and score differ
+        // Same title ignoring case, subject and due date; the score differs
         JsonAdaptedHomework duplicate = new JsonAdaptedHomework("COMPLETE ALGEBRA WORKSHEET", "MATH", "2026-10-15",
-                "COMPLETED", 90);
+                90);
         List<JsonAdaptedHomework> homeworks = List.of(new JsonAdaptedHomework(ALGEBRA), duplicate);
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
                 VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, homeworks);
@@ -197,7 +196,7 @@ public class JsonAdaptedStudentTest {
     @Test
     public void toModelType_sameTitleDifferentDueDate_returnsStudentWithBothHomework() throws Exception {
         JsonAdaptedHomework laterAlgebra = new JsonAdaptedHomework(ALGEBRA.getTitle().toString(), "MATH",
-                "2026-10-22", "ASSIGNED", null);
+                "2026-10-22", null);
         List<JsonAdaptedHomework> homeworks = List.of(new JsonAdaptedHomework(ALGEBRA), laterAlgebra);
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
                 VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, homeworks);

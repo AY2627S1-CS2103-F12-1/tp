@@ -99,7 +99,6 @@ public class JsonAddressBookStorageTest {
         assertTrue(savedJson.contains("\"name\" : \"" + ALICE.getName() + "\""));
         assertTrue(savedJson.contains("\"subjects\" : [ \"MATH\", \"PHYSICS\", \"CHEMISTRY\" ]"));
         assertTrue(savedJson.contains("\"dueDate\" : \"2026-10-15\""));
-        assertTrue(savedJson.contains("\"status\" : \"COMPLETED\""));
         assertTrue(savedJson.contains("\"score\" : 85"));
     }
 

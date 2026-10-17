@@ -9,6 +9,7 @@ import static seedu.address.testutil.TypicalHomeworks.ATOMIC_STRUCTURE;
 import static seedu.address.testutil.TypicalHomeworks.MECHANICS;
 
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 
@@ -31,6 +32,8 @@ import seedu.address.model.student.Student;
 import seedu.address.testutil.StudentBuilder;
 
 public class StudentUiTest {
+    /** Date the student cards count upcoming homework from, between the due dates of the typical homework. */
+    private static final LocalDate TODAY = LocalDate.of(2026, 10, 16);
     private static final String LONG_NAME = "Guardian With An Exceptionally Long Name That Fills Seventy Characters";
 
     @BeforeAll
@@ -47,7 +50,7 @@ public class StudentUiTest {
     public void studentCard_displaysAllStudentFields() throws Exception {
         runOnFxThread(() -> {
             Student student = new StudentBuilder().build();
-            Parent card = (Parent) new StudentCard(student, 2).getRoot();
+            Parent card = (Parent) new StudentCard(student, 2, TODAY).getRoot();
 
             assertEquals("2.", labelText(card, "index"));
             assertEquals("John Tan", labelText(card, "name"));
@@ -56,18 +59,18 @@ public class StudentUiTest {
             assertEquals("Student: 91234567", labelText(card, "studentPhone"));
             assertEquals("Guardian: Mary Tan", labelText(card, "guardianName"));
             assertEquals("Guardian phone: 98765432", labelText(card, "guardianPhone"));
-            assertEquals("Assigned homework: 0", labelText(card, "assignedHomeworkCount"));
+            assertEquals("Upcoming homework: 0", labelText(card, "upcomingHomeworkCount"));
         });
     }
 
     @Test
-    public void studentCard_countsAssignedHomeworkOnly() throws Exception {
+    public void studentCard_countsUpcomingHomeworkOnly() throws Exception {
         runOnFxThread(() -> {
-            // ATOMIC_STRUCTURE is completed, so it is not counted
+            // ALGEBRA is due on 2026-10-15, before TODAY, so it is not counted
             Student student = new StudentBuilder().withHomeworks(ALGEBRA, MECHANICS, ATOMIC_STRUCTURE).build();
-            Parent card = (Parent) new StudentCard(student, 1).getRoot();
+            Parent card = (Parent) new StudentCard(student, 1, TODAY).getRoot();
 
-            assertEquals("Assigned homework: 2", labelText(card, "assignedHomeworkCount"));
+            assertEquals("Upcoming homework: 2", labelText(card, "upcomingHomeworkCount"));
         });
     }
 
@@ -154,7 +157,7 @@ public class StudentUiTest {
 
     /** Returns the width the given label of the student's card needs to show its text on one line. */
     private static double oneLineWidth(Student student, String id) {
-        Parent card = (Parent) new StudentCard(student, 1).getRoot();
+        Parent card = (Parent) new StudentCard(student, 1, TODAY).getRoot();
         new Scene(card);
         card.applyCss();
         return card.lookup("#" + id).prefWidth(-1);

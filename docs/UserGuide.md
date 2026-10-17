@@ -129,7 +129,7 @@ Format: `homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|M
 * For 29 February (`02-29` or `2-29`), the year is this year only if this year is a leap year and 29 February has not passed yet. Otherwise it is next year, and if next year is not a leap year, the date is rejected. For example, `due/2-29` is rejected throughout 2026, and gives `2028-02-29` throughout 2027.
 * In both formats, the month and day may have 1 or 2 digits, so `2026-2-5` means 5 February 2026 and `10-5` means 5 October. The year must have 4 digits.
 * A student cannot have two homework records with the same title (ignoring case), subject and due date. The same homework can be added to different students.
-* Each student card shows the number of homework records that are still assigned. Completed homework is not counted, but it still appears in `homework list`.
+* Each student card shows `Upcoming homework: N`, the number of the student's homework records due today or later.
 
 Examples:
 * `homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15`
@@ -146,7 +146,6 @@ Format: `homework|hw list|ls STUDENT_INDEX`
 * `homework` can be shortened to `hw`, and `list` can be shortened to `ls`.
 * `STUDENT_INDEX` follows the same rules as in `homework add`.
 * The result starts with `Listed N homework records for NAME.` (`record` when there is only one) and `Homework for NAME:`, followed by one line per homework with its number, title, subject and due date, e.g. `1. Complete algebra worksheet (MATH) - due 2026-10-15`.
-* Completed homework is listed too. The list does not show whether a homework is assigned or completed.
 * If the student has no homework, the result is `No homework found for NAME.`
 * The numbers shown are the `HOMEWORK_INDEX` values used by `homework delete`. They change when homework is deleted.
 
@@ -275,7 +274,6 @@ The data file holds a list of `students`. Each student can hold `homeworks` and 
       "title" : "Quadratic equations worksheet",
       "subject" : "MATH",
       "dueDate" : "2026-10-23",
-      "status" : "ASSIGNED",
       "score" : null
     } ],
     "lessons" : [ {
@@ -294,9 +292,9 @@ When editing the file, follow these rules:
 * Each student needs `name`, `academicLevel`, `subjects`, `phone`, `guardianName` and `guardianPhone`, with the same rules as in [`add`](#adding-a-student-add). `subjects` is a list with one subject per entry. No two students may have the same name (ignoring case) and the same `phone`.
 * `homeworks` may be left out, or written as `[ ]`, for a student with no homework.
 * `lessons` may be left out, or written as `[ ]`, for a student with no regular lessons. Each lesson has `subject`, `dayOfWeek`, `startTime` and `endTime`, for example `{"subject":"MATH","dayOfWeek":"MONDAY","startTime":"16:00","endTime":"18:00"}`. The same subject, weekday, time and overlap rules as `lesson add` apply. Older files without `lessons` continue to work.
-* Each homework needs `title`, `subject`, `dueDate` and `status`. `title` follows the same rules as in [`homework add`](#adding-homework-to-a-student-homework-add), and `subject` must be one of the student's `subjects`.
+* Each homework needs `title`, `subject` and `dueDate`. `title` follows the same rules as in [`homework add`](#adding-homework-to-a-student-homework-add), and `subject` must be one of the student's `subjects`.
 * `dueDate` must be a full date in `YYYY-MM-DD` format, such as `2026-10-23`. The short `MM-DD` form is not accepted in the data file, as TutorFlow never guesses the year of a saved date.
-* `status` is `ASSIGNED` or `COMPLETED`. `score` is a whole number such as `85` (not `85.5` or `"85"`), or `null` (or left out) if the homework has no score.
+* `score` is a whole number such as `85` (not `85.5` or `"85"`), or `null` (or left out) if the homework has no score.
 * A student cannot have two homework records with the same title (ignoring case), subject and due date.
 * Values such as `math` or `s3` are accepted in any case, and extra spaces in names and titles are removed. TutorFlow writes them in its own format the next time it saves.
 * Spell every key exactly as shown above. A misspelled key that may be left out (`homeworks`, `lessons` or `score`) is ignored without an error: for example, with `homework` instead of `homeworks`, the student loads with no homework, and the next command that changes the data removes that homework from the file. A misspelled required key, such as `phne` instead of `phone`, makes the data file invalid (see the caution below).

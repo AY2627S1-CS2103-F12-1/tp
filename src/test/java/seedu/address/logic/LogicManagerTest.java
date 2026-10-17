@@ -186,6 +186,7 @@ public class LogicManagerTest {
         setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
 
         logic.execute("hw ls 1");
+        logic.execute("hw up due/365");
         logic.execute("help");
 
         assertEquals(new ModelManager(getTypicalAddressBook(), new UserPrefs()), model);

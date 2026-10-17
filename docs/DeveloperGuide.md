@@ -413,6 +413,72 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
   * 4a2. TutorFlow informs the tutor that no lesson data was changed.
   * 4a3. Use case ends.
 
+#### Use case: UC03 - Edit a homework record
+
+**MSS**
+
+1. Tutor requests to list a student's homework.
+2. TutorFlow displays the student's upcoming homework, each with its homework index.
+3. Tutor requests to edit one homework record of the student using its homework index, specifying a new title, subject or due date.
+4. TutorFlow updates the homework record, keeping its homework index and score, and displays it together with the student's upcoming homework.
+5. Use case ends.
+
+**Extensions**
+
+* 2a. The homework to edit is overdue, so it is not displayed.
+  * 2a1. Tutor requests to list all of the student's homework.
+  * 2a2. TutorFlow displays all of the student's homework, including overdue homework, each with its homework index.
+  * 2a3. Use case resumes at step 3.
+* 3a. The supplied student index or homework index does not identify a homework record.
+  * 3a1. TutorFlow displays an error.
+  * 3a2. Use case resumes at step 3.
+* 3b. No new detail is supplied, or a new detail is invalid.
+  * 3b1. TutorFlow displays the relevant error.
+  * 3b2. Use case resumes at step 3.
+* 3c. The student does not take the new subject.
+  * 3c1. TutorFlow rejects the edit and displays an error.
+  * 3c2. Use case resumes at step 3.
+* 3d. The new details are identical to the existing details.
+  * 3d1. TutorFlow informs the tutor that no changes were made.
+  * 3d2. Use case ends.
+* 3e. The edited homework would duplicate another homework record of the student.
+  * 3e1. TutorFlow rejects the edit and informs the tutor.
+  * 3e2. Use case ends.
+* 4a. TutorFlow cannot save the updated data.
+  * 4a1. TutorFlow leaves the homework unchanged.
+  * 4a2. TutorFlow informs the tutor that no homework data was changed.
+  * 4a3. Use case ends.
+
+#### Use case: UC04 - Record homework marks
+
+**MSS**
+
+1. Tutor requests to list a student's homework.
+2. TutorFlow displays the student's upcoming homework, each with its homework index and score.
+3. Tutor requests to record the marks of one homework record of the student using its homework index, specifying the marks obtained and the total marks.
+4. TutorFlow records the score, replacing any score recorded before, and displays the homework record with its score.
+5. Use case ends.
+
+**Extensions**
+
+* 2a. The homework is overdue, so it is not displayed.
+  * 2a1. Tutor requests to list all of the student's homework.
+  * 2a2. TutorFlow displays all of the student's homework, including overdue homework.
+  * 2a3. Use case resumes at step 3.
+* 3a. The supplied student index or homework index does not identify a homework record.
+  * 3a1. TutorFlow displays an error.
+  * 3a2. Use case resumes at step 3.
+* 3b. The score is invalid, for example the marks obtained exceed the total marks.
+  * 3b1. TutorFlow displays the score format and its rules.
+  * 3b2. Use case resumes at step 3.
+* 3c. The homework already has this score.
+  * 3c1. TutorFlow informs the tutor that no changes were made.
+  * 3c2. Use case ends.
+* 4a. TutorFlow cannot save the updated data.
+  * 4a1. TutorFlow leaves the score unchanged.
+  * 4a2. TutorFlow informs the tutor that no homework data was changed.
+  * 4a3. Use case ends.
+
 ### Non-Functional Requirements
 
 1. TutorFlow should work on Windows, Linux, and macOS on a computer with Java `25` installed.
@@ -433,11 +499,14 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
 * **Displayed index**: A temporary one-based number assigned to an item in the currently displayed list. It is not a permanent identifier.
 * **Guardian**: The person recorded as the primary guardian or contact for a student.
 * **Homework**: Work assigned to a student and recorded in TutorFlow for follow-up.
+* **Homework index**: The one-based position of a homework record in its student's homework list, in the order the homework was added. `homework list` shows it next to each record, and `homework edit`, `homework marks` and `homework delete` use it to identify the record.
 * **Lesson clash**: Two regular lessons on the same weekday whose time intervals overlap.
 * **Regular lesson**: A tuition lesson that repeats weekly for a student at a specified weekday and time.
+* **Score**: The marks a student obtained for a homework record together with the total marks, written as `MARKS_OBTAINED/TOTAL_MARKS`, such as `5/10`.
 * **Student profile**: The record containing a student's identity, contact information, academic information, guardian information, and associated regular lessons.
 * **Student roster**: The collection of student profiles managed by TutorFlow.
 * **Tuition subject**: A subject that the tutor teaches to a student, such as Mathematics, Physics, or Chemistry.
+* **Upcoming homework**: Homework that is due today or later.
 
 --------------------------------------------------------------------------------------------------------------------
 

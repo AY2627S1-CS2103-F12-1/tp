@@ -188,9 +188,9 @@ Examples:
 
 ### Recording homework marks: `homework marks`
 
-Records the marks a student obtained for one homework record, replacing any marks recorded before.
+Records the marks a student obtained for one homework record, replacing any marks recorded before, or clears the recorded marks.
 
-Format: `homework|hw marks|m STUDENT_INDEX HOMEWORK_INDEX score/SCORE`
+Format: `homework|hw marks|m STUDENT_INDEX HOMEWORK_INDEX score/[SCORE]`
 
 * `homework` can be shortened to `hw`, and `marks` can be shortened to `m`.
 * `STUDENT_INDEX` and `HOMEWORK_INDEX` follow the same rules as in `homework edit`.
@@ -199,11 +199,14 @@ Format: `homework|hw marks|m STUDENT_INDEX HOMEWORK_INDEX score/SCORE`
 * Recording the score that the homework already has is rejected with `No changes made; the homework already has this score.`
 * Homework without marks shows `Not recorded`, not `0`, in `homework list`.
 * On success, the result shows the homework with its new score, e.g. `Recorded homework marks:` followed by `Ethan Lim; Title: Kinematics practice set; Subject: PHYSICS; Due: 2026-10-28; Score: 5/10`.
+* Leaving `SCORE` empty (nothing or only spaces after `score/`) clears the recorded marks, so the homework shows `Not recorded` again. The result is `Cleared homework marks:` followed by the homework, e.g. `Ethan Lim; Title: Kinematics practice set; Subject: PHYSICS; Due: 2026-10-28; Score: Not recorded`. Clearing homework that has no marks is rejected with `No changes made; the homework has no recorded marks.`
+* The `score/` prefix is required even when clearing: `hw m 1 2` without it is rejected.
 
 Examples:
 * `hw m 1 2 score/5/10`
 * `hw m 2 1 score/35/50`
 * `homework marks 4 2 score/0/10` records that the 4th student scored no marks for their 2nd homework.
+* `hw m 1 2 score/` clears the marks of the 2nd homework of the 1st student.
 
 ### Deleting a student: `delete`
 
@@ -392,7 +395,7 @@ Action | Format, Examples
 **Homework delete** | <code>homework&#124;hw delete&#124;del STUDENT_INDEX HOMEWORK_INDEX</code><br> e.g., `homework delete 1 2`
 **Homework edit** | <code>homework&#124;hw edit&#124;e STUDENT_INDEX HOMEWORK_INDEX [title/&#124;t/TITLE] [s/SUBJECT] [due/YYYY-MM-DD&#124;MM-DD]</code><br> e.g., `hw edit 1 2 t/Revise mechanics s/PHYSICS due/2026-11-10`
 **Homework list** | <code>homework&#124;hw list&#124;ls STUDENT_INDEX [all]</code><br> e.g., `homework list 1`, `hw ls 2 all`
-**Homework marks** | <code>homework&#124;hw marks&#124;m STUDENT_INDEX HOMEWORK_INDEX score/SCORE</code><br> e.g., `hw m 1 2 score/5/10`
+**Homework marks** | <code>homework&#124;hw marks&#124;m STUDENT_INDEX HOMEWORK_INDEX score/[SCORE]</code><br> e.g., `hw m 1 2 score/5/10`, `hw m 1 2 score/`
 **Lesson add** | `lesson add INDEX s/SUBJECT d/DAY st/START_TIME et/END_TIME`<br> e.g., `lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00`
 **Lesson list** | `lesson list`
 **Lesson delete** | `lesson delete LESSON_INDEX`<br> e.g., `lesson delete 2`

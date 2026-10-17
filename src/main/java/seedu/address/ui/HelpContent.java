@@ -11,6 +11,7 @@ import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
 import seedu.address.logic.commands.HomeworkEditCommand;
 import seedu.address.logic.commands.HomeworkListCommand;
+import seedu.address.logic.commands.HomeworkMarksCommand;
 import seedu.address.logic.commands.LessonAddCommand;
 import seedu.address.logic.commands.LessonDeleteCommand;
 import seedu.address.logic.commands.LessonListCommand;
@@ -62,6 +63,12 @@ public final class HelpContent {
                                     + " by homework list, of the student at STUDENT_INDEX. Give at least one of them;"
                                     + " the other details and the score stay unchanged.",
                             "hw e 1 2 t/Complete algebra questions 1-10"),
+                    new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_MARKS,
+                            HomeworkMarksCommand.MESSAGE_USAGE,
+                            "Records the marks of homework number HOMEWORK_INDEX of the student at STUDENT_INDEX,"
+                                    + " replacing any marks recorded before. SCORE is MARKS_OBTAINED/TOTAL_MARKS,"
+                                    + " e.g. 5/10, with whole numbers and marks obtained from 0 to the total.",
+                            "hw m 1 2 score/5/10"),
                     new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_DELETE,
                             HomeworkDeleteCommand.MESSAGE_USAGE,
                             "Deletes homework number HOMEWORK_INDEX, as numbered by homework list, from the student"

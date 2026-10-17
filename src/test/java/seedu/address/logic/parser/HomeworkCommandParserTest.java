@@ -16,6 +16,8 @@ import seedu.address.logic.commands.HomeworkDeleteCommand;
 import seedu.address.logic.commands.HomeworkEditCommand;
 import seedu.address.logic.commands.HomeworkEditCommand.EditHomeworkDescriptor;
 import seedu.address.logic.commands.HomeworkListCommand;
+import seedu.address.logic.commands.HomeworkMarksCommand;
+import seedu.address.model.homework.Score;
 import seedu.address.model.student.TuitionSubject;
 
 public class HomeworkCommandParserTest {
@@ -25,6 +27,7 @@ public class HomeworkCommandParserTest {
             + "Usage: homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD\n"
             + "homework|hw list|ls STUDENT_INDEX\n"
             + "homework|hw edit|e STUDENT_INDEX HOMEWORK_INDEX [title/|t/TITLE] [s/SUBJECT] [due/YYYY-MM-DD|MM-DD]\n"
+            + "homework|hw marks|m STUDENT_INDEX HOMEWORK_INDEX score/SCORE\n"
             + "homework|hw delete|del STUDENT_INDEX HOMEWORK_INDEX";
 
     private final HomeworkCommandParser parser = new HomeworkCommandParser(CLOCK);
@@ -61,6 +64,18 @@ public class HomeworkCommandParserTest {
     public void parse_editAliasShortDueDate_usesGivenClock() {
         assertParseSuccess(parser, " e 2 1 due/10-15", new HomeworkEditCommand(Index.fromOneBased(2),
                 Index.fromOneBased(1), new EditHomeworkDescriptor(null, null, ALGEBRA.getDueDate()), true));
+    }
+
+    @Test
+    public void parse_marks_returnsHomeworkMarksCommand() {
+        assertParseSuccess(parser, " marks 3 2 score/0/10",
+                new HomeworkMarksCommand(Index.fromOneBased(3), Index.fromOneBased(2), new Score(0, 10)));
+    }
+
+    @Test
+    public void parse_marksAlias_returnsHomeworkMarksCommand() {
+        assertParseSuccess(parser, " m 1 2 score/5/10",
+                new HomeworkMarksCommand(Index.fromOneBased(1), Index.fromOneBased(2), new Score(5, 10)));
     }
 
     @Test

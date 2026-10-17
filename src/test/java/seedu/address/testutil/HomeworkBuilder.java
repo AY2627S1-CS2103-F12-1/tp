@@ -54,6 +54,12 @@ public class HomeworkBuilder {
         return this;
     }
 
+    /** Returns this builder without a score. */
+    public HomeworkBuilder withoutScore() {
+        this.score = null;
+        return this;
+    }
+
     /** Returns a homework record using the configured fields. */
     public Homework build() {
         return new Homework(new Title(title), TuitionSubject.parse(subject), DueDate.parse(dueDate, DEFAULT_TODAY),

@@ -30,7 +30,7 @@ public class HomeworkCommandParserTest {
             + "homework|hw list|ls STUDENT_INDEX [all]\n"
             + "homework|hw edit|e STUDENT_INDEX HOMEWORK_INDEX [title/|t/TITLE] [s/SUBJECT] "
             + "[due/YYYY-MM-DD|MM-DD]\n"
-            + "homework|hw marks|m STUDENT_INDEX HOMEWORK_INDEX score/SCORE\n"
+            + "homework|hw marks|m STUDENT_INDEX HOMEWORK_INDEX score/[SCORE]\n"
             + "homework|hw delete|del STUDENT_INDEX HOMEWORK_INDEX";
 
     private final HomeworkCommandParser parser = new HomeworkCommandParser(CLOCK);

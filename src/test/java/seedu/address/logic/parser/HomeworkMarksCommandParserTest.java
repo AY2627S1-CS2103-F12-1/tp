@@ -12,9 +12,9 @@ import seedu.address.model.homework.Score;
 
 public class HomeworkMarksCommandParserTest {
     private static final String MESSAGE_INVALID_FORMAT = "Invalid command format.\n"
-            + "Usage: homework|hw marks|m STUDENT_INDEX HOMEWORK_INDEX score/SCORE";
+            + "Usage: homework|hw marks|m STUDENT_INDEX HOMEWORK_INDEX score/[SCORE]";
     private static final String MESSAGE_MISSING_SCORE = "Missing required prefix(es): score/\n"
-            + "Usage: homework|hw marks|m STUDENT_INDEX HOMEWORK_INDEX score/SCORE";
+            + "Usage: homework|hw marks|m STUDENT_INDEX HOMEWORK_INDEX score/[SCORE]";
 
     private final HomeworkMarksCommandParser parser = new HomeworkMarksCommandParser();
 
@@ -43,6 +43,24 @@ public class HomeworkMarksCommandParserTest {
         // largest numbers
         assertParseSuccess(parser, "3 2 score/2147483647/2147483647", new HomeworkMarksCommand(
                 Index.fromOneBased(3), Index.fromOneBased(2), new Score(Integer.MAX_VALUE, Integer.MAX_VALUE)));
+    }
+
+    @Test
+    public void parse_emptyScore_returnsClearCommand() {
+        HomeworkMarksCommand expectedCommand = new HomeworkMarksCommand(Index.fromOneBased(1), Index.fromOneBased(2));
+
+        // no value
+        assertParseSuccess(parser, "1 2 score/", expectedCommand);
+
+        // whitespace only
+        assertParseSuccess(parser, " 1  2  score/   ", expectedCommand);
+    }
+
+    @Test
+    public void parse_emptyScoreInvalidIndex_failure() {
+        assertParseFailure(parser, "0 2 score/", Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
+        assertParseFailure(parser, "1 01 score/", Messages.MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX);
+        assertParseFailure(parser, "1 score/", MESSAGE_INVALID_FORMAT);
     }
 
     @Test
@@ -83,6 +101,8 @@ public class HomeworkMarksCommandParserTest {
     @Test
     public void parse_repeatedScorePrefix_failure() {
         assertParseFailure(parser, "1 2 score/5/10 score/6/10",
+                String.format(StrictArgumentTokenizer.MESSAGE_REPEATED_PREFIX, "score/"));
+        assertParseFailure(parser, "1 2 score/ score/",
                 String.format(StrictArgumentTokenizer.MESSAGE_REPEATED_PREFIX, "score/"));
     }
 
@@ -141,9 +161,6 @@ public class HomeworkMarksCommandParserTest {
 
     @Test
     public void parse_invalidScore_failure() {
-        // empty
-        assertParseFailure(parser, "1 2 score/", Score.MESSAGE_CONSTRAINTS);
-
         // marks obtained above the total
         assertParseFailure(parser, "1 2 score/11/10", Score.MESSAGE_CONSTRAINTS);
 

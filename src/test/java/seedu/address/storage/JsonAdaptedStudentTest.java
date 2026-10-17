@@ -185,7 +185,7 @@ public class JsonAdaptedStudentTest {
     public void toModelType_duplicateHomework_throwsIllegalValueException() {
         // Same title ignoring case, subject and due date; the score differs
         JsonAdaptedHomework duplicate = new JsonAdaptedHomework("COMPLETE ALGEBRA WORKSHEET", "MATH", "2026-10-15",
-                90);
+                "9/10");
         List<JsonAdaptedHomework> homeworks = List.of(new JsonAdaptedHomework(ALGEBRA), duplicate);
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
                 VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, homeworks);

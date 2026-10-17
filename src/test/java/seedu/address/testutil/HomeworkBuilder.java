@@ -48,9 +48,9 @@ public class HomeworkBuilder {
         return this;
     }
 
-    /** Returns this builder with a score. */
-    public HomeworkBuilder withScore(int score) {
-        this.score = new Score(score);
+    /** Returns this builder with a score, given in {@code MARKS_OBTAINED/TOTAL_MARKS} format. */
+    public HomeworkBuilder withScore(String score) {
+        this.score = Score.parse(score);
         return this;
     }
 

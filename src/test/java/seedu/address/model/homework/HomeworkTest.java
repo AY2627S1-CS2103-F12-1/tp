@@ -39,9 +39,9 @@ public class HomeworkTest {
 
     @Test
     public void constructor_allFields_success() {
-        Homework homework = new Homework(TITLE, TuitionSubject.MATH, DUE_DATE, new Score(90));
+        Homework homework = new Homework(TITLE, TuitionSubject.MATH, DUE_DATE, new Score(9, 10));
 
-        assertEquals(Optional.of(new Score(90)), homework.getScore());
+        assertEquals(Optional.of(new Score(9, 10)), homework.getScore());
     }
 
     @Test
@@ -71,7 +71,7 @@ public class HomeworkTest {
                 .withTitle(" COMPLETE  algebra Worksheet ").build()));
 
         // different score -> returns true
-        assertTrue(ALGEBRA.isSameHomework(new HomeworkBuilder(ALGEBRA).withScore(70).build()));
+        assertTrue(ALGEBRA.isSameHomework(new HomeworkBuilder(ALGEBRA).withScore("7/10").build()));
 
         // different title -> returns false
         assertFalse(ALGEBRA.isSameHomework(new HomeworkBuilder(ALGEBRA).withTitle("Revise algebra").build()));
@@ -109,13 +109,13 @@ public class HomeworkTest {
         assertFalse(ALGEBRA.equals(new HomeworkBuilder(ALGEBRA).withDueDate("2026-10-16").build()));
 
         // different score -> returns false
-        assertFalse(ALGEBRA.equals(new HomeworkBuilder(ALGEBRA).withScore(70).build()));
+        assertFalse(ALGEBRA.equals(new HomeworkBuilder(ALGEBRA).withScore("7/10").build()));
     }
 
     @Test
     public void toStringMethod() {
         String expected = Homework.class.getCanonicalName() + "{title=Revise atomic structure, subject=CHEMISTRY, "
-                + "dueDate=2026-10-18, score=85}";
+                + "dueDate=2026-10-18, score=17/20}";
         assertEquals(expected, ATOMIC_STRUCTURE.toString());
 
         String expectedWithoutScore = Homework.class.getCanonicalName() + "{title=Complete algebra worksheet, "

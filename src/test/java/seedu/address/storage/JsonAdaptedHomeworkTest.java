@@ -109,15 +109,19 @@ public class JsonAdaptedHomeworkTest {
 
     @Test
     public void toModelType_score_returnsHomeworkWithScore() throws Exception {
-        JsonAdaptedHomework homework = new JsonAdaptedHomework(VALID_TITLE, VALID_SUBJECT, VALID_DUE_DATE, 0);
-        assertEquals(new HomeworkBuilder().withScore(0).build(), homework.toModelType());
+        JsonAdaptedHomework homework = new JsonAdaptedHomework(VALID_TITLE, VALID_SUBJECT, VALID_DUE_DATE, "0/10");
+        assertEquals(new HomeworkBuilder().withScore("0/10").build(), homework.toModelType());
     }
 
     @Test
-    public void toModelType_wholeNumberScoreInJson_returnsHomeworkWithScore() throws Exception {
-        assertEquals(new HomeworkBuilder().withScore(85).build(), fromJsonWithScore("85").toModelType());
-        assertEquals(new HomeworkBuilder().withScore(Integer.MAX_VALUE).build(),
-                fromJsonWithScore("2147483647").toModelType());
+    public void toModelType_validScoreInJson_returnsHomeworkWithScore() throws Exception {
+        assertEquals(new HomeworkBuilder().withScore("5/10").build(), fromJsonWithScore("\"5/10\"").toModelType());
+        assertEquals(new HomeworkBuilder().withScore("2147483647/2147483647").build(),
+                fromJsonWithScore("\"2147483647/2147483647\"").toModelType());
+
+        // surrounding whitespace is ignored, as in commands
+        assertEquals(new HomeworkBuilder().withScore("5/10").build(),
+                fromJsonWithScore("\" 5/10 \"").toModelType());
     }
 
     @Test
@@ -130,12 +134,17 @@ public class JsonAdaptedHomeworkTest {
 
     @Test
     public void toModelType_invalidScoreInJson_throwsIllegalValueException() throws Exception {
-        assertInvalidScore("85.5"); // decimal, which must not be truncated to 85
-        assertInvalidScore("85.0"); // decimal with a zero fraction
-        assertInvalidScore("2147483648"); // larger than Integer.MAX_VALUE
-        assertInvalidScore("\"85\""); // number written as text
+        assertInvalidScore("85"); // single number, as saved before scores had a total
+        assertInvalidScore("\"85\""); // single number written as text
+        assertInvalidScore("85.5"); // decimal number
+        assertInvalidScore("\"5.5/10\""); // decimal marks
+        assertInvalidScore("\"11/10\""); // marks above the total
+        assertInvalidScore("\"5/0\""); // zero total
+        assertInvalidScore("\"5 / 10\""); // spaces inside
         assertInvalidScore("\"abc\""); // non-numeric text
         assertInvalidScore("true"); // boolean
+        assertThrows(IllegalValueException.class, Score.MESSAGE_TOO_LARGE, fromJsonWithScore(
+                "\"2147483648/2147483648\"")::toModelType); // larger than Integer.MAX_VALUE
     }
 
     private static JsonAdaptedHomework fromJsonWithScore(String score) throws Exception {

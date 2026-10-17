@@ -13,7 +13,7 @@ public class TypicalHomeworks {
     public static final Homework MECHANICS = new HomeworkBuilder().withTitle("Attempt mechanics questions 1-5")
             .withSubject("PHYSICS").withDueDate("2026-10-20").build();
     public static final Homework ATOMIC_STRUCTURE = new HomeworkBuilder().withTitle("Revise atomic structure")
-            .withSubject("CHEMISTRY").withDueDate("2026-10-18").withScore(85)
+            .withSubject("CHEMISTRY").withDueDate("2026-10-18").withScore("17/20")
             .build();
 
     private TypicalHomeworks() {} // prevents instantiation

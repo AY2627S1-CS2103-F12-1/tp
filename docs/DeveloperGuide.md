@@ -155,7 +155,7 @@ The app data is saved in `data/tutorflow.json`. `JsonSerializableAddressBook` ho
 * Homework fields: `title`, `subject`, `dueDate`, and `score`.
 * Lesson fields: `subject`, `dayOfWeek`, `startTime`, and `endTime`.
 
-Contact and academic fields, homework titles and dates, and lesson fields are strings. `subjects` is a list of strings, `homeworks` and `lessons` are lists of objects, and `score` is a whole number or `null`. Lessons store weekdays by name and times in `HH:mm` format.
+Contact and academic fields, homework titles and dates, and lesson fields are strings. `subjects` is a list of strings, `homeworks` and `lessons` are lists of objects, and `score` is a `MARKS_OBTAINED/TOTAL_MARKS` string such as `"5/10"`, or `null`. Lessons store weekdays by name and times in `HH:mm` format.
 
 Each adapted class checks its values in `toModelType()` with the same value classes that commands use. Student and homework adapters report missing fields with `MISSING_FIELD_MESSAGE_FORMAT` and invalid values with the value class's `MESSAGE_CONSTRAINTS`. `JsonAdaptedLesson` reports missing lesson fields together and delegates value validation to `TuitionSubject` and `RegularLesson`. Invalid data produces an `IllegalValueException`. Loading also rejects:
 
@@ -165,7 +165,7 @@ Each adapted class checks its values in `toModelType()` with the same value clas
 * a lesson for a subject the student does not take, duplicate lessons within a student, or overlapping lessons within or across students.
 * a lesson with a missing or invalid subject, weekday, start time, or end time.
 * a due date that is not a full `YYYY-MM-DD` date. `JsonAdaptedHomework` uses `DueDate#parseFullDate`, so the year of a saved date is never inferred from today's date. Dates are saved padded (`2026-02-05`).
-* a score that is not a JSON whole number within the `int` range (e.g. `85.5`, `"85"`), with `Score#MESSAGE_CONSTRAINTS`. `JsonAdaptedHomework` keeps `score` as the `Object` Jackson reads (an `Integer` only for such a whole number), because a field of type `Integer` would make Jackson silently truncate `85.5` to `85`.
+* a score that `Score#parse` rejects (e.g. `"5.5/10"`, `"11/10"`, `"5/0"`), with `Score#MESSAGE_CONSTRAINTS`, or `Score#MESSAGE_TOO_LARGE` for a number beyond the `int` range. Jackson reads a JSON number such as `85` into the `String` field as `"85"`, which has no total, so a score saved as a single number is rejected too.
 
 A missing `homeworks` list, `lessons` list, or `score` means no homework, no lessons, or no score. This allows older student data without a `lessons` field to load. Subjects, levels, and weekdays are accepted in any case and saved in upper case.
 

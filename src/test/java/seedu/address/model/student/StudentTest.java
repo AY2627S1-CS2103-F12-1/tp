@@ -99,7 +99,7 @@ public class StudentTest {
 
         // same identity with different title case and score -> returns true
         assertTrue(student.hasHomework(new HomeworkBuilder(ALGEBRA).withTitle("COMPLETE ALGEBRA WORKSHEET")
-                .withScore(70).build()));
+                .withScore("7/10").build()));
 
         // different homework -> returns false
         assertFalse(student.hasHomework(MECHANICS));

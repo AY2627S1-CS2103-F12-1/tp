@@ -22,7 +22,7 @@ class JsonAdaptedHomework {
     private final String title;
     private final String subject;
     private final String dueDate;
-    private final Object score;
+    private final String score;
 
     /**
      * Constructs a {@code JsonAdaptedHomework} with the given homework details, as read from the JSON file.
@@ -30,13 +30,11 @@ class JsonAdaptedHomework {
      * @param title Title of the homework, or null if the field is missing.
      * @param subject Subject of the homework, such as {@code MATH}, or null if the field is missing.
      * @param dueDate Due date in {@code YYYY-MM-DD} format, or null if the field is missing.
-     * @param score Score received for the homework, or null if none is recorded. It is kept as read from the JSON
-     *     file (e.g. a {@code Double} for {@code 85.5}) so that {@link #toModelType()} can reject a score that is
-     *     not a whole number instead of truncating it.
+     * @param score Score in {@code MARKS_OBTAINED/TOTAL_MARKS} format, or null if none is recorded.
      */
     @JsonCreator
     public JsonAdaptedHomework(@JsonProperty("title") String title, @JsonProperty("subject") String subject,
-            @JsonProperty("dueDate") String dueDate, @JsonProperty("score") Object score) {
+            @JsonProperty("dueDate") String dueDate, @JsonProperty("score") String score) {
         this.title = title;
         this.subject = subject;
         this.dueDate = dueDate;
@@ -50,7 +48,7 @@ class JsonAdaptedHomework {
         title = source.getTitle().toString();
         subject = source.getSubject().name();
         dueDate = source.getDueDate().toString();
-        score = source.getScore().map(Score::getValue).orElse(null);
+        score = source.getScore().map(Score::toString).orElse(null);
     }
 
     /**
@@ -72,17 +70,18 @@ class JsonAdaptedHomework {
     /**
      * Returns the model score for the optional field {@code score}, or null if the field is missing.
      *
-     * @throws IllegalValueException If {@code score} is not a JSON whole number within the {@code int} range.
+     * @throws IllegalValueException If {@code score} is not a valid score in {@code MARKS_OBTAINED/TOTAL_MARKS}
+     *         format.
      */
-    private static Score toModelScore(Object score) throws IllegalValueException {
+    private static Score toModelScore(String score) throws IllegalValueException {
         if (score == null) {
             return null;
         }
-        // Jackson reads a whole number within the int range as an Integer, and 85.5 as a Double
-        if (!(score instanceof Integer value)) {
-            throw new IllegalValueException(Score.MESSAGE_CONSTRAINTS);
+        try {
+            return Score.parse(score);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalValueException(exception.getMessage());
         }
-        return new Score(value);
     }
 
     /**

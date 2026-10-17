@@ -13,7 +13,10 @@ import org.junit.jupiter.api.Test;
 import seedu.address.commons.core.index.Index;
 import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
+import seedu.address.logic.commands.HomeworkEditCommand;
+import seedu.address.logic.commands.HomeworkEditCommand.EditHomeworkDescriptor;
 import seedu.address.logic.commands.HomeworkListCommand;
+import seedu.address.model.student.TuitionSubject;
 
 public class HomeworkCommandParserTest {
     /** Fixed clock at 2026-10-05, so short-form due dates always infer the same year. */
@@ -21,6 +24,7 @@ public class HomeworkCommandParserTest {
     private static final String MESSAGE_INVALID_FORMAT = "Invalid command format.\n"
             + "Usage: homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD\n"
             + "homework|hw list|ls STUDENT_INDEX\n"
+            + "homework|hw edit|e STUDENT_INDEX HOMEWORK_INDEX [title/|t/TITLE] [s/SUBJECT] [due/YYYY-MM-DD|MM-DD]\n"
             + "homework|hw delete|del STUDENT_INDEX HOMEWORK_INDEX";
 
     private final HomeworkCommandParser parser = new HomeworkCommandParser(CLOCK);
@@ -45,6 +49,18 @@ public class HomeworkCommandParserTest {
     @Test
     public void parse_listAlias_returnsHomeworkListCommand() {
         assertParseSuccess(parser, " ls 5", new HomeworkListCommand(Index.fromOneBased(5)));
+    }
+
+    @Test
+    public void parse_edit_returnsHomeworkEditCommand() {
+        assertParseSuccess(parser, " edit 1 2 s/MATH", new HomeworkEditCommand(Index.fromOneBased(1),
+                Index.fromOneBased(2), new EditHomeworkDescriptor(null, TuitionSubject.MATH, null), false));
+    }
+
+    @Test
+    public void parse_editAliasShortDueDate_usesGivenClock() {
+        assertParseSuccess(parser, " e 2 1 due/10-15", new HomeworkEditCommand(Index.fromOneBased(2),
+                Index.fromOneBased(1), new EditHomeworkDescriptor(null, null, ALGEBRA.getDueDate()), true));
     }
 
     @Test

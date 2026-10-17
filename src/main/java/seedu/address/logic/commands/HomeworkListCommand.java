@@ -64,10 +64,17 @@ public class HomeworkListCommand extends Command {
             throw new CommandException(Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
         }
 
-        Student student = students.get(studentIndex.getZeroBased());
+        return new CommandResult(formatHomeworkList(students.get(studentIndex.getZeroBased())));
+    }
+
+    /**
+     * Returns the homework of {@code student} in the format this command shows it, so that other homework commands
+     * can show the same list.
+     */
+    static String formatHomeworkList(Student student) {
         List<Homework> homeworks = student.getHomeworks();
         if (homeworks.isEmpty()) {
-            return new CommandResult(String.format(MESSAGE_NO_HOMEWORK, student.getName()));
+            return String.format(MESSAGE_NO_HOMEWORK, student.getName());
         }
 
         String recordWord = homeworks.size() == 1 ? MESSAGE_RECORD_SINGULAR : MESSAGE_RECORD_PLURAL;
@@ -78,7 +85,7 @@ public class HomeworkListCommand extends Command {
             message.append(String.format(MESSAGE_HOMEWORK_LINE, i + 1, homework.getTitle(), homework.getSubject(),
                     homework.getDueDate()));
         }
-        return new CommandResult(message.toString());
+        return message.toString();
     }
 
     @Override

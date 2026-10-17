@@ -25,6 +25,7 @@ import seedu.address.logic.commands.ClearCommand;
 import seedu.address.logic.commands.CommandResult;
 import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
+import seedu.address.logic.commands.HomeworkEditCommand;
 import seedu.address.logic.commands.LessonAddCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.exceptions.CommandException;
@@ -134,6 +135,18 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_homeworkEdit_savesEditedHomework() throws Exception {
+        setUpLogic(getTypicalAddressBook(), addressBookStorage);
+
+        logic.execute("hw e 1 1 t/Complete algebra questions 1-10");
+
+        ReadOnlyAddressBook savedData = addressBookStorage.readAddressBook().get();
+        assertEquals("Complete algebra questions 1-10",
+                savedData.getStudentList().get(0).getHomeworks().get(0).getTitle().toString());
+        assertEquals(model.getAddressBook(), new AddressBook(savedData));
+    }
+
+    @Test
     public void execute_clear_savesNoStudents() throws Exception {
         setUpLogic(getTypicalAddressBook(), addressBookStorage);
 
@@ -226,6 +239,15 @@ public class LogicManagerTest {
 
         assertCommandFailure("hw del 1 2", CommandException.class, HomeworkDeleteCommand.MESSAGE_SAVE_FAILURE,
                 new ModelManager(getTypicalAddressBook(), new UserPrefs()));
+    }
+
+    @Test
+    public void execute_homeworkEditSaveFails_rollsBackEdit() {
+        setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+
+        assertCommandFailure("hw edit 1 2 t/Revise mechanics s/PHYSICS due/2026-11-10", CommandException.class,
+                HomeworkEditCommand.MESSAGE_SAVE_FAILURE, new ModelManager(getTypicalAddressBook(), new UserPrefs()));
+        assertFalse(Files.exists(dataFilePath));
     }
 
     @Test

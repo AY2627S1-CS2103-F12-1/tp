@@ -491,6 +491,29 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
   * 4a2. TutorFlow informs the tutor that no homework data was changed.
   * 4a3. Use case ends.
 
+#### Use case: UC05 - List upcoming homework of all students
+
+**MSS**
+
+1. Tutor requests to list the homework of all students that is due within a number of days from today.
+2. TutorFlow displays that homework, earliest due date first, with each record's student, title, subject, due date and score.
+3. Use case ends.
+
+**Extensions**
+
+* 1a. The tutor does not specify the number of days.
+  * 1a1. TutorFlow uses 7 days.
+  * 1a2. Use case resumes at step 2.
+* 1b. The number of days is invalid.
+  * 1b1. TutorFlow displays an error.
+  * 1b2. Use case resumes at step 1.
+* 2a. No homework is due in that period.
+  * 2a1. TutorFlow informs the tutor that no homework is due in that period.
+  * 2a2. Use case ends.
+* 2b. The tutor wants to edit, score or delete one of the displayed records.
+  * 2b1. Tutor requests to list that student's homework to find the record's homework index, as the displayed order is not the homework index (see UC03 and UC04).
+  * 2b2. Use case ends.
+
 ### Non-Functional Requirements
 
 1. TutorFlow should work on Windows, Linux, and macOS on a computer with Java `25` installed.

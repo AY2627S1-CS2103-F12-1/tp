@@ -34,6 +34,8 @@ import seedu.address.model.student.TuitionSubject;
 import seedu.address.testutil.HomeworkBuilder;
 
 public class HomeworkEditCommandTest {
+    /** Date before every typical due date, so all typical homework is upcoming. */
+    private static final LocalDate TODAY = LocalDate.of(2026, 10, 5);
     private static final Index FIRST = Index.fromOneBased(1);
     private static final Index SECOND = Index.fromOneBased(2);
     private static final Index THIRD = Index.fromOneBased(3);
@@ -44,9 +46,9 @@ public class HomeworkEditCommandTest {
 
     @Test
     public void constructor_nullArgument_throwsNullPointerException() {
-        assertThrows(NullPointerException.class, () -> new HomeworkEditCommand(null, FIRST, NEW_TITLE, false));
-        assertThrows(NullPointerException.class, () -> new HomeworkEditCommand(FIRST, null, NEW_TITLE, false));
-        assertThrows(NullPointerException.class, () -> new HomeworkEditCommand(FIRST, FIRST, null, false));
+        assertThrows(NullPointerException.class, () -> new HomeworkEditCommand(null, FIRST, NEW_TITLE, false, TODAY));
+        assertThrows(NullPointerException.class, () -> new HomeworkEditCommand(FIRST, null, NEW_TITLE, false, TODAY));
+        assertThrows(NullPointerException.class, () -> new HomeworkEditCommand(FIRST, FIRST, null, false, TODAY));
     }
 
     @Test
@@ -54,15 +56,15 @@ public class HomeworkEditCommandTest {
         Homework editedAlgebra = new HomeworkBuilder(ALGEBRA).withTitle("Complete algebra questions 1-10").build();
         String expectedMessage = "Edited homework:\n"
                 + "Alice Tan; Title: Complete algebra questions 1-10; Subject: MATH; Due: 2026-10-15\n"
-                + "Listed 3 homework records for Alice Tan.\n"
+                + "Listed 3 upcoming homework records for Alice Tan.\n"
                 + "Homework for Alice Tan:\n"
-                + "1. Complete algebra questions 1-10 (MATH) - due 2026-10-15\n"
-                + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20\n"
-                + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18";
+                + "1. Complete algebra questions 1-10 (MATH) - due 2026-10-15 - score Not recorded\n"
+                + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20\n"
+                + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded";
         Model expectedModel = getModelWithStudents(List.of(
                 ALICE.withHomeworks(List.of(editedAlgebra, MECHANICS, ATOMIC_STRUCTURE)), BENSON, CARL));
 
-        assertCommandSuccess(new HomeworkEditCommand(FIRST, FIRST, NEW_TITLE, false), model, expectedMessage,
+        assertCommandSuccess(new HomeworkEditCommand(FIRST, FIRST, NEW_TITLE, false, TODAY), model, expectedMessage,
                 expectedModel);
     }
 
@@ -74,15 +76,15 @@ public class HomeworkEditCommandTest {
                 .withDueDate("2026-11-10").build();
         String expectedMessage = "Edited homework:\n"
                 + "Alice Tan; Title: Revise mechanics; Subject: CHEMISTRY; Due: 2026-11-10\n"
-                + "Listed 3 homework records for Alice Tan.\n"
+                + "Listed 3 upcoming homework records for Alice Tan.\n"
                 + "Homework for Alice Tan:\n"
-                + "1. Complete algebra worksheet (MATH) - due 2026-10-15\n"
-                + "2. Revise mechanics (CHEMISTRY) - due 2026-11-10\n"
-                + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18";
+                + "1. Complete algebra worksheet (MATH) - due 2026-10-15 - score Not recorded\n"
+                + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20\n"
+                + "2. Revise mechanics (CHEMISTRY) - due 2026-11-10 - score Not recorded";
         Model expectedModel = getModelWithStudents(List.of(
                 ALICE.withHomeworks(List.of(ALGEBRA, editedMechanics, ATOMIC_STRUCTURE)), BENSON, CARL));
 
-        assertCommandSuccess(new HomeworkEditCommand(FIRST, SECOND, descriptor, false), model, expectedMessage,
+        assertCommandSuccess(new HomeworkEditCommand(FIRST, SECOND, descriptor, false, TODAY), model, expectedMessage,
                 expectedModel);
     }
 
@@ -93,15 +95,15 @@ public class HomeworkEditCommandTest {
         Homework editedAtomicStructure = new HomeworkBuilder(ATOMIC_STRUCTURE).withDueDate("2026-11-05").build();
         String expectedMessage = "Edited homework:\n"
                 + "Alice Tan; Title: Revise atomic structure; Subject: CHEMISTRY; Due: 2026-11-05\n"
-                + "Listed 3 homework records for Alice Tan.\n"
+                + "Listed 3 upcoming homework records for Alice Tan.\n"
                 + "Homework for Alice Tan:\n"
-                + "1. Complete algebra worksheet (MATH) - due 2026-10-15\n"
-                + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20\n"
-                + "3. Revise atomic structure (CHEMISTRY) - due 2026-11-05";
+                + "1. Complete algebra worksheet (MATH) - due 2026-10-15 - score Not recorded\n"
+                + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded\n"
+                + "3. Revise atomic structure (CHEMISTRY) - due 2026-11-05 - score 17/20";
         Model expectedModel = getModelWithStudents(List.of(
                 ALICE.withHomeworks(List.of(ALGEBRA, MECHANICS, editedAtomicStructure)), BENSON, CARL));
 
-        assertCommandSuccess(new HomeworkEditCommand(FIRST, THIRD, descriptor, false), model, expectedMessage,
+        assertCommandSuccess(new HomeworkEditCommand(FIRST, THIRD, descriptor, false, TODAY), model, expectedMessage,
                 expectedModel);
     }
 
@@ -113,13 +115,13 @@ public class HomeworkEditCommandTest {
         String expectedMessage = "Edited homework:\n"
                 + "Carl Ng; Title: Attempt mechanics questions 1-5; Subject: PHYSICS; Due: 2027-01-05\n"
                 + "Inferred year: 2027\n"
-                + "Listed 1 homework record for Carl Ng.\n"
+                + "Listed 1 upcoming homework record for Carl Ng.\n"
                 + "Homework for Carl Ng:\n"
-                + "1. Attempt mechanics questions 1-5 (PHYSICS) - due 2027-01-05";
+                + "1. Attempt mechanics questions 1-5 (PHYSICS) - due 2027-01-05 - score Not recorded";
         Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON,
                 CARL.withHomeworks(List.of(editedMechanics))));
 
-        assertCommandSuccess(new HomeworkEditCommand(THIRD, FIRST, descriptor, true), model, expectedMessage,
+        assertCommandSuccess(new HomeworkEditCommand(THIRD, FIRST, descriptor, true, TODAY), model, expectedMessage,
                 expectedModel);
     }
 
@@ -133,43 +135,75 @@ public class HomeworkEditCommandTest {
                 ALICE.withHomeworks(List.of(editedAlgebra, MECHANICS, ATOMIC_STRUCTURE)), BENSON, CARL));
         String expectedMessage = "Edited homework:\n"
                 + "Alice Tan; Title: COMPLETE algebra worksheet; Subject: MATH; Due: 2026-10-15\n"
-                + "Listed 3 homework records for Alice Tan.\n"
+                + "Listed 3 upcoming homework records for Alice Tan.\n"
                 + "Homework for Alice Tan:\n"
-                + "1. COMPLETE algebra worksheet (MATH) - due 2026-10-15\n"
-                + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20\n"
-                + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18";
+                + "1. COMPLETE algebra worksheet (MATH) - due 2026-10-15 - score Not recorded\n"
+                + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20\n"
+                + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded";
 
-        assertCommandSuccess(new HomeworkEditCommand(FIRST, FIRST, descriptor, false), model, expectedMessage,
+        assertCommandSuccess(new HomeworkEditCommand(FIRST, FIRST, descriptor, false, TODAY), model, expectedMessage,
                 expectedModel);
     }
 
     @Test
+    public void execute_overdueHomework_listsUpcomingHomeworkOnly() {
+        // on 2026-10-16 ALGEBRA (due 2026-10-15) is overdue, so the list after the edit leaves it out
+        Homework editedAlgebra = new HomeworkBuilder(ALGEBRA).withTitle("Complete algebra questions 1-10").build();
+        String expectedMessage = "Edited homework:\n"
+                + "Alice Tan; Title: Complete algebra questions 1-10; Subject: MATH; Due: 2026-10-15\n"
+                + "Listed 2 upcoming homework records for Alice Tan.\n"
+                + "Homework for Alice Tan:\n"
+                + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20\n"
+                + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded";
+        Model expectedModel = getModelWithStudents(List.of(
+                ALICE.withHomeworks(List.of(editedAlgebra, MECHANICS, ATOMIC_STRUCTURE)), BENSON, CARL));
+
+        assertCommandSuccess(new HomeworkEditCommand(FIRST, FIRST, NEW_TITLE, false, LocalDate.of(2026, 10, 16)),
+                model, expectedMessage, expectedModel);
+    }
+
+    @Test
+    public void execute_dueDateMovedToPast_showsNoUpcomingHomework() {
+        EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(null, null,
+                DueDate.parseFullDate("2026-10-01"));
+        Homework editedMechanics = new HomeworkBuilder(MECHANICS).withDueDate("2026-10-01").build();
+        String expectedMessage = "Edited homework:\n"
+                + "Carl Ng; Title: Attempt mechanics questions 1-5; Subject: PHYSICS; Due: 2026-10-01\n"
+                + "No upcoming homework found for Carl Ng.";
+        Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON,
+                CARL.withHomeworks(List.of(editedMechanics))));
+
+        assertCommandSuccess(new HomeworkEditCommand(THIRD, FIRST, descriptor, false, TODAY), model,
+                expectedMessage, expectedModel);
+    }
+
+    @Test
     public void execute_studentIndexAboveListSize_failure() {
-        assertCommandFailure(new HomeworkEditCommand(Index.fromOneBased(4), FIRST, NEW_TITLE, false), model,
+        assertCommandFailure(new HomeworkEditCommand(Index.fromOneBased(4), FIRST, NEW_TITLE, false, TODAY), model,
                 Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
     }
 
     @Test
     public void execute_emptyRoster_failure() {
-        assertCommandFailure(new HomeworkEditCommand(FIRST, FIRST, NEW_TITLE, false),
+        assertCommandFailure(new HomeworkEditCommand(FIRST, FIRST, NEW_TITLE, false, TODAY),
                 getModelWithStudents(List.of()), Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
     }
 
     @Test
     public void execute_bothIndicesOutOfRange_reportsStudentIndex() {
         assertCommandFailure(new HomeworkEditCommand(Index.fromOneBased(4), Index.fromOneBased(9), NEW_TITLE,
-                false), model, Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
+                false, TODAY), model, Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
     }
 
     @Test
     public void execute_studentWithoutHomework_failure() {
-        assertCommandFailure(new HomeworkEditCommand(SECOND, FIRST, NEW_TITLE, false), model,
+        assertCommandFailure(new HomeworkEditCommand(SECOND, FIRST, NEW_TITLE, false, TODAY), model,
                 HomeworkEditCommand.MESSAGE_NO_HOMEWORK);
     }
 
     @Test
     public void execute_homeworkIndexAboveListSize_failure() {
-        assertCommandFailure(new HomeworkEditCommand(FIRST, Index.fromOneBased(4), NEW_TITLE, false), model,
+        assertCommandFailure(new HomeworkEditCommand(FIRST, Index.fromOneBased(4), NEW_TITLE, false, TODAY), model,
                 Messages.MESSAGE_INVALID_HOMEWORK_DISPLAYED_INDEX);
     }
 
@@ -178,7 +212,7 @@ public class HomeworkEditCommandTest {
         // CARL takes PHYSICS only
         EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(null, TuitionSubject.MATH, null);
 
-        assertCommandFailure(new HomeworkEditCommand(THIRD, FIRST, descriptor, false), model,
+        assertCommandFailure(new HomeworkEditCommand(THIRD, FIRST, descriptor, false, TODAY), model,
                 HomeworkAddCommand.MESSAGE_SUBJECT_NOT_TAKEN);
     }
 
@@ -187,7 +221,7 @@ public class HomeworkEditCommandTest {
         EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(new Title("Complete algebra worksheet"),
                 TuitionSubject.MATH, DueDate.parseFullDate("2026-10-15"));
 
-        assertCommandFailure(new HomeworkEditCommand(FIRST, FIRST, descriptor, false), model,
+        assertCommandFailure(new HomeworkEditCommand(FIRST, FIRST, descriptor, false, TODAY), model,
                 HomeworkEditCommand.MESSAGE_NO_CHANGES);
     }
 
@@ -197,7 +231,7 @@ public class HomeworkEditCommandTest {
         EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(new Title("COMPLETE ALGEBRA WORKSHEET"),
                 TuitionSubject.MATH, DueDate.parseFullDate("2026-10-15"));
 
-        assertCommandFailure(new HomeworkEditCommand(FIRST, SECOND, descriptor, false), model,
+        assertCommandFailure(new HomeworkEditCommand(FIRST, SECOND, descriptor, false, TODAY), model,
                 HomeworkEditCommand.MESSAGE_DUPLICATE_HOMEWORK);
     }
 
@@ -207,7 +241,7 @@ public class HomeworkEditCommandTest {
         EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(new Title("Revise atomic structure"),
                 TuitionSubject.CHEMISTRY, DueDate.parseFullDate("2026-10-18"));
 
-        assertCommandFailure(new HomeworkEditCommand(FIRST, FIRST, descriptor, false), model,
+        assertCommandFailure(new HomeworkEditCommand(FIRST, FIRST, descriptor, false, TODAY), model,
                 HomeworkEditCommand.MESSAGE_DUPLICATE_HOMEWORK);
     }
 
@@ -221,7 +255,7 @@ public class HomeworkEditCommandTest {
         };
         getTypicalStudents().forEach(failingModel::addStudent);
 
-        assertCommandFailure(new HomeworkEditCommand(FIRST, FIRST, NEW_TITLE, false), failingModel,
+        assertCommandFailure(new HomeworkEditCommand(FIRST, FIRST, NEW_TITLE, false, TODAY), failingModel,
                 HomeworkEditCommand.MESSAGE_INTERNAL_ERROR);
     }
 
@@ -229,7 +263,7 @@ public class HomeworkEditCommandTest {
     public void getSaveFailureMessage_anyDefaultMessage_returnsHomeworkMessage() {
         String expectedMessage = "The homework could not be edited because TutorFlow could not save the updated "
                 + "data. No homework data was changed.";
-        assertEquals(expectedMessage, new HomeworkEditCommand(FIRST, FIRST, NEW_TITLE, false)
+        assertEquals(expectedMessage, new HomeworkEditCommand(FIRST, FIRST, NEW_TITLE, false, TODAY)
                 .getSaveFailureMessage("Could not save data"));
     }
 
@@ -245,14 +279,14 @@ public class HomeworkEditCommandTest {
 
     @Test
     public void equals() {
-        HomeworkEditCommand editCommand = new HomeworkEditCommand(FIRST, SECOND, NEW_TITLE, false);
+        HomeworkEditCommand editCommand = new HomeworkEditCommand(FIRST, SECOND, NEW_TITLE, false, TODAY);
 
         // same object -> returns true
         assertTrue(editCommand.equals(editCommand));
 
         // same values -> returns true
         assertTrue(editCommand.equals(new HomeworkEditCommand(Index.fromOneBased(1), Index.fromOneBased(2),
-                new EditHomeworkDescriptor(new Title("Complete algebra questions 1-10"), null, null), false)));
+                new EditHomeworkDescriptor(new Title("Complete algebra questions 1-10"), null, null), false, TODAY)));
 
         // null -> returns false
         assertFalse(editCommand.equals(null));
@@ -261,25 +295,30 @@ public class HomeworkEditCommandTest {
         assertFalse(editCommand.equals(1));
 
         // different student index -> returns false
-        assertFalse(editCommand.equals(new HomeworkEditCommand(SECOND, SECOND, NEW_TITLE, false)));
+        assertFalse(editCommand.equals(new HomeworkEditCommand(SECOND, SECOND, NEW_TITLE, false, TODAY)));
 
         // different homework index -> returns false
-        assertFalse(editCommand.equals(new HomeworkEditCommand(FIRST, FIRST, NEW_TITLE, false)));
+        assertFalse(editCommand.equals(new HomeworkEditCommand(FIRST, FIRST, NEW_TITLE, false, TODAY)));
 
         // different descriptor -> returns false
         assertFalse(editCommand.equals(new HomeworkEditCommand(FIRST, SECOND,
-                new EditHomeworkDescriptor(null, TuitionSubject.MATH, null), false)));
+                new EditHomeworkDescriptor(null, TuitionSubject.MATH, null), false, TODAY)));
 
         // different year inference -> returns false
-        assertFalse(editCommand.equals(new HomeworkEditCommand(FIRST, SECOND, NEW_TITLE, true)));
+        assertFalse(editCommand.equals(new HomeworkEditCommand(FIRST, SECOND, NEW_TITLE, true, TODAY)));
+
+        // different date -> returns false
+        assertFalse(editCommand.equals(new HomeworkEditCommand(FIRST, SECOND, NEW_TITLE, false,
+                LocalDate.of(2026, 10, 6))));
     }
 
     @Test
     public void toStringMethod() {
         EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(null, null,
-                DueDate.parse("11-05", LocalDate.of(2026, 10, 5)));
+                DueDate.parse("11-05", TODAY));
         String expected = HomeworkEditCommand.class.getCanonicalName() + "{studentIndex=" + FIRST
-                + ", homeworkIndex=" + SECOND + ", descriptor=" + descriptor + ", isYearInferred=true}";
-        assertEquals(expected, new HomeworkEditCommand(FIRST, SECOND, descriptor, true).toString());
+                + ", homeworkIndex=" + SECOND + ", descriptor=" + descriptor + ", isYearInferred=true, today="
+                + TODAY + "}";
+        assertEquals(expected, new HomeworkEditCommand(FIRST, SECOND, descriptor, true, TODAY).toString());
     }
 }

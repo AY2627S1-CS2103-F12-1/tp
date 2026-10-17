@@ -6,6 +6,7 @@ import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 
 import org.junit.jupiter.api.Test;
@@ -21,12 +22,14 @@ import seedu.address.model.homework.Score;
 import seedu.address.model.student.TuitionSubject;
 
 public class HomeworkCommandParserTest {
-    /** Fixed clock at 2026-10-05, so short-form due dates always infer the same year. */
+    /** Fixed clock at 2026-10-05, so short-form due dates always infer the same year and today never changes. */
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-05T00:00:00Z"), ZoneOffset.UTC);
+    private static final LocalDate TODAY = LocalDate.of(2026, 10, 5);
     private static final String MESSAGE_INVALID_FORMAT = "Invalid command format.\n"
             + "Usage: homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD\n"
-            + "homework|hw list|ls STUDENT_INDEX\n"
-            + "homework|hw edit|e STUDENT_INDEX HOMEWORK_INDEX [title/|t/TITLE] [s/SUBJECT] [due/YYYY-MM-DD|MM-DD]\n"
+            + "homework|hw list|ls STUDENT_INDEX [all]\n"
+            + "homework|hw edit|e STUDENT_INDEX HOMEWORK_INDEX [title/|t/TITLE] [s/SUBJECT] "
+            + "[due/YYYY-MM-DD|MM-DD]\n"
             + "homework|hw marks|m STUDENT_INDEX HOMEWORK_INDEX score/SCORE\n"
             + "homework|hw delete|del STUDENT_INDEX HOMEWORK_INDEX";
 
@@ -46,24 +49,24 @@ public class HomeworkCommandParserTest {
 
     @Test
     public void parse_list_returnsHomeworkListCommand() {
-        assertParseSuccess(parser, " list 1", new HomeworkListCommand(Index.fromOneBased(1)));
+        assertParseSuccess(parser, " list 1", new HomeworkListCommand(Index.fromOneBased(1), TODAY, false));
     }
 
     @Test
     public void parse_listAlias_returnsHomeworkListCommand() {
-        assertParseSuccess(parser, " ls 5", new HomeworkListCommand(Index.fromOneBased(5)));
+        assertParseSuccess(parser, " ls 5 all", new HomeworkListCommand(Index.fromOneBased(5), TODAY, true));
     }
 
     @Test
     public void parse_edit_returnsHomeworkEditCommand() {
         assertParseSuccess(parser, " edit 1 2 s/MATH", new HomeworkEditCommand(Index.fromOneBased(1),
-                Index.fromOneBased(2), new EditHomeworkDescriptor(null, TuitionSubject.MATH, null), false));
+                Index.fromOneBased(2), new EditHomeworkDescriptor(null, TuitionSubject.MATH, null), false, TODAY));
     }
 
     @Test
     public void parse_editAliasShortDueDate_usesGivenClock() {
         assertParseSuccess(parser, " e 2 1 due/10-15", new HomeworkEditCommand(Index.fromOneBased(2),
-                Index.fromOneBased(1), new EditHomeworkDescriptor(null, null, ALGEBRA.getDueDate()), true));
+                Index.fromOneBased(1), new EditHomeworkDescriptor(null, null, ALGEBRA.getDueDate()), true, TODAY));
     }
 
     @Test
@@ -112,6 +115,7 @@ public class HomeworkCommandParserTest {
 
     @Test
     public void parse_invalidSubcommandArguments_reportsSubcommandError() {
-        assertParseFailure(parser, " list", "Invalid command format.\nUsage: homework|hw list|ls STUDENT_INDEX");
+        assertParseFailure(parser, " list",
+                "Invalid command format.\nUsage: homework|hw list|ls STUDENT_INDEX [all]");
     }
 }

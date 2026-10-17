@@ -5,6 +5,7 @@ import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSucces
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 
 import org.junit.jupiter.api.Test;
@@ -18,13 +19,14 @@ import seedu.address.model.homework.Title;
 import seedu.address.model.student.TuitionSubject;
 
 public class HomeworkEditCommandParserTest {
-    /** Fixed clock at 2026-10-05, so short-form due dates always infer the same year. */
+    /** Fixed clock at 2026-10-05, so short-form due dates always infer the same year and today never changes. */
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-05T00:00:00Z"), ZoneOffset.UTC);
     private static final String MESSAGE_INVALID_FORMAT = "Invalid command format.\n"
             + "Usage: homework|hw edit|e STUDENT_INDEX HOMEWORK_INDEX [title/|t/TITLE] [s/SUBJECT] "
             + "[due/YYYY-MM-DD|MM-DD]";
     private static final Index FIRST = Index.fromOneBased(1);
     private static final Index SECOND = Index.fromOneBased(2);
+    private static final LocalDate TODAY = LocalDate.of(2026, 10, 5);
     private static final Title TITLE = new Title("Complete algebra questions 1-10");
 
     private final HomeworkEditCommandParser parser = new HomeworkEditCommandParser(CLOCK);
@@ -51,7 +53,7 @@ public class HomeworkEditCommandParserTest {
     @Test
     public void parse_fullDueDateOnly_success() {
         assertParseSuccess(parser, "2 1 due/2026-11-05", new HomeworkEditCommand(SECOND, FIRST,
-                new EditHomeworkDescriptor(null, null, DueDate.parseFullDate("2026-11-05")), false));
+                new EditHomeworkDescriptor(null, null, DueDate.parseFullDate("2026-11-05")), false, TODAY));
     }
 
     @Test
@@ -170,7 +172,7 @@ public class HomeworkEditCommandParserTest {
     public void parse_largestIntIndices_success() {
         assertParseSuccess(parser, "2147483647 2147483647 t/Complete algebra questions 1-10",
                 new HomeworkEditCommand(Index.fromOneBased(Integer.MAX_VALUE), Index.fromOneBased(Integer.MAX_VALUE),
-                        new EditHomeworkDescriptor(TITLE, null, null), false));
+                        new EditHomeworkDescriptor(TITLE, null, null), false, TODAY));
     }
 
     @Test
@@ -265,6 +267,6 @@ public class HomeworkEditCommandParserTest {
      * Returns a command that edits the 2nd homework of the 1st student with {@code descriptor}.
      */
     private static HomeworkEditCommand editCommand(EditHomeworkDescriptor descriptor, boolean isYearInferred) {
-        return new HomeworkEditCommand(FIRST, SECOND, descriptor, isYearInferred);
+        return new HomeworkEditCommand(FIRST, SECOND, descriptor, isYearInferred, TODAY);
     }
 }

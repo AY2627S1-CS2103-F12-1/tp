@@ -36,12 +36,12 @@ public class HomeworkCommandParser implements Parser<Command> {
 
     private final Clock clock;
 
-    /** Creates a parser whose subcommands infer due date years from the system clock. */
+    /** Creates a parser whose subcommands take today's date from the system clock. */
     public HomeworkCommandParser() {
         this(Clock.systemDefaultZone());
     }
 
-    /** Creates a parser whose subcommands infer due date years from {@code clock}. */
+    /** Creates a parser whose subcommands take today's date from {@code clock}. */
     public HomeworkCommandParser(Clock clock) {
         this.clock = requireNonNull(clock);
     }
@@ -58,7 +58,8 @@ public class HomeworkCommandParser implements Parser<Command> {
         String subcommandArguments = subcommandAndArguments.length > 1 ? subcommandAndArguments[1] : "";
         return switch (subcommandAndArguments[0]) {
             case SUBCOMMAND_ADD -> new HomeworkAddCommandParser(clock).parse(subcommandArguments);
-            case SUBCOMMAND_LIST, SUBCOMMAND_LIST_ALIAS -> new HomeworkListCommandParser().parse(subcommandArguments);
+            case SUBCOMMAND_LIST, SUBCOMMAND_LIST_ALIAS ->
+                new HomeworkListCommandParser(clock).parse(subcommandArguments);
             case SUBCOMMAND_EDIT, SUBCOMMAND_EDIT_ALIAS ->
                 new HomeworkEditCommandParser(clock).parse(subcommandArguments);
             case SUBCOMMAND_MARKS, SUBCOMMAND_MARKS_ALIAS ->

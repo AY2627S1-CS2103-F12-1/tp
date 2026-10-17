@@ -3,6 +3,7 @@ package seedu.address.logic.commands;
 import static java.util.Objects.requireNonNull;
 import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -23,7 +24,8 @@ import seedu.address.model.student.TuitionSubject;
 
 /**
  * Edits the title, subject or due date of one homework record, identified by its index in the homework list of a
- * student identified by its displayed index. The homework keeps its position in the list and its score.
+ * student identified by its displayed index. The homework keeps its position in the list and its score. On success,
+ * the student's upcoming homework is listed as by {@link HomeworkListCommand}.
  */
 public class HomeworkEditCommand extends Command {
     public static final String MESSAGE_USAGE = "homework|hw edit|e STUDENT_INDEX HOMEWORK_INDEX [title/|t/TITLE] "
@@ -45,6 +47,7 @@ public class HomeworkEditCommand extends Command {
     private final Index homeworkIndex;
     private final EditHomeworkDescriptor descriptor;
     private final boolean isYearInferred;
+    private final LocalDate today;
 
     /**
      * Creates a command that edits the homework at {@code homeworkIndex} of the student at {@code studentIndex}.
@@ -53,14 +56,16 @@ public class HomeworkEditCommand extends Command {
      * @param homeworkIndex Index of the homework in that student's homework list.
      * @param descriptor New values of the fields to edit.
      * @param isYearInferred Whether the year of the new due date was inferred, so the success message reports it.
+     * @param today Date from which homework counts as upcoming in the homework list shown on success.
      */
     public HomeworkEditCommand(Index studentIndex, Index homeworkIndex, EditHomeworkDescriptor descriptor,
-            boolean isYearInferred) {
-        requireAllNonNull(studentIndex, homeworkIndex, descriptor);
+            boolean isYearInferred, LocalDate today) {
+        requireAllNonNull(studentIndex, homeworkIndex, descriptor, today);
         this.studentIndex = studentIndex;
         this.homeworkIndex = homeworkIndex;
         this.descriptor = descriptor;
         this.isYearInferred = isYearInferred;
+        this.today = today;
     }
 
     /**
@@ -117,7 +122,7 @@ public class HomeworkEditCommand extends Command {
             message += String.format(HomeworkAddCommand.MESSAGE_INFERRED_YEAR,
                     editedHomework.getDueDate().getDate().getYear());
         }
-        message += "\n" + HomeworkListCommand.formatHomeworkList(editedStudent);
+        message += "\n" + HomeworkListCommand.formatHomeworkList(editedStudent, today, false);
 
         model.setStudent(student, editedStudent);
         return new CommandResult(message);
@@ -155,7 +160,8 @@ public class HomeworkEditCommand extends Command {
         return studentIndex.equals(otherCommand.studentIndex)
                 && homeworkIndex.equals(otherCommand.homeworkIndex)
                 && descriptor.equals(otherCommand.descriptor)
-                && isYearInferred == otherCommand.isYearInferred;
+                && isYearInferred == otherCommand.isYearInferred
+                && today.equals(otherCommand.today);
     }
 
     @Override
@@ -165,6 +171,7 @@ public class HomeworkEditCommand extends Command {
                 .add("homeworkIndex", homeworkIndex)
                 .add("descriptor", descriptor)
                 .add("isYearInferred", isYearInferred)
+                .add("today", today)
                 .toString();
     }
 

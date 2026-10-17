@@ -36,7 +36,8 @@ public class HomeworkEditCommandParser implements Parser<HomeworkEditCommand> {
     private final Clock clock;
 
     /**
-     * Creates a parser that infers the year of short-form due dates from {@code clock}.
+     * Creates a parser that takes today's date from {@code clock}, to infer the year of short-form due dates and to
+     * decide which homework the command lists as upcoming.
      */
     public HomeworkEditCommandParser(Clock clock) {
         this.clock = requireNonNull(clock);
@@ -67,13 +68,14 @@ public class HomeworkEditCommandParser implements Parser<HomeworkEditCommand> {
         String rawTitle = values.getOrDefault(PREFIX_TITLE, values.get(PREFIX_TITLE_ALIAS));
         String rawSubject = values.get(PREFIX_SUBJECT);
         String rawDueDate = values.get(PREFIX_DUE_DATE);
+        LocalDate today = LocalDate.now(clock);
         try {
             EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(
                     rawTitle == null ? null : new Title(rawTitle),
                     rawSubject == null ? null : TuitionSubject.parse(rawSubject),
-                    rawDueDate == null ? null : DueDate.parse(rawDueDate, LocalDate.now(clock)));
+                    rawDueDate == null ? null : DueDate.parse(rawDueDate, today));
             return new HomeworkEditCommand(studentIndex, homeworkIndex, descriptor,
-                    rawDueDate != null && DueDate.isShortForm(rawDueDate));
+                    rawDueDate != null && DueDate.isShortForm(rawDueDate), today);
         } catch (IllegalArgumentException exception) {
             throw new ParseException(exception.getMessage(), exception);
         }

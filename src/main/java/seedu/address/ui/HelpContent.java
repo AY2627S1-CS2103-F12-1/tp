@@ -55,7 +55,9 @@ public final class HelpContent {
                             "hw add 1 t/Algebra worksheet s/MATH due/2026-10-15"),
                     new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_LIST,
                             HomeworkListCommand.MESSAGE_USAGE,
-                            "Lists the homework of the student at STUDENT_INDEX, numbered from 1.",
+                            "Lists the homework of the student at STUDENT_INDEX that is due today or later, earliest"
+                                    + " first, with its score. Add all to list overdue homework too. Each homework"
+                                    + " keeps its number, the HOMEWORK_INDEX used by the other homework commands.",
                             "hw ls 1"),
                     new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_EDIT,
                             HomeworkEditCommand.MESSAGE_USAGE,

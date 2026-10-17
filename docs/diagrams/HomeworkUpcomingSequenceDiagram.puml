@@ -1,0 +1,103 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+
+box Logic LOGIC_COLOR_T1
+participant ":LogicManager" as LogicManager LOGIC_COLOR
+participant ":AddressBookParser" as AddressBookParser LOGIC_COLOR
+participant ":HomeworkCommandParser" as HomeworkCommandParser LOGIC_COLOR
+participant ":HomeworkUpcomingCommandParser" as HomeworkUpcomingCommandParser LOGIC_COLOR
+participant "u:HomeworkUpcomingCommand" as HomeworkUpcomingCommand LOGIC_COLOR
+participant "r:CommandResult" as CommandResult LOGIC_COLOR
+end box
+
+box Model MODEL_COLOR_T1
+participant "m:Model" as Model MODEL_COLOR
+participant "ab:ReadOnlyAddressBook" as AddressBook MODEL_COLOR
+participant "h:Homework" as Homework MODEL_COLOR
+end box
+
+[-> LogicManager : execute("hw up due/3")
+activate LogicManager
+
+LogicManager -> AddressBookParser : parseCommand("hw up due/3")
+activate AddressBookParser
+
+create HomeworkCommandParser
+AddressBookParser -> HomeworkCommandParser
+activate HomeworkCommandParser
+
+HomeworkCommandParser --> AddressBookParser
+deactivate HomeworkCommandParser
+
+AddressBookParser -> HomeworkCommandParser : parse("up due/3")
+activate HomeworkCommandParser
+
+create HomeworkUpcomingCommandParser
+HomeworkCommandParser -> HomeworkUpcomingCommandParser
+activate HomeworkUpcomingCommandParser
+
+HomeworkUpcomingCommandParser --> HomeworkCommandParser
+deactivate HomeworkUpcomingCommandParser
+
+HomeworkCommandParser -> HomeworkUpcomingCommandParser : parse("due/3")
+activate HomeworkUpcomingCommandParser
+
+create HomeworkUpcomingCommand
+HomeworkUpcomingCommandParser -> HomeworkUpcomingCommand : HomeworkUpcomingCommand(today, 3)
+activate HomeworkUpcomingCommand
+
+HomeworkUpcomingCommand --> HomeworkUpcomingCommandParser
+deactivate HomeworkUpcomingCommand
+
+HomeworkUpcomingCommandParser --> HomeworkCommandParser : u
+deactivate HomeworkUpcomingCommandParser
+'Hidden arrow to position the destroy marker below the end of the activation bar.
+HomeworkUpcomingCommandParser -[hidden]-> HomeworkCommandParser
+destroy HomeworkUpcomingCommandParser
+
+HomeworkCommandParser --> AddressBookParser : u
+deactivate HomeworkCommandParser
+'Hidden arrow to position the destroy marker below the end of the activation bar.
+HomeworkCommandParser -[hidden]-> AddressBookParser
+destroy HomeworkCommandParser
+
+AddressBookParser --> LogicManager : u
+deactivate AddressBookParser
+
+LogicManager -> HomeworkUpcomingCommand : execute(m)
+activate HomeworkUpcomingCommand
+
+HomeworkUpcomingCommand -> Model : getAddressBook()
+activate Model
+
+Model --> HomeworkUpcomingCommand : ab
+deactivate Model
+
+HomeworkUpcomingCommand -> AddressBook : getStudentList()
+activate AddressBook
+
+AddressBook --> HomeworkUpcomingCommand : students
+deactivate AddressBook
+
+loop each homework h of each student, in roster order
+HomeworkUpcomingCommand -> Homework : isUpcoming(today)
+activate Homework
+
+Homework --> HomeworkUpcomingCommand
+deactivate Homework
+end
+
+create CommandResult
+HomeworkUpcomingCommand -> CommandResult
+activate CommandResult
+
+CommandResult --> HomeworkUpcomingCommand
+deactivate CommandResult
+
+HomeworkUpcomingCommand --> LogicManager : r
+deactivate HomeworkUpcomingCommand
+
+[<--LogicManager
+deactivate LogicManager
+@enduml

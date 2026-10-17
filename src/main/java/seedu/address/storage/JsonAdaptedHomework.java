@@ -8,7 +8,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.model.homework.DueDate;
 import seedu.address.model.homework.Homework;
-import seedu.address.model.homework.HomeworkStatus;
 import seedu.address.model.homework.Score;
 import seedu.address.model.homework.Title;
 import seedu.address.model.student.TuitionSubject;
@@ -23,8 +22,7 @@ class JsonAdaptedHomework {
     private final String title;
     private final String subject;
     private final String dueDate;
-    private final String status;
-    private final Object score;
+    private final String score;
 
     /**
      * Constructs a {@code JsonAdaptedHomework} with the given homework details, as read from the JSON file.
@@ -32,19 +30,14 @@ class JsonAdaptedHomework {
      * @param title Title of the homework, or null if the field is missing.
      * @param subject Subject of the homework, such as {@code MATH}, or null if the field is missing.
      * @param dueDate Due date in {@code YYYY-MM-DD} format, or null if the field is missing.
-     * @param status Status of the homework, {@code ASSIGNED} or {@code COMPLETED}, or null if the field is missing.
-     * @param score Score received for the homework, or null if none is recorded. It is kept as read from the JSON
-     *     file (e.g. a {@code Double} for {@code 85.5}) so that {@link #toModelType()} can reject a score that is
-     *     not a whole number instead of truncating it.
+     * @param score Score in {@code MARKS_OBTAINED/TOTAL_MARKS} format, or null if none is recorded.
      */
     @JsonCreator
     public JsonAdaptedHomework(@JsonProperty("title") String title, @JsonProperty("subject") String subject,
-            @JsonProperty("dueDate") String dueDate, @JsonProperty("status") String status,
-            @JsonProperty("score") Object score) {
+            @JsonProperty("dueDate") String dueDate, @JsonProperty("score") String score) {
         this.title = title;
         this.subject = subject;
         this.dueDate = dueDate;
-        this.status = status;
         this.score = score;
     }
 
@@ -55,8 +48,7 @@ class JsonAdaptedHomework {
         title = source.getTitle().toString();
         subject = source.getSubject().name();
         dueDate = source.getDueDate().toString();
-        status = source.getStatus().name();
-        score = source.getScore().map(Score::getValue).orElse(null);
+        score = source.getScore().map(Score::toString).orElse(null);
     }
 
     /**
@@ -71,26 +63,25 @@ class JsonAdaptedHomework {
                 TuitionSubject.MESSAGE_CONSTRAINTS);
         final DueDate modelDueDate = toModelValue("dueDate", dueDate, DueDate::parseFullDate,
                 DueDate.MESSAGE_FULL_DATE_CONSTRAINTS);
-        final HomeworkStatus modelStatus = toModelValue("status", status, HomeworkStatus::parse,
-                HomeworkStatus.MESSAGE_CONSTRAINTS);
         final Score modelScore = toModelScore(score);
-        return new Homework(modelTitle, modelSubject, modelDueDate, modelStatus, modelScore);
+        return new Homework(modelTitle, modelSubject, modelDueDate, modelScore);
     }
 
     /**
      * Returns the model score for the optional field {@code score}, or null if the field is missing.
      *
-     * @throws IllegalValueException If {@code score} is not a JSON whole number within the {@code int} range.
+     * @throws IllegalValueException If {@code score} is not a valid score in {@code MARKS_OBTAINED/TOTAL_MARKS}
+     *         format.
      */
-    private static Score toModelScore(Object score) throws IllegalValueException {
+    private static Score toModelScore(String score) throws IllegalValueException {
         if (score == null) {
             return null;
         }
-        // Jackson reads a whole number within the int range as an Integer, and 85.5 as a Double
-        if (!(score instanceof Integer value)) {
-            throw new IllegalValueException(Score.MESSAGE_CONSTRAINTS);
+        try {
+            return Score.parse(score);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalValueException(exception.getMessage());
         }
-        return new Score(value);
     }
 
     /**

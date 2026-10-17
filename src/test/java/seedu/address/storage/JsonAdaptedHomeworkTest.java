@@ -12,7 +12,6 @@ import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.commons.util.JsonUtil;
 import seedu.address.model.homework.DueDate;
 import seedu.address.model.homework.Homework;
-import seedu.address.model.homework.HomeworkStatus;
 import seedu.address.model.homework.Score;
 import seedu.address.model.homework.Title;
 import seedu.address.model.student.TuitionSubject;
@@ -22,7 +21,6 @@ public class JsonAdaptedHomeworkTest {
     private static final String VALID_TITLE = "Complete algebra worksheet";
     private static final String VALID_SUBJECT = "MATH";
     private static final String VALID_DUE_DATE = "2026-10-15";
-    private static final String VALID_STATUS = "ASSIGNED";
 
     @Test
     public void toModelType_validHomeworkDetails_returnsHomework() throws Exception {
@@ -30,26 +28,25 @@ public class JsonAdaptedHomeworkTest {
     }
 
     @Test
-    public void toModelType_completedHomeworkWithScore_returnsHomework() throws Exception {
+    public void toModelType_homeworkWithScore_returnsHomework() throws Exception {
         assertEquals(ATOMIC_STRUCTURE, new JsonAdaptedHomework(ATOMIC_STRUCTURE).toModelType());
     }
 
     @Test
     public void toModelType_lenientValues_returnsNormalizedHomework() throws Exception {
-        // Subject and status ignore case, the title is normalized and the date is padded, as in commands
+        // The subject ignores case, the title is normalized and the date is padded, as in commands
         JsonAdaptedHomework homework = new JsonAdaptedHomework("  Complete   algebra worksheet ", "math",
-                "2026-10-15", "assigned", null);
+                "2026-10-15", null);
         assertEquals(ALGEBRA, homework.toModelType());
 
         Homework paddedDate = new HomeworkBuilder().withDueDate("2026-02-05").build();
-        assertEquals(paddedDate, new JsonAdaptedHomework(VALID_TITLE, VALID_SUBJECT, "2026-2-5", VALID_STATUS, null)
+        assertEquals(paddedDate, new JsonAdaptedHomework(VALID_TITLE, VALID_SUBJECT, "2026-2-5", null)
                 .toModelType());
     }
 
     @Test
     public void toModelType_nullTitle_throwsIllegalValueException() {
-        JsonAdaptedHomework homework = new JsonAdaptedHomework(null, VALID_SUBJECT, VALID_DUE_DATE, VALID_STATUS,
-                null);
+        JsonAdaptedHomework homework = new JsonAdaptedHomework(null, VALID_SUBJECT, VALID_DUE_DATE, null);
         String expectedMessage = String.format(MISSING_FIELD_MESSAGE_FORMAT, "title");
         assertThrows(IllegalValueException.class, expectedMessage, homework::toModelType);
     }
@@ -57,33 +54,31 @@ public class JsonAdaptedHomeworkTest {
     @Test
     public void toModelType_invalidTitle_throwsIllegalValueException() {
         // empty title
-        JsonAdaptedHomework homework = new JsonAdaptedHomework("   ", VALID_SUBJECT, VALID_DUE_DATE, VALID_STATUS,
-                null);
+        JsonAdaptedHomework homework = new JsonAdaptedHomework("   ", VALID_SUBJECT, VALID_DUE_DATE, null);
         assertThrows(IllegalValueException.class, Title.MESSAGE_CONSTRAINTS, homework::toModelType);
 
         // line break in title
         JsonAdaptedHomework homeworkWithLineBreak = new JsonAdaptedHomework("Line\nbreak", VALID_SUBJECT,
-                VALID_DUE_DATE, VALID_STATUS, null);
+                VALID_DUE_DATE, null);
         assertThrows(IllegalValueException.class, Title.MESSAGE_CONSTRAINTS, homeworkWithLineBreak::toModelType);
     }
 
     @Test
     public void toModelType_nullSubject_throwsIllegalValueException() {
-        JsonAdaptedHomework homework = new JsonAdaptedHomework(VALID_TITLE, null, VALID_DUE_DATE, VALID_STATUS, null);
+        JsonAdaptedHomework homework = new JsonAdaptedHomework(VALID_TITLE, null, VALID_DUE_DATE, null);
         String expectedMessage = String.format(MISSING_FIELD_MESSAGE_FORMAT, "subject");
         assertThrows(IllegalValueException.class, expectedMessage, homework::toModelType);
     }
 
     @Test
     public void toModelType_invalidSubject_throwsIllegalValueException() {
-        JsonAdaptedHomework homework = new JsonAdaptedHomework(VALID_TITLE, "BIOLOGY", VALID_DUE_DATE, VALID_STATUS,
-                null);
+        JsonAdaptedHomework homework = new JsonAdaptedHomework(VALID_TITLE, "BIOLOGY", VALID_DUE_DATE, null);
         assertThrows(IllegalValueException.class, TuitionSubject.MESSAGE_CONSTRAINTS, homework::toModelType);
     }
 
     @Test
     public void toModelType_nullDueDate_throwsIllegalValueException() {
-        JsonAdaptedHomework homework = new JsonAdaptedHomework(VALID_TITLE, VALID_SUBJECT, null, VALID_STATUS, null);
+        JsonAdaptedHomework homework = new JsonAdaptedHomework(VALID_TITLE, VALID_SUBJECT, null, null);
         String expectedMessage = String.format(MISSING_FIELD_MESSAGE_FORMAT, "dueDate");
         assertThrows(IllegalValueException.class, expectedMessage, homework::toModelType);
     }
@@ -99,62 +94,62 @@ public class JsonAdaptedHomeworkTest {
     }
 
     @Test
-    public void toModelType_nullStatus_throwsIllegalValueException() {
-        JsonAdaptedHomework homework = new JsonAdaptedHomework(VALID_TITLE, VALID_SUBJECT, VALID_DUE_DATE, null,
-                null);
-        String expectedMessage = String.format(MISSING_FIELD_MESSAGE_FORMAT, "status");
-        assertThrows(IllegalValueException.class, expectedMessage, homework::toModelType);
-    }
-
-    @Test
-    public void toModelType_invalidStatus_throwsIllegalValueException() {
-        JsonAdaptedHomework homework = new JsonAdaptedHomework(VALID_TITLE, VALID_SUBJECT, VALID_DUE_DATE, "DONE",
-                null);
-        assertThrows(IllegalValueException.class, HomeworkStatus.MESSAGE_CONSTRAINTS, homework::toModelType);
-    }
-
-    @Test
     public void toModelType_nullScore_returnsHomeworkWithoutScore() throws Exception {
-        JsonAdaptedHomework homework = new JsonAdaptedHomework(VALID_TITLE, VALID_SUBJECT, VALID_DUE_DATE,
-                "COMPLETED", null);
-        assertEquals(new HomeworkBuilder().withStatus(HomeworkStatus.COMPLETED).build(), homework.toModelType());
+        JsonAdaptedHomework homework = new JsonAdaptedHomework(VALID_TITLE, VALID_SUBJECT, VALID_DUE_DATE, null);
+        assertEquals(new HomeworkBuilder().build(), homework.toModelType());
+    }
+
+    @Test
+    public void toModelType_oldStatusKeyInJson_ignoresStatus() throws Exception {
+        // Files saved before homework status was removed still have a status key
+        assertEquals(new HomeworkBuilder().build(), JsonUtil.fromJsonString("{\"title\": \"" + VALID_TITLE
+                + "\", \"subject\": \"MATH\", \"dueDate\": \"2026-10-15\", \"status\": \"COMPLETED\"}",
+                JsonAdaptedHomework.class).toModelType());
     }
 
     @Test
     public void toModelType_score_returnsHomeworkWithScore() throws Exception {
-        JsonAdaptedHomework homework = new JsonAdaptedHomework(VALID_TITLE, VALID_SUBJECT, VALID_DUE_DATE,
-                VALID_STATUS, 0);
-        assertEquals(new HomeworkBuilder().withScore(0).build(), homework.toModelType());
+        JsonAdaptedHomework homework = new JsonAdaptedHomework(VALID_TITLE, VALID_SUBJECT, VALID_DUE_DATE, "0/10");
+        assertEquals(new HomeworkBuilder().withScore("0/10").build(), homework.toModelType());
     }
 
     @Test
-    public void toModelType_wholeNumberScoreInJson_returnsHomeworkWithScore() throws Exception {
-        assertEquals(new HomeworkBuilder().withScore(85).build(), fromJsonWithScore("85").toModelType());
-        assertEquals(new HomeworkBuilder().withScore(Integer.MAX_VALUE).build(),
-                fromJsonWithScore("2147483647").toModelType());
+    public void toModelType_validScoreInJson_returnsHomeworkWithScore() throws Exception {
+        assertEquals(new HomeworkBuilder().withScore("5/10").build(), fromJsonWithScore("\"5/10\"").toModelType());
+        assertEquals(new HomeworkBuilder().withScore("2147483647/2147483647").build(),
+                fromJsonWithScore("\"2147483647/2147483647\"").toModelType());
+
+        // surrounding whitespace is ignored, as in commands
+        assertEquals(new HomeworkBuilder().withScore("5/10").build(),
+                fromJsonWithScore("\" 5/10 \"").toModelType());
     }
 
     @Test
     public void toModelType_nullOrMissingScoreInJson_returnsHomeworkWithoutScore() throws Exception {
         assertEquals(new HomeworkBuilder().build(), fromJsonWithScore("null").toModelType());
         assertEquals(new HomeworkBuilder().build(), JsonUtil.fromJsonString("{\"title\": \"" + VALID_TITLE
-                + "\", \"subject\": \"MATH\", \"dueDate\": \"2026-10-15\", \"status\": \"ASSIGNED\"}",
+                + "\", \"subject\": \"MATH\", \"dueDate\": \"2026-10-15\"}",
                 JsonAdaptedHomework.class).toModelType());
     }
 
     @Test
     public void toModelType_invalidScoreInJson_throwsIllegalValueException() throws Exception {
-        assertInvalidScore("85.5"); // decimal, which must not be truncated to 85
-        assertInvalidScore("85.0"); // decimal with a zero fraction
-        assertInvalidScore("2147483648"); // larger than Integer.MAX_VALUE
-        assertInvalidScore("\"85\""); // number written as text
+        assertInvalidScore("85"); // single number, as saved before scores had a total
+        assertInvalidScore("\"85\""); // single number written as text
+        assertInvalidScore("85.5"); // decimal number
+        assertInvalidScore("\"5.5/10\""); // decimal marks
+        assertInvalidScore("\"11/10\""); // marks above the total
+        assertInvalidScore("\"5/0\""); // zero total
+        assertInvalidScore("\"5 / 10\""); // spaces inside
         assertInvalidScore("\"abc\""); // non-numeric text
         assertInvalidScore("true"); // boolean
+        assertThrows(IllegalValueException.class, Score.MESSAGE_TOO_LARGE, fromJsonWithScore(
+                "\"2147483648/2147483648\"")::toModelType); // larger than Integer.MAX_VALUE
     }
 
     private static JsonAdaptedHomework fromJsonWithScore(String score) throws Exception {
         return JsonUtil.fromJsonString("{\"title\": \"" + VALID_TITLE + "\", \"subject\": \"MATH\", "
-                + "\"dueDate\": \"2026-10-15\", \"status\": \"ASSIGNED\", \"score\": " + score + "}",
+                + "\"dueDate\": \"2026-10-15\", \"score\": " + score + "}",
                 JsonAdaptedHomework.class);
     }
 
@@ -163,8 +158,7 @@ public class JsonAdaptedHomeworkTest {
     }
 
     private static void assertInvalidDueDate(String dueDate) {
-        JsonAdaptedHomework homework = new JsonAdaptedHomework(VALID_TITLE, VALID_SUBJECT, dueDate, VALID_STATUS,
-                null);
+        JsonAdaptedHomework homework = new JsonAdaptedHomework(VALID_TITLE, VALID_SUBJECT, dueDate, null);
         assertThrows(IllegalValueException.class, DueDate.MESSAGE_FULL_DATE_CONSTRAINTS, homework::toModelType);
     }
 }

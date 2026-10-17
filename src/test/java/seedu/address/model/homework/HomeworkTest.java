@@ -24,34 +24,38 @@ public class HomeworkTest {
         assertThrows(NullPointerException.class, () -> new Homework(null, TuitionSubject.MATH, DUE_DATE));
         assertThrows(NullPointerException.class, () -> new Homework(TITLE, null, DUE_DATE));
         assertThrows(NullPointerException.class, () -> new Homework(TITLE, TuitionSubject.MATH, null));
-        assertThrows(NullPointerException.class, () ->
-                new Homework(TITLE, TuitionSubject.MATH, DUE_DATE, null, null));
+        assertThrows(NullPointerException.class, () -> new Homework(null, TuitionSubject.MATH, DUE_DATE, null));
     }
 
     @Test
-    public void constructor_withoutStatusAndScore_assignedWithNoScore() {
+    public void constructor_withoutScore_noScore() {
         Homework homework = new Homework(TITLE, TuitionSubject.MATH, DUE_DATE);
 
         assertEquals(TITLE, homework.getTitle());
         assertEquals(TuitionSubject.MATH, homework.getSubject());
         assertEquals(DUE_DATE, homework.getDueDate());
-        assertEquals(HomeworkStatus.ASSIGNED, homework.getStatus());
         assertEquals(Optional.empty(), homework.getScore());
     }
 
     @Test
     public void constructor_allFields_success() {
-        Homework homework = new Homework(TITLE, TuitionSubject.MATH, DUE_DATE, HomeworkStatus.COMPLETED,
-                new Score(90));
+        Homework homework = new Homework(TITLE, TuitionSubject.MATH, DUE_DATE, new Score(9, 10));
 
-        assertEquals(HomeworkStatus.COMPLETED, homework.getStatus());
-        assertEquals(Optional.of(new Score(90)), homework.getScore());
+        assertEquals(Optional.of(new Score(9, 10)), homework.getScore());
     }
 
     @Test
-    public void isAssigned() {
-        assertTrue(ALGEBRA.isAssigned());
-        assertFalse(ATOMIC_STRUCTURE.isAssigned());
+    public void isUpcoming() {
+        // ALGEBRA is due on 2026-10-15
+
+        // due the day after today -> returns true
+        assertTrue(ALGEBRA.isUpcoming(LocalDate.of(2026, 10, 14)));
+
+        // due today -> returns true
+        assertTrue(ALGEBRA.isUpcoming(LocalDate.of(2026, 10, 15)));
+
+        // due the day before today -> returns false
+        assertFalse(ALGEBRA.isUpcoming(LocalDate.of(2026, 10, 16)));
     }
 
     @Test
@@ -66,9 +70,8 @@ public class HomeworkTest {
         assertTrue(ALGEBRA.isSameHomework(new HomeworkBuilder(ALGEBRA)
                 .withTitle(" COMPLETE  algebra Worksheet ").build()));
 
-        // different status and score -> returns true
-        assertTrue(ALGEBRA.isSameHomework(new HomeworkBuilder(ALGEBRA).withStatus(HomeworkStatus.COMPLETED)
-                .withScore(70).build()));
+        // different score -> returns true
+        assertTrue(ALGEBRA.isSameHomework(new HomeworkBuilder(ALGEBRA).withScore("7/10").build()));
 
         // different title -> returns false
         assertFalse(ALGEBRA.isSameHomework(new HomeworkBuilder(ALGEBRA).withTitle("Revise algebra").build()));
@@ -105,21 +108,18 @@ public class HomeworkTest {
         // different due date -> returns false
         assertFalse(ALGEBRA.equals(new HomeworkBuilder(ALGEBRA).withDueDate("2026-10-16").build()));
 
-        // different status -> returns false
-        assertFalse(ALGEBRA.equals(new HomeworkBuilder(ALGEBRA).withStatus(HomeworkStatus.COMPLETED).build()));
-
         // different score -> returns false
-        assertFalse(ALGEBRA.equals(new HomeworkBuilder(ALGEBRA).withScore(70).build()));
+        assertFalse(ALGEBRA.equals(new HomeworkBuilder(ALGEBRA).withScore("7/10").build()));
     }
 
     @Test
     public void toStringMethod() {
         String expected = Homework.class.getCanonicalName() + "{title=Revise atomic structure, subject=CHEMISTRY, "
-                + "dueDate=2026-10-18, status=COMPLETED, score=85}";
+                + "dueDate=2026-10-18, score=17/20}";
         assertEquals(expected, ATOMIC_STRUCTURE.toString());
 
         String expectedWithoutScore = Homework.class.getCanonicalName() + "{title=Complete algebra worksheet, "
-                + "subject=MATH, dueDate=2026-10-15, status=ASSIGNED, score=null}";
+                + "subject=MATH, dueDate=2026-10-15, score=null}";
         assertEquals(expectedWithoutScore, ALGEBRA.toString());
     }
 }

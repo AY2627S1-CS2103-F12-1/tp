@@ -9,8 +9,7 @@
     "homeworks" : [ {
       "title" : "Complete algebra worksheet",
       "subject" : "MATH",
-      "dueDate" : "10-15",
-      "status" : "ASSIGNED"
+      "dueDate" : "10-15"
     } ]
   } ]
 }

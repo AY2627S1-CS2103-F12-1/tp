@@ -67,6 +67,15 @@ TutorFlow is a **desktop application for private tutors to manage their students
 * Parameters can be in any order.<br>
   For example, if the command specifies `n/NAME p/PHONE_NUMBER`, `p/PHONE_NUMBER n/NAME` is also acceptable.
 
+* A lowercase word directly followed by `/` after a space (such as `km/h` or `and/or`) is read as a prefix. To use such a word in a value, wrap the whole value in double quotes (`"`). The outer quotes are removed before the value is checked, and spaces outside them are ignored. This works for every value that follows a prefix.<br>
+  For example, `hw add 1 t/"Speed in km/h" s/PHYSICS due/2026-11-01` adds homework titled `Speed in km/h`, while `hw add 1 t/Speed in km/h s/PHYSICS due/2026-11-01` is rejected because `km/` is not a prefix of `hw add`.
+
+* A quoted value ends at the first `"` that is followed by the end of the command, or by a space and another prefix of the same command. Any other `"` is kept as typed.<br>
+  For example, `t/Read "Hamlet" act 1` gives the title `Read "Hamlet" act 1`, and `t/"Read "Hamlet" km/h"` gives `Read "Hamlet" km/h`.
+
+* A value whose opening `"` is never closed in this way is read as typed, as if it had no quotes.<br>
+  For example, `t/"Speed" extra` gives the title `"Speed" extra`, and `hw add 1 t/"Speed in km/h s/PHYSICS due/2026-11-01` is rejected because the quote is not closed, so `km/` is read as a prefix.
+
 * Extraneous parameters for commands that take no parameters, such as `help`, `exit`, and `clear`, are ignored. The `list` command rejects extra parameters.<br>
   For example, `help 123` is interpreted as `help`.
 
@@ -94,7 +103,7 @@ Format: `add n/STUDENT_NAME l/ACADEMIC_LEVEL s/SUBJECTS p/STUDENT_PHONE gn/GUARD
 
 * All six fields are required, and each prefix must appear exactly once.
 * `STUDENT_NAME` and `GUARDIAN_NAME` must be 1 to 70 characters long and may contain letters, numbers, spaces, apostrophes, hyphens, periods, parentheses and `/`. Extra spaces are removed, and capitalization is kept.
-* A name may contain words such as `s/o` and `d/o`, but not this command's other prefixes (such as `p/` or `gn/`) after a space.
+* A name may contain words such as `s/o` and `d/o`, but not this command's other prefixes (such as `p/` or `gn/`) after a space, unless the whole name is wrapped in double quotes (see the [notes about the command format](#features)).
 * `ACADEMIC_LEVEL` must be one of `S1`, `S2`, `S3`, `S4`, `S5`, `J1` or `J2` (in any case).
 * `SUBJECTS` is one or more of `MATH`, `PHYSICS` and `CHEMISTRY` (in any case), separated by commas, with no subject repeated. The student card shows the subjects in the order you type them.
 * `STUDENT_PHONE` and `GUARDIAN_PHONE` must each be an 8-digit Singapore number starting with 6, 8 or 9, or an international number written as `+` followed by 8 to 15 digits, without spaces.
@@ -122,7 +131,7 @@ Format: `homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|M
 * `homework` can be shortened to `hw`, and `title/` can be shortened to `t/`.
 * `STUDENT_INDEX` refers to the index number shown in the displayed student list. It **must be a positive whole number without leading zeroes**, such as 1, 2, 3, …​
 * `TITLE` must be 1 to 100 characters long and must not contain line breaks or control characters (such as tabs). Extra spaces are removed, and capitalization is kept.
-* A lowercase word directly followed by `/` in `TITLE` (such as `km/h` or `and/or`) is read as a prefix, so the command is rejected. Write such words with a capital letter or with spaces around the `/` instead, e.g. `And/or`, `and / or` or `km / h`.
+* A lowercase word directly followed by `/` in `TITLE` (such as `km/h` or `and/or`) is read as a prefix, so the command is rejected. Wrap the title in double quotes to keep such words, e.g. `t/"Speed in km/h"` (see the [notes about the command format](#features)).
 * `SUBJECT` must be `MATH`, `PHYSICS` or `CHEMISTRY` (in any case), and the student must take that subject.
 * The due date must be a real calendar date in `YYYY-MM-DD` format. Past dates are accepted, so you can record homework that was assigned earlier.
 * The due date can also be given as `MM-DD`. The year is then this year, or next year if that date has already passed this year, and the result shows the year used.
@@ -136,6 +145,7 @@ Examples:
 * `hw add 1 t/Attempt mechanics questions 1-5 s/PHYSICS due/2026-10-20`
 * `homework add 2 due/10-18 s/chemistry title/Revise atomic structure` adds homework due on 18 October of this year, or of next year if 18 October has passed.
 * `hw add 1 t/Read chapter 3 s/physics due/10-5` adds homework due on 5 October of this year, or of next year if 5 October has passed.
+* `hw add 1 t/"Speed in km/h" s/PHYSICS due/2026-11-01` adds homework titled `Speed in km/h`; the quotes keep `km/h` in the title.
 
 ### Listing a student's homework: `homework list`
 
@@ -184,6 +194,7 @@ Examples:
   3. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-09 - score Not recorded
   ```
 * `hw edit 1 2 t/Revise mechanics s/PHYSICS due/2026-11-10` changes the title, subject and due date together.
+* `hw e 1 2 t/"Speed in km/h"` changes the title to `Speed in km/h`.
 * `hw e 3 1 due/10-5` moves the due date to 5 October of this year, or of next year if 5 October has passed.
 
 ### Recording homework marks: `homework marks`
@@ -391,7 +402,7 @@ Action | Format, Examples
 **Clear** | `clear`
 **Delete student** | `delete INDEX`<br> e.g., `delete 2`
 **List** | `list` or `ls`
-**Homework add** | <code>homework&#124;hw add STUDENT_INDEX title/&#124;t/TITLE s/SUBJECT due/YYYY-MM-DD&#124;MM-DD</code><br> e.g., `homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15`
+**Homework add** | <code>homework&#124;hw add STUDENT_INDEX title/&#124;t/TITLE s/SUBJECT due/YYYY-MM-DD&#124;MM-DD</code><br> e.g., `homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15`, `hw add 1 t/"Speed in km/h" s/PHYSICS due/2026-11-01`
 **Homework delete** | <code>homework&#124;hw delete&#124;del STUDENT_INDEX HOMEWORK_INDEX</code><br> e.g., `homework delete 1 2`
 **Homework edit** | <code>homework&#124;hw edit&#124;e STUDENT_INDEX HOMEWORK_INDEX [title/&#124;t/TITLE] [s/SUBJECT] [due/YYYY-MM-DD&#124;MM-DD]</code><br> e.g., `hw edit 1 2 t/Revise mechanics s/PHYSICS due/2026-11-10`
 **Homework list** | <code>homework&#124;hw list&#124;ls STUDENT_INDEX [all]</code><br> e.g., `homework list 1`, `hw ls 2 all`

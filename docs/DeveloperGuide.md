@@ -218,7 +218,7 @@ The sequence diagram below shows how `hw e 1 2 t/Algebra` is executed. `h` is th
 
 ![Interactions inside the Logic component for the `hw e 1 2 t/Algebra` command](images/HomeworkEditSequenceDiagram.png)
 
-**Recording marks.** `HomeworkMarksCommandParser` takes two indices and the required `score/` prefix; a missing `score/` is reported with the same "Missing required prefix(es)" message as in `homework add`. `HomeworkMarksCommand` checks the student index, that the student has homework, the homework index, and that the new score differs from the recorded one, then replaces the homework with a copy holding the new score.
+**Recording marks.** `HomeworkMarksCommandParser` takes two indices and the required `score/` prefix; a missing `score/` is reported with the same "Missing required prefix(es)" message as in `homework add`. If the value of `score/` is empty or only whitespace, the parser skips `Score#parse` and creates a command that clears the marks with `new HomeworkMarksCommand(studentIndex, homeworkIndex)`, which holds no score (`null`). `HomeworkMarksCommand` checks the student index, that the student has homework, the homework index, and that the new score differs from the recorded one, then replaces the homework with a copy holding the new score. When clearing, the homework must have a score (otherwise `MESSAGE_NO_MARKS_TO_CLEAR`), the copy holds no score, and the result starts with `Cleared homework marks:` instead of `Recorded homework marks:`. Clearing reuses the index, save-failure and internal-error handling of recording, so the two cases differ only in the score passed on.
 
 The sequence diagram below shows how `hw m 1 2 score/5/10` is executed. The parser turns `5/10` into a `Score` with `Score#parse` before the command is created, so an invalid score never reaches the command. The checks that can reject the command are left out.
 
@@ -474,6 +474,12 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
 * 3c. The homework already has this score.
   * 3c1. TutorFlow informs the tutor that no changes were made.
   * 3c2. Use case ends.
+* 3d. The tutor leaves the score empty to remove the recorded marks.
+  * 3d1. TutorFlow clears the score and displays the homework record with its score shown as not recorded.
+  * 3d2. Use case ends.
+* 3e. The tutor leaves the score empty, but the homework has no recorded marks.
+  * 3e1. TutorFlow informs the tutor that no changes were made.
+  * 3e2. Use case ends.
 * 4a. TutorFlow cannot save the updated data.
   * 4a1. TutorFlow leaves the score unchanged.
   * 4a2. TutorFlow informs the tutor that no homework data was changed.
@@ -595,6 +601,12 @@ testers are expected to do more *exploratory* testing.
 
    1. Test case: `hw m 1 2 score/5/10` again<br>
       Expected: `No changes made; the homework already has this score.`
+
+   1. Test case: `hw m 1 2 score/`, then `hw ls 1`<br>
+      Expected: `Cleared homework marks:` followed by `Ethan Lim; Title: Kinematics practice set; Subject: PHYSICS; Due: 2026-10-28; Score: Not recorded`, and the list shows `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score Not recorded`. Restart the app: `hw ls 1` still shows `score Not recorded`.
+
+   1. Test case: `hw m 1 2 score/` again, and `hw m 1 1 score/   ` (only spaces)<br>
+      Expected: `No changes made; the homework has no recorded marks.` each time.
 
    1. Other incorrect commands to try: `hw m 1 2 score/11/10`, `hw m 1 2 score/5/0`, `hw m 1 2 score/5.5/10`, `hw m 1 2 score/2147483648/10`, `hw m 1 2`<br>
       Expected: An error message each time, and the score is unchanged.

@@ -338,7 +338,7 @@ Priorities: High (must-have) - `* * *`, Medium (should-have) - `* *`, Low (nice-
 | US26 | `*` | independent tutor | view and filter homework by student, due date, or subject | find homework that requires my attention |
 | US27 | `*` | independent tutor | edit recorded homework | correct or update an assignment's details |
 | US28 | `*` | independent tutor | delete recorded homework | remove assignments entered incorrectly or no longer required |
-| US30 | `*` | independent tutor | record a student's homework score | keep track of the student's performance |
+| US29 | `*` | independent tutor | record a student's homework score | keep track of the student's performance |
 
 ### Use cases
 

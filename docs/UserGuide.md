@@ -350,6 +350,7 @@ When editing the file, follow these rules:
 * A student cannot have two homework records with the same title (ignoring case), subject and due date.
 * Values such as `math` or `s3` are accepted in any case, and extra spaces in names and titles are removed. TutorFlow writes them in its own format the next time it saves.
 * Spell every key exactly as shown above. A misspelled key that may be left out (`homeworks`, `lessons` or `score`) is ignored without an error: for example, with `homework` instead of `homeworks`, the student loads with no homework, and the next command that changes the data removes that homework from the file. A misspelled required key, such as `phne` instead of `phone`, makes the data file invalid (see the caution below).
+* Keys that TutorFlow does not use are ignored and removed the next time TutorFlow saves. For example, a data file saved by an older version of TutorFlow, in which each homework has a `status` key, still loads.
 
 <div markdown="span" class="alert alert-warning">:exclamation: **Caution:**
 If your changes make the data file invalid, TutorFlow starts with no students at the next run (not with the sample students). The invalid file remains on disk until you run a command that changes the data, which overwrites it. So if TutorFlow starts with no students after you edit the file, close it without changing anything, fix the file and start TutorFlow again. Still, we recommend backing up the file before editing it.<br>

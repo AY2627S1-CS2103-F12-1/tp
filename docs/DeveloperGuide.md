@@ -214,7 +214,18 @@ The student index refers to `Model#getStudentList()`. The homework index is the 
 
 **Editing.** `HomeworkEditCommandParser` uses the prefixes of `homework add`, all optional, and reports errors in this order: an unknown or repeated prefix, both `title/` and `t/` given (reported as a repeated `title/`), indices that are not exactly two words or no field to edit (both reported as an invalid command format), the student index syntax, the homework index syntax, and then the title, subject and due date. It stores the new values in a `HomeworkEditCommand.EditHomeworkDescriptor`, a record in which `null` means "unchanged". `HomeworkEditCommand` checks, in order, the student index, that the student has homework, the homework index, that the student takes the (possibly new) subject, that the edit changes something (`Homework#equals`), and that the edited homework is not the same as any *other* homework of the student. `EditHomeworkDescriptor#applyTo` copies the score, so editing never changes it. On success, the command shows the edited record followed by `HomeworkListCommand#formatHomeworkList(editedStudent, today, false)`, so the tutor sees the upcoming list as `homework list` would show it after the edit.
 
+The sequence diagram below shows how `hw e 1 2 t/Algebra` is executed. `h` is the 2nd homework of the 1st student `s`, and `s2` is `s.withHomeworks(updated)`, a copy of `s` whose homework list holds `edited` in place of `h`. The checks that can reject the edit are left out.
+
+![Interactions inside the Logic component for the `hw e 1 2 t/Algebra` command](images/HomeworkEditSequenceDiagram.png)
+
 **Recording marks.** `HomeworkMarksCommandParser` takes two indices and the required `score/` prefix; a missing `score/` is reported with the same "Missing required prefix(es)" message as in `homework add`. `HomeworkMarksCommand` checks the student index, that the student has homework, the homework index, and that the new score differs from the recorded one, then replaces the homework with a copy holding the new score.
+
+The sequence diagram below shows how `hw m 1 2 score/5/10` is executed. The parser turns `5/10` into a `Score` with `Score#parse` before the command is created, so an invalid score never reaches the command. The checks that can reject the command are left out.
+
+![Interactions inside the Logic component for the `hw m 1 2 score/5/10` command](images/HomeworkMarksSequenceDiagram.png)
+
+<div markdown="span" class="alert alert-info">:information_source: **Note:** As in the `hw del 1 2` diagram, the lifelines of the parsers should end at the destroy markers (X), but due to a limitation of PlantUML, they continue to the end of the diagram.
+</div>
 
 **Due date forms.** A due date is given as `YYYY-MM-DD` or `MM-DD`, and in both forms the month and day may have 1 or 2 digits (`2026-2-5`, `10-5`). `DueDate` matches each form with a regular expression that allows only 4-digit years and 1- or 2-digit months and days, then builds the date with `LocalDate#of`, which rejects dates that do not exist (such as `2-30`). The stored date is a `LocalDate`, so it is always shown padded (`2026-02-05`), and `10-5` and `10-05` give equal due dates.
 

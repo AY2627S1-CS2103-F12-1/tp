@@ -13,8 +13,11 @@ import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.commons.util.JsonUtil;
 import seedu.address.model.AddressBook;
 import seedu.address.model.homework.DueDate;
-import seedu.address.model.homework.Score;
+import seedu.address.model.student.Student;
 import seedu.address.model.student.StudentPhone;
+import seedu.address.testutil.AddressBookBuilder;
+import seedu.address.testutil.HomeworkBuilder;
+import seedu.address.testutil.StudentBuilder;
 import seedu.address.testutil.TypicalStudents;
 
 public class JsonSerializableAddressBookTest {
@@ -52,11 +55,15 @@ public class JsonSerializableAddressBookTest {
     }
 
     @Test
-    public void toModelType_singleNumberScore_throwsIllegalValueException() throws Exception {
-        // A score saved before scores had a total, such as 85, is rejected
+    public void toModelType_singleNumberScore_loadsHomeworkWithoutScore() throws Exception {
+        // A score saved before scores had a total, such as 85, is dropped; the rest of the file still loads
         JsonSerializableAddressBook dataFromFile = JsonUtil.readJsonFile(SINGLE_NUMBER_SCORE_FILE,
                 JsonSerializableAddressBook.class).get();
-        assertThrows(IllegalValueException.class, Score.MESSAGE_CONSTRAINTS, dataFromFile::toModelType);
+        Student expectedStudent = new StudentBuilder().withName("Alice Tan").withPhone("91111111")
+                .withHomeworks(new HomeworkBuilder().build(), new HomeworkBuilder()
+                        .withTitle("Revise quadratic equations").withDueDate("2026-10-22").withScore("7/10").build())
+                .build();
+        assertEquals(new AddressBookBuilder().withStudent(expectedStudent).build(), dataFromFile.toModelType());
     }
 
     @Test

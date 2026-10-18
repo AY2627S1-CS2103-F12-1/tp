@@ -2,12 +2,23 @@ package seedu.address.storage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static seedu.address.storage.JsonAdaptedHomework.MISSING_FIELD_MESSAGE_FORMAT;
+import static seedu.address.storage.JsonAdaptedHomework.OLD_FORMAT_SCORE_WARNING_FORMAT;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalHomeworks.ATOMIC_STRUCTURE;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
+
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.databind.node.TextNode;
+
+import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.commons.util.JsonUtil;
 import seedu.address.model.homework.DueDate;
@@ -109,7 +120,8 @@ public class JsonAdaptedHomeworkTest {
 
     @Test
     public void toModelType_score_returnsHomeworkWithScore() throws Exception {
-        JsonAdaptedHomework homework = new JsonAdaptedHomework(VALID_TITLE, VALID_SUBJECT, VALID_DUE_DATE, "0/10");
+        JsonAdaptedHomework homework = new JsonAdaptedHomework(VALID_TITLE, VALID_SUBJECT, VALID_DUE_DATE,
+                TextNode.valueOf("0/10"));
         assertEquals(new HomeworkBuilder().withScore("0/10").build(), homework.toModelType());
     }
 
@@ -133,9 +145,16 @@ public class JsonAdaptedHomeworkTest {
     }
 
     @Test
+    public void toModelType_oldFormatScoreInJson_returnsHomeworkWithoutScore() throws Exception {
+        // whole numbers, as saved before scores had a total, including 0 and numbers beyond the int range
+        assertOldFormatScoreIgnored("85");
+        assertOldFormatScoreIgnored("0");
+        assertOldFormatScoreIgnored("2147483648");
+    }
+
+    @Test
     public void toModelType_invalidScoreInJson_throwsIllegalValueException() throws Exception {
-        assertInvalidScore("85"); // single number, as saved before scores had a total
-        assertInvalidScore("\"85\""); // single number written as text
+        assertInvalidScore("\"85\""); // single number written as text, which was never saved
         assertInvalidScore("85.5"); // decimal number
         assertInvalidScore("\"5.5/10\""); // decimal marks
         assertInvalidScore("\"11/10\""); // marks above the total
@@ -143,6 +162,7 @@ public class JsonAdaptedHomeworkTest {
         assertInvalidScore("\"5 / 10\""); // spaces inside
         assertInvalidScore("\"abc\""); // non-numeric text
         assertInvalidScore("true"); // boolean
+        assertInvalidScore("[\"5/10\"]"); // list
         assertThrows(IllegalValueException.class, Score.MESSAGE_TOO_LARGE, fromJsonWithScore(
                 "\"2147483648/2147483648\"")::toModelType); // larger than Integer.MAX_VALUE
     }
@@ -151,6 +171,37 @@ public class JsonAdaptedHomeworkTest {
         return JsonUtil.fromJsonString("{\"title\": \"" + VALID_TITLE + "\", \"subject\": \"MATH\", "
                 + "\"dueDate\": \"2026-10-15\", \"score\": " + score + "}",
                 JsonAdaptedHomework.class);
+    }
+
+    /**
+     * Asserts that the JSON {@code score} is ignored when loading, with one warning naming the score and the title.
+     */
+    private static void assertOldFormatScoreIgnored(String score) throws Exception {
+        Logger logger = LogsCenter.getLogger(JsonAdaptedHomework.class);
+        List<LogRecord> records = new ArrayList<>();
+        Handler handler = new Handler() {
+            @Override
+            public void publish(LogRecord logRecord) {
+                records.add(logRecord);
+            }
+
+            @Override
+            public void flush() {
+            }
+
+            @Override
+            public void close() {
+            }
+        };
+        logger.addHandler(handler);
+        try {
+            assertEquals(new HomeworkBuilder().build(), fromJsonWithScore(score).toModelType());
+        } finally {
+            logger.removeHandler(handler);
+        }
+        assertEquals(1, records.size());
+        assertEquals(Level.WARNING, records.get(0).getLevel());
+        assertEquals(String.format(OLD_FORMAT_SCORE_WARNING_FORMAT, score, VALID_TITLE), records.get(0).getMessage());
     }
 
     private static void assertInvalidScore(String score) throws Exception {

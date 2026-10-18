@@ -11,6 +11,11 @@
       "subject" : "MATH",
       "dueDate" : "2026-10-15",
       "score" : 85
+    }, {
+      "title" : "Revise quadratic equations",
+      "subject" : "MATH",
+      "dueDate" : "2026-10-22",
+      "score" : "7/10"
     } ]
   } ]
 }

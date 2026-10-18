@@ -165,9 +165,9 @@ Each adapted class checks its values in `toModelType()` with the same value clas
 * a lesson for a subject the student does not take, duplicate lessons within a student, or overlapping lessons within or across students.
 * a lesson with a missing or invalid subject, weekday, start time, or end time.
 * a due date that is not a full `YYYY-MM-DD` date. `JsonAdaptedHomework` uses `DueDate#parseFullDate`, so the year of a saved date is never inferred from today's date. Dates are saved padded (`2026-02-05`).
-* a score that `Score#parse` rejects (e.g. `"5.5/10"`, `"11/10"`, `"5/0"`), with `Score#MESSAGE_CONSTRAINTS`, or `Score#MESSAGE_TOO_LARGE` for a number beyond the `int` range. Jackson reads a JSON number such as `85` into the `String` field as `"85"`, which has no total, so a score saved as a single number is rejected too.
+* a score that `Score#parse` rejects (e.g. `"5.5/10"`, `"11/10"`, `"5/0"`, `"85"`), with `Score#MESSAGE_CONSTRAINTS`, or `Score#MESSAGE_TOO_LARGE` for a number beyond the `int` range, and a score that is neither text nor a whole number (e.g. `85.5`, `true`), with `Score#MESSAGE_CONSTRAINTS`.
 
-A missing `homeworks` list, `lessons` list, or `score` means no homework, no lessons, or no score. This allows older student data without a `lessons` field to load. Subjects, levels, and weekdays are accepted in any case and saved in upper case.
+A missing `homeworks` list, `lessons` list, or `score` means no homework, no lessons, or no score. This allows older student data without a `lessons` field to load. `JsonAdaptedHomework` keeps `score` as a Jackson `JsonNode`, so it can tell a JSON number from text. A whole number such as `85` is the format saved before scores had a total; it cannot be turned into marks out of a total, so the homework loads with no score and a warning is logged (`Ignored old-format homework score 85 for 'Algebra worksheet'`). Rejecting it would make the whole file invalid and start the app with no students, losing all other data at the next save. Subjects, levels, and weekdays are accepted in any case and saved in upper case.
 
 `MainApp#readInitialData` decides what the app starts with: the saved data if the data file is valid, the sample students from `SampleDataUtil#getSampleAddressBook()` if the data file does not exist (the file is not created at startup; the sample students are first saved by the first command that changes the data), and no students if the data file cannot be read or is invalid (a warning is logged). In the last case the invalid file stays on disk until the next command that changes the data overwrites it.
 
@@ -666,6 +666,14 @@ testers are expected to do more *exploratory* testing.
 
    1. Close the app. In `data/tutorflow.json`, change the `dueDate` of a homework to `10-15` (no year), or delete the closing `}`. Launch the app.<br>
       Expected: The app shows no students, and a warning is logged. The data file is unchanged until a command changes the data.
+
+1. Dealing with a score saved by an older version
+
+   1. Close the app. In `data/tutorflow.json`, change the `score` of a homework to `85` (a number, without quotes). Launch the app.<br>
+      Expected: All students are shown, and `homework list` for that student shows the homework with `score Not recorded`. A warning such as `Ignored old-format homework score 85 for 'Algebra worksheet'` is logged. The `85` stays in the data file until a command changes the data, which saves the homework with `"score" : null`.
+
+   1. Change the `score` to `"85"` (text, with quotes) instead. Launch the app.<br>
+      Expected: Similar to a corrupted data file: the app shows no students.
 
 1. Dealing with a data file that cannot be written
 

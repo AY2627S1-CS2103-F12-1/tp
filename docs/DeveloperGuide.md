@@ -155,7 +155,7 @@ The app data is saved in `data/tutorflow.json`. `JsonSerializableAddressBook` ho
 * Homework fields: `title`, `subject`, `dueDate`, and `score`.
 * Lesson fields: `subject`, `dayOfWeek`, `startTime`, and `endTime`.
 
-Contact and academic fields, homework titles and dates, and lesson fields are strings. `subjects` is a list of strings, `homeworks` and `lessons` are lists of objects, and `score` is a `MARKS_OBTAINED/TOTAL_MARKS` string such as `"5/10"`, or `null`. Lessons store weekdays by name and times in `HH:mm` format.
+Contact and academic fields, homework titles and dates, and lesson fields are strings. `subjects` is a list of strings, `homeworks` and `lessons` are lists of objects, and `score` is a `MARKS` or `MARKS_OBTAINED/TOTAL_MARKS` string such as `"17"` or `"5/10"`, or `null`. Lessons store weekdays by name and times in `HH:mm` format.
 
 Each adapted class checks its values in `toModelType()` with the same value classes that commands use. Student and homework adapters report missing fields with `MISSING_FIELD_MESSAGE_FORMAT` and invalid values with the value class's `MESSAGE_CONSTRAINTS`. `JsonAdaptedLesson` reports missing lesson fields together and delegates value validation to `TuitionSubject` and `RegularLesson`. Invalid data produces an `IllegalValueException`. Loading also rejects:
 
@@ -165,9 +165,9 @@ Each adapted class checks its values in `toModelType()` with the same value clas
 * a lesson for a subject the student does not take, duplicate lessons within a student, or overlapping lessons within or across students.
 * a lesson with a missing or invalid subject, weekday, start time, or end time.
 * a due date that is not a full `YYYY-MM-DD` date. `JsonAdaptedHomework` uses `DueDate#parseFullDate`, so the year of a saved date is never inferred from today's date. Dates are saved padded (`2026-02-05`).
-* a score that `Score#parse` rejects (e.g. `"5.5/10"`, `"11/10"`, `"5/0"`, `"85"`), with `Score#MESSAGE_CONSTRAINTS`, or `Score#MESSAGE_TOO_LARGE` for a number beyond the `int` range, and a score that is neither text nor a whole number (e.g. `85.5`, `true`), with `Score#MESSAGE_CONSTRAINTS`.
+* a text score that `Score#parse` rejects (e.g. `"5.5/10"`, `"11/10"`, `"5/0"`, `"017"`), with `Score#MESSAGE_CONSTRAINTS`, or `Score#MESSAGE_TOO_LARGE` for a number beyond the `int` range, and a score that is neither text nor a number (e.g. `true`), with `Score#MESSAGE_CONSTRAINTS`.
 
-A missing `homeworks` list, `lessons` list, or `score` means no homework, no lessons, or no score. This allows older student data without a `lessons` field to load. `JsonAdaptedHomework` keeps `score` as a Jackson `JsonNode`, so it can tell a JSON number from text. A whole number such as `85` is the format saved before scores had a total; it cannot be turned into marks out of a total, so the homework loads with no score and a warning is logged (`Ignored old-format homework score 85 for 'Algebra worksheet'`). Rejecting it would make the whole file invalid and start the app with no students, losing all other data at the next save. Subjects, levels, and weekdays are accepted in any case and saved in upper case.
+A missing `homeworks` list, `lessons` list, or `score` means no homework, no lessons, or no score. This allows older student data without a `lessons` field to load. `JsonAdaptedHomework` keeps `score` as a Jackson `JsonNode`, so it can tell a JSON number from text. A JSON number such as `85` is the format saved before scores were text; `JsonAdaptedHomework` passes its digits (`JsonNode#asText`) to `Score#parse`, so `85` and `"85"` both load as the bare score `85`, which is saved back as `"85"`. A JSON number that `Score#parse` rejects (e.g. `85.5`, `-3`, `3000000000`) makes the homework load with no score, and a warning is logged (`Ignored invalid homework score 85.5 for 'Quadratic equations worksheet'`). Rejecting it would make the whole file invalid and start the app with no students, losing all other data at the next save. Subjects, levels, and weekdays are accepted in any case and saved in upper case.
 
 `MainApp#readInitialData` decides what the app starts with: the saved data if the data file is valid, the sample students from `SampleDataUtil#getSampleAddressBook()` if the data file does not exist (the file is not created at startup; the sample students are first saved by the first command that changes the data), and no students if the data file cannot be read or is invalid (a warning is logged). In the last case the invalid file stays on disk until the next command that changes the data overwrites it.
 
@@ -208,7 +208,7 @@ The subcommand parsers use `StrictArgumentTokenizer`, which rejects unknown and 
 
 The student index refers to `Model#getStudentList()`. The homework index is the one-based position in that student's homework list (insertion order); it is not stored and changes only when earlier homework is deleted. Editing or scoring homework replaces it at the same position, so its index stays the same. Two homework records of the same student are duplicates when `Homework#isSameHomework` holds: same title ignoring case, same subject and same due date. The score is not part of this identity.
 
-**Score.** `Score` holds the marks obtained and the total marks as two `int`s and keeps the ratio as given (`5/10` is not simplified). `Score#parse` accepts `MARKS_OBTAINED/TOTAL_MARKS` only: it matches the whole input against `(0|[1-9][0-9]*)/(0|[1-9][0-9]*)`, so signs, decimals, spaces and leading zeroes are rejected with `Score#MESSAGE_CONSTRAINTS`. A number that matches but does not fit in an `int` is reported with `Score#MESSAGE_TOO_LARGE`, and the constructor then rejects a total of 0 and marks above the total. The data file stores a score as this text, e.g. `"5/10"`. `Messages#formatScore` shows a missing score as `Not recorded`.
+**Score.** `Score` holds the marks obtained as an `int` and the total marks as an `Integer` that is `null` for a bare score such as `17`, which has no total. It keeps the score as given: `5/10` is not simplified, and `toString` gives back `17` or `5/10`. `Score#equals` compares the marks and the total, so `17` and `17/20` are different scores. `Score#parse` matches the whole input against `(0|[1-9][0-9]*)(?:/(0|[1-9][0-9]*))?`, so it accepts `MARKS` or `MARKS_OBTAINED/TOTAL_MARKS` and rejects signs, decimals, spaces and leading zeroes with `Score#MESSAGE_CONSTRAINTS`. A number that matches but does not fit in an `int` is reported with `Score#MESSAGE_TOO_LARGE`, and the constructors then reject negative marks, a total of 0 and marks above the total. The data file stores a score as this text, e.g. `"17"` or `"5/10"`. `Messages#formatScore` shows a missing score as `Not recorded`.
 
 **Listing.** `homework list` is read-only and returns the list as text in the result display. `HomeworkListCommandParser` accepts a student index optionally followed by the word `all`, and passes `LocalDate.now(clock)` and whether `all` was given to `HomeworkListCommand`. `HomeworkListCommand#formatHomeworkList(student, today, isAllShown)` keeps the zero-based positions of the homework to show (all of them, or only the upcoming ones), sorts the positions by due date with the stable `Stream#sorted`, so homework due on the same date stays in insertion order, and prints each record in the format of `HomeworkListCommand#MESSAGE_HOMEWORK_LINE` with its insertion-order number, e.g. `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score 5/10`. Printing the insertion-order number, not the position in the sorted list, keeps the numbers valid as `HOMEWORK_INDEX` for the other homework commands.
 
@@ -218,7 +218,7 @@ The sequence diagram below shows how `hw e 1 2 t/Algebra` is executed. `h` is th
 
 ![Interactions inside the Logic component for the `hw e 1 2 t/Algebra` command](images/HomeworkEditSequenceDiagram.png)
 
-**Recording marks.** `HomeworkMarksCommandParser` takes two indices and the required `score/` prefix; a missing `score/` is reported with the same "Missing required prefix(es)" message as in `homework add`. If the value of `score/` is empty or only whitespace, the parser skips `Score#parse` and creates a command that clears the marks with `new HomeworkMarksCommand(studentIndex, homeworkIndex)`, which holds no score (`null`). `HomeworkMarksCommand` checks the student index, that the student has homework, the homework index, and that the new score differs from the recorded one, then replaces the homework with a copy holding the new score. When clearing, the homework must have a score (otherwise `MESSAGE_NO_MARKS_TO_CLEAR`), the copy holds no score, and the result starts with `Cleared homework marks:` instead of `Recorded homework marks:`. Clearing reuses the index, save-failure and internal-error handling of recording, so the two cases differ only in the score passed on.
+**Recording marks.** `HomeworkMarksCommandParser` takes two indices and the required `score/` prefix; a missing `score/` is reported with the same "Missing required prefix(es)" message as in `homework add`. If the value of `score/` is empty or only whitespace, the parser skips `Score#parse` and creates a command that clears the marks with `new HomeworkMarksCommand(studentIndex, homeworkIndex)`, which holds no score (`null`). `HomeworkMarksCommand` checks the student index, that the student has homework, the homework index, and that the new score differs from the recorded one (`Score#equals`, so replacing `17/20` with `17` is a change), then replaces the homework with a copy holding the new score. When clearing, the homework must have a score (otherwise `MESSAGE_NO_MARKS_TO_CLEAR`), the copy holds no score, and the result starts with `Cleared homework marks:` instead of `Recorded homework marks:`. Clearing reuses the index, save-failure and internal-error handling of recording, so the two cases differ only in the score passed on.
 
 The sequence diagram below shows how `hw m 1 2 score/5/10` is executed. The parser turns `5/10` into a `Score` with `Score#parse` before the command is created, so an invalid score never reaches the command. The checks that can reject the command are left out.
 
@@ -455,7 +455,7 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
 
 1. Tutor requests to list a student's homework.
 2. TutorFlow displays the student's upcoming homework, each with its homework index and score.
-3. Tutor requests to record the marks of one homework record of the student using its homework index, specifying the marks obtained and the total marks.
+3. Tutor requests to record the marks of one homework record of the student using its homework index, specifying the marks obtained, optionally together with the total marks.
 4. TutorFlow records the score, replacing any score recorded before, and displays the homework record with its score.
 5. Use case ends.
 
@@ -508,7 +508,7 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
 * **Homework index**: The one-based position of a homework record in its student's homework list, in the order the homework was added. `homework list` shows it next to each record, and `homework edit`, `homework marks` and `homework delete` use it to identify the record.
 * **Lesson clash**: Two regular lessons on the same weekday whose time intervals overlap.
 * **Regular lesson**: A tuition lesson that repeats weekly for a student at a specified weekday and time.
-* **Score**: The marks a student obtained for a homework record together with the total marks, written as `MARKS_OBTAINED/TOTAL_MARKS`, such as `5/10`.
+* **Score**: The marks a student obtained for a homework record, written on their own, such as `17`, or together with the total marks as `MARKS_OBTAINED/TOTAL_MARKS`, such as `5/10`.
 * **Student profile**: The record containing a student's identity, contact information, academic information, guardian information, and associated regular lessons.
 * **Student roster**: The collection of student profiles managed by TutorFlow.
 * **Tuition subject**: A subject that the tutor teaches to a student, such as Mathematics, Physics, or Chemistry.
@@ -602,13 +602,16 @@ testers are expected to do more *exploratory* testing.
    1. Test case: `hw m 1 2 score/5/10` again<br>
       Expected: `No changes made; the homework already has this score.`
 
+   1. Test case: `hw m 1 2 score/17`, then `hw ls 1`<br>
+      Expected: `Recorded homework marks:` followed by `Ethan Lim; Title: Kinematics practice set; Subject: PHYSICS; Due: 2026-10-28; Score: 17`, and the list shows `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score 17`. Running `hw m 1 2 score/17` again gives `No changes made; the homework already has this score.`, while `hw m 1 2 score/17/20` records `Score: 17/20`.
+
    1. Test case: `hw m 1 2 score/`, then `hw ls 1`<br>
       Expected: `Cleared homework marks:` followed by `Ethan Lim; Title: Kinematics practice set; Subject: PHYSICS; Due: 2026-10-28; Score: Not recorded`, and the list shows `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score Not recorded`. Restart the app: `hw ls 1` still shows `score Not recorded`.
 
    1. Test case: `hw m 1 2 score/` again, and `hw m 1 1 score/   ` (only spaces)<br>
       Expected: `No changes made; the homework has no recorded marks.` each time.
 
-   1. Other incorrect commands to try: `hw m 1 2 score/11/10`, `hw m 1 2 score/5/0`, `hw m 1 2 score/5.5/10`, `hw m 1 2 score/2147483648/10`, `hw m 1 2`<br>
+   1. Other incorrect commands to try: `hw m 1 2 score/11/10`, `hw m 1 2 score/5/0`, `hw m 1 2 score/5.5/10`, `hw m 1 2 score/17.5`, `hw m 1 2 score/017`, `hw m 1 2 score/2147483648/10`, `hw m 1 2 score/2147483648`, `hw m 1 2`<br>
       Expected: An error message each time, and the score is unchanged.
 
 1. Saving fails
@@ -670,9 +673,15 @@ testers are expected to do more *exploratory* testing.
 1. Dealing with a score saved by an older version
 
    1. Close the app. In `data/tutorflow.json`, change the `score` of a homework to `85` (a number, without quotes). Launch the app.<br>
-      Expected: All students are shown, and `homework list` for that student shows the homework with `score Not recorded`. A warning such as `Ignored old-format homework score 85 for 'Algebra worksheet'` is logged. The `85` stays in the data file until a command changes the data, which saves the homework with `"score" : null`.
+      Expected: All students are shown, and `homework list` for that student shows the homework with `score 85`. The `85` stays in the data file until a command changes the data, which saves the homework with `"score" : "85"`.
 
    1. Change the `score` to `"85"` (text, with quotes) instead. Launch the app.<br>
+      Expected: Same as above.
+
+   1. Change the `score` to `85.5` (a number that is not a valid score) instead. Launch the app.<br>
+      Expected: All students are shown, and the homework shows `score Not recorded`. A warning such as `Ignored invalid homework score 85.5 for 'Quadratic equations worksheet'` is logged.
+
+   1. Change the `score` to `"85.5"` (text, with quotes) instead. Launch the app.<br>
       Expected: Similar to a corrupted data file: the app shows no students.
 
 1. Dealing with a data file that cannot be written

@@ -17,7 +17,9 @@ import seedu.address.model.lesson.LessonSchedule;
 import seedu.address.model.lesson.RegularLesson;
 import seedu.address.model.student.Student;
 
-/** Adds a regular weekly lesson to the student at a displayed index. */
+/**
+ * Adds a regular weekly lesson to the student at a displayed index.
+ */
 public class LessonAddCommand extends Command {
     public static final String MESSAGE_USAGE = "lesson add INDEX s/SUBJECT d/DAY st/START_TIME et/END_TIME";
     public static final String MESSAGE_SUBJECT = "The selected student is not registered for this subject.";
@@ -32,7 +34,9 @@ public class LessonAddCommand extends Command {
     private final Index studentIndex;
     private final RegularLesson lesson;
 
-    /** Creates a command to add the given lesson to the selected student. */
+    /**
+     * Creates a command to add the given lesson to the selected student.
+     */
     public LessonAddCommand(Index studentIndex, RegularLesson lesson) {
         requireAllNonNull(studentIndex, lesson);
         this.studentIndex = studentIndex;
@@ -50,7 +54,9 @@ public class LessonAddCommand extends Command {
         }
     }
 
-    /** Validates the schedule before replacing the immutable student. */
+    /**
+     * Validates the schedule before replacing the immutable student.
+     */
     private CommandResult addLesson(Model model) throws CommandException {
         List<Student> students = model.getStudentList();
         if (studentIndex.getZeroBased() >= students.size()) {

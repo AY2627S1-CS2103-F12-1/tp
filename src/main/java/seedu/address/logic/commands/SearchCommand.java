@@ -21,6 +21,7 @@ public class SearchCommand extends Command {
     public static final String MESSAGE_NO_MATCHES = "No students found for \"%s\".";
     public static final String MESSAGE_SUCCESS_SINGULAR = "Found 1 student for \"%s\".";
     public static final String MESSAGE_SUCCESS = "Found %d students for \"%s\".";
+    public static final String MESSAGE_SHOW_ALL = "Type list to show all students.";
     public static final String MESSAGE_INTERNAL_ERROR =
             "TutorFlow could not search students due to an internal error.";
 
@@ -65,7 +66,7 @@ public class SearchCommand extends Command {
         } else {
             feedback = String.format(MESSAGE_SUCCESS, count, keyword);
         }
-        return new CommandResult(feedback, false, false, true);
+        return new CommandResult(feedback + "\n" + MESSAGE_SHOW_ALL, false, false, true);
     }
 
     private static boolean matches(String value, String normalizedKeyword) {

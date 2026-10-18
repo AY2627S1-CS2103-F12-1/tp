@@ -123,7 +123,8 @@ Format: `search KEYWORD`
 * `KEYWORD` must not be blank; it can contain spaces. For example, `search Mary Tan` searches for that full phrase.
 * `search 9123` can find a student by part of their phone number. `search Tan` may match a student or a guardian.
 * The feedback repeats the keyword used, e.g. `Found 2 students for "Tan".` If nothing matches, TutorFlow shows
-  `No students found for "Nobody".` and displays no student cards.
+  `No students found for "Nobody".` and displays no student cards. In both cases, the feedback reminds you to type
+  `list` to show all students again.
 * Student indexes in subsequent commands, such as `delete 1` or `homework list 1`, refer to the currently displayed
   search results. Run `list` or `ls` to show the full roster again. Adding a student also restores the full roster.
 * Searching only changes which students are displayed; it does not change the saved roster.

@@ -117,7 +117,8 @@ public class LogicManagerTest {
 
         CommandResult result = logic.execute("search Alice");
 
-        assertEquals("Found 1 student for \"Alice\".", result.getFeedbackToUser());
+        assertEquals("Found 1 student for \"Alice\".\nType list to show all students.",
+                result.getFeedbackToUser());
         assertEquals(1, logic.getStudentList().size());
         assertEquals(before, model.getAddressBook());
         assertFalse(Files.exists(dataFilePath));

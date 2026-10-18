@@ -39,7 +39,8 @@ public class SearchCommandTest {
 
         CommandResult result = new SearchCommand("  jOhN  ").execute(model);
 
-        assertEquals("Found 1 student for \"jOhN\".", result.getFeedbackToUser());
+        assertEquals("Found 1 student for \"jOhN\".\nType list to show all students.",
+                result.getFeedbackToUser());
         assertEquals(List.of(first), model.getStudentList());
         assertTrue(result.isShowStudentList());
         assertEquals(before, model.getAddressBook());
@@ -51,7 +52,8 @@ public class SearchCommandTest {
 
         CommandResult result = new SearchCommand("tAn").execute(model);
 
-        assertEquals("Found 2 students for \"tAn\".", result.getFeedbackToUser());
+        assertEquals("Found 2 students for \"tAn\".\nType list to show all students.",
+                result.getFeedbackToUser());
         assertEquals(List.of(first, second), model.getStudentList());
     }
 
@@ -80,7 +82,8 @@ public class SearchCommandTest {
 
         CommandResult result = new SearchCommand("Nobody").execute(model);
 
-        assertEquals("No students found for \"Nobody\".", result.getFeedbackToUser());
+        assertEquals("No students found for \"Nobody\".\nType list to show all students.",
+                result.getFeedbackToUser());
         assertTrue(model.getStudentList().isEmpty());
         assertEquals(before, model.getAddressBook());
     }

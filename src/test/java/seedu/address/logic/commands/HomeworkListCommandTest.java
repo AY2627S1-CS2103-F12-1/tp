@@ -123,6 +123,23 @@ public class HomeworkListCommandTest {
     }
 
     @Test
+    public void execute_bareScore_showsScoreAsEntered() {
+        Student student = new StudentBuilder().withHomeworks(
+                new HomeworkBuilder().withTitle("Bare").withDueDate("2026-10-15").withScore("17").build(),
+                new HomeworkBuilder().withTitle("Ratio").withDueDate("2026-10-16").withScore("17/20").build(),
+                new HomeworkBuilder().withTitle("Zero").withDueDate("2026-10-17").withScore("0").build())
+                .build();
+        String expectedMessage = "Listed 3 upcoming homework records for John Tan.\n"
+                + "Homework for John Tan:\n"
+                + "1. Bare (MATH) - due 2026-10-15 - score 17\n"
+                + "2. Ratio (MATH) - due 2026-10-16 - score 17/20\n"
+                + "3. Zero (MATH) - due 2026-10-17 - score 0";
+
+        assertCommandSuccess(new HomeworkListCommand(FIRST, BEFORE_ALL_DUE_DATES, false),
+                getModelWithStudents(List.of(student)), expectedMessage, getModelWithStudents(List.of(student)));
+    }
+
+    @Test
     public void execute_studentWithoutHomework_showsNoHomeworkFound() {
         Index secondIndex = Index.fromOneBased(2);
 

@@ -69,6 +69,40 @@ public class HomeworkMarksCommandTest {
     }
 
     @Test
+    public void execute_bareScore_recordsScoreWithoutTotal() {
+        String expectedMessage = "Recorded homework marks:\n"
+                + "Alice Tan; Title: Attempt mechanics questions 1-5; Subject: PHYSICS; Due: 2026-10-20; Score: 17";
+        Model expectedModel = getModelWithStudents(List.of(ALICE.withHomeworks(List.of(ALGEBRA,
+                new HomeworkBuilder(MECHANICS).withScore("17").build(), ATOMIC_STRUCTURE)), BENSON, CARL));
+
+        assertCommandSuccess(new HomeworkMarksCommand(FIRST, SECOND, new Score(17)), model, expectedMessage,
+                expectedModel);
+    }
+
+    @Test
+    public void execute_bareScoreReplacingSameMarksWithTotal_replacesScore() {
+        // ATOMIC_STRUCTURE has 17/20; 17 without a total is a different score
+        String expectedMessage = "Recorded homework marks:\n"
+                + "Alice Tan; Title: Revise atomic structure; Subject: CHEMISTRY; Due: 2026-10-18; Score: 17";
+        Model expectedModel = getModelWithStudents(List.of(ALICE.withHomeworks(List.of(ALGEBRA, MECHANICS,
+                new HomeworkBuilder(ATOMIC_STRUCTURE).withScore("17").build())), BENSON, CARL));
+
+        assertCommandSuccess(new HomeworkMarksCommand(FIRST, THIRD, new Score(17)), model, expectedMessage,
+                expectedModel);
+    }
+
+    @Test
+    public void execute_scoreWithTotalReplacingBareScore_replacesScore() {
+        Model modelWithBareScore = getModelWithStudents(List.of(ALICE.withHomeworks(List.of(ALGEBRA, MECHANICS,
+                new HomeworkBuilder(ATOMIC_STRUCTURE).withScore("17").build())), BENSON, CARL));
+        String expectedMessage = "Recorded homework marks:\n"
+                + "Alice Tan; Title: Revise atomic structure; Subject: CHEMISTRY; Due: 2026-10-18; Score: 17/20";
+
+        assertCommandSuccess(new HomeworkMarksCommand(FIRST, THIRD, new Score(17, 20)), modelWithBareScore,
+                expectedMessage, getModelWithTypicalStudents());
+    }
+
+    @Test
     public void execute_zeroMarks_recordsZero() {
         String expectedMessage = "Recorded homework marks:\n"
                 + "Carl Ng; Title: Attempt mechanics questions 1-5; Subject: PHYSICS; Due: 2026-10-20; Score: 0/10";
@@ -147,6 +181,15 @@ public class HomeworkMarksCommandTest {
     }
 
     @Test
+    public void execute_sameBareScore_failure() {
+        Model modelWithBareScore = getModelWithStudents(List.of(ALICE.withHomeworks(List.of(ALGEBRA, MECHANICS,
+                new HomeworkBuilder(ATOMIC_STRUCTURE).withScore("17").build())), BENSON, CARL));
+
+        assertCommandFailure(new HomeworkMarksCommand(FIRST, THIRD, new Score(17)), modelWithBareScore,
+                HomeworkMarksCommand.MESSAGE_NO_CHANGES);
+    }
+
+    @Test
     public void execute_unexpectedError_reportsInternalErrorWithoutChangingModel() {
         Model failingModel = new ModelManager() {
             @Override
@@ -193,6 +236,9 @@ public class HomeworkMarksCommandTest {
 
         // different score -> returns false
         assertFalse(marksCommand.equals(new HomeworkMarksCommand(FIRST, SECOND, new Score(1, 2))));
+
+        // same marks without a total -> returns false
+        assertFalse(marksCommand.equals(new HomeworkMarksCommand(FIRST, SECOND, new Score(5))));
 
         // clearing instead of recording -> returns false
         HomeworkMarksCommand clearCommand = new HomeworkMarksCommand(FIRST, SECOND);

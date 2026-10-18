@@ -22,7 +22,8 @@ import seedu.address.model.student.TuitionSubject;
 class JsonAdaptedHomework {
 
     public static final String MISSING_FIELD_MESSAGE_FORMAT = "Homework's %s field is missing!";
-    public static final String OLD_FORMAT_SCORE_WARNING_FORMAT = "Ignored old-format homework score %s for '%s'";
+    public static final String INVALID_NUMBER_SCORE_WARNING_FORMAT =
+            "Ignored invalid homework score %s for '%s'";
 
     private static final Logger logger = LogsCenter.getLogger(JsonAdaptedHomework.class);
 
@@ -37,8 +38,8 @@ class JsonAdaptedHomework {
      * @param title Title of the homework, or null if the field is missing.
      * @param subject Subject of the homework, such as {@code MATH}, or null if the field is missing.
      * @param dueDate Due date in {@code YYYY-MM-DD} format, or null if the field is missing.
-     * @param score Score as text in {@code MARKS_OBTAINED/TOTAL_MARKS} format, a whole number saved before scores
-     *         had a total, or null if none is recorded.
+     * @param score Score as text in {@code MARKS} or {@code MARKS_OBTAINED/TOTAL_MARKS} format, a number as saved
+     *         before scores were text, or null if none is recorded.
      */
     @JsonCreator
     public JsonAdaptedHomework(@JsonProperty("title") String title, @JsonProperty("subject") String subject,
@@ -77,20 +78,25 @@ class JsonAdaptedHomework {
 
     /**
      * Returns the model score for the optional field {@code score}, or null if the field is missing or null.
-     * A whole number, as saved before scores had a total, has no total to keep, so it is ignored with a warning
+     * A JSON number, as saved before scores were text, is read like the same digits written as text, e.g. {@code 85}
+     * as the score {@code 85}. A number that is not a valid score, such as {@code 85.5}, is ignored with a warning
      * instead of making the whole data file invalid.
      *
      * @param modelTitle Title of the homework, used in the warning.
-     * @throws IllegalValueException If {@code score} is neither a whole number nor a valid score in
+     * @throws IllegalValueException If {@code score} is neither a number nor a valid score in {@code MARKS} or
      *         {@code MARKS_OBTAINED/TOTAL_MARKS} format.
      */
     private Score toModelScore(Title modelTitle) throws IllegalValueException {
         if (score == null || score.isNull()) {
             return null;
         }
-        if (score.isIntegralNumber()) {
-            logger.warning(String.format(OLD_FORMAT_SCORE_WARNING_FORMAT, score, modelTitle));
-            return null;
+        if (score.isNumber()) {
+            try {
+                return Score.parse(score.asText());
+            } catch (IllegalArgumentException exception) {
+                logger.warning(String.format(INVALID_NUMBER_SCORE_WARNING_FORMAT, score, modelTitle));
+                return null;
+            }
         }
         if (!score.isTextual()) {
             throw new IllegalValueException(Score.MESSAGE_CONSTRAINTS);

@@ -3,25 +3,44 @@ package seedu.address.model.homework;
 import static java.util.Objects.requireNonNull;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Represents the marks a student obtained for a homework record out of its total marks, e.g. {@code 5/10}.
- * Guarantees: immutable; the total is positive and the marks obtained are from zero to the total. The ratio is kept
- * as given, so {@code 5/10} is not simplified to {@code 1/2}.
+ * Represents the marks a student obtained for a homework record, either on their own, e.g. {@code 17}, or out of the
+ * total marks, e.g. {@code 5/10}.
+ * Guarantees: immutable; the marks obtained are not negative; a total, if any, is positive and the marks obtained are
+ * at most the total. The score is kept as given, so {@code 5/10} is not simplified to {@code 1/2}, and {@code 17} is
+ * a different score from {@code 17/20}.
  */
 public final class Score {
-    public static final String MESSAGE_CONSTRAINTS = "Score must use MARKS_OBTAINED/TOTAL_MARKS format with whole "
-            + "numbers, a positive total, and marks obtained between zero and the total.";
+    public static final String MESSAGE_CONSTRAINTS = "Score must be a whole number, or MARKS_OBTAINED/TOTAL_MARKS "
+            + "with whole numbers, a positive total, and marks obtained between zero and the total.";
     public static final String MESSAGE_TOO_LARGE =
             "Marks are too large. Enter whole numbers no greater than 2147483647.";
 
-    /** Whole numbers without signs, decimals or leading zeroes (except {@code 0}), separated by a single slash. */
-    private static final Pattern SCORE_FORMAT = Pattern.compile("(0|[1-9][0-9]*)/(0|[1-9][0-9]*)");
+    /**
+     * A whole number without a sign, decimals or leading zeroes (except {@code 0}), optionally followed by a single
+     * slash and a second such number.
+     */
+    private static final Pattern SCORE_FORMAT = Pattern.compile("(0|[1-9][0-9]*)(?:/(0|[1-9][0-9]*))?");
 
     private final int marksObtained;
-    private final int totalMarks;
+    private final Integer totalMarks;
+
+    /**
+     * Creates a score of {@code marksObtained} without a total.
+     *
+     * @throws IllegalArgumentException If the marks obtained are negative.
+     */
+    public Score(int marksObtained) {
+        if (marksObtained < 0) {
+            throw new IllegalArgumentException(MESSAGE_CONSTRAINTS);
+        }
+        this.marksObtained = marksObtained;
+        this.totalMarks = null;
+    }
 
     /**
      * Creates a score of {@code marksObtained} out of {@code totalMarks}.
@@ -38,12 +57,12 @@ public final class Score {
     }
 
     /**
-     * Returns the score represented by the input in {@code MARKS_OBTAINED/TOTAL_MARKS} format, ignoring surrounding
-     * whitespace.
+     * Returns the score represented by the input, either {@code MARKS} or {@code MARKS_OBTAINED/TOTAL_MARKS}, ignoring
+     * surrounding whitespace.
      *
-     * @throws IllegalArgumentException With {@link #MESSAGE_CONSTRAINTS} if the input is not in that format or
-     *         breaks the rules of {@link #Score(int, int)}, or with {@link #MESSAGE_TOO_LARGE} if a number in the
-     *         right format is larger than {@link Integer#MAX_VALUE}.
+     * @throws IllegalArgumentException With {@link #MESSAGE_CONSTRAINTS} if the input is in neither format or breaks
+     *         the rules of {@link #Score(int, int)}, or with {@link #MESSAGE_TOO_LARGE} if a number in the right
+     *         format is larger than {@link Integer#MAX_VALUE}.
      */
     public static Score parse(String rawScore) {
         requireNonNull(rawScore);
@@ -51,7 +70,11 @@ public final class Score {
         if (!matcher.matches()) {
             throw new IllegalArgumentException(MESSAGE_CONSTRAINTS);
         }
-        return new Score(parseMarks(matcher.group(1)), parseMarks(matcher.group(2)));
+        int marksObtained = parseMarks(matcher.group(1));
+        if (matcher.group(2) == null) {
+            return new Score(marksObtained);
+        }
+        return new Score(marksObtained, parseMarks(matcher.group(2)));
     }
 
     /**
@@ -78,20 +101,23 @@ public final class Score {
         return marksObtained;
     }
 
-    public int getTotalMarks() {
-        return totalMarks;
+    /**
+     * Returns the total marks, or an empty {@code Optional} if the score has no total.
+     */
+    public Optional<Integer> getTotalMarks() {
+        return Optional.ofNullable(totalMarks);
     }
 
     @Override
     public String toString() {
-        return marksObtained + "/" + totalMarks;
+        return totalMarks == null ? String.valueOf(marksObtained) : marksObtained + "/" + totalMarks;
     }
 
     @Override
     public boolean equals(Object other) {
         return other instanceof Score score
                 && marksObtained == score.marksObtained
-                && totalMarks == score.totalMarks;
+                && Objects.equals(totalMarks, score.totalMarks);
     }
 
     @Override

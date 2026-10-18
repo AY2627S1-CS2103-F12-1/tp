@@ -46,6 +46,24 @@ public class HomeworkMarksCommandParserTest {
     }
 
     @Test
+    public void parse_bareScore_success() {
+        assertParseSuccess(parser, "1 2 score/17",
+                new HomeworkMarksCommand(Index.fromOneBased(1), Index.fromOneBased(2), new Score(17)));
+
+        // no marks obtained
+        assertParseSuccess(parser, "1 2 score/0",
+                new HomeworkMarksCommand(Index.fromOneBased(1), Index.fromOneBased(2), new Score(0)));
+
+        // largest number
+        assertParseSuccess(parser, "1 2 score/2147483647",
+                new HomeworkMarksCommand(Index.fromOneBased(1), Index.fromOneBased(2), new Score(Integer.MAX_VALUE)));
+
+        // surrounding whitespace
+        assertParseSuccess(parser, "1 2 score/  17  ",
+                new HomeworkMarksCommand(Index.fromOneBased(1), Index.fromOneBased(2), new Score(17)));
+    }
+
+    @Test
     public void parse_emptyScore_returnsClearCommand() {
         HomeworkMarksCommand expectedCommand = new HomeworkMarksCommand(Index.fromOneBased(1), Index.fromOneBased(2));
 
@@ -173,9 +191,6 @@ public class HomeworkMarksCommandParserTest {
         // spaces inside
         assertParseFailure(parser, "1 2 score/5 / 10", Score.MESSAGE_CONSTRAINTS);
 
-        // single number
-        assertParseFailure(parser, "1 2 score/85", Score.MESSAGE_CONSTRAINTS);
-
         // leading zero
         assertParseFailure(parser, "1 2 score/05/10", Score.MESSAGE_CONSTRAINTS);
 
@@ -184,11 +199,33 @@ public class HomeworkMarksCommandParserTest {
 
         // extra word after the score
         assertParseFailure(parser, "1 2 score/5/10 extra", Score.MESSAGE_CONSTRAINTS);
+
+        // empty total
+        assertParseFailure(parser, "1 2 score/17/", Score.MESSAGE_CONSTRAINTS);
+    }
+
+    @Test
+    public void parse_invalidBareScore_failure() {
+        // leading zero
+        assertParseFailure(parser, "1 2 score/017", Score.MESSAGE_CONSTRAINTS);
+
+        // plus sign
+        assertParseFailure(parser, "1 2 score/+17", Score.MESSAGE_CONSTRAINTS);
+
+        // negative
+        assertParseFailure(parser, "1 2 score/-1", Score.MESSAGE_CONSTRAINTS);
+
+        // decimal
+        assertParseFailure(parser, "1 2 score/17.5", Score.MESSAGE_CONSTRAINTS);
+
+        // space inside
+        assertParseFailure(parser, "1 2 score/1 7", Score.MESSAGE_CONSTRAINTS);
     }
 
     @Test
     public void parse_marksTooLarge_failure() {
         assertParseFailure(parser, "1 2 score/2147483648/2147483648", Score.MESSAGE_TOO_LARGE);
         assertParseFailure(parser, "1 2 score/5/2147483648", Score.MESSAGE_TOO_LARGE);
+        assertParseFailure(parser, "1 2 score/2147483648", Score.MESSAGE_TOO_LARGE);
     }
 }

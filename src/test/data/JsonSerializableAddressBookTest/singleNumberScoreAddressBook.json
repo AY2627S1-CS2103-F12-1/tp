@@ -16,6 +16,16 @@
       "subject" : "MATH",
       "dueDate" : "2026-10-22",
       "score" : "7/10"
+    }, {
+      "title" : "Attempt factorization questions",
+      "subject" : "MATH",
+      "dueDate" : "2026-10-29",
+      "score" : "85"
+    }, {
+      "title" : "Revise indices",
+      "subject" : "MATH",
+      "dueDate" : "2026-11-05",
+      "score" : 85.5
     } ]
   } ]
 }

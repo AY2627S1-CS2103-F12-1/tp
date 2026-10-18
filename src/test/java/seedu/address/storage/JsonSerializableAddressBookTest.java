@@ -55,13 +55,18 @@ public class JsonSerializableAddressBookTest {
     }
 
     @Test
-    public void toModelType_singleNumberScore_loadsHomeworkWithoutScore() throws Exception {
-        // A score saved before scores had a total, such as 85, is dropped; the rest of the file still loads
+    public void toModelType_singleNumberScore_loadsBareScore() throws Exception {
+        // The number 85, as saved before scores were text, and the text "85" both load as the score 85; the
+        // invalid number 85.5 is dropped, and the rest of the file still loads
         JsonSerializableAddressBook dataFromFile = JsonUtil.readJsonFile(SINGLE_NUMBER_SCORE_FILE,
                 JsonSerializableAddressBook.class).get();
         Student expectedStudent = new StudentBuilder().withName("Alice Tan").withPhone("91111111")
-                .withHomeworks(new HomeworkBuilder().build(), new HomeworkBuilder()
-                        .withTitle("Revise quadratic equations").withDueDate("2026-10-22").withScore("7/10").build())
+                .withHomeworks(new HomeworkBuilder().withScore("85").build(),
+                        new HomeworkBuilder().withTitle("Revise quadratic equations").withDueDate("2026-10-22")
+                                .withScore("7/10").build(),
+                        new HomeworkBuilder().withTitle("Attempt factorization questions").withDueDate("2026-10-29")
+                                .withScore("85").build(),
+                        new HomeworkBuilder().withTitle("Revise indices").withDueDate("2026-11-05").build())
                 .build();
         assertEquals(new AddressBookBuilder().withStudent(expectedStudent).build(), dataFromFile.toModelType());
     }

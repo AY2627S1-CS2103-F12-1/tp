@@ -18,9 +18,9 @@ public class SearchCommand extends Command {
     public static final String COMMAND_WORD = "search";
     public static final String MESSAGE_USAGE = "search KEYWORD";
     public static final String MESSAGE_INVALID_FORMAT = "Invalid command format.\nUsage: " + MESSAGE_USAGE;
-    public static final String MESSAGE_NO_MATCHES = "No matching students found.";
-    public static final String MESSAGE_SUCCESS_SINGULAR = "Found 1 matching student.";
-    public static final String MESSAGE_SUCCESS = "Found %d matching students.";
+    public static final String MESSAGE_NO_MATCHES = "No students found for \"%s\".";
+    public static final String MESSAGE_SUCCESS_SINGULAR = "Found 1 student for \"%s\".";
+    public static final String MESSAGE_SUCCESS = "Found %d students for \"%s\".";
     public static final String MESSAGE_INTERNAL_ERROR =
             "TutorFlow could not search students due to an internal error.";
 
@@ -59,11 +59,11 @@ public class SearchCommand extends Command {
         int count = model.getStudentList().size();
         String feedback;
         if (count == 0) {
-            feedback = MESSAGE_NO_MATCHES;
+            feedback = String.format(MESSAGE_NO_MATCHES, keyword);
         } else if (count == 1) {
-            feedback = MESSAGE_SUCCESS_SINGULAR;
+            feedback = String.format(MESSAGE_SUCCESS_SINGULAR, keyword);
         } else {
-            feedback = String.format(MESSAGE_SUCCESS, count);
+            feedback = String.format(MESSAGE_SUCCESS, count, keyword);
         }
         return new CommandResult(feedback, false, false, true);
     }

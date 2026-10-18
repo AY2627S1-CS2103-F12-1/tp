@@ -63,9 +63,10 @@ public final class HelpContent {
                     new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_UPCOMING,
                             HomeworkUpcomingCommand.MESSAGE_USAGE,
                             "Lists the homework of all students that is due from today to DAYS days later, earliest"
-                                    + " first, with its score. DAYS is a number of days from 0 to 365, not a date,"
-                                    + " and is 7 if not given. The lines are not numbered by HOMEWORK_INDEX; use"
-                                    + " homework list to find it.",
+                                    + " first, with its score. Each line starts with the STUDENT_INDEX of the"
+                                    + " student. DAYS is a number of days from 0 to 365, not a date, and is 7 if"
+                                    + " not given. The lines are not numbered by HOMEWORK_INDEX; use homework list"
+                                    + " STUDENT_INDEX to find it.",
                             "hw up due/3"),
                     new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_EDIT,
                             HomeworkEditCommand.MESSAGE_USAGE,

@@ -142,7 +142,7 @@ public class SampleDataUtilTest {
         Model model = getModelWithStudents(List.of(sampleStudents));
 
         assertEquals("Found 1 homework record due from 2026-10-17 to 2026-10-24.\n"
-                + "Ethan Lim; Quadratic equations worksheet; MATH; Due: 2026-10-23; Score: Not recorded",
+                + "Student 1: Ethan Lim; Quadratic equations worksheet; MATH; Due: 2026-10-23; Score: Not recorded",
                 parser.parseCommand("hw up").execute(model).getFeedbackToUser());
         assertEquals("No homework due from 2026-10-17 to 2026-10-20.",
                 parser.parseCommand("hw up due/3").execute(model).getFeedbackToUser());

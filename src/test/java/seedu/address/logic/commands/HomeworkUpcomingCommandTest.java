@@ -62,11 +62,11 @@ public class HomeworkUpcomingCommandTest {
         // overdue (2026-10-16) and day after the window (2026-10-21) are left out; ties keep roster order, then
         // insertion order
         String expectedMessage = "Found 5 homework records due from 2026-10-17 to 2026-10-20.\n"
-                + "Zoe Lee; Today worksheet; MATH; Due: 2026-10-17; Score: 5/10\n"
-                + "Adam Ng; Today quiz; CHEMISTRY; Due: 2026-10-17; Score: 0/20\n"
-                + "Zoe Lee; Zeta last day; PHYSICS; Due: 2026-10-20; Score: Not recorded\n"
-                + "Zoe Lee; Alpha last day; MATH; Due: 2026-10-20; Score: Not recorded\n"
-                + "Adam Ng; Last day practice; MATH; Due: 2026-10-20; Score: Not recorded";
+                + "Student 1: Zoe Lee; Today worksheet; MATH; Due: 2026-10-17; Score: 5/10\n"
+                + "Student 3: Adam Ng; Today quiz; CHEMISTRY; Due: 2026-10-17; Score: 0/20\n"
+                + "Student 1: Zoe Lee; Zeta last day; PHYSICS; Due: 2026-10-20; Score: Not recorded\n"
+                + "Student 1: Zoe Lee; Alpha last day; MATH; Due: 2026-10-20; Score: Not recorded\n"
+                + "Student 3: Adam Ng; Last day practice; MATH; Due: 2026-10-20; Score: Not recorded";
 
         assertCommandSuccess(new HomeworkUpcomingCommand(TODAY, 3), model, expectedMessage, expectedModel);
     }
@@ -74,8 +74,8 @@ public class HomeworkUpcomingCommandTest {
     @Test
     public void execute_zeroDays_listsHomeworkDueTodayOnly() {
         String expectedMessage = "Found 2 homework records due from 2026-10-17 to 2026-10-17.\n"
-                + "Zoe Lee; Today worksheet; MATH; Due: 2026-10-17; Score: 5/10\n"
-                + "Adam Ng; Today quiz; CHEMISTRY; Due: 2026-10-17; Score: 0/20";
+                + "Student 1: Zoe Lee; Today worksheet; MATH; Due: 2026-10-17; Score: 5/10\n"
+                + "Student 3: Adam Ng; Today quiz; CHEMISTRY; Due: 2026-10-17; Score: 0/20";
 
         assertCommandSuccess(new HomeworkUpcomingCommand(TODAY, 0), model, expectedMessage, expectedModel);
     }
@@ -84,8 +84,8 @@ public class HomeworkUpcomingCommandTest {
     public void execute_windowEndsDayBeforeDueDate_excludesHomework() {
         // the window ends on 2026-10-19, one day before the homework due on 2026-10-20
         String expectedMessage = "Found 2 homework records due from 2026-10-17 to 2026-10-19.\n"
-                + "Zoe Lee; Today worksheet; MATH; Due: 2026-10-17; Score: 5/10\n"
-                + "Adam Ng; Today quiz; CHEMISTRY; Due: 2026-10-17; Score: 0/20";
+                + "Student 1: Zoe Lee; Today worksheet; MATH; Due: 2026-10-17; Score: 5/10\n"
+                + "Student 3: Adam Ng; Today quiz; CHEMISTRY; Due: 2026-10-17; Score: 0/20";
 
         assertCommandSuccess(new HomeworkUpcomingCommand(TODAY, 2), model, expectedMessage, expectedModel);
     }
@@ -94,7 +94,7 @@ public class HomeworkUpcomingCommandTest {
     public void execute_oneRecord_listsSingleRecord() {
         Model singleModel = getModelWithStudents(List.of(ADAM));
         String expectedMessage = "Found 1 homework record due from 2026-10-17 to 2026-10-17.\n"
-                + "Adam Ng; Today quiz; CHEMISTRY; Due: 2026-10-17; Score: 0/20";
+                + "Student 1: Adam Ng; Today quiz; CHEMISTRY; Due: 2026-10-17; Score: 0/20";
 
         assertCommandSuccess(new HomeworkUpcomingCommand(TODAY, 0), singleModel, expectedMessage,
                 getModelWithStudents(List.of(ADAM)));
@@ -103,13 +103,30 @@ public class HomeworkUpcomingCommandTest {
     @Test
     public void execute_typicalStudents_listsAcrossStudents() {
         String expectedMessage = "Found 4 homework records due from 2026-10-15 to 2026-10-22.\n"
-                + "Alice Tan; Complete algebra worksheet; MATH; Due: 2026-10-15; Score: Not recorded\n"
-                + "Alice Tan; Revise atomic structure; CHEMISTRY; Due: 2026-10-18; Score: 17/20\n"
-                + "Alice Tan; Attempt mechanics questions 1-5; PHYSICS; Due: 2026-10-20; Score: Not recorded\n"
-                + "Carl Ng; Attempt mechanics questions 1-5; PHYSICS; Due: 2026-10-20; Score: Not recorded";
+                + "Student 1: Alice Tan; Complete algebra worksheet; MATH; Due: 2026-10-15; Score: Not recorded\n"
+                + "Student 1: Alice Tan; Revise atomic structure; CHEMISTRY; Due: 2026-10-18; Score: 17/20\n"
+                + "Student 1: Alice Tan; Attempt mechanics questions 1-5; PHYSICS; Due: 2026-10-20; "
+                + "Score: Not recorded\n"
+                + "Student 3: Carl Ng; Attempt mechanics questions 1-5; PHYSICS; Due: 2026-10-20; Score: Not recorded";
 
         assertCommandSuccess(new HomeworkUpcomingCommand(LocalDate.of(2026, 10, 15), 7),
                 getModelWithTypicalStudents(), expectedMessage, getModelWithTypicalStudents());
+    }
+
+    @Test
+    public void execute_sameNameStudents_showsDistinctStudentIndexes() {
+        // two students named John Tan, told apart by phone in the roster and by STUDENT_INDEX in the result
+        Student firstJohn = new StudentBuilder().withPhone("91111111")
+                .withHomeworks(new HomeworkBuilder().withDueDate("2026-10-17").build()).build();
+        Student secondJohn = new StudentBuilder().withPhone("92222222")
+                .withHomeworks(new HomeworkBuilder().withDueDate("2026-10-17").withScore("7/10").build()).build();
+        String expectedMessage = "Found 2 homework records due from 2026-10-17 to 2026-10-17.\n"
+                + "Student 2: John Tan; Complete algebra worksheet; MATH; Due: 2026-10-17; Score: Not recorded\n"
+                + "Student 3: John Tan; Complete algebra worksheet; MATH; Due: 2026-10-17; Score: 7/10";
+
+        assertCommandSuccess(new HomeworkUpcomingCommand(TODAY, 0),
+                getModelWithStudents(List.of(NO_HOMEWORK, firstJohn, secondJohn)), expectedMessage,
+                getModelWithStudents(List.of(NO_HOMEWORK, firstJohn, secondJohn)));
     }
 
     @Test
@@ -123,8 +140,8 @@ public class HomeworkUpcomingCommandTest {
         };
         List.of(ZOE, NO_HOMEWORK, ADAM).forEach(modelShowingNoStudents::addStudent);
         String expectedMessage = "Found 2 homework records due from 2026-10-17 to 2026-10-17.\n"
-                + "Zoe Lee; Today worksheet; MATH; Due: 2026-10-17; Score: 5/10\n"
-                + "Adam Ng; Today quiz; CHEMISTRY; Due: 2026-10-17; Score: 0/20";
+                + "Student 1: Zoe Lee; Today worksheet; MATH; Due: 2026-10-17; Score: 5/10\n"
+                + "Student 3: Adam Ng; Today quiz; CHEMISTRY; Due: 2026-10-17; Score: 0/20";
 
         assertCommandSuccess(new HomeworkUpcomingCommand(TODAY, 0), modelShowingNoStudents, expectedMessage,
                 expectedModel);

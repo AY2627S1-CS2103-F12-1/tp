@@ -212,7 +212,7 @@ The student index refers to `Model#getStudentList()`. The homework index is the 
 
 **Listing.** `homework list` is read-only and returns the list as text in the result display. `HomeworkListCommandParser` accepts a student index optionally followed by the word `all`, and passes `LocalDate.now(clock)` and whether `all` was given to `HomeworkListCommand`. `HomeworkListCommand#formatHomeworkList(student, today, isAllShown)` keeps the zero-based positions of the homework to show (all of them, or only the upcoming ones), sorts the positions by due date with the stable `Stream#sorted`, so homework due on the same date stays in insertion order, and prints each record in the format of `HomeworkListCommand#MESSAGE_HOMEWORK_LINE` with its insertion-order number, e.g. `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score 5/10`. Printing the insertion-order number, not the position in the sorted list, keeps the numbers valid as `HOMEWORK_INDEX` for the other homework commands.
 
-**Upcoming homework across students.** `homework upcoming` is also read-only and returns text in the result display. `HomeworkUpcomingCommandParser` accepts no preamble and at most one `due/` prefix, whose value here is a number of days, not a date. It checks the value against `0|[1-9][0-9]{0,2}` and then against the maximum of 365 (at most three digits, so the value always fits in an `int`), uses 7 if `due/` is left out, and passes `LocalDate.now(clock)` and the number of days to `HomeworkUpcomingCommand`. The command searches `model.getAddressBook().getStudentList()`, the whole roster, rather than relying on the displayed list, so a future filtered student list would not hide any homework. It pairs each homework with its student in roster order and insertion order, keeps the pairs for which `Homework#isUpcoming(today)` holds and the due date is not after `today.plusDays(days)`, and sorts them by due date with the stable `Stream#sorted`, so homework due on the same date stays in roster order, then insertion order. Each pair is printed in the format of `HomeworkUpcomingCommand#MESSAGE_HOMEWORK_LINE`, e.g. `Ethan Lim; Quadratic equations worksheet; MATH; Due: 2026-10-23; Score: 5/10`. The lines are not numbered, because a position in this list is not a `HOMEWORK_INDEX`.
+**Upcoming homework across students.** `homework upcoming` is also read-only and returns text in the result display. `HomeworkUpcomingCommandParser` accepts no preamble and at most one `due/` prefix, whose value here is a number of days, not a date. It checks the value against `0|[1-9][0-9]{0,2}` and then against the maximum of 365 (at most three digits, so the value always fits in an `int`), uses 7 if `due/` is left out, and passes `LocalDate.now(clock)` and the number of days to `HomeworkUpcomingCommand`. The command searches `model.getAddressBook().getStudentList()`, the whole roster, rather than relying on the displayed list, so a future filtered student list would not hide any homework. It pairs each homework with the zero-based roster position of its student, in roster order and insertion order, keeps the pairs for which `Homework#isUpcoming(today)` holds and the due date is not after `today.plusDays(days)`, and sorts them by due date with the stable `Stream#sorted`, so homework due on the same date stays in roster order, then insertion order. Each pair is printed in the format of `HomeworkUpcomingCommand#MESSAGE_HOMEWORK_LINE`, e.g. `Student 1: Ethan Lim; Quadratic equations worksheet; MATH; Due: 2026-10-23; Score: 5/10`. The number after `Student` is the one-based roster position, which is the `STUDENT_INDEX` of the student because the student list always shows the whole roster. Two students may have the same name (they differ in phone number), and the index tells them apart in a form the tutor can type straight into `homework list`. The lines themselves are not numbered, because a position in this list is not a `HOMEWORK_INDEX`.
 
 The sequence diagram below shows how `hw up due/3` is executed. The command only reads the model, so `LogicManager` finds the data unchanged and does not call `Storage`.
 
@@ -496,7 +496,7 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
 **MSS**
 
 1. Tutor requests to list the homework of all students that is due within a number of days from today.
-2. TutorFlow displays that homework, earliest due date first, with each record's student, title, subject, due date and score.
+2. TutorFlow displays that homework, earliest due date first, with each record's student index and name, title, subject, due date and score.
 3. Use case ends.
 
 **Extensions**
@@ -511,7 +511,7 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
   * 2a1. TutorFlow informs the tutor that no homework is due in that period.
   * 2a2. Use case ends.
 * 2b. The tutor wants to edit, score or delete one of the displayed records.
-  * 2b1. Tutor requests to list that student's homework to find the record's homework index, as the displayed order is not the homework index (see UC03 and UC04).
+  * 2b1. Tutor requests to list the homework of the student with the displayed student index to find the record's homework index, as the displayed order is not the homework index (see UC03 and UC04).
   * 2b2. Use case ends.
 
 ### Non-Functional Requirements
@@ -610,13 +610,16 @@ testers are expected to do more *exploratory* testing.
    1. Prerequisites: Start with the sample students. Run `hw add 3 t/Today drill s/MATH due/TODAY`, then `hw add 1 t/Today forces s/PHYSICS due/TODAY` and `hw add 5 t/Old worksheet s/MATH due/2026-10-01`, replacing `TODAY` with today's date in `YYYY-MM-DD` form.
 
    1. Test case: `hw up due/0`<br>
-      Expected: `Found 2 homework records due from TODAY to TODAY.`, then Ethan Lim's `Today forces` line before Marcus Tan's `Today drill` line (roster order, not the order they were added). `Old worksheet` is not shown, as it is overdue.
+      Expected: `Found 2 homework records due from TODAY to TODAY.`, then `Student 1: Ethan Lim; Today forces; PHYSICS; Due: TODAY; Score: Not recorded` before `Student 3: Marcus Tan; Today drill; MATH; Due: TODAY; Score: Not recorded` (roster order, not the order they were added). `Old worksheet` is not shown, as it is overdue.
 
    1. Test case: `hw up`<br>
       Expected: The summary ends with the date 7 days after today, and the lines are sorted by due date. The data file is not modified.
 
    1. Test case: `hw up due/365`, then `hw ls 1`<br>
       Expected: Every homework due today or later is shown. The order in `hw up` is not the numbering in `hw ls 1`.
+
+   1. Test case: `add n/Ethan Lim l/S1 s/MATH p/81234567 gn/Lim Mei gp/81234568` (a second Ethan Lim, with another phone number, who becomes student 7), then `hw add 7 t/Today algebra s/MATH due/TODAY` and `hw up due/0`<br>
+      Expected: The new line starts with `Student 7: Ethan Lim`, while the first Ethan Lim's line starts with `Student 1: Ethan Lim`.
 
    1. Incorrect commands to try: `hw up due/366`, `hw up due/007`, `hw up due/-1`, `hw up due/1.5`, `hw up due/2026-10-20`, `hw up due/`<br>
       Expected: `Days must be a whole number from 0 to 365 without leading zeroes.`

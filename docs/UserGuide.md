@@ -167,9 +167,10 @@ Format: `homework|hw upcoming|up [due/DAYS]`
 * Homework due before today is left out. Homework is shown whether or not it has marks.
 * The homework of every student is searched, not only the students shown in the student list.
 * Homework is sorted by due date, earliest first. Homework due on the same date is shown in the order of the students in the student list, and then in the order it was added.
-* The result starts with `Found N homework records due from START to END.` (`record` when there is only one), followed by one line per homework with the student's name, title, subject, due date and score, e.g. `Ethan Lim; Quadratic equations worksheet; MATH; Due: 2026-10-23; Score: 5/10`. Homework without marks shows `Score: Not recorded`.
+* The result starts with `Found N homework records due from START to END.` (`record` when there is only one), followed by one line per homework with the student's `STUDENT_INDEX` and name, title, subject, due date and score, e.g. `Student 1: Ethan Lim; Quadratic equations worksheet; MATH; Due: 2026-10-23; Score: 5/10`. Homework without marks shows `Score: Not recorded`.
+* `Student N` is the index of the student in the displayed student list, the `STUDENT_INDEX` that other commands take. It tells apart students with the same name.
 * If no homework is due in that period, the result is `No homework due from START to END.`
-* The lines are not numbered, and their order is not the `HOMEWORK_INDEX` used by other homework commands. To edit, score or delete a record shown here, find its number with [`homework list STUDENT_INDEX`](#listing-a-students-homework-homework-list).
+* The lines are not numbered, and their order is not the `HOMEWORK_INDEX` used by other homework commands. To edit, score or delete a record shown here, find its number with [`homework list STUDENT_INDEX`](#listing-a-students-homework-homework-list), using the student index shown after `Student`.
 * This command does not change your data.
 
 Examples:
@@ -177,7 +178,7 @@ Examples:
 
   ```
   Found 1 homework record due from 2026-10-17 to 2026-10-24.
-  Ethan Lim; Quadratic equations worksheet; MATH; Due: 2026-10-23; Score: Not recorded
+  Student 1: Ethan Lim; Quadratic equations worksheet; MATH; Due: 2026-10-23; Score: Not recorded
   ```
 * `hw up due/3` shows the homework due from today to 3 days later. With the sample students on 2026-10-17, the result is `No homework due from 2026-10-17 to 2026-10-20.`
 * `hw up due/7` is the same as `hw up`.

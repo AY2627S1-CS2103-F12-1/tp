@@ -19,6 +19,8 @@ import seedu.address.commons.core.index.Index;
 import seedu.address.logic.commands.AddCommand;
 import seedu.address.logic.commands.ClearCommand;
 import seedu.address.logic.commands.DeleteCommand;
+import seedu.address.logic.commands.EditCommand;
+import seedu.address.logic.commands.EditCommand.EditStudentDescriptor;
 import seedu.address.logic.commands.ExitCommand;
 import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.HomeworkAddCommand;
@@ -30,6 +32,7 @@ import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.homework.Homework;
 import seedu.address.model.student.Student;
+import seedu.address.model.student.StudentName;
 import seedu.address.testutil.HomeworkBuilder;
 import seedu.address.testutil.StudentBuilder;
 
@@ -54,6 +57,13 @@ public class AddressBookParserTest {
     @Test
     public void parseCommand_deleteStudent() throws Exception {
         assertEquals(new DeleteCommand(Index.fromOneBased(2)), parser.parseCommand("delete 2"));
+    }
+
+    @Test
+    public void parseCommand_editStudent() throws Exception {
+        EditStudentDescriptor descriptor = new EditStudentDescriptor(new StudentName("Alice"), null, null,
+                null, null, null);
+        assertEquals(new EditCommand(Index.fromOneBased(1), descriptor), parser.parseCommand("edit 1 n/Alice"));
     }
 
     @Test
@@ -141,7 +151,7 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_removedAddressBookCommands_throwsParseException() {
-        for (String userInput : List.of("find Alice", "edit 1 n/Alice")) {
+        for (String userInput : List.of("find Alice")) {
             assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand(userInput));
         }
     }

@@ -30,6 +30,8 @@ TutorFlow is a **desktop application for private tutors to manage their students
 
    * `list` : Lists all students.
 
+   * `edit 1 n/Updated Student` : Changes the name of the 1st student shown in the list.
+
    * `homework list 1` : Lists the homework of the 1st student shown in the student list.
 
    * `hw add 1 t/Algebra worksheet s/MATH due/2026-10-15` : Adds homework to the 1st student.
@@ -75,9 +77,7 @@ TutorFlow is a **desktop application for private tutors to manage their students
 
 ### Viewing help: `help`
 
-Opens the help window, which lists the commands `add`, `list`, `delete`, `homework add`, `homework list`, `homework delete`, `lesson add`, `lesson list`, `lesson delete`, `help`, `clear` and `exit`, grouped into Students, Homework, Lessons and General. Each command is shown with its format, what it does and an example.
-
-![help window](images/helpMessage.png)
+Opens the help window, which lists the commands `add`, `edit`, `list`, `delete`, `homework add`, `homework list`, `homework delete`, `lesson add`, `lesson list`, `lesson delete`, `help`, `clear` and `exit`, grouped into Students, Homework, Lessons and General. Each command is shown with its format, what it does and an example.
 
 Format: `help`
 
@@ -112,6 +112,26 @@ If the roster is empty, the app shows `No students found.` This command does not
 With one student, the result says `Listed 1 student.`; with more students, it says `Listed N students.` using the actual count.
 
 Format: `list` or `ls` (no parameters)
+
+### Editing a student: `edit`
+
+Changes one or more details of the student at the displayed index without removing their homework or lessons. The
+updated student card appears in the same position, and the change is saved automatically.
+
+Format: `edit INDEX [n/STUDENT_NAME] [l/ACADEMIC_LEVEL] [s/SUBJECTS] [p/STUDENT_PHONE] [gn/GUARDIAN_NAME] [gp/GUARDIAN_PHONE]`
+
+* `INDEX` is a positive whole number without leading zeroes, as shown beside the student. At least one field prefix
+  must be supplied; fields you omit stay unchanged. Prefixes may be in any order, but must not be repeated.
+* Edited values follow the same rules as in `add`. The new name and student phone must not duplicate another
+  student's name and phone; changes to other fields do not affect identity.
+* A subject cannot be removed if any of this student's homework or lessons uses it. You can add subjects while
+  retaining all used subjects.
+* If all supplied values are identical to the existing details, or the index is invalid, nothing is changed. If
+  saving fails, the original profile, homework and lessons are restored.
+
+Examples:
+* `edit 1 l/S4 p/91234568` changes the first student's academic level and phone.
+* `edit 2 gn/Ramesh s/o Krishnan gp/96543210` changes the guardian's name and phone.
 
 ### Adding homework to a student: `homework add`
 
@@ -336,6 +356,7 @@ Action | Format, Examples
 **Add** | `add n/STUDENT_NAME l/ACADEMIC_LEVEL s/SUBJECTS p/STUDENT_PHONE gn/GUARDIAN_NAME gp/GUARDIAN_PHONE` <br> e.g., `add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777`
 **Clear** | `clear`
 **Delete student** | `delete INDEX`<br> e.g., `delete 2`
+**Edit student** | `edit INDEX [n/STUDENT_NAME] [l/ACADEMIC_LEVEL] [s/SUBJECTS] [p/STUDENT_PHONE] [gn/GUARDIAN_NAME] [gp/GUARDIAN_PHONE]`<br> e.g., `edit 1 l/S4 p/91234568`
 **List** | `list` or `ls`
 **Homework add** | <code>homework&#124;hw add STUDENT_INDEX title/&#124;t/TITLE s/SUBJECT due/YYYY-MM-DD&#124;MM-DD</code><br> e.g., `homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15`
 **Homework delete** | <code>homework&#124;hw delete&#124;del STUDENT_INDEX HOMEWORK_INDEX</code><br> e.g., `homework delete 1 2`

@@ -189,6 +189,17 @@ This section describes some noteworthy details on how certain features are imple
 
 `AddressBookParser` routes `delete INDEX` to `DeleteCommandParser`. It uses `ParserUtil#parseStrictIndex`, so zero, signs, leading zeroes, extra arguments, and numbers beyond the supported integer range are rejected before execution. `DeleteCommand` checks the one-based index against the current roster, then calls `Model#deleteStudent` for that student. The remaining students retain their order and receive new displayed indexes. Homework and regular lessons belong to the deleted `Student`, so they are removed with it. `LogicManager` saves the changed roster; if saving fails, it restores the previous roster, including that student's homework and lessons.
 
+### Editing students
+
+`AddressBookParser` routes `edit INDEX` to `EditCommandParser`. The parser uses strict index parsing and the same
+prefix tokenizer and field value types as `add`; its name-token rule preserves `s/o` in student and guardian names.
+At least one replacement field is required. `EditCommand` applies only supplied fields to a new immutable `Student`,
+retaining its homework and lessons. Before calling `Model#setStudent`, it rejects an unchanged profile, a name-and-phone
+identity already used by another student, or subjects that would leave existing homework or lessons unsupported.
+`StudentRoster#setStudent` replaces the student in place, refreshing the observable card without renumbering other
+students. `LogicManager` saves the change and restores the original roster if saving fails. The command builds its
+feedback before the replacement, logs unexpected runtime failures, and supplies an edit-specific save-failure message.
+
 ### Homework management
 
 Homework is managed with three commands: `homework add`, `homework list` and `homework delete`. `hw` is an alias for `homework`.

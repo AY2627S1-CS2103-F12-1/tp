@@ -15,6 +15,7 @@ import seedu.address.logic.commands.AddCommand;
 import seedu.address.logic.commands.ClearCommand;
 import seedu.address.logic.commands.Command;
 import seedu.address.logic.commands.DeleteCommand;
+import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.ExitCommand;
 import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.HomeworkAddCommand;
@@ -41,6 +42,7 @@ public class HelpContentTest {
         Map<String, String> expectedFormats = Map.ofEntries(
                 Map.entry(AddCommand.COMMAND_WORD, AddCommand.MESSAGE_USAGE),
                 Map.entry(DeleteCommand.COMMAND_WORD, DeleteCommand.MESSAGE_USAGE),
+                Map.entry(EditCommand.COMMAND_WORD, EditCommand.MESSAGE_USAGE),
                 Map.entry(ListCommand.COMMAND_WORD, ListCommand.MESSAGE_USAGE),
                 Map.entry("homework add", HomeworkAddCommand.MESSAGE_USAGE),
                 Map.entry("homework list", HomeworkListCommand.MESSAGE_USAGE),
@@ -64,6 +66,7 @@ public class HelpContentTest {
         Map<String, Class<? extends Command>> expectedCommandTypes = Map.ofEntries(
                 Map.entry(AddCommand.COMMAND_WORD, AddCommand.class),
                 Map.entry(DeleteCommand.COMMAND_WORD, DeleteCommand.class),
+                Map.entry(EditCommand.COMMAND_WORD, EditCommand.class),
                 Map.entry(ListCommand.COMMAND_WORD, ListCommand.class),
                 Map.entry("homework add", HomeworkAddCommand.class),
                 Map.entry("homework list", HomeworkListCommand.class),

@@ -64,11 +64,13 @@ public class LessonAddCommandTest {
         ModelManager model = new ModelManager();
         model.addStudent(new StudentBuilder()
                 .withLessons(new RegularLesson(TuitionSubject.MATH, DayOfWeek.MONDAY,
-                        LocalTime.of(14, 0), LocalTime.of(16, 0)))
+                        LocalTime.of(14, 0), LocalTime.of(15, 0)),
+                        new RegularLesson(TuitionSubject.MATH, DayOfWeek.MONDAY,
+                                LocalTime.of(18, 0), LocalTime.of(19, 0)))
                 .build());
         model.addStudent(new StudentBuilder().withName("Mary Lim").withPhone("91234568")
                 .withLessons(new RegularLesson(TuitionSubject.MATH, DayOfWeek.MONDAY,
-                        LocalTime.of(15, 0), LocalTime.of(17, 0)))
+                        LocalTime.of(16, 0), LocalTime.of(17, 0)))
                 .build());
         AddressBook before = new AddressBook(model.getAddressBook());
 
@@ -76,8 +78,8 @@ public class LessonAddCommandTest {
                 parser.parseCommand(command(2, "13:00", "18:00")).execute(model));
 
         assertEquals(LessonAddCommand.MESSAGE_MULTIPLE_CLASHES
-                + "John Tan; MATH; MONDAY; 14:00-16:00\n"
-                + "Mary Lim; MATH; MONDAY; 15:00-17:00", exception.getMessage());
+                + "John Tan; MATH; MONDAY; 14:00-15:00\n"
+                + "Mary Lim; MATH; MONDAY; 16:00-17:00", exception.getMessage());
         assertEquals(before, model.getAddressBook());
     }
 

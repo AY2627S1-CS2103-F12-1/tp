@@ -130,6 +130,20 @@ public class HomeworkUpcomingCommandTest {
     }
 
     @Test
+    public void execute_bareScore_showsScoreAsEntered() {
+        Student student = new StudentBuilder().withHomeworks(
+                new HomeworkBuilder().withTitle("Bare").withDueDate("2026-10-17").withScore("17").build(),
+                new HomeworkBuilder().withTitle("Ratio").withDueDate("2026-10-18").withScore("17/20").build())
+                .build();
+        String expectedMessage = "Found 2 homework records due from 2026-10-17 to 2026-10-24.\n"
+                + "Student 1: John Tan; Bare; MATH; Due: 2026-10-17; Score: 17\n"
+                + "Student 1: John Tan; Ratio; MATH; Due: 2026-10-18; Score: 17/20";
+
+        assertCommandSuccess(new HomeworkUpcomingCommand(TODAY, 7), getModelWithStudents(List.of(student)),
+                expectedMessage, getModelWithStudents(List.of(student)));
+    }
+
+    @Test
     public void execute_displayedListEmpty_searchesWholeRoster() {
         // no student is displayed, but all students in the roster are searched
         Model modelShowingNoStudents = new ModelManager() {

@@ -17,9 +17,9 @@ import seedu.address.logic.parser.exceptions.ParseException;
  * Any lowercase word followed by {@code /} at the start of the arguments or after whitespace is treated as a prefix,
  * so a {@code /} inside a value (e.g. {@code n/A/P Roe}) does not start a new prefix.
  * A value wrapped in double quotes may contain prefix-shaped words (e.g. {@code t/"Speed in km/h"}); the outer quotes
- * are removed from the value. A quoted value ends at the first {@code "} that is followed by the end of the arguments,
- * or by whitespace and an allowed prefix, so quotes inside the value are kept. A value without such a closing quote
- * is read as if it were not quoted.
+ * and the whitespace at both ends inside them are removed from the value. A quoted value ends at the first {@code "}
+ * that is followed by the end of the arguments, or by whitespace and an allowed prefix, so quotes inside the value
+ * are kept. A value without such a closing quote is read as if it were not quoted.
  * Errors are reported in the order the offending text appears.
  */
 public final class StrictArgumentTokenizer {
@@ -135,12 +135,12 @@ public final class StrictArgumentTokenizer {
     }
 
     /**
-     * Returns the stripped text of {@code arguments} from {@code start} to {@code end}, without its outer quotes if
-     * {@code isQuoted}.
+     * Returns the stripped text of {@code arguments} from {@code start} to {@code end}. If {@code isQuoted}, the outer
+     * quotes are removed and the text inside them is stripped too.
      */
     private static String extractValue(String arguments, int start, int end, boolean isQuoted) {
         String value = arguments.substring(start, end).strip();
-        return isQuoted ? value.substring(1, value.length() - 1) : value;
+        return isQuoted ? value.substring(1, value.length() - 1).strip() : value;
     }
 
     /**

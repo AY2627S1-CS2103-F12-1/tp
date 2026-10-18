@@ -59,6 +59,20 @@ public class StudentAddParserTest {
     }
 
     @Test
+    public void parse_quotedNameWithSpacesInside_stripsSpaces() throws ParseException {
+        Student student = parser.parse(VALID_ARGUMENTS.replace("n/John Tan", "n/\" Ravi s/o Kumar \""));
+
+        assertEquals("Ravi s/o Kumar", student.getName().toString());
+    }
+
+    @Test
+    public void parse_emptyQuotedName_reportsItsValidationError() {
+        // rejected like an empty unquoted name
+        assertParseFailure(VALID_ARGUMENTS.replace("n/John Tan", "n/\"\""), StudentName.MESSAGE_CONSTRAINTS);
+        assertParseFailure(VALID_ARGUMENTS.replace("n/John Tan", "n/\" \""), StudentName.MESSAGE_CONSTRAINTS);
+    }
+
+    @Test
     public void parse_unquotedAllowedPrefixInName_reportsRepeatedPrefix() {
         assertParseFailure(VALID_ARGUMENTS.replace("gn/Mary Tan", "gn/Maya l/ Raj"),
                 String.format(StudentAddParser.MESSAGE_REPEATED_PREFIX, "l/"));

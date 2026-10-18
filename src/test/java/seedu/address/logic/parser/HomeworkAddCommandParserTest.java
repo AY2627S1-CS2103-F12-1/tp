@@ -142,6 +142,10 @@ public class HomeworkAddCommandParserTest {
 
         assertParseSuccess(parser, "1 t/\"Speed in km/h\" s/PHYSICS due/2026-11-01",
                 new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, false));
+
+        // spaces at both ends inside the quotes are removed
+        assertParseSuccess(parser, "1 t/\"  Speed in km/h  \" s/PHYSICS due/2026-11-01",
+                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, false));
     }
 
     @Test
@@ -164,6 +168,9 @@ public class HomeworkAddCommandParserTest {
     @Test
     public void parse_emptyQuotedTitle_failure() {
         assertParseFailure(parser, "1 t/\"\" s/MATH due/2026-10-15", Title.MESSAGE_CONSTRAINTS);
+
+        // only spaces inside the quotes
+        assertParseFailure(parser, "1 t/\" \" s/MATH due/2026-10-15", Title.MESSAGE_CONSTRAINTS);
     }
 
     @Test

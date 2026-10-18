@@ -193,7 +193,7 @@ This section describes some noteworthy details on how certain features are imple
 1. It looks at each later `"` in turn. The first one that is followed by only whitespace up to the end of the arguments, or by whitespace and one of the command's allowed prefixes, closes the value.
 1. If no `"` closes the value, the value is not quoted and is read exactly as before quoting was added.
 
-For a quoted value, the tokenizer continues searching for prefixes after the closing quote, so the prefix-shaped words inside the quotes are never treated as prefixes. It also skips the `ValueTokenFilter` for the prefix right after the closing quote, since the quotes have already ended the value. The value is then stripped, and its outer quotes are removed; quotes inside it are kept. The caller validates the result like any other value, so quoting works the same way in every command that uses the tokenizer.
+For a quoted value, the tokenizer continues searching for prefixes after the closing quote, so the prefix-shaped words inside the quotes are never treated as prefixes. It also skips the `ValueTokenFilter` for the prefix right after the closing quote, since the quotes have already ended the value. The value is then stripped, its outer quotes are removed, and the text inside them is stripped again, so `t/" Speed in km/h "` gives `Speed in km/h`; quotes and whitespace between words inside it are kept. Empty quotes, or quotes with only whitespace inside, give an empty value, as a prefix with nothing after it does. The caller validates the result like any other value, so quoting works the same way in every command that uses the tokenizer.
 
 For example, with the allowed prefixes `title/`, `t/`, `s/` and `due/` of `hw add`, the value of `t/` in `hw add 1 t/"Read "Hamlet" km/h" s/MATH due/2026-11-02` starts with `"`. The quote before `Hamlet` is followed by `Hamlet`, and the quote after `Hamlet` is followed by ` km/`, which is not an allowed prefix, so neither closes the value. The quote after `km/h` is followed by ` s/`, so it closes the value. The search for prefixes resumes there and finds `s/` and `due/`, and the title is `Read "Hamlet" km/h`. In `hw add 1 t/"Speed in km/h s/MATH due/2026-11-02`, no quote closes the value, so `km/` is read as an unknown prefix and the command is rejected, as it is without quotes.
 
@@ -212,6 +212,16 @@ For example, with the allowed prefixes `title/`, `t/`, `s/` and `due/` of `hw ad
 * **Alternative 3:** Allow escaping a quote inside a quoted value, e.g. `\"`.
   * Pros: Any text can be entered.
   * Cons: Users must learn escape rules, and a `\` in a value would need escaping too. Rejected to keep typing commands simple.
+
+**Aspect: Whitespace at the ends inside the quotes:**
+
+* **Alternative 1 (current choice):** Strip it, as for a value without quotes.
+  * Pros: Quotes change only which words are read as prefixes, so `due/" 3 "` means the same as `due/ 3 `, and a stray space typed after `"` does not make a name or a number invalid.
+  * Cons: A value cannot start or end with a space. No field needs that: names and titles have their extra spaces removed anyway.
+
+* **Alternative 2:** Keep the text inside the quotes exactly as typed.
+  * Pros: Quotes would mean "exactly this text", as in a shell.
+  * Cons: `due/" 3 "` would be rejected while `due/ 3 ` is accepted, and every value class would see spaces it never sees from unquoted input.
 
 ### Listing and deleting students
 
@@ -686,6 +696,15 @@ testers are expected to do more *exploratory* testing.
 
    1. Test case: `hw add 1 t/"Speed in km/h s/PHYSICS due/2026-11-04`, then `hw add 1 t/Speed in km/h s/PHYSICS due/2026-11-04`<br>
       Expected: An invalid command format error each time, and no homework is added.
+
+   1. Test case: `hw add 1 t/"  Speed in km/h  " s/PHYSICS due/2026-11-05`<br>
+      Expected: The title is `Speed in km/h`: the spaces at both ends inside the quotes are removed.
+
+   1. Test case: `hw add 1 t/"" s/PHYSICS due/2026-11-06`, then `hw add 1 t/" " s/PHYSICS due/2026-11-06`<br>
+      Expected: The same title error as for `hw add 1 t/ s/PHYSICS due/2026-11-06`, and no homework is added.
+
+   1. Test case: `hw up due/" 3 "`<br>
+      Expected: The same result as `hw up due/3`.
 
    1. Test case: `add n/"Ravi s/o Kumar" l/S3 s/MATH p/91230000 gn/"Maya l/ Raj" gp/98760000`<br>
       Expected: `New student added: Ravi s/o Kumar; Level: S3; Subjects: MATH; Phone: 91230000; Guardian: Maya l/ Raj; Guardian phone: 98760000`. Without the quotes around the guardian name, the command is rejected with `Prefix l/ must be specified exactly once.`

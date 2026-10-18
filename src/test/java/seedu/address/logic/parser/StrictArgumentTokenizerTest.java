@@ -197,12 +197,14 @@ public class StrictArgumentTokenizerTest {
         assertEquals(Map.of("t/", ""), tokenizeValues(" t/\"\""));
         // before another prefix
         assertEquals(Map.of("t/", "", "n/", "A"), tokenizeValues(" t/\"\" n/A"));
+        // only whitespace inside
+        assertEquals(Map.of("t/", "", "n/", "A"), tokenizeValues(" t/\"   \" n/A"));
     }
 
     @Test
-    public void tokenize_whitespaceAroundQuotes_stripsOutsideOnly() throws ParseException {
-        // whitespace outside the quotes is removed, whitespace inside is kept
-        assertEquals(Map.of("t/", " a km/h ", "n/", "A"), tokenizeValues(" t/   \" a km/h \"   n/A"));
+    public void tokenize_whitespaceAroundQuotes_stripsBothSides() throws ParseException {
+        // whitespace outside and at both ends inside the quotes is removed, whitespace between words is kept
+        assertEquals(Map.of("t/", "a  km/h", "n/", "A"), tokenizeValues(" t/   \"  a  km/h \t\"   n/A"));
         // trailing whitespace after the last quoted value
         assertEquals(Map.of("t/", "km/h"), tokenizeValues(" t/ \"km/h\"  \t"));
         // tab between the closing quote and the next prefix

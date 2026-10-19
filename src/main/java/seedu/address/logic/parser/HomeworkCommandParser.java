@@ -8,7 +8,9 @@ import seedu.address.logic.Messages;
 import seedu.address.logic.commands.Command;
 import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
+import seedu.address.logic.commands.HomeworkEditCommand;
 import seedu.address.logic.commands.HomeworkListCommand;
+import seedu.address.logic.commands.HomeworkMarksCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 
 /**
@@ -21,20 +23,25 @@ public class HomeworkCommandParser implements Parser<Command> {
     public static final String SUBCOMMAND_ADD = "add";
     public static final String SUBCOMMAND_LIST = "list";
     public static final String SUBCOMMAND_LIST_ALIAS = "ls";
+    public static final String SUBCOMMAND_EDIT = "edit";
+    public static final String SUBCOMMAND_EDIT_ALIAS = "e";
+    public static final String SUBCOMMAND_MARKS = "marks";
+    public static final String SUBCOMMAND_MARKS_ALIAS = "m";
     public static final String SUBCOMMAND_DELETE = "delete";
     public static final String SUBCOMMAND_DELETE_ALIAS = "del";
     public static final String MESSAGE_INVALID_FORMAT = String.format(Messages.MESSAGE_INVALID_FORMAT_WITH_USAGE,
             String.join("\n", HomeworkAddCommand.MESSAGE_USAGE, HomeworkListCommand.MESSAGE_USAGE,
+                    HomeworkEditCommand.MESSAGE_USAGE, HomeworkMarksCommand.MESSAGE_USAGE,
                     HomeworkDeleteCommand.MESSAGE_USAGE));
 
     private final Clock clock;
 
-    /** Creates a parser whose {@code homework add} subcommand infers due date years from the system clock. */
+    /** Creates a parser whose subcommands take today's date from the system clock. */
     public HomeworkCommandParser() {
         this(Clock.systemDefaultZone());
     }
 
-    /** Creates a parser whose {@code homework add} subcommand infers due date years from {@code clock}. */
+    /** Creates a parser whose subcommands take today's date from {@code clock}. */
     public HomeworkCommandParser(Clock clock) {
         this.clock = requireNonNull(clock);
     }
@@ -51,7 +58,12 @@ public class HomeworkCommandParser implements Parser<Command> {
         String subcommandArguments = subcommandAndArguments.length > 1 ? subcommandAndArguments[1] : "";
         return switch (subcommandAndArguments[0]) {
             case SUBCOMMAND_ADD -> new HomeworkAddCommandParser(clock).parse(subcommandArguments);
-            case SUBCOMMAND_LIST, SUBCOMMAND_LIST_ALIAS -> new HomeworkListCommandParser().parse(subcommandArguments);
+            case SUBCOMMAND_LIST, SUBCOMMAND_LIST_ALIAS ->
+                new HomeworkListCommandParser(clock).parse(subcommandArguments);
+            case SUBCOMMAND_EDIT, SUBCOMMAND_EDIT_ALIAS ->
+                new HomeworkEditCommandParser(clock).parse(subcommandArguments);
+            case SUBCOMMAND_MARKS, SUBCOMMAND_MARKS_ALIAS ->
+                new HomeworkMarksCommandParser().parse(subcommandArguments);
             case SUBCOMMAND_DELETE, SUBCOMMAND_DELETE_ALIAS ->
                 new HomeworkDeleteCommandParser().parse(subcommandArguments);
             default -> throw new ParseException(MESSAGE_INVALID_FORMAT);

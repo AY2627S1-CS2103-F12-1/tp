@@ -11,20 +11,17 @@
       "title" : "Complete algebra worksheet",
       "subject" : "MATH",
       "dueDate" : "2026-10-15",
-      "status" : "ASSIGNED",
       "score" : null
     }, {
       "title" : "Attempt mechanics questions 1-5",
       "subject" : "PHYSICS",
       "dueDate" : "2026-10-20",
-      "status" : "ASSIGNED",
       "score" : null
     }, {
       "title" : "Revise atomic structure",
       "subject" : "CHEMISTRY",
       "dueDate" : "2026-10-18",
-      "status" : "COMPLETED",
-      "score" : 85
+      "score" : "17/20"
     } ]
   }, {
     "name" : "Benson Lim",
@@ -45,7 +42,6 @@
       "title" : "Attempt mechanics questions 1-5",
       "subject" : "PHYSICS",
       "dueDate" : "2026-10-20",
-      "status" : "ASSIGNED",
       "score" : null
     } ]
   } ]

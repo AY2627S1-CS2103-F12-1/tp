@@ -151,11 +151,11 @@ public class HomeworkAddCommandTest {
     }
 
     @Test
-    public void execute_duplicateCompletedHomework_failure() {
-        // status and score do not affect identity
-        Homework assignedAtomicStructure = new HomeworkBuilder().withTitle("Revise atomic structure")
+    public void execute_duplicateScoredHomework_failure() {
+        // the score does not affect identity
+        Homework unscoredAtomicStructure = new HomeworkBuilder().withTitle("Revise atomic structure")
                 .withSubject("CHEMISTRY").withDueDate("2026-10-18").build();
-        HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(1), assignedAtomicStructure, false);
+        HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(1), unscoredAtomicStructure, false);
 
         assertCommandFailure(command, model, HomeworkAddCommand.MESSAGE_DUPLICATE_HOMEWORK);
     }

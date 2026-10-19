@@ -1,12 +1,14 @@
 package seedu.address.ui;
 
+import java.time.LocalDate;
+
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.layout.Region;
 import seedu.address.model.student.Student;
 
 /**
- * Displays the six fields of a student in the roster and the number of homework records still assigned.
+ * Displays the six fields of a student in the roster and the number of homework records due today or later.
  */
 public class StudentCard extends UiPart<Region> {
     private static final String FXML = "StudentListCard.fxml";
@@ -26,12 +28,13 @@ public class StudentCard extends UiPart<Region> {
     @FXML
     private Label guardianPhone;
     @FXML
-    private Label assignedHomeworkCount;
+    private Label upcomingHomeworkCount;
 
     /**
-     * Creates a card for the student at the specified one-based displayed index.
+     * Creates a card for the student at the specified one-based displayed index, counting the homework due on or
+     * after {@code today}.
      */
-    public StudentCard(Student student, int displayedIndex) {
+    public StudentCard(Student student, int displayedIndex, LocalDate today) {
         super(FXML);
         index.setText(displayedIndex + ".");
         name.setText(student.getName().toString());
@@ -40,6 +43,6 @@ public class StudentCard extends UiPart<Region> {
         studentPhone.setText("Student: " + student.getPhone());
         guardianName.setText("Guardian: " + student.getGuardianName());
         guardianPhone.setText("Guardian phone: " + student.getGuardianPhone());
-        assignedHomeworkCount.setText("Assigned homework: " + student.getAssignedHomeworkCount());
+        upcomingHomeworkCount.setText("Upcoming homework: " + student.getUpcomingHomeworkCount(today));
     }
 }

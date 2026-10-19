@@ -8,7 +8,6 @@ import seedu.address.model.AddressBook;
 import seedu.address.model.ReadOnlyAddressBook;
 import seedu.address.model.homework.DueDate;
 import seedu.address.model.homework.Homework;
-import seedu.address.model.homework.HomeworkStatus;
 import seedu.address.model.homework.Title;
 import seedu.address.model.lesson.RegularLesson;
 import seedu.address.model.student.AcademicLevel;
@@ -35,8 +34,7 @@ public class SampleDataUtil {
                 List.of(getRegularLesson(TuitionSubject.MATH, DayOfWeek.MONDAY, "17:00", "18:30"))),
             new Student(new StudentName("Priya Nair"), AcademicLevel.J1, new TuitionSubjects("MATH, CHEMISTRY"),
                 new StudentPhone("82345671"), new StudentName("Ravi Nair"), new StudentPhone("96543218"),
-                List.of(getHomework("Integration by parts exercise", TuitionSubject.MATH, "2026-10-26",
-                        HomeworkStatus.COMPLETED),
+                List.of(getHomework("Integration by parts exercise", TuitionSubject.MATH, "2026-10-26"),
                     getHomework("Organic reaction pathways map", TuitionSubject.CHEMISTRY, "2026-11-02"),
                     getHomework("Chemical equilibrium past paper", TuitionSubject.CHEMISTRY, "2026-11-09")),
                 List.of(getRegularLesson(TuitionSubject.CHEMISTRY, DayOfWeek.SATURDAY, "15:00", "16:30"))),
@@ -68,19 +66,10 @@ public class SampleDataUtil {
     }
 
     /**
-     * Returns assigned homework without a score, due on {@code dueDate} given in {@code YYYY-MM-DD} format.
+     * Returns homework without a score, due on {@code dueDate} given in {@code YYYY-MM-DD} format.
      */
     private static Homework getHomework(String title, TuitionSubject subject, String dueDate) {
-        return getHomework(title, subject, dueDate, HomeworkStatus.ASSIGNED);
-    }
-
-    /**
-     * Returns homework with {@code status} and without a score, due on {@code dueDate} given in {@code YYYY-MM-DD}
-     * format.
-     */
-    private static Homework getHomework(String title, TuitionSubject subject, String dueDate,
-            HomeworkStatus status) {
-        return new Homework(new Title(title), subject, DueDate.parseFullDate(dueDate), status, null);
+        return new Homework(new Title(title), subject, DueDate.parseFullDate(dueDate));
     }
 
     /**

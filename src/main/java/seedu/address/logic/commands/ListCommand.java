@@ -20,6 +20,7 @@ public class ListCommand extends Command {
     @Override
     public CommandResult execute(Model model) {
         requireNonNull(model);
+        model.updateFilteredStudentList(Model.PREDICATE_SHOW_ALL_STUDENTS);
         int count = model.getStudentList().size();
         String feedback;
         if (count == 0) {

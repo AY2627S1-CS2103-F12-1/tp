@@ -55,6 +55,19 @@ public class LessonDeleteCommandTest {
     }
 
     @Test
+    public void execute_filteredStudentList_deletesLessonAtFullScheduleIndex() {
+        Student john = new StudentBuilder().withLessons(MONDAY_MATH).build();
+        Student amy = new StudentBuilder().withName("Amy Lim").withPhone("91234568")
+                .withSubjects("PHYSICS").withLessons(TUESDAY_PHYSICS).build();
+        Model model = getModelWithStudents(List.of(john, amy));
+        model.updateFilteredStudentList(student -> student.equals(amy));
+
+        assertCommandSuccess(new LessonDeleteCommand(Index.fromOneBased(1)), model,
+                "Deleted regular lesson:\nJohn Tan; Subject: MATH; Day: MON; Time: 17:00-18:30",
+                getModelWithStudents(List.of(john.withLessons(List.of()), amy)));
+    }
+
+    @Test
     public void execute_noLessons_failure() {
         Model model = getModelWithStudents(List.of(new StudentBuilder().build()));
 

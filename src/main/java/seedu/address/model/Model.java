@@ -1,5 +1,7 @@
 package seedu.address.model;
 
+import java.util.function.Predicate;
+
 import javafx.collections.ObservableList;
 import seedu.address.commons.core.GuiSettings;
 import seedu.address.model.student.Student;
@@ -8,6 +10,8 @@ import seedu.address.model.student.Student;
  * The API of the Model component.
  */
 public interface Model {
+    Predicate<Student> PREDICATE_SHOW_ALL_STUDENTS = unused -> true;
+
     /**
      * Returns the user prefs.
      */
@@ -47,6 +51,9 @@ public interface Model {
      */
     void setStudent(Student target, Student editedStudent);
 
-    /** Returns an unmodifiable observable view of the student roster. */
+    /** Returns an unmodifiable observable view of the currently displayed students. */
     ObservableList<Student> getStudentList();
+
+    /** Updates the students displayed in the UI without changing the stored roster. */
+    void updateFilteredStudentList(Predicate<Student> predicate);
 }

@@ -61,7 +61,8 @@ public class LessonAddCommand extends Command {
         if (student.getLessons().contains(lesson)) {
             throw new CommandException(MESSAGE_DUPLICATE);
         }
-        for (Student other : students) {
+        // A search can hide students, but their lessons still occupy the shared weekly schedule.
+        for (Student other : model.getAddressBook().getStudentList()) {
             for (RegularLesson existing : other.getLessons()) {
                 if (lesson.clashesWith(existing)) {
                     throw new CommandException(MESSAGE_CLASH + other.getName() + "; " + existing);

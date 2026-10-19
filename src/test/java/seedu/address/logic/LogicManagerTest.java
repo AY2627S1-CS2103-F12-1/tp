@@ -115,6 +115,38 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_searchFiltersDisplayWithoutSavingData() throws Exception {
+        setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+        AddressBook before = new AddressBook(model.getAddressBook());
+
+        CommandResult result = logic.execute("search Alice");
+
+        assertEquals("Found 1 student for \"Alice\".\nType list to show all students.",
+                result.getFeedbackToUser());
+        assertEquals(1, logic.getStudentList().size());
+        assertEquals(before, model.getAddressBook());
+        assertFalse(Files.exists(dataFilePath));
+    }
+
+    @Test
+    public void execute_lessonClashHiddenBySearch_preservesSavedRoster() throws Exception {
+        logic.execute(ADD_STUDENT_COMMAND);
+        logic.execute("add n/Alex Lim l/S3 s/MATH p/92345678 gn/Jane Lim gp/98765433");
+        logic.execute("lesson add 1 s/MATH d/MONDAY st/14:00 et/16:00");
+        String savedBefore = Files.readString(dataFilePath);
+        AddressBook rosterBefore = new AddressBook(model.getAddressBook());
+        logic.execute("search Alex");
+
+        assertCommandException("lesson add 1 s/MATH d/MONDAY st/15:00 et/17:00",
+                LessonAddCommand.MESSAGE_CLASH + "John Tan; MATH; MONDAY; 14:00-16:00");
+
+        assertEquals(1, logic.getStudentList().size());
+        assertEquals(rosterBefore, model.getAddressBook());
+        assertEquals(savedBefore, Files.readString(dataFilePath));
+        assertEquals(rosterBefore, new AddressBook(addressBookStorage.readAddressBook().get()));
+    }
+
+    @Test
     public void execute_addStudent_savesStudent() throws Exception {
         logic.execute(ADD_STUDENT_COMMAND);
 

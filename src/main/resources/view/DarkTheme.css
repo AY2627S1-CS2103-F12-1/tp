@@ -185,6 +185,10 @@
     -fx-background-color: #edf3f5;
 }
 
+.upcoming-panel .label {
+    -fx-font-family: "System";
+}
+
 .upcoming-title {
     -fx-font-size: 18px;
     -fx-text-fill: #20313a;
@@ -212,7 +216,6 @@
 }
 
 .upcoming-panel .upcoming-entry {
-    -fx-font-family: "Segoe UI";
     -fx-font-size: 12px;
     -fx-text-fill: #20313a;
     -fx-padding: 5 8 5 8;

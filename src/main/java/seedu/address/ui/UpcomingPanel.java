@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 
+import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -16,6 +17,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import seedu.address.model.homework.Homework;
 import seedu.address.model.lesson.LessonSchedule;
 import seedu.address.model.student.Student;
@@ -38,9 +40,13 @@ public class UpcomingPanel extends UiPart<Region> {
     @FXML
     private Label homeworkCount;
     @FXML
+    private VBox homeworkSection;
+    @FXML
     private ListView<String> homeworkListView;
     @FXML
     private Label lessonCount;
+    @FXML
+    private VBox lessonSection;
     @FXML
     private ListView<String> lessonListView;
 
@@ -63,6 +69,8 @@ public class UpcomingPanel extends UiPart<Region> {
         homeworkListView.setCellFactory(unused -> new WrappedTextListCell(overdueHomeworkEntries::contains));
         lessonListView.setPlaceholder(new Label("No regular lessons"));
         homeworkListView.setPlaceholder(new Label("No outstanding homework"));
+        ScrollSupport.enableScrolling(lessonSection, lessonListView);
+        ScrollSupport.enableScrolling(homeworkSection, homeworkListView);
 
         updateEntries(students);
         students.addListener((ListChangeListener<Student>) change -> updateEntries(students));
@@ -94,28 +102,34 @@ public class UpcomingPanel extends UiPart<Region> {
     }
 
     private String formatHomework(HomeworkEntry entry, boolean isOverdue) {
-        return entry.homework().getTitle() + (isOverdue ? " (overdue)" : "") + "\n" + entry.student().getName() + " \u00b7 "
-                + entry.homework().getSubject() + " \u00b7 Due " + entry.homework().getDueDate()
-                ;
+        return entry.homework().getTitle() + (isOverdue ? " (overdue)" : "") + "\n" + entry.student().getName()
+                + " \u00b7 " + entry.homework().getSubject() + " \u00b7 Due " + entry.homework().getDueDate();
     }
 
     private String formatCount(int count, String singular) {
         return count == 1 ? "1 " + singular : count + " " + singular + "s";
     }
 
-    /** Associates a homework record with the student it belongs to. */
+    /**
+     * Associates a homework record with the student it belongs to.
+     */
     private record HomeworkEntry(Student student, Homework homework) {
     }
 
-    /** Displays wrapped sidebar entries without truncating their second line. */
+    /**
+     * Displays wrapped sidebar entries without truncating their second line.
+     */
     private static class WrappedTextListCell extends ListCell<String> {
         private final Label entryLabel = new Label();
         private final Predicate<String> isHighlighted;
 
         WrappedTextListCell(Predicate<String> isHighlighted) {
             this.isHighlighted = isHighlighted;
+            setPrefWidth(0);
             entryLabel.setWrapText(true);
-            entryLabel.maxWidthProperty().bind(widthProperty().subtract(18));
+            entryLabel.setMinHeight(Region.USE_PREF_SIZE);
+            entryLabel.maxWidthProperty().bind(Bindings.createDoubleBinding(() -> Math.max(0,
+                    getWidth() - getInsets().getLeft() - getInsets().getRight()), widthProperty(), insetsProperty()));
             entryLabel.getStyleClass().add("upcoming-entry");
         }
 

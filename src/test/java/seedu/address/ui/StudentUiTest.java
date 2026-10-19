@@ -35,6 +35,7 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollBar;
 import javafx.scene.layout.Region;
 import seedu.address.model.student.Student;
+import seedu.address.testutil.HomeworkBuilder;
 import seedu.address.testutil.StudentBuilder;
 
 public class StudentUiTest {
@@ -64,6 +65,7 @@ public class StudentUiTest {
             assertEquals("Guardian: Mary Tan", labelText(card, "guardianName"));
             assertEquals("Guardian phone: 98765432", labelText(card, "guardianPhone"));
             assertEquals("Assigned homework: 0", labelText(card, "assignedHomeworkCount"));
+            assertEquals("Overdue homework: 0", labelText(card, "overdueHomeworkCount"));
         });
     }
 
@@ -72,9 +74,11 @@ public class StudentUiTest {
         runOnFxThread(() -> {
             // ATOMIC_STRUCTURE is completed, so it is not counted
             Student student = new StudentBuilder().withHomeworks(ALGEBRA, MECHANICS, ATOMIC_STRUCTURE).build();
-            Parent card = (Parent) new StudentCard(student, 1).getRoot();
+            Parent card = (Parent) new StudentCard(student, 1,
+                    Clock.fixed(Instant.parse("2026-10-16T00:00:00Z"), ZoneOffset.UTC)).getRoot();
 
             assertEquals("Assigned homework: 2", labelText(card, "assignedHomeworkCount"));
+            assertEquals("Overdue homework: 1", labelText(card, "overdueHomeworkCount"));
         });
     }
 
@@ -132,6 +136,75 @@ public class StudentUiTest {
                 ScrollBar scrollBar = (ScrollBar) node;
                 assertTrue(scrollBar.getOrientation() == Orientation.VERTICAL || !scrollBar.isVisible(),
                         "horizontal scroll bar is visible");
+            }
+        });
+    }
+
+    @Test
+    public void studentCard_narrowWidth_homeworkCountsRemainReadable() throws Exception {
+        runOnFxThread(() -> {
+            for (String family : List.of("System", "Serif", "Monospaced")) {
+                Region card = new StudentCard(new StudentBuilder().build(), 1).getRoot();
+                Scene scene = new Scene(card, 260, 350);
+                scene.getStylesheets().add(getClass().getResource("/view/DarkTheme.css").toExternalForm());
+                for (String id : List.of("assignedHomeworkCount", "overdueHomeworkCount")) {
+                    card.lookup("#" + id).setStyle("-fx-font-family: '" + family + "'; -fx-font-size: 16px;");
+                }
+                card.applyCss();
+                card.layout();
+                for (String id : List.of("assignedHomeworkCount", "overdueHomeworkCount")) {
+                    Label label = (Label) card.lookup("#" + id);
+                    assertEndsBefore(card.getWidth(), label, id);
+                    assertTrue(label.getWidth() >= label.prefWidth(-1), id + " is truncated with " + family);
+                }
+            }
+        });
+    }
+
+    @Test
+    public void upcomingPanel_narrowWidths_entriesAndHeadingsFit() throws Exception {
+        runOnFxThread(() -> {
+            Student student = new StudentBuilder().withName(LONG_NAME).withLessons(MONDAY_MATH)
+                    .withHomeworks(new HomeworkBuilder().withTitle("A long homework title that must wrap on resize")
+                            .build()).build();
+            for (String family : List.of("System", "Serif", "Monospaced")) {
+                Region panel = new UpcomingPanel(FXCollections.observableArrayList(student)).getRoot();
+                Scene scene = new Scene(panel, 360, 600);
+                scene.getStylesheets().add(getClass().getResource("/view/DarkTheme.css").toExternalForm());
+                panel.applyCss();
+                panel.layout();
+                for (Node node : panel.lookupAll(".label")) {
+                    node.setStyle("-fx-font-family: '" + family + "'; -fx-font-size: 16px;");
+                }
+                // Different skins can add different cell insets. Leave room for them without a fixed pixel guess.
+                for (Node node : panel.lookupAll(".list-cell")) {
+                    node.setStyle("-fx-padding: 2 13 2 9;");
+                }
+                panel.applyCss();
+                for (double width : new double[] {220, 360, 260}) {
+                    panel.resize(width, 600);
+                    panel.layout();
+                    panel.layout();
+                    for (Node node : panel.lookupAll(".upcoming-section-title")) {
+                        Label heading = (Label) node;
+                        assertTrue(heading.getWidth() >= heading.prefWidth(-1), "heading is truncated with " + family);
+                    }
+                    for (String id : List.of("lessonListView", "homeworkListView")) {
+                        ListView<?> list = (ListView<?>) panel.lookup("#" + id);
+                        Label entry = (Label) list.lookup(".upcoming-entry");
+                        assertTrue(entry.getWidth() > 0);
+                        assertEndsBefore(rightEdge(list.lookup(".clipped-container")), entry, id);
+                        assertTrue(entry.getHeight() + 1 >= entry.prefHeight(entry.getWidth()),
+                                id + " clips wrapped text with " + family + " at width " + width);
+                        assertTrue(entry.getWidth() <= ((Region) entry.getParent()).getWidth() - 22 + 1,
+                                id + " ignores the cell insets");
+                        for (Node node : list.lookupAll(".scroll-bar")) {
+                            ScrollBar bar = (ScrollBar) node;
+                            assertTrue(bar.getOrientation() == Orientation.VERTICAL || !bar.isVisible(),
+                                    id + " has a horizontal scroll bar");
+                        }
+                    }
+                }
             }
         });
     }

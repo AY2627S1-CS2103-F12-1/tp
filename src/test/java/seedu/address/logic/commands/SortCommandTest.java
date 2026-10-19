@@ -6,22 +6,19 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
-import java.util.logging.Logger;
 
 import org.junit.jupiter.api.Test;
 
-import seedu.address.commons.core.LogsCenter;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.AddressBook;
 import seedu.address.model.ModelManager;
 import seedu.address.model.student.SortKey;
 import seedu.address.model.student.SortOrder;
 import seedu.address.model.student.Student;
+import seedu.address.testutil.LogRecorder;
 import seedu.address.testutil.StudentBuilder;
 
 public class SortCommandTest {
@@ -77,24 +74,15 @@ public class SortCommandTest {
         };
         model.addStudent(junior);
         model.addStudent(secondary);
-        List<LogRecord> records = new ArrayList<>();
-        Logger logger = LogsCenter.getLogger(SortCommand.class);
-        Handler handler = new RecordingHandler(records);
-        Level previousLevel = logger.getLevel();
-        logger.addHandler(handler);
-        logger.setLevel(Level.ALL);
-        try {
+        try (LogRecorder recorder = new LogRecorder(SortCommand.class)) {
             CommandException exception = assertThrows(CommandException.class, () -> command.execute(model));
             assertEquals(SortCommand.MESSAGE_INTERNAL_ERROR, exception.getMessage());
             assertSame(failure, exception.getCause());
             assertEquals(List.of(junior, secondary), model.getStudentList());
-            List<LogRecord> failures = records.stream().filter(record -> record.getThrown() != null).toList();
+            List<LogRecord> failures = recorder.getFailures();
             assertEquals(1, failures.size());
             assertEquals(Level.WARNING, failures.getFirst().getLevel());
             assertSame(failure, failures.getFirst().getThrown());
-        } finally {
-            logger.removeHandler(handler);
-            logger.setLevel(previousLevel);
         }
     }
 
@@ -105,25 +93,25 @@ public class SortCommandTest {
         assertFalse(command.equals(new SortCommand(SortKey.LEVEL, SortOrder.DESCENDING)));
     }
 
-    /** Records diagnostic events without reading or modifying application log files. */
-    private static class RecordingHandler extends Handler {
-        private final List<LogRecord> records;
+    @Test
+    public void execute_recoveryFailure_retainsBothCausesAndLogsSevere() {
+        RuntimeException failure = new IllegalStateException("Injected publication failure");
+        RuntimeException recoveryFailure = new IllegalStateException("Injected recovery failure");
+        ModelManager model = new ModelManager() {
+            private int attempts;
 
-        RecordingHandler(List<LogRecord> records) {
-            this.records = records;
-        }
-
-        @Override
-        public void publish(LogRecord record) {
-            records.add(record);
-        }
-
-        @Override
-        public void flush() {
-        }
-
-        @Override
-        public void close() {
+            @Override
+            public void setStudentListOrder(List<Student> students) {
+                throw attempts++ == 0 ? failure : recoveryFailure;
+            }
+        };
+        model.addStudent(junior);
+        try (LogRecorder recorder = new LogRecorder(SortCommand.class)) {
+            CommandException exception = assertThrows(CommandException.class, () -> command.execute(model));
+            assertSame(failure, exception.getCause());
+            assertSame(recoveryFailure, failure.getSuppressed()[0]);
+            assertEquals(1, recorder.getFailures().size());
+            assertEquals(Level.SEVERE, recorder.getFailures().getFirst().getLevel());
         }
     }
 }

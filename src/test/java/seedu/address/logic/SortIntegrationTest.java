@@ -1,0 +1,145 @@
+package seedu.address.logic;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import seedu.address.logic.commands.exceptions.CommandException;
+import seedu.address.logic.parser.exceptions.ParseException;
+import seedu.address.model.ModelManager;
+import seedu.address.model.ReadOnlyAddressBook;
+import seedu.address.storage.JsonAddressBookStorage;
+import seedu.address.storage.JsonUserPrefsStorage;
+import seedu.address.storage.StorageManager;
+import seedu.address.testutil.StudentBuilder;
+
+public class SortIntegrationTest {
+    @TempDir
+    public Path temporaryFolder;
+
+    private ModelManager model;
+    private Logic logic;
+    private CountingStorage storage;
+    private Path dataPath;
+
+    @BeforeEach
+    public void setUp() throws Exception {
+        model = new ModelManager();
+        model.addStudent(new StudentBuilder().withName("Target Junior").withAcademicLevel("J1").build());
+        model.addStudent(new StudentBuilder().withName("Hidden Student").withAcademicLevel("S3").build());
+        model.addStudent(new StudentBuilder().withName("Target Secondary").withAcademicLevel("S1").build());
+        dataPath = temporaryFolder.resolve("students.json");
+        storage = new CountingStorage(dataPath);
+        storage.saveAddressBook(model.getAddressBook());
+        storage.saveCount = 0;
+        logic = new LogicManager(model, new StorageManager(storage,
+                new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json"))),
+                Clock.fixed(Instant.parse("2026-10-20T00:00:00Z"), ZoneOffset.UTC));
+    }
+
+    @Test
+    public void execute_sortAndValidationFailures_neverWriteStoredData() throws Exception {
+        String before = Files.readString(dataPath);
+        logic.execute("search Target");
+        logic.execute("sort by/level");
+        logic.execute("sort by/subject o/desc");
+        logic.execute("sort by/day");
+        List<String> displayedBeforeFailure = displayedNames();
+        assertThrows(ParseException.class, () -> logic.execute("sort by/name"));
+
+        assertEquals(displayedBeforeFailure, displayedNames());
+        assertEquals(List.of("Target Secondary", "Target Junior"), displayedNames());
+        assertEquals(0, storage.saveCount);
+        assertEquals(before, Files.readString(dataPath));
+        assertEquals(List.of("Target Junior", "Hidden Student", "Target Secondary"), storedNames());
+    }
+
+    @Test
+    public void execute_listSearchAddAndUpcoming_discardPreviousSort() throws Exception {
+        logic.execute("sort by/level");
+        logic.execute("list");
+        assertEquals(storedNames(), displayedNames());
+        logic.execute("sort by/level");
+        logic.execute("search Target");
+        assertEquals(List.of("Target Junior", "Target Secondary"), displayedNames());
+        logic.execute("sort by/level");
+        logic.execute("hw up");
+        assertEquals(storedNames(), displayedNames());
+        logic.execute("sort by/level");
+        logic.execute("add n/New Student l/S2 s/MATH p/92345678 gn/New Guardian gp/98765432");
+        assertEquals(List.of("Target Junior", "Hidden Student", "Target Secondary", "New Student"), displayedNames());
+    }
+
+    @Test
+    public void execute_indexedCommandsAfterSort_targetDisplayedStudentAndKeepStoredOrder() throws Exception {
+        logic.execute("search Target");
+        logic.execute("sort by/level");
+        logic.execute("lesson add 1 s/MATH d/TUESDAY st/14:00 et/15:00");
+        logic.execute("hw add 1 t/Original title s/MATH due/2026-10-21");
+        logic.execute("hw edit 1 1 t/Updated title");
+        logic.execute("hw marks 1 1 score/5");
+        assertTrue(logic.execute("hw ls 1").getFeedbackToUser().contains("Updated title"));
+        assertEquals("Target Secondary", model.getStudentList().getFirst().getName().toString());
+        assertEquals(1, model.getAddressBook().getStudentList().get(2).getLessons().size());
+        assertEquals(1, model.getAddressBook().getStudentList().get(2).getHomeworks().size());
+        assertEquals(0, model.getAddressBook().getStudentList().getFirst().getHomeworks().size());
+        assertEquals(List.of("Target Junior", "Hidden Student", "Target Secondary"), storedNames());
+        logic.execute("hw delete 1 1");
+        logic.execute("delete 1");
+        assertEquals(List.of("Target Junior", "Hidden Student"), storedNames());
+        assertEquals(List.of("Target Junior"), displayedNames());
+        assertEquals(model.getAddressBook(), storage.readAddressBook().orElseThrow());
+    }
+
+    @Test
+    public void execute_failedSaveAfterSort_restoresStudentAndDisplayOrder() throws Exception {
+        logic.execute("sort by/level");
+        List<String> before = displayedNames();
+        String savedBefore = Files.readString(dataPath);
+        storage.shouldFail = true;
+        String addLesson = "lesson add 1 s/MATH d/TUESDAY st/14:00 et/15:00";
+        assertThrows(CommandException.class, () -> logic.execute(addLesson));
+        assertEquals(before, displayedNames());
+        assertTrue(model.getStudentList().getFirst().getLessons().isEmpty());
+        assertEquals(savedBefore, Files.readString(dataPath));
+    }
+
+    private List<String> displayedNames() {
+        return model.getStudentList().stream().map(student -> student.getName().toString()).toList();
+    }
+
+    private List<String> storedNames() {
+        return model.getAddressBook().getStudentList().stream().map(student -> student.getName().toString()).toList();
+    }
+
+    /** Counts actual persistence calls while retaining real JSON serialization for interaction tests. */
+    private static class CountingStorage extends JsonAddressBookStorage {
+        private int saveCount;
+        private boolean shouldFail;
+
+        CountingStorage(Path path) {
+            super(path);
+        }
+
+        @Override
+        public void saveAddressBook(ReadOnlyAddressBook addressBook) throws IOException {
+            saveCount++;
+            if (shouldFail) {
+                throw new IOException("Injected save failure");
+            }
+            super.saveAddressBook(addressBook);
+        }
+    }
+}

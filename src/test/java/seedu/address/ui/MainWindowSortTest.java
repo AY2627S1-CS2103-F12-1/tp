@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -30,6 +31,7 @@ import seedu.address.model.student.Student;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
 import seedu.address.storage.StorageManager;
+import seedu.address.testutil.LogRecorder;
 import seedu.address.testutil.StudentBuilder;
 
 public class MainWindowSortTest {
@@ -111,8 +113,14 @@ public class MainWindowSortTest {
             ListView<Student> listView = getListView(root);
             listView.getSelectionModel().select(1);
             shouldFail.set(true);
-            enterCommand(root, "sort by/level");
-
+            try (LogRecorder recorder = new LogRecorder(MainWindow.class)) {
+                enterCommand(root, "sort by/level");
+                assertEquals(1, recorder.getFailures().size());
+                assertEquals(Level.WARNING, recorder.getFailures().getFirst().getLevel());
+                assertEquals("Injected rendering failure", recorder.getFailures().getFirst().getThrown().getMessage());
+                assertFalse(recorder.getRecords().stream()
+                        .anyMatch(record -> record.getMessage().startsWith("Result: Sorted")));
+            }
             assertEquals(SortCommand.MESSAGE_INTERNAL_ERROR, feedback(root));
             assertEquals(before, model.getStudentList());
             assertEquals(before, model.getAddressBook().getStudentList());

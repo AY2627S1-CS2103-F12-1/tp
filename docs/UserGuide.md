@@ -89,7 +89,7 @@ TutorFlow is a **desktop application for private tutors to manage their students
 
 ### Viewing help: `help`
 
-Opens the help window, which lists the commands `add`, `list`, `search`, `delete`, `homework add`, `homework list`, `homework upcoming`, `homework edit`, `homework marks`, `homework delete`, `lesson add`, `lesson list`, `lesson delete`, `help`, `clear` and `exit`, grouped into Students, Homework, Lessons and General. Each command is shown with its format, what it does and an example.
+Opens the help window, which lists the commands `add`, `list`, `search`, `filter`, `delete`, `homework add`, `homework list`, `homework upcoming`, `homework edit`, `homework marks`, `homework delete`, `lesson add`, `lesson list`, `lesson delete`, `help`, `clear` and `exit`, grouped into Students, Homework, Lessons and General. Each command is shown with its format, what it does and an example.
 
 Format: `help`
 
@@ -119,7 +119,7 @@ Examples:
 
 ### Listing all students: `list`
 
-Shows all students in roster order, starting from the top, including after a search. The displayed indexes start at 1.
+Shows all students in roster order, starting from the top, including after a search or filter. The displayed indexes start at 1.
 If the roster is empty, the app shows `No students found.` This command does not change the roster.
 With one student, the result says `Listed 1 student.`; with more students, it says `Listed N students.` using the actual count.
 
@@ -141,6 +141,55 @@ Format: `search KEYWORD`
   search results. Run `list` or `ls` to show the full roster again. Adding a student or running `homework upcoming`
   also restores the full roster.
 * Searching only changes which students are displayed; it does not change the saved roster.
+* A new search replaces any active filter and searches the full roster.
+
+### Filtering students: `filter`
+
+Shows students at an academic level, taking a tuition subject, or satisfying both conditions.
+
+Format: `filter [l/LEVEL] [s/SUBJECT]`
+
+* Supply at least one filter. Each prefix may appear only once, in either order.
+* `LEVEL` must be `S1`, `S2`, `S3`, `S4`, `S5`, `J1` or `J2`.
+* `SUBJECT` must be one of `MATH`, `PHYSICS` or `CHEMISTRY`. A student taking several subjects matches if one
+  of them is the selected subject. Supply only one subject to the filter command.
+* Values ignore letter case and surrounding whitespace, so `s/Math` matches `MATH`.
+* With both filters, a student must match **both**. Matches retain roster order and receive displayed indexes
+  starting at 1. Subsequent student-index commands use these displayed indexes.
+* Each filter examines the full roster and replaces any previous search or filter. To show all students again,
+  run `list` or `ls`. Adding a student or running `homework upcoming` also restores the full roster.
+* Filtering changes only the displayed students. It does not change records or write to the data file.
+
+Examples:
+
+* `filter l/S4` shows every S4 student.
+* `filter s/Math` shows every student taking MATH, including those taking other subjects too.
+* `filter l/S4 s/Math` and `filter s/Math l/S4` both show S4 students taking MATH.
+
+For matches, the feedback is `Found N student(s)`, using the actual count. If nothing matches, including when
+the roster is empty, no student cards are displayed and the feedback is `No students match the selected filters`.
+
+With no filters, TutorFlow shows:
+
+```text
+Invalid Command Format
+Usage: filter [l/LEVEL] [s/SUBJECT]
+At least one filter must be provided
+```
+
+Other invalid commands report:
+
+| Problem | Feedback |
+| --- | --- |
+| Unknown prefix or text before the first prefix | `Invalid command format`, followed by `Usage: filter [l/LEVEL] [s/SUBJECT]` on the next line |
+| Repeated prefix | `Each filter may only be specified once` |
+| Empty or unsupported level | `Academic level must be a non-empty value` |
+| Empty or unsupported subject | `Subject must be a non-empty value` |
+
+Invalid commands leave the displayed students, selection, scroll position and data file unchanged.
+If an internal problem prevents rendering, TutorFlow shows
+`TutorFlow could not display the filtered results due to an internal error`. Student records remain unchanged;
+you can retry the filter or use `list` to show all students again.
 
 ### Adding homework to a student: `homework add`
 
@@ -196,7 +245,7 @@ Format: `homework|hw upcoming|up [due/DAYS]`
 * `DAYS` must be a whole number from 0 to 365 without signs, decimals, spaces or leading zeroes (`0` itself is accepted). If `due/` is left out, `DAYS` is 7.
 * Homework due before today is left out. Homework is shown whether or not it has marks.
 * The homework of every student is searched, not only the students shown in the student list.
-* Like [`list`](#listing-all-students-list), this command shows all students in the student list again, even when no homework is due. So after a [`search`](#searching-for-students-search), `Student N` still matches the student list.
+* Like [`list`](#listing-all-students-list), this command shows all students in the student list again, even when no homework is due. So after a search or filter, `Student N` still matches the student list.
 * Homework is sorted by due date, earliest first. Homework due on the same date is shown in the order of the students in the student list, and then in the order it was added.
 * The result starts with `Found N homework records due from START to END.` (`record` when there is only one), followed by one line per homework with the student's `STUDENT_INDEX` and name, title, subject, due date and score, e.g. `Student 1: Ethan Lim; Quadratic equations worksheet; MATH; Due: 2026-10-23; Score: 5/10`. Homework without marks shows `Score: Not recorded`.
 * `Student N` is the index of the student in the displayed student list, the `STUDENT_INDEX` that other commands take. It tells apart students with the same name.
@@ -370,7 +419,7 @@ Listed 2 regular lessons.
 
 TutorFlow saves your students, homework and regular lessons automatically after every command that changes them. You do not need to save manually.
 
-* Commands that do not change the data, such as `homework list`, `homework upcoming`, `lesson list`, `help` and `exit`, do not write to the data file.
+* Commands that do not change the data, such as `filter`, `search`, `list`, `homework list`, `homework upcoming`, `lesson list`, `help` and `exit`, do not write to the data file.
 * If TutorFlow cannot save the data (for example, because the data file is read-only), the command is cancelled: its changes are undone and an error message is shown. Homework and lesson commands state that their respective data was not changed.
 
 ### Editing the data file
@@ -457,6 +506,7 @@ Action | Format, Examples
 **Delete student** | `delete INDEX`<br> e.g., `delete 2`
 **List** | `list` or `ls`
 **Search** | `search KEYWORD`<br> e.g., `search Tan`
+**Filter** | `filter [l/LEVEL] [s/SUBJECT]`<br> e.g., `filter l/S4 s/Math`
 **Homework add** | <code>homework&#124;hw add STUDENT_INDEX title/&#124;t/TITLE s/SUBJECT due/YYYY-MM-DD&#124;MM-DD</code><br> e.g., `homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15`, `hw add 1 t/"Speed in km/h" s/PHYSICS due/2026-11-01`
 **Homework delete** | <code>homework&#124;hw delete&#124;del STUDENT_INDEX HOMEWORK_INDEX</code><br> e.g., `homework delete 1 2`
 **Homework edit** | <code>homework&#124;hw edit&#124;e STUDENT_INDEX HOMEWORK_INDEX [title/&#124;t/TITLE] [s/SUBJECT] [due/YYYY-MM-DD&#124;MM-DD]</code><br> e.g., `hw edit 1 2 t/Revise mechanics s/PHYSICS due/2026-11-10`

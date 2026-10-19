@@ -58,7 +58,7 @@ public class LessonDeleteCommand extends Command {
      * Resolves the displayed index from the same sorted schedule used by {@link LessonListCommand}.
      */
     private CommandResult deleteSelectedLesson(Model model) throws CommandException {
-        List<LessonSchedule.Entry> orderedLessonSchedule = LessonSchedule.from(model.getStudentList());
+        List<LessonSchedule.Entry> orderedLessonSchedule = LessonSchedule.from(model.getAddressBook().getStudentList());
         if (orderedLessonSchedule.isEmpty()) {
             throw new CommandException(MESSAGE_NO_LESSONS);
         }

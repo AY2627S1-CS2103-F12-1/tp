@@ -16,10 +16,10 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import javafx.collections.ObservableList;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
+import seedu.address.model.ReadOnlyAddressBook;
 import seedu.address.model.lesson.RegularLesson;
 import seedu.address.model.student.Student;
 import seedu.address.model.student.TuitionSubject;
@@ -70,10 +70,25 @@ public class LessonListCommandTest {
     }
 
     @Test
+    public void execute_filteredStudentList_stillListsAllLessons() throws Exception {
+        Student zoe = new StudentBuilder().withName("Zoe Tan").withLessons(MONDAY_MATH).build();
+        Student amy = new StudentBuilder().withName("Amy Lim").withPhone("91234568")
+                .withSubjects("PHYSICS").withLessons(TUESDAY_PHYSICS).build();
+        Model model = getModelWithStudents(List.of(zoe, amy));
+        model.updateFilteredStudentList(student -> student.equals(amy));
+
+        String feedback = new LessonListCommand().execute(model).getFeedbackToUser();
+
+        assertTrue(feedback.startsWith("Listed 2 regular lessons."));
+        assertTrue(feedback.contains("Zoe Tan"));
+        assertTrue(feedback.contains("Amy Lim"));
+    }
+
+    @Test
     public void execute_unexpectedError_reportsInternalErrorWithoutChangingModel() {
         Model failingModel = new ModelManager() {
             @Override
-            public ObservableList<Student> getStudentList() {
+            public ReadOnlyAddressBook getAddressBook() {
                 throw new IllegalStateException("dummy internal error");
             }
         };

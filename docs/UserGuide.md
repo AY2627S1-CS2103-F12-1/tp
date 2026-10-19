@@ -30,6 +30,8 @@ TutorFlow is a **desktop application for private tutors to manage their students
 
    * `list` : Lists all students.
 
+   * `search Tan` : Shows students whose name, phone, guardian name or guardian phone contains `Tan`.
+
    * `homework list 1` : Lists the upcoming homework of the 1st student shown in the student list.
 
    * `hw add 1 t/Algebra worksheet s/MATH due/2026-10-15` : Adds homework to the 1st student.
@@ -75,9 +77,7 @@ TutorFlow is a **desktop application for private tutors to manage their students
 
 ### Viewing help: `help`
 
-Opens the help window, which lists the commands `add`, `list`, `delete`, `homework add`, `homework list`, `homework edit`, `homework marks`, `homework delete`, `lesson add`, `lesson list`, `lesson delete`, `help`, `clear` and `exit`, grouped into Students, Homework, Lessons and General. Each command is shown with its format, what it does and an example.
-
-![help window](images/helpMessage.png)
+Opens the help window, which lists the commands `add`, `list`, `search`, `delete`, `homework add`, `homework list`, `homework edit`, `homework marks`, `homework delete`, `lesson add`, `lesson list`, `lesson delete`, `help`, `clear` and `exit`, grouped into Students, Homework, Lessons and General. Each command is shown with its format, what it does and an example.
 
 Format: `help`
 
@@ -107,11 +107,27 @@ Examples:
 
 ### Listing all students: `list`
 
-Shows all students in roster order, starting from the top. The displayed indexes start at 1.
+Shows all students in roster order, starting from the top, including after a search. The displayed indexes start at 1.
 If the roster is empty, the app shows `No students found.` This command does not change the roster.
 With one student, the result says `Listed 1 student.`; with more students, it says `Listed N students.` using the actual count.
 
 Format: `list` or `ls` (no parameters)
+
+### Searching for students: `search`
+
+Shows students whose student name, student phone, guardian name or guardian phone contains the keyword. Name matching
+ignores letter case. Matches stay in roster order and are numbered from 1 in the displayed list.
+
+Format: `search KEYWORD`
+
+* `KEYWORD` must not be blank; it can contain spaces. For example, `search Mary Tan` searches for that full phrase.
+* `search 9123` can find a student by part of their phone number. `search Tan` may match a student or a guardian.
+* The feedback repeats the keyword used, e.g. `Found 2 students for "Tan".` If nothing matches, TutorFlow shows
+  `No students found for "Nobody".` and displays no student cards. In both cases, the feedback reminds you to type
+  `list` to show all students again.
+* Student indexes in subsequent commands, such as `delete 1` or `homework list 1`, refer to the currently displayed
+  search results. Run `list` or `ls` to show the full roster again. Adding a student also restores the full roster.
+* Searching only changes which students are displayed; it does not change the saved roster.
 
 ### Adding homework to a student: `homework add`
 
@@ -394,6 +410,7 @@ Action | Format, Examples
 **Clear** | `clear`
 **Delete student** | `delete INDEX`<br> e.g., `delete 2`
 **List** | `list` or `ls`
+**Search** | `search KEYWORD`<br> e.g., `search Tan`
 **Homework add** | <code>homework&#124;hw add STUDENT_INDEX title/&#124;t/TITLE s/SUBJECT due/YYYY-MM-DD&#124;MM-DD</code><br> e.g., `homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15`
 **Homework delete** | <code>homework&#124;hw delete&#124;del STUDENT_INDEX HOMEWORK_INDEX</code><br> e.g., `homework delete 1 2`
 **Homework edit** | <code>homework&#124;hw edit&#124;e STUDENT_INDEX HOMEWORK_INDEX [title/&#124;t/TITLE] [s/SUBJECT] [due/YYYY-MM-DD&#124;MM-DD]</code><br> e.g., `hw edit 1 2 t/Revise mechanics s/PHYSICS due/2026-11-10`

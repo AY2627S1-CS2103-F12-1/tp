@@ -35,6 +35,7 @@ public class AddCommand extends Command {
         }
 
         model.addStudent(studentToAdd);
+        model.updateFilteredStudentList(Model.PREDICATE_SHOW_ALL_STUDENTS);
         return new CommandResult(String.format(MESSAGE_SUCCESS, Messages.format(studentToAdd)));
     }
 

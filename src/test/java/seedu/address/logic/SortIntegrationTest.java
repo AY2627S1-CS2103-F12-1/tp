@@ -20,6 +20,8 @@ import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.ModelManager;
 import seedu.address.model.ReadOnlyAddressBook;
+import seedu.address.model.UserPrefs;
+import seedu.address.model.student.Student;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
 import seedu.address.storage.StorageManager;
@@ -114,6 +116,31 @@ public class SortIntegrationTest {
         assertEquals(before, displayedNames());
         assertTrue(model.getStudentList().getFirst().getLessons().isEmpty());
         assertEquals(savedBefore, Files.readString(dataPath));
+    }
+
+    @Test
+    public void execute_internalSortFailure_neverWritesStoredData() throws Exception {
+        ModelManager failingModel = new ModelManager(model.getAddressBook(), new UserPrefs()) {
+            private boolean shouldFail = true;
+
+            @Override
+            public void setStudentListOrder(List<Student> students) {
+                super.setStudentListOrder(students);
+                if (shouldFail) {
+                    shouldFail = false;
+                    throw new IllegalStateException("Injected sort publication failure");
+                }
+            }
+        };
+        Logic failingLogic = new LogicManager(failingModel, new StorageManager(storage,
+                new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json"))));
+        String before = Files.readString(dataPath);
+
+        assertThrows(CommandException.class, () -> failingLogic.execute("sort by/level"));
+
+        assertEquals(model.getStudentList(), failingModel.getStudentList());
+        assertEquals(before, Files.readString(dataPath));
+        assertEquals(0, storage.saveCount);
     }
 
     private List<String> displayedNames() {

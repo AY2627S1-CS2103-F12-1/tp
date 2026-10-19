@@ -114,4 +114,22 @@ public class SortCommandTest {
             assertEquals(Level.SEVERE, recorder.getFailures().getFirst().getLevel());
         }
     }
+
+    @Test
+    public void execute_repeatedFailureInstance_recordsFailedRecoveryWithoutSelfSuppression() {
+        RuntimeException failure = new IllegalStateException("Repeated publication failure");
+        ModelManager model = new ModelManager() {
+            @Override
+            public void setStudentListOrder(List<Student> students) {
+                throw failure;
+            }
+        };
+        model.addStudent(junior);
+        try (LogRecorder recorder = new LogRecorder(SortCommand.class)) {
+            CommandException exception = assertThrows(CommandException.class, () -> command.execute(model));
+            assertSame(failure, exception.getCause());
+            assertEquals(1, failure.getSuppressed().length);
+            assertEquals(Level.SEVERE, recorder.getFailures().getFirst().getLevel());
+        }
+    }
 }

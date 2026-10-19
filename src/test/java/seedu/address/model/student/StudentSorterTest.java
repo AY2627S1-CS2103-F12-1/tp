@@ -71,6 +71,19 @@ public class StudentSorterTest {
     }
 
     @Test
+    public void sort_days_includesWeekBoundariesAndIgnoresMeetingTimesForTies() {
+        Student sunday = new StudentBuilder().withLessons(lesson(DayOfWeek.SUNDAY, 8)).build();
+        Student mondayLate = new StudentBuilder().withLessons(lesson(DayOfWeek.MONDAY, 17)).build();
+        Student mondayEarly = new StudentBuilder().withLessons(lesson(DayOfWeek.MONDAY, 8)).build();
+        List<Student> input = List.of(mondayLate, sunday, mondayEarly);
+
+        assertEquals(List.of(mondayLate, mondayEarly, sunday),
+                StudentSorter.sort(input, SortKey.DAY, SortOrder.ASCENDING));
+        assertEquals(List.of(sunday, mondayLate, mondayEarly),
+                StudentSorter.sort(input, SortKey.DAY, SortOrder.DESCENDING));
+    }
+
+    @Test
     public void sort_duplicateOccurrences_preservesReferencesAndMultiplicity() {
         Student first = new StudentBuilder().build();
         Student equal = new StudentBuilder().build();

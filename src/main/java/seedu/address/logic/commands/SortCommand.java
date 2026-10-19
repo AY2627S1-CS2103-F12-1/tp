@@ -4,6 +4,7 @@ import static java.util.Objects.requireNonNull;
 import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -86,9 +87,9 @@ public class SortCommand extends Command {
         try {
             model.setStudentListOrder(previousStudents);
         } catch (RuntimeException recoveryFailure) {
-            if (recoveryFailure != exception) {
-                exception.addSuppressed(recoveryFailure);
-            }
+            exception.addSuppressed(recoveryFailure == exception
+                    ? new IllegalStateException("Restoring the display order repeated the original failure.")
+                    : recoveryFailure);
         }
     }
 
@@ -99,6 +100,6 @@ public class SortCommand extends Command {
 
     @Override
     public int hashCode() {
-        return 31 * key.hashCode() + order.hashCode();
+        return Objects.hash(key, order);
     }
 }

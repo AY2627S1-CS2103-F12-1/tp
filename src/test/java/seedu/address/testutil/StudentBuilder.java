@@ -33,6 +33,14 @@ public class StudentBuilder {
         return this;
     }
 
+    /**
+     * Returns this builder with a different academic level.
+     */
+    public StudentBuilder withAcademicLevel(String academicLevel) {
+        this.academicLevel = academicLevel;
+        return this;
+    }
+
     /** Returns this builder with different tuition subjects. */
     public StudentBuilder withSubjects(String subjects) {
         this.subjects = subjects;

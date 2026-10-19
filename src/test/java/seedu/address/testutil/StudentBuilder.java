@@ -21,6 +21,12 @@ public class StudentBuilder {
     private List<Homework> homeworks = List.of();
     private List<RegularLesson> lessons = List.of();
 
+    /** Returns this builder with a different academic level. */
+    public StudentBuilder withAcademicLevel(String academicLevel) {
+        this.academicLevel = academicLevel;
+        return this;
+    }
+
     /** Returns this builder with a different student name. */
     public StudentBuilder withName(String name) {
         this.name = name;

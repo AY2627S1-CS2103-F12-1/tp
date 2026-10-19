@@ -22,6 +22,9 @@ import seedu.address.model.student.Student;
 
 public class SampleDataUtilTest {
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-05T00:00:00Z"), ZoneOffset.UTC);
+    /** Date of the documented {@code homework upcoming} results. */
+    private static final Clock UPCOMING_EXAMPLE_CLOCK =
+            Clock.fixed(Instant.parse("2026-10-17T00:00:00Z"), ZoneOffset.UTC);
 
     private final Student[] sampleStudents = SampleDataUtil.getSampleStudents();
 
@@ -93,6 +96,11 @@ public class SampleDataUtilTest {
             {"hw add 1 t/Read chapter 3 s/physics due/10-5"},
             {"homework list 1"},
             {"hw ls 2 all"},
+            {"hw up"},
+            {"hw up due/3"},
+            {"hw up due/7"},
+            {"hw up due/0"},
+            {"hw upcoming due/7"},
             {"hw e 1 2 t/Complete algebra questions 1-10"},
             {"hw e 2 1 due/2026-11-05"},
             {"hw edit 1 2 t/Revise mechanics s/PHYSICS due/2026-11-10"},
@@ -126,5 +134,17 @@ public class SampleDataUtilTest {
 
         assertEquals(expectedMessage, new AddressBookParser(CLOCK).parseCommand("hw e 2 1 due/2026-11-05")
                 .execute(model).getFeedbackToUser());
+    }
+
+    @Test
+    public void getSampleStudents_userGuideUpcomingExamples_showDocumentedResults() throws Exception {
+        AddressBookParser parser = new AddressBookParser(UPCOMING_EXAMPLE_CLOCK);
+        Model model = getModelWithStudents(List.of(sampleStudents));
+
+        assertEquals("Found 1 homework record due from 2026-10-17 to 2026-10-24.\n"
+                + "Student 1: Ethan Lim; Quadratic equations worksheet; MATH; Due: 2026-10-23; Score: Not recorded",
+                parser.parseCommand("hw up").execute(model).getFeedbackToUser());
+        assertEquals("No homework due from 2026-10-17 to 2026-10-20.",
+                parser.parseCommand("hw up due/3").execute(model).getFeedbackToUser());
     }
 }

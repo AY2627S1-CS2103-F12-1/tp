@@ -22,6 +22,7 @@ import seedu.address.logic.commands.HomeworkDeleteCommand;
 import seedu.address.logic.commands.HomeworkEditCommand;
 import seedu.address.logic.commands.HomeworkListCommand;
 import seedu.address.logic.commands.HomeworkMarksCommand;
+import seedu.address.logic.commands.HomeworkUpcomingCommand;
 import seedu.address.logic.commands.LessonAddCommand;
 import seedu.address.logic.commands.LessonDeleteCommand;
 import seedu.address.logic.commands.LessonListCommand;
@@ -48,6 +49,7 @@ public class HelpContentTest {
                 Map.entry(SearchCommand.COMMAND_WORD, SearchCommand.MESSAGE_USAGE),
                 Map.entry("homework add", HomeworkAddCommand.MESSAGE_USAGE),
                 Map.entry("homework list", HomeworkListCommand.MESSAGE_USAGE),
+                Map.entry("homework upcoming", HomeworkUpcomingCommand.MESSAGE_USAGE),
                 Map.entry("homework edit", HomeworkEditCommand.MESSAGE_USAGE),
                 Map.entry("homework marks", HomeworkMarksCommand.MESSAGE_USAGE),
                 Map.entry("homework delete", HomeworkDeleteCommand.MESSAGE_USAGE),
@@ -74,6 +76,7 @@ public class HelpContentTest {
                 Map.entry(SearchCommand.COMMAND_WORD, SearchCommand.class),
                 Map.entry("homework add", HomeworkAddCommand.class),
                 Map.entry("homework list", HomeworkListCommand.class),
+                Map.entry("homework upcoming", HomeworkUpcomingCommand.class),
                 Map.entry("homework edit", HomeworkEditCommand.class),
                 Map.entry("homework marks", HomeworkMarksCommand.class),
                 Map.entry("homework delete", HomeworkDeleteCommand.class),

@@ -187,7 +187,7 @@ This section describes some noteworthy details on how certain features are imple
 
 `AddressBookParser` routes `list` and its alias `ls` to `ListCommandParser`, which rejects non-blank arguments. `ListCommand` resets the displayed-student predicate, reads `Model#getStudentList()`, and asks the UI to show the roster from the top. It reports `No students found.` for an empty roster, `Listed 1 student.` for one student, and `Listed N students.` otherwise. Because the stored roster is unchanged, `LogicManager` does not save the data file.
 
-`AddressBookParser` routes `search KEYWORD` to `SearchCommandParser`, which rejects a blank keyword. `SearchCommand` compares the stripped keyword with the student and guardian names and phone numbers, ignoring case for names. It sets the predicate of `ModelManager`'s `FilteredList<Student>`, whose source is the full roster. The UI observes an unmodifiable view of that list, so it refreshes the displayed cards and numbers automatically. Repeated searches examine the full roster, not just the previous results. The stored `AddressBook` is unchanged, so searching is never saved. Index-based student and homework commands use `Model#getStudentList()` and therefore act on the student currently shown at that index. `list` and a successful `add` restore the full roster.
+`AddressBookParser` routes `search KEYWORD` to `SearchCommandParser`, which rejects a blank keyword. `SearchCommand` compares the stripped keyword with the student and guardian names and phone numbers, ignoring case for names. It sets the predicate of `ModelManager`'s `FilteredList<Student>`, whose source is the full roster. The UI observes an unmodifiable view of that list, so it refreshes the displayed cards and numbers automatically. Repeated searches examine the full roster, not just the previous results. The stored `AddressBook` is unchanged, so searching is never saved. Index-based student and homework commands use `Model#getStudentList()` and therefore act on the student currently shown at that index. `list`, a successful `add` and `homework upcoming` restore the full roster.
 
 `AddressBookParser` routes `delete INDEX` to `DeleteCommandParser`. It uses `ParserUtil#parseStrictIndex`, so zero, signs, leading zeroes, extra arguments, and numbers beyond the supported integer range are rejected before execution. `DeleteCommand` checks the one-based index against the current roster, then calls `Model#deleteStudent` for that student. The remaining students retain their order and receive new displayed indexes. Homework and regular lessons belong to the deleted `Student`, so they are removed with it. `LogicManager` saves the changed roster; if saving fails, it restores the previous roster, including that student's homework and lessons.
 
@@ -203,9 +203,9 @@ Homework is managed with six subcommands of `homework` (alias `hw`): `add`, `lis
 
 **Score.** A `Score` is either `MARKS` (e.g. `17`) or `MARKS_OBTAINED/TOTAL_MARKS` (e.g. `5/10`). It is kept as given (`5/10` is not simplified) and stored in the data file as this text, e.g. `"17"` or `"5/10"`.
 
-**Saving.** Homework is saved as part of each student (see [Storage component](#storage-component)). `homework list` and `homework upcoming` only read the model, so `LogicManager` never writes the data file after them (see [Saving after a command](#saving-after-a-command)).
+**Saving.** Homework is saved as part of each student (see [Storage component](#storage-component)). `homework list` and `homework upcoming` do not change the stored data, so `LogicManager` never writes the data file after them (see [Saving after a command](#saving-after-a-command)).
 
-**Upcoming homework.** `homework upcoming` searches the whole roster, not the displayed list, and starts each line with `Student N:`, where `N` is the student's `STUDENT_INDEX`. Two students may have the same name, and the index tells them apart in a form the tutor can type into `homework list`.
+**Upcoming homework.** `homework upcoming` searches the whole roster, not the displayed list, and starts each line with `Student N:`, where `N` is the student's `STUDENT_INDEX`. Two students may have the same name, and the index tells them apart in a form the tutor can type into `homework list`. It first resets the displayed list to the full roster, as `list` does, so `N` matches the student list even after a `search`.
 
 #### Design considerations:
 
@@ -586,6 +586,9 @@ testers are expected to do more *exploratory* testing.
 
    1. Test case: `add n/Ethan Lim l/S1 s/MATH p/81234567 gn/Lim Mei gp/81234568` (a second Ethan Lim, with another phone number, who becomes student 7), then `hw add 7 t/Today algebra s/MATH due/TODAY` and `hw up due/0`<br>
       Expected: The new line starts with `Student 7: Ethan Lim`, while the first Ethan Lim's line starts with `Student 1: Ethan Lim`.
+
+   1. Test case: `search Marcus`, then `hw up due/0`, then `hw ls 3`<br>
+      Expected: After `hw up due/0`, all students are shown again and Marcus Tan's line starts with `Student 3`. `hw ls 3` lists Marcus Tan's homework.
 
    1. Incorrect commands to try: `hw up due/366`, `hw up due/007`, `hw up due/-1`, `hw up due/1.5`, `hw up due/2026-10-20`, `hw up due/`<br>
       Expected: `Days must be a whole number from 0 to 365 without leading zeroes.`

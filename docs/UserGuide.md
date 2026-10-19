@@ -126,7 +126,8 @@ Format: `search KEYWORD`
   `No students found for "Nobody".` and displays no student cards. In both cases, the feedback reminds you to type
   `list` to show all students again.
 * Student indexes in subsequent commands, such as `delete 1` or `homework list 1`, refer to the currently displayed
-  search results. Run `list` or `ls` to show the full roster again. Adding a student also restores the full roster.
+  search results. Run `list` or `ls` to show the full roster again. Adding a student or running `homework upcoming`
+  also restores the full roster.
 * Searching only changes which students are displayed; it does not change the saved roster.
 
 ### Adding homework to a student: `homework add`
@@ -182,6 +183,7 @@ Format: `homework|hw upcoming|up [due/DAYS]`
 * `DAYS` must be a whole number from 0 to 365 without signs, decimals, spaces or leading zeroes (`0` itself is accepted). If `due/` is left out, `DAYS` is 7.
 * Homework due before today is left out. Homework is shown whether or not it has marks.
 * The homework of every student is searched, not only the students shown in the student list.
+* Like [`list`](#listing-all-students-list), this command shows all students in the student list again, even when no homework is due. So after a [`search`](#searching-for-students-search), `Student N` still matches the student list.
 * Homework is sorted by due date, earliest first. Homework due on the same date is shown in the order of the students in the student list, and then in the order it was added.
 * The result starts with `Found N homework records due from START to END.` (`record` when there is only one), followed by one line per homework with the student's `STUDENT_INDEX` and name, title, subject, due date and score, e.g. `Student 1: Ethan Lim; Quadratic equations worksheet; MATH; Due: 2026-10-23; Score: 5/10`. Homework without marks shows `Score: Not recorded`.
 * `Student N` is the index of the student in the displayed student list, the `STUDENT_INDEX` that other commands take. It tells apart students with the same name.

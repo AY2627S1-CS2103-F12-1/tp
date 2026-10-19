@@ -2,6 +2,7 @@ package seedu.address.logic;
 
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
+import java.time.Clock;
 import java.util.logging.Logger;
 
 import javafx.collections.ObservableList;
@@ -37,9 +38,16 @@ public class LogicManager implements Logic {
      * Constructs a {@code LogicManager} with the given {@code Model} and {@code Storage}.
      */
     public LogicManager(Model model, Storage storage) {
+        this(model, storage, Clock.systemDefaultZone());
+    }
+
+    /**
+     * Constructs a {@code LogicManager} whose {@code homework} commands take today's date from {@code clock}.
+     */
+    public LogicManager(Model model, Storage storage, Clock clock) {
         this.model = model;
         this.storage = storage;
-        addressBookParser = new AddressBookParser();
+        addressBookParser = new AddressBookParser(clock);
     }
 
     /**

@@ -22,7 +22,7 @@ import seedu.address.model.student.Student;
 /**
  * Lists the homework of every student in the roster that is due from today to a given number of days after today,
  * both inclusive. The homework is sorted by due date, earliest first, with ties in roster order and then in
- * insertion order. The model is not changed.
+ * insertion order. The full roster is displayed again, as after {@code list}, but the stored data is not changed.
  */
 public class HomeworkUpcomingCommand extends Command {
     public static final String MESSAGE_USAGE = "homework|hw upcoming|up [due/DAYS]";
@@ -50,11 +50,13 @@ public class HomeworkUpcomingCommand extends Command {
 
     /**
      * {@inheritDoc}
+     * The full roster is displayed first, so that each {@code STUDENT_INDEX} in the result matches the student list.
      * An unexpected error is logged and reported as an internal error.
      */
     @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
+        model.updateFilteredStudentList(Model.PREDICATE_SHOW_ALL_STUDENTS);
         try {
             return new CommandResult(listUpcomingHomework(model));
         } catch (RuntimeException exception) {

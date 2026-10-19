@@ -13,8 +13,6 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
@@ -144,21 +142,25 @@ public class HomeworkUpcomingCommandTest {
     }
 
     @Test
-    public void execute_displayedListEmpty_searchesWholeRoster() {
-        // no student is displayed, but all students in the roster are searched
-        Model modelShowingNoStudents = new ModelManager() {
-            @Override
-            public ObservableList<Student> getStudentList() {
-                return FXCollections.emptyObservableList();
-            }
-        };
-        List.of(ZOE, NO_HOMEWORK, ADAM).forEach(modelShowingNoStudents::addStudent);
+    public void execute_noStudentDisplayed_listsAndShowsWholeRoster() {
+        // no student is displayed, but all students in the roster are searched and then displayed again
+        model.updateFilteredStudentList(student -> false);
         String expectedMessage = "Found 2 homework records due from 2026-10-17 to 2026-10-17.\n"
                 + "Student 1: Zoe Lee; Today worksheet; MATH; Due: 2026-10-17; Score: 5/10\n"
                 + "Student 3: Adam Ng; Today quiz; CHEMISTRY; Due: 2026-10-17; Score: 0/20";
 
-        assertCommandSuccess(new HomeworkUpcomingCommand(TODAY, 0), modelShowingNoStudents, expectedMessage,
-                expectedModel);
+        assertCommandSuccess(new HomeworkUpcomingCommand(TODAY, 0), model, expectedMessage, expectedModel);
+        assertEquals(List.of(ZOE, NO_HOMEWORK, ADAM), model.getStudentList());
+    }
+
+    @Test
+    public void execute_noHomeworkInWindowWhileFiltered_showsWholeRoster() {
+        // the full roster is displayed again even when no homework is due; the last homework is due on 2026-10-21
+        model.updateFilteredStudentList(student -> student.equals(ADAM));
+
+        assertCommandSuccess(new HomeworkUpcomingCommand(LocalDate.of(2026, 10, 22), 7), model,
+                "No homework due from 2026-10-22 to 2026-10-29.", expectedModel);
+        assertEquals(List.of(ZOE, NO_HOMEWORK, ADAM), model.getStudentList());
     }
 
     @Test

@@ -4,7 +4,6 @@ import java.time.LocalDate;
 
 import seedu.address.model.homework.DueDate;
 import seedu.address.model.homework.Homework;
-import seedu.address.model.homework.HomeworkStatus;
 import seedu.address.model.homework.Score;
 import seedu.address.model.homework.Title;
 import seedu.address.model.student.TuitionSubject;
@@ -17,7 +16,6 @@ public class HomeworkBuilder {
     private String title = "Complete algebra worksheet";
     private String subject = "MATH";
     private String dueDate = "2026-10-15";
-    private HomeworkStatus status = HomeworkStatus.ASSIGNED;
     private Score score;
 
     /** Creates a builder with the default homework fields. */
@@ -29,7 +27,6 @@ public class HomeworkBuilder {
         title = homeworkToCopy.getTitle().toString();
         subject = homeworkToCopy.getSubject().name();
         dueDate = homeworkToCopy.getDueDate().toString();
-        status = homeworkToCopy.getStatus();
         score = homeworkToCopy.getScore().orElse(null);
     }
 
@@ -51,21 +48,21 @@ public class HomeworkBuilder {
         return this;
     }
 
-    /** Returns this builder with a different status. */
-    public HomeworkBuilder withStatus(HomeworkStatus status) {
-        this.status = status;
+    /** Returns this builder with a score, given in {@code MARKS} or {@code MARKS_OBTAINED/TOTAL_MARKS} format. */
+    public HomeworkBuilder withScore(String score) {
+        this.score = Score.parse(score);
         return this;
     }
 
-    /** Returns this builder with a score. */
-    public HomeworkBuilder withScore(int score) {
-        this.score = new Score(score);
+    /** Returns this builder without a score. */
+    public HomeworkBuilder withoutScore() {
+        this.score = null;
         return this;
     }
 
     /** Returns a homework record using the configured fields. */
     public Homework build() {
         return new Homework(new Title(title), TuitionSubject.parse(subject), DueDate.parse(dueDate, DEFAULT_TODAY),
-                status, score);
+                score);
     }
 }

@@ -1,5 +1,7 @@
 package seedu.address.ui;
 
+import java.time.LocalDate;
+
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -52,7 +54,9 @@ public class StudentListPanel extends UiPart<Region> {
         protected void updateItem(Student student, boolean isEmpty) {
             super.updateItem(student, isEmpty);
             setText(null);
-            setGraphic(isEmpty || student == null ? null : new StudentCard(student, getIndex() + 1).getRoot());
+            setGraphic(isEmpty || student == null
+                    ? null
+                    : new StudentCard(student, getIndex() + 1, LocalDate.now()).getRoot());
         }
     }
 }

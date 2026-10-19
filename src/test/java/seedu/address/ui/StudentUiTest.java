@@ -14,6 +14,7 @@ import static seedu.address.testutil.TypicalRegularLessons.TUESDAY_PHYSICS;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.concurrent.FutureTask;
@@ -39,6 +40,8 @@ import seedu.address.testutil.HomeworkBuilder;
 import seedu.address.testutil.StudentBuilder;
 
 public class StudentUiTest {
+    /** Date the student cards count upcoming homework from, between the due dates of the typical homework. */
+    private static final LocalDate TODAY = LocalDate.of(2026, 10, 16);
     private static final String LONG_NAME = "Guardian With An Exceptionally Long Name That Fills Seventy Characters";
 
     @BeforeAll
@@ -55,7 +58,7 @@ public class StudentUiTest {
     public void studentCard_displaysAllStudentFields() throws Exception {
         runOnFxThread(() -> {
             Student student = new StudentBuilder().build();
-            Parent card = (Parent) new StudentCard(student, 2).getRoot();
+            Parent card = (Parent) new StudentCard(student, 2, TODAY).getRoot();
 
             assertEquals("2.", labelText(card, "index"));
             assertEquals("John Tan", labelText(card, "name"));
@@ -64,20 +67,19 @@ public class StudentUiTest {
             assertEquals("Student: 91234567", labelText(card, "studentPhone"));
             assertEquals("Guardian: Mary Tan", labelText(card, "guardianName"));
             assertEquals("Guardian phone: 98765432", labelText(card, "guardianPhone"));
-            assertEquals("Assigned homework: 0", labelText(card, "assignedHomeworkCount"));
+            assertEquals("Upcoming homework: 0", labelText(card, "upcomingHomeworkCount"));
             assertEquals("Overdue homework: 0", labelText(card, "overdueHomeworkCount"));
         });
     }
 
     @Test
-    public void studentCard_countsAssignedHomeworkOnly() throws Exception {
+    public void studentCard_countsUpcomingHomeworkOnly() throws Exception {
         runOnFxThread(() -> {
-            // ATOMIC_STRUCTURE is completed, so it is not counted
+            // ALGEBRA is overdue; MECHANICS and scored ATOMIC_STRUCTURE are due on or after TODAY.
             Student student = new StudentBuilder().withHomeworks(ALGEBRA, MECHANICS, ATOMIC_STRUCTURE).build();
-            Parent card = (Parent) new StudentCard(student, 1,
-                    Clock.fixed(Instant.parse("2026-10-16T00:00:00Z"), ZoneOffset.UTC)).getRoot();
+            Parent card = (Parent) new StudentCard(student, 1, TODAY).getRoot();
 
-            assertEquals("Assigned homework: 2", labelText(card, "assignedHomeworkCount"));
+            assertEquals("Upcoming homework: 2", labelText(card, "upcomingHomeworkCount"));
             assertEquals("Overdue homework: 1", labelText(card, "overdueHomeworkCount"));
         });
     }
@@ -144,15 +146,15 @@ public class StudentUiTest {
     public void studentCard_narrowWidth_homeworkCountsRemainReadable() throws Exception {
         runOnFxThread(() -> {
             for (String family : List.of("System", "Serif", "Monospaced")) {
-                Region card = new StudentCard(new StudentBuilder().build(), 1).getRoot();
+                Region card = new StudentCard(new StudentBuilder().build(), 1, TODAY).getRoot();
                 Scene scene = new Scene(card, 260, 350);
                 scene.getStylesheets().add(getClass().getResource("/view/DarkTheme.css").toExternalForm());
-                for (String id : List.of("assignedHomeworkCount", "overdueHomeworkCount")) {
+                for (String id : List.of("upcomingHomeworkCount", "overdueHomeworkCount")) {
                     card.lookup("#" + id).setStyle("-fx-font-family: '" + family + "'; -fx-font-size: 16px;");
                 }
                 card.applyCss();
                 card.layout();
-                for (String id : List.of("assignedHomeworkCount", "overdueHomeworkCount")) {
+                for (String id : List.of("upcomingHomeworkCount", "overdueHomeworkCount")) {
                     Label label = (Label) card.lookup("#" + id);
                     assertEndsBefore(card.getWidth(), label, id);
                     assertTrue(label.getWidth() >= label.prefWidth(-1), id + " is truncated with " + family);
@@ -275,7 +277,7 @@ public class StudentUiTest {
 
     /** Returns the width the given label of the student's card needs to show its text on one line. */
     private static double oneLineWidth(Student student, String id) {
-        Parent card = (Parent) new StudentCard(student, 1).getRoot();
+        Parent card = (Parent) new StudentCard(student, 1, TODAY).getRoot();
         new Scene(card);
         card.applyCss();
         return card.lookup("#" + id).prefWidth(-1);

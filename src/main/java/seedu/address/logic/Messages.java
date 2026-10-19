@@ -1,6 +1,7 @@
 package seedu.address.logic;
 
 import seedu.address.model.homework.Homework;
+import seedu.address.model.homework.Score;
 import seedu.address.model.lesson.RegularLesson;
 import seedu.address.model.student.Student;
 
@@ -21,7 +22,7 @@ public class Messages {
     public static final String MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX = "The student index provided is invalid.";
     public static final String MESSAGE_INVALID_HOMEWORK_DISPLAYED_INDEX = "The homework index provided is invalid.";
     public static final String MESSAGE_INVALID_LESSON_DISPLAYED_INDEX = "The lesson index provided is invalid.";
-    public static final String MESSAGE_NOT_IMPLEMENTED = "This command is not implemented yet.";
+    public static final String MESSAGE_SCORE_NOT_RECORDED = "Not recorded";
 
     /** Returns all six student fields in the Add Student success-message format. */
     public static String format(Student student) {
@@ -47,6 +48,19 @@ public class Messages {
                 + "; " + lesson.getSubject()
                 + "; " + lesson.getDayOfWeek().name().substring(0, 3)
                 + "; " + lesson.getStartTime() + "-" + lesson.getEndTime();
+    }
+
+    /**
+     * Returns the homework in the format of {@link #format(Student, Homework)}, followed by its score, or
+     * {@link #MESSAGE_SCORE_NOT_RECORDED} if it has none.
+     */
+    public static String formatWithScore(Student student, Homework homework) {
+        return format(student, homework) + "; Score: " + formatScore(homework);
+    }
+
+    /** Returns the score of {@code homework}, or {@link #MESSAGE_SCORE_NOT_RECORDED} if it has none. */
+    public static String formatScore(Homework homework) {
+        return homework.getScore().map(Score::toString).orElse(MESSAGE_SCORE_NOT_RECORDED);
     }
 
     /**

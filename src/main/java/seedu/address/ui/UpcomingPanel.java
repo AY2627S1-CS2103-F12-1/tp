@@ -84,7 +84,7 @@ public class UpcomingPanel extends UiPart<Region> {
                 .toList());
         List<HomeworkEntry> outstandingHomework = students.stream()
                 .flatMap(student -> student.getHomeworks().stream()
-                        .filter(Homework::isAssigned)
+                        .filter(homework -> homework.getScore().isEmpty())
                         .map(homework -> new HomeworkEntry(student, homework)))
                 .sorted(HOMEWORK_ORDER)
                 .toList();

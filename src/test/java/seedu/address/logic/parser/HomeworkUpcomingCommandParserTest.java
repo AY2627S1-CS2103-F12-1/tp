@@ -50,6 +50,27 @@ public class HomeworkUpcomingCommandParserTest {
     }
 
     @Test
+    public void parse_quotedDays_success() {
+        assertParseSuccess(parser, "due/\"3\"", new HomeworkUpcomingCommand(TODAY, 3));
+        assertParseSuccess(parser, " due/  \"0\"  ", new HomeworkUpcomingCommand(TODAY, 0));
+
+        // spaces at both ends inside the quotes are removed
+        assertParseSuccess(parser, "due/\" 3 \"", new HomeworkUpcomingCommand(TODAY, 3));
+    }
+
+    @Test
+    public void parse_invalidQuotedDays_failure() {
+        // empty quotes, rejected like an empty unquoted value
+        assertParseFailure(parser, "due/\"\"", MESSAGE_INVALID_DAYS);
+
+        // only spaces inside the quotes
+        assertParseFailure(parser, "due/\" \"", MESSAGE_INVALID_DAYS);
+
+        // spaces between digits are kept
+        assertParseFailure(parser, "due/\"1 0\"", MESSAGE_INVALID_DAYS);
+    }
+
+    @Test
     public void parse_invalidDays_failure() {
         // one above the largest number of days
         assertParseFailure(parser, "due/366", MESSAGE_INVALID_DAYS);

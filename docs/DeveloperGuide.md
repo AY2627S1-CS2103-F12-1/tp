@@ -183,6 +183,46 @@ Classes used by multiple components are in the `seedu.address.commons` package.
 
 This section describes some noteworthy details on how certain features are implemented.
 
+### Splitting arguments at prefixes
+
+`StrictArgumentTokenizer` splits the arguments of `add`, `lesson add`, `lesson delete` and every homework subcommand into a preamble (the text before the first prefix, such as the indices in `hw e 1 2 t/Algebra`) and the value of each prefix. Any lowercase word followed by `/` at the start of the arguments or after whitespace is a prefix, so a `/` inside a word such as `3/4` does not start one. Each prefix is checked in the order it appears: an unknown prefix gives the caller's "Invalid command format." message, and a repeated prefix gives `Prefix X must be specified exactly once.` A caller may also pass a `ValueTokenFilter`, which keeps some prefix-shaped words in the previous value; `StudentAddParser` uses one so that names can contain words such as `s/o` and `d/o`.
+
+**Quoted values.** A value wrapped in double quotes may contain prefix-shaped words. After reading a prefix, `StrictArgumentTokenizer#findQuotedValueEnd` decides whether its value is quoted:
+
+1. It skips the whitespace after the prefix. If the next character is not `"`, the value is not quoted.
+1. It looks at each later `"` in turn. The first one that is followed by only whitespace up to the end of the arguments, or by whitespace and one of the command's allowed prefixes, closes the value.
+1. If no `"` closes the value, the value is not quoted and is read exactly as before quoting was added.
+
+For a quoted value, the tokenizer continues searching for prefixes after the closing quote, so the prefix-shaped words inside the quotes are never treated as prefixes. It also skips the `ValueTokenFilter` for the prefix right after the closing quote, since the quotes have already ended the value. The value is then stripped, its outer quotes are removed, and the text inside them is stripped again, so `t/" Speed in km/h "` gives `Speed in km/h`; quotes and whitespace between words inside it are kept. Empty quotes, or quotes with only whitespace inside, give an empty value, as a prefix with nothing after it does. The caller validates the result like any other value, so quoting works the same way in every command that uses the tokenizer.
+
+For example, with the allowed prefixes `title/`, `t/`, `s/` and `due/` of `hw add`, the value of `t/` in `hw add 1 t/"Read "Hamlet" km/h" s/MATH due/2026-11-02` starts with `"`. The quote before `Hamlet` is followed by `Hamlet`, and the quote after `Hamlet` is followed by ` km/`, which is not an allowed prefix, so neither closes the value. The quote after `km/h` is followed by ` s/`, so it closes the value. The search for prefixes resumes there and finds `s/` and `due/`, and the title is `Read "Hamlet" km/h`. In `hw add 1 t/"Speed in km/h s/MATH due/2026-11-02`, no quote closes the value, so `km/` is read as an unknown prefix and the command is rejected, as it is without quotes.
+
+#### Design considerations:
+
+**Aspect: Where a quoted value ends:**
+
+* **Alternative 1 (current choice):** At the first `"` that is followed by the end of the arguments, or by whitespace and one of the command's allowed prefixes.
+  * Pros: A value can contain both quotes and a word such as `km/`, e.g. `Read "Hamlet" km/h`. Input without quotes, and values whose quote is never closed, are read as before.
+  * Cons: A value cannot contain a `"` followed by whitespace and one of the command's own prefixes. For example, in `add n/"Ravi" s/o Kumar …` the quote after `Ravi` closes the name, so `s/` is read as a second subjects prefix.
+
+* **Alternative 2:** At the next `"`.
+  * Pros: Simpler to explain and to implement.
+  * Cons: A value cannot hold a quote and a word such as `km/` together, because the first quote inside the value would end it.
+
+* **Alternative 3:** Allow escaping a quote inside a quoted value, e.g. `\"`.
+  * Pros: Any text can be entered.
+  * Cons: Users must learn escape rules, and a `\` in a value would need escaping too. Rejected to keep typing commands simple.
+
+**Aspect: Whitespace at the ends inside the quotes:**
+
+* **Alternative 1 (current choice):** Strip it, as for a value without quotes.
+  * Pros: Quotes change only which words are read as prefixes, so `due/" 3 "` means the same as `due/ 3 `, and a stray space typed after `"` does not make a name or a number invalid.
+  * Cons: A value cannot start or end with a space. No field needs that: names and titles have their extra spaces removed anyway.
+
+* **Alternative 2:** Keep the text inside the quotes exactly as typed.
+  * Pros: Quotes would mean "exactly this text", as in a shell.
+  * Cons: `due/" 3 "` would be rejected while `due/ 3 ` is accepted, and every value class would see spaces it never sees from unquoted input.
+
 ### Listing and deleting students
 
 `AddressBookParser` routes `list` and its alias `ls` to `ListCommandParser`, which rejects non-blank arguments. `ListCommand` resets the displayed-student predicate, reads `Model#getStudentList()`, and asks the UI to show the roster from the top. It reports `No students found.` for an empty roster, `Listed 1 student.` for one student, and `Listed N students.` otherwise. Because the stored roster is unchanged, `LogicManager` does not save the data file.
@@ -638,6 +678,39 @@ testers are expected to do more *exploratory* testing.
 
    1. Make `data/tutorflow.json` read-only, then run `hw e 1 1 t/Changed title` and `hw m 1 1 score/9/10`.<br>
       Expected: Each shows that the homework could not be edited, or that its marks could not be recorded, and that no homework data was changed. `hw ls 1` is unchanged.
+
+### Quoting values
+
+1. Values containing prefix-like words
+
+   1. Prerequisites: Start with the sample students.
+
+   1. Test case: `hw add 1 t/"Speed in km/h" s/PHYSICS due/2026-11-01`<br>
+      Expected: `New homework added:` followed by `Ethan Lim; Title: Speed in km/h; Subject: PHYSICS; Due: 2026-11-01`.
+
+   1. Test case: `hw add 1 t/"Read "Hamlet" km/h" s/MATH due/2026-11-02`<br>
+      Expected: The title is `Read "Hamlet" km/h`: the outer quotes are removed and the inner ones kept.
+
+   1. Test case: `hw add 1 t/"Speed" extra s/PHYSICS due/2026-11-03`<br>
+      Expected: The title is `"Speed" extra`, as typed, because the value does not end with a quote.
+
+   1. Test case: `hw add 1 t/"Speed in km/h s/PHYSICS due/2026-11-04`, then `hw add 1 t/Speed in km/h s/PHYSICS due/2026-11-04`<br>
+      Expected: An invalid command format error each time, and no homework is added.
+
+   1. Test case: `hw add 1 t/"  Speed in km/h  " s/PHYSICS due/2026-11-05`<br>
+      Expected: The title is `Speed in km/h`: the spaces at both ends inside the quotes are removed.
+
+   1. Test case: `hw add 1 t/"" s/PHYSICS due/2026-11-06`, then `hw add 1 t/" " s/PHYSICS due/2026-11-06`<br>
+      Expected: The same title error as for `hw add 1 t/ s/PHYSICS due/2026-11-06`, and no homework is added.
+
+   1. Test case: `hw up due/" 3 "`<br>
+      Expected: The same result as `hw up due/3`.
+
+   1. Test case: `add n/"Ravi s/o Kumar" l/S3 s/MATH p/91230000 gn/"Maya l/ Raj" gp/98760000`<br>
+      Expected: `New student added: Ravi s/o Kumar; Level: S3; Subjects: MATH; Phone: 91230000; Guardian: Maya l/ Raj; Guardian phone: 98760000`. Without the quotes around the guardian name, the command is rejected with `Prefix l/ must be specified exactly once.`
+
+   1. Test case: `lesson add 7 s/"MATH" d/"TUESDAY" st/"16:00" et/"18:00"` (7 is the student added above)<br>
+      Expected: `New lesson added: Ravi s/o Kumar; MATH; TUESDAY; 16:00-18:00`.
 
 ### Deleting homework
 

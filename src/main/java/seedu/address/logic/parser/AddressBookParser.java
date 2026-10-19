@@ -33,12 +33,12 @@ public class AddressBookParser {
 
     private final Clock clock;
 
-    /** Creates a parser whose {@code homework add} command infers due date years from the system clock. */
+    /** Creates a parser whose {@code homework} commands take today's date from the system clock. */
     public AddressBookParser() {
         this(Clock.systemDefaultZone());
     }
 
-    /** Creates a parser whose {@code homework add} command infers due date years from {@code clock}. */
+    /** Creates a parser whose {@code homework} commands take today's date from {@code clock}. */
     public AddressBookParser(Clock clock) {
         this.clock = requireNonNull(clock);
     }

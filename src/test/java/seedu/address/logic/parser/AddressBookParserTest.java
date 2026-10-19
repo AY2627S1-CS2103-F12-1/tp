@@ -10,6 +10,7 @@ import static seedu.address.testutil.TypicalHomeworks.MECHANICS;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
 
@@ -116,8 +117,9 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_homeworkAliasList() throws Exception {
-        HomeworkListCommand command = (HomeworkListCommand) parser.parseCommand("hw ls 5");
-        assertEquals(new HomeworkListCommand(Index.fromOneBased(5)), command);
+        Clock clock = Clock.fixed(Instant.parse("2026-10-05T00:00:00Z"), ZoneOffset.UTC);
+        HomeworkListCommand command = (HomeworkListCommand) new AddressBookParser(clock).parseCommand("hw ls 5");
+        assertEquals(new HomeworkListCommand(Index.fromOneBased(5), LocalDate.of(2026, 10, 5), false), command);
     }
 
     @Test

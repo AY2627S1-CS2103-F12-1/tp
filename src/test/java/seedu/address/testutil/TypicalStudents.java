@@ -15,7 +15,7 @@ import seedu.address.model.student.Student;
  * A utility class containing a list of {@code Student} objects to be used in tests.
  */
 public class TypicalStudents {
-    /** Takes all three subjects and has three homework records, the last one completed. */
+    /** Takes all three subjects and has three homework records, the last one with a score. */
     public static final Student ALICE = new StudentBuilder().withName("Alice Tan").withPhone("91111111")
             .withSubjects("MATH, PHYSICS, CHEMISTRY").withHomeworks(ALGEBRA, MECHANICS, ATOMIC_STRUCTURE).build();
     /** Takes math only and has no homework. */

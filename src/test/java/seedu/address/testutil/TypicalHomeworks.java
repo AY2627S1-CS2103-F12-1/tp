@@ -3,7 +3,6 @@ package seedu.address.testutil;
 import java.util.List;
 
 import seedu.address.model.homework.Homework;
-import seedu.address.model.homework.HomeworkStatus;
 
 /**
  * A utility class containing a list of {@code Homework} objects to be used in tests.
@@ -14,8 +13,8 @@ public class TypicalHomeworks {
     public static final Homework MECHANICS = new HomeworkBuilder().withTitle("Attempt mechanics questions 1-5")
             .withSubject("PHYSICS").withDueDate("2026-10-20").build();
     public static final Homework ATOMIC_STRUCTURE = new HomeworkBuilder().withTitle("Revise atomic structure")
-            .withSubject("CHEMISTRY").withDueDate("2026-10-18").withStatus(HomeworkStatus.COMPLETED)
-            .withScore(85).build();
+            .withSubject("CHEMISTRY").withDueDate("2026-10-18").withScore("17/20")
+            .build();
 
     private TypicalHomeworks() {} // prevents instantiation
 

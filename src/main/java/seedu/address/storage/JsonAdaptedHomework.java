@@ -1,14 +1,17 @@
 package seedu.address.storage;
 
 import java.util.function.Function;
+import java.util.logging.Logger;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 
+import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.model.homework.DueDate;
 import seedu.address.model.homework.Homework;
-import seedu.address.model.homework.HomeworkStatus;
 import seedu.address.model.homework.Score;
 import seedu.address.model.homework.Title;
 import seedu.address.model.student.TuitionSubject;
@@ -19,12 +22,15 @@ import seedu.address.model.student.TuitionSubject;
 class JsonAdaptedHomework {
 
     public static final String MISSING_FIELD_MESSAGE_FORMAT = "Homework's %s field is missing!";
+    public static final String INVALID_NUMBER_SCORE_WARNING_FORMAT =
+            "Ignored invalid homework score %s for '%s'";
+
+    private static final Logger logger = LogsCenter.getLogger(JsonAdaptedHomework.class);
 
     private final String title;
     private final String subject;
     private final String dueDate;
-    private final String status;
-    private final Object score;
+    private final JsonNode score;
 
     /**
      * Constructs a {@code JsonAdaptedHomework} with the given homework details, as read from the JSON file.
@@ -32,19 +38,15 @@ class JsonAdaptedHomework {
      * @param title Title of the homework, or null if the field is missing.
      * @param subject Subject of the homework, such as {@code MATH}, or null if the field is missing.
      * @param dueDate Due date in {@code YYYY-MM-DD} format, or null if the field is missing.
-     * @param status Status of the homework, {@code ASSIGNED} or {@code COMPLETED}, or null if the field is missing.
-     * @param score Score received for the homework, or null if none is recorded. It is kept as read from the JSON
-     *     file (e.g. a {@code Double} for {@code 85.5}) so that {@link #toModelType()} can reject a score that is
-     *     not a whole number instead of truncating it.
+     * @param score Score as text in {@code MARKS} or {@code MARKS_OBTAINED/TOTAL_MARKS} format, a number as saved
+     *         before scores were text, or null if none is recorded.
      */
     @JsonCreator
     public JsonAdaptedHomework(@JsonProperty("title") String title, @JsonProperty("subject") String subject,
-            @JsonProperty("dueDate") String dueDate, @JsonProperty("status") String status,
-            @JsonProperty("score") Object score) {
+            @JsonProperty("dueDate") String dueDate, @JsonProperty("score") JsonNode score) {
         this.title = title;
         this.subject = subject;
         this.dueDate = dueDate;
-        this.status = status;
         this.score = score;
     }
 
@@ -55,8 +57,7 @@ class JsonAdaptedHomework {
         title = source.getTitle().toString();
         subject = source.getSubject().name();
         dueDate = source.getDueDate().toString();
-        status = source.getStatus().name();
-        score = source.getScore().map(Score::getValue).orElse(null);
+        score = source.getScore().map(modelScore -> TextNode.valueOf(modelScore.toString())).orElse(null);
     }
 
     /**
@@ -71,26 +72,40 @@ class JsonAdaptedHomework {
                 TuitionSubject.MESSAGE_CONSTRAINTS);
         final DueDate modelDueDate = toModelValue("dueDate", dueDate, DueDate::parseFullDate,
                 DueDate.MESSAGE_FULL_DATE_CONSTRAINTS);
-        final HomeworkStatus modelStatus = toModelValue("status", status, HomeworkStatus::parse,
-                HomeworkStatus.MESSAGE_CONSTRAINTS);
-        final Score modelScore = toModelScore(score);
-        return new Homework(modelTitle, modelSubject, modelDueDate, modelStatus, modelScore);
+        final Score modelScore = toModelScore(modelTitle);
+        return new Homework(modelTitle, modelSubject, modelDueDate, modelScore);
     }
 
     /**
-     * Returns the model score for the optional field {@code score}, or null if the field is missing.
+     * Returns the model score for the optional field {@code score}, or null if the field is missing or null.
+     * A JSON number, as saved before scores were text, is read like the same digits written as text, e.g. {@code 85}
+     * as the score {@code 85}. A number that is not a valid score, such as {@code 85.5}, is ignored with a warning
+     * instead of making the whole data file invalid.
      *
-     * @throws IllegalValueException If {@code score} is not a JSON whole number within the {@code int} range.
+     * @param modelTitle Title of the homework, used in the warning.
+     * @throws IllegalValueException If {@code score} is neither a number nor a valid score in {@code MARKS} or
+     *         {@code MARKS_OBTAINED/TOTAL_MARKS} format.
      */
-    private static Score toModelScore(Object score) throws IllegalValueException {
-        if (score == null) {
+    private Score toModelScore(Title modelTitle) throws IllegalValueException {
+        if (score == null || score.isNull()) {
             return null;
         }
-        // Jackson reads a whole number within the int range as an Integer, and 85.5 as a Double
-        if (!(score instanceof Integer value)) {
+        if (score.isNumber()) {
+            try {
+                return Score.parse(score.asText());
+            } catch (IllegalArgumentException exception) {
+                logger.warning(String.format(INVALID_NUMBER_SCORE_WARNING_FORMAT, score, modelTitle));
+                return null;
+            }
+        }
+        if (!score.isTextual()) {
             throw new IllegalValueException(Score.MESSAGE_CONSTRAINTS);
         }
-        return new Score(value);
+        try {
+            return Score.parse(score.textValue());
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalValueException(exception.getMessage());
+        }
     }
 
     /**

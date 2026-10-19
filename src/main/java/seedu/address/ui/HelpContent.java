@@ -9,7 +9,9 @@ import seedu.address.logic.commands.ExitCommand;
 import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
+import seedu.address.logic.commands.HomeworkEditCommand;
 import seedu.address.logic.commands.HomeworkListCommand;
+import seedu.address.logic.commands.HomeworkMarksCommand;
 import seedu.address.logic.commands.LessonAddCommand;
 import seedu.address.logic.commands.LessonDeleteCommand;
 import seedu.address.logic.commands.LessonListCommand;
@@ -56,8 +58,23 @@ public final class HelpContent {
                             "hw add 1 t/Algebra worksheet s/MATH due/2026-10-15"),
                     new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_LIST,
                             HomeworkListCommand.MESSAGE_USAGE,
-                            "Lists the homework of the student at STUDENT_INDEX, numbered from 1.",
+                            "Lists the homework of the student at STUDENT_INDEX that is due today or later, earliest"
+                                    + " first, with its score. Add all to list overdue homework too. Each homework"
+                                    + " keeps its number, the HOMEWORK_INDEX used by the other homework commands.",
                             "hw ls 1"),
+                    new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_EDIT,
+                            HomeworkEditCommand.MESSAGE_USAGE,
+                            "Changes the title, subject or due date of homework number HOMEWORK_INDEX, as numbered"
+                                    + " by homework list, of the student at STUDENT_INDEX. Give at least one of them;"
+                                    + " the other details and the score stay unchanged.",
+                            "hw e 1 2 t/Complete algebra questions 1-10"),
+                    new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_MARKS,
+                            HomeworkMarksCommand.MESSAGE_USAGE,
+                            "Records the marks of homework number HOMEWORK_INDEX of the student at STUDENT_INDEX,"
+                                    + " replacing any marks recorded before. SCORE is a whole number, e.g. 17, or"
+                                    + " MARKS_OBTAINED/TOTAL_MARKS, e.g. 5/10, with whole numbers and marks obtained"
+                                    + " from 0 to the total. Leave SCORE empty to clear the recorded marks.",
+                            "hw m 1 2 score/5/10"),
                     new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_DELETE,
                             HomeworkDeleteCommand.MESSAGE_USAGE,
                             "Deletes homework number HOMEWORK_INDEX, as numbered by homework list, from the student"

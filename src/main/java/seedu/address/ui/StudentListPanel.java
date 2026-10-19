@@ -1,13 +1,21 @@
 package seedu.address.ui;
 
 import java.time.LocalDate;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
 
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.geometry.Orientation;
+import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.ScrollBar;
 import javafx.scene.layout.Region;
 import seedu.address.model.student.Student;
 
@@ -16,6 +24,11 @@ import seedu.address.model.student.Student;
  */
 public class StudentListPanel extends UiPart<Region> {
     private static final String FXML = "StudentListPanel.fxml";
+
+    private final BiFunction<Student, Integer, Region> cardFactory;
+    private Map<Integer, RenderedCard> renderedCards = new HashMap<>();
+    private boolean isSorting;
+    private RuntimeException renderingFailure;
 
     @FXML
     private Label studentCount;
@@ -26,7 +39,15 @@ public class StudentListPanel extends UiPart<Region> {
      * Creates a panel that updates when the given student list changes.
      */
     public StudentListPanel(ObservableList<Student> students) {
+        this(students, (student, index) -> new StudentCard(student, index, LocalDate.now()).getRoot());
+    }
+
+    /**
+     * Creates a panel with a controllable card renderer for recovery tests.
+     */
+    StudentListPanel(ObservableList<Student> students, BiFunction<Student, Integer, Region> cardFactory) {
         super(FXML);
+        this.cardFactory = cardFactory;
         studentListView.setItems(students);
         studentListView.setCellFactory(unused -> new StudentListViewCell());
         updateStudentCount(students.size());
@@ -43,15 +64,144 @@ public class StudentListPanel extends UiPart<Region> {
         studentListView.scrollTo(0);
     }
 
+    /**
+     * Captures the visible state and retains old cards before a sort can notify the list view.
+     */
+    public ViewState beginSort() {
+        Map<Orientation, Double> scrollPositions = new EnumMap<>(Orientation.class);
+        for (Node node : studentListView.lookupAll(".scroll-bar")) {
+            ScrollBar scrollBar = (ScrollBar) node;
+            scrollPositions.put(scrollBar.getOrientation(), scrollBar.getValue());
+        }
+        ViewState state = new ViewState(List.copyOf(studentListView.getSelectionModel().getSelectedIndices()),
+                studentListView.getFocusModel().getFocusedIndex(), scrollPositions, new HashMap<>(renderedCards));
+        isSorting = true;
+        renderingFailure = null;
+        renderedCards = new HashMap<>();
+        return state;
+    }
+
+    /**
+     * Checks every candidate card, including offscreen records, and forces the visible cell layout.
+     */
+    public void verifySortRendering() {
+        for (int i = 0; i < studentListView.getItems().size(); i++) {
+            renderCard(studentListView.getItems().get(i), i);
+        }
+        studentListView.refresh();
+        getRoot().applyCss();
+        getRoot().layout();
+        if (renderingFailure != null) {
+            throw renderingFailure;
+        }
+    }
+
+    /**
+     * Makes the previous cards available before the model restores its previous order.
+     */
+    public void prepareRestore(ViewState state) {
+        renderedCards = new HashMap<>(state.renderedCards);
+        renderingFailure = null;
+    }
+
+    /**
+     * Restores selection, focus and scrollbar positions after the previous order is restored.
+     */
+    public void restoreViewState(ViewState state) {
+        studentListView.refresh();
+        getRoot().applyCss();
+        getRoot().layout();
+        studentListView.getSelectionModel().clearSelection();
+        for (int index : state.selectedIndices) {
+            studentListView.getSelectionModel().select(index);
+        }
+        studentListView.getFocusModel().focus(state.focusedIndex);
+        for (Node node : studentListView.lookupAll(".scroll-bar")) {
+            ScrollBar scrollBar = (ScrollBar) node;
+            Double position = state.scrollPositions.get(scrollBar.getOrientation());
+            if (position != null) {
+                scrollBar.setValue(position);
+            }
+        }
+        if (renderingFailure != null) {
+            throw renderingFailure;
+        }
+    }
+
+    /**
+     * Ends the sort rendering boundary after successful rendering or restoration.
+     */
+    public void endSort() {
+        isSorting = false;
+        renderingFailure = null;
+    }
+
+    /**
+     * Reuses verified cards so later virtualized cells do not repeat candidate card creation.
+     */
+    private Region renderCard(Student student, int index) {
+        RenderedCard rendered = renderedCards.get(index);
+        if (rendered == null || rendered.student() != student) {
+            rendered = new RenderedCard(student, cardFactory.apply(student, index + 1));
+            renderedCards.put(index, rendered);
+        }
+        return rendered.root();
+    }
+
+    /**
+     * Holds an occurrence's rendered card without using student equality as its identity.
+     */
+    private record RenderedCard(Student student, Region root) {
+    }
+
+    /**
+     * Holds the previous UI state privately while a sort is being rendered.
+     */
+    public static final class ViewState {
+        private final List<Integer> selectedIndices;
+        private final int focusedIndex;
+        private final Map<Orientation, Double> scrollPositions;
+        private final Map<Integer, RenderedCard> renderedCards;
+
+        private ViewState(List<Integer> selectedIndices, int focusedIndex,
+                Map<Orientation, Double> scrollPositions, Map<Integer, RenderedCard> renderedCards) {
+            this.selectedIndices = selectedIndices;
+            this.focusedIndex = focusedIndex;
+            this.scrollPositions = scrollPositions;
+            this.renderedCards = renderedCards;
+        }
+    }
+
     /** Displays a student card with its current one-based roster index. */
-    private static class StudentListViewCell extends ListCell<Student> {
+    private class StudentListViewCell extends ListCell<Student> {
         @Override
         protected void updateItem(Student student, boolean isEmpty) {
             super.updateItem(student, isEmpty);
+            updateCard();
+        }
+
+        @Override
+        public void updateIndex(int index) {
+            super.updateIndex(index);
+            updateCard();
+        }
+
+        /**
+         * Records cell callback failures at the sort boundary instead of losing them in event dispatch.
+         */
+        private void updateCard() {
             setText(null);
-            setGraphic(isEmpty || student == null
-                    ? null
-                    : new StudentCard(student, getIndex() + 1, LocalDate.now()).getRoot());
+            try {
+                setGraphic(isEmpty() || getItem() == null || getIndex() < 0
+                        ? null : renderCard(getItem(), getIndex()));
+            } catch (RuntimeException exception) {
+                if (!isSorting) {
+                    throw exception;
+                }
+                if (renderingFailure == null) {
+                    renderingFailure = exception;
+                }
+            }
         }
     }
 }

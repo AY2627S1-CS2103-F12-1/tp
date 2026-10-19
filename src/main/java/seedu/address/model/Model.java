@@ -1,5 +1,6 @@
 package seedu.address.model;
 
+import java.util.List;
 import java.util.function.Predicate;
 
 import javafx.collections.ObservableList;
@@ -56,4 +57,10 @@ public interface Model {
 
     /** Updates the students displayed in the UI without changing the stored roster. */
     void updateFilteredStudentList(Predicate<Student> predicate);
+
+    /**
+     * Reorders the displayed occurrences without changing the active predicate or stored roster.
+     * The supplied list must contain the same student references with the same multiplicities.
+     */
+    void setStudentListOrder(List<Student> students);
 }

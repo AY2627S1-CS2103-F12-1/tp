@@ -60,6 +60,21 @@ public class LessonAddCommandTest {
     }
 
     @Test
+    public void execute_clashWithStudentHiddenBySearch_rejectedWithoutChangingModel() throws Exception {
+        ModelManager model = model();
+        parser.parseCommand(command(1, "14:00", "16:00")).execute(model);
+        parser.parseCommand("search Lim").execute(model);
+        AddressBook before = new AddressBook(model.getAddressBook());
+
+        CommandException exception = assertThrows(CommandException.class, () ->
+                parser.parseCommand(command(1, "15:00", "17:00")).execute(model));
+
+        assertEquals(LessonAddCommand.MESSAGE_CLASH + "John Tan; MATH; MONDAY; 14:00-16:00",
+                exception.getMessage());
+        assertEquals(before, model.getAddressBook());
+    }
+
+    @Test
     public void execute_multipleClashes_reportsEveryConflictingLesson() throws Exception {
         ModelManager model = new ModelManager();
         model.addStudent(new StudentBuilder()

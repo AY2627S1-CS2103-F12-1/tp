@@ -1,0 +1,126 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+
+box Logic LOGIC_COLOR_T1
+participant ":LogicManager" as LogicManager LOGIC_COLOR
+participant ":AddressBookParser" as AddressBookParser LOGIC_COLOR
+participant ":HomeworkCommandParser" as HomeworkCommandParser LOGIC_COLOR
+participant ":HomeworkEditCommandParser" as HomeworkEditCommandParser LOGIC_COLOR
+participant "desc:EditHomeworkDescriptor" as EditHomeworkDescriptor LOGIC_COLOR
+participant "e:HomeworkEditCommand" as HomeworkEditCommand LOGIC_COLOR
+participant "<<class>>\nHomeworkListCommand" as HomeworkListCommand LOGIC_COLOR
+participant "r:CommandResult" as CommandResult LOGIC_COLOR
+end box
+
+box Model MODEL_COLOR_T1
+participant "m:Model" as Model MODEL_COLOR
+end box
+
+box Storage STORAGE_COLOR_T1
+participant ":Storage" as Storage STORAGE_COLOR
+end box
+
+[-> LogicManager : execute("hw e 1 2 t/Algebra")
+activate LogicManager
+
+LogicManager -> AddressBookParser : parseCommand("hw e 1 2 t/Algebra")
+activate AddressBookParser
+
+create HomeworkCommandParser
+AddressBookParser -> HomeworkCommandParser
+activate HomeworkCommandParser
+
+HomeworkCommandParser --> AddressBookParser
+deactivate HomeworkCommandParser
+
+AddressBookParser -> HomeworkCommandParser : parse("e 1 2 t/Algebra")
+activate HomeworkCommandParser
+
+create HomeworkEditCommandParser
+HomeworkCommandParser -> HomeworkEditCommandParser
+activate HomeworkEditCommandParser
+
+HomeworkEditCommandParser --> HomeworkCommandParser
+deactivate HomeworkEditCommandParser
+
+HomeworkCommandParser -> HomeworkEditCommandParser : parse("1 2 t/Algebra")
+activate HomeworkEditCommandParser
+
+create EditHomeworkDescriptor
+HomeworkEditCommandParser -> EditHomeworkDescriptor
+activate EditHomeworkDescriptor
+
+EditHomeworkDescriptor --> HomeworkEditCommandParser
+deactivate EditHomeworkDescriptor
+
+create HomeworkEditCommand
+HomeworkEditCommandParser -> HomeworkEditCommand
+activate HomeworkEditCommand
+
+HomeworkEditCommand --> HomeworkEditCommandParser
+deactivate HomeworkEditCommand
+
+HomeworkEditCommandParser --> HomeworkCommandParser : e
+deactivate HomeworkEditCommandParser
+'Hidden arrow to position the destroy marker below the end of the activation bar.
+HomeworkEditCommandParser -[hidden]-> HomeworkCommandParser
+destroy HomeworkEditCommandParser
+
+HomeworkCommandParser --> AddressBookParser : e
+deactivate HomeworkCommandParser
+'Hidden arrow to position the destroy marker below the end of the activation bar.
+HomeworkCommandParser -[hidden]-> AddressBookParser
+destroy HomeworkCommandParser
+
+AddressBookParser --> LogicManager : e
+deactivate AddressBookParser
+
+LogicManager -> HomeworkEditCommand : execute(m)
+activate HomeworkEditCommand
+
+HomeworkEditCommand -> Model : getStudentList()
+activate Model
+
+Model --> HomeworkEditCommand : students
+deactivate Model
+
+HomeworkEditCommand -> EditHomeworkDescriptor : applyTo(h)
+activate EditHomeworkDescriptor
+
+EditHomeworkDescriptor --> HomeworkEditCommand : edited
+deactivate EditHomeworkDescriptor
+
+HomeworkEditCommand -> HomeworkListCommand : formatHomeworkList(s2, today, false)
+activate HomeworkListCommand
+
+HomeworkListCommand --> HomeworkEditCommand : list
+deactivate HomeworkListCommand
+
+HomeworkEditCommand -> Model : setStudent(s, s2)
+activate Model
+
+Model --> HomeworkEditCommand
+deactivate Model
+
+create CommandResult
+HomeworkEditCommand -> CommandResult
+activate CommandResult
+
+CommandResult --> HomeworkEditCommand
+deactivate CommandResult
+
+HomeworkEditCommand --> LogicManager : r
+deactivate HomeworkEditCommand
+
+opt data changed
+LogicManager -> Storage : saveAddressBook(m.getAddressBook())
+activate Storage
+
+Storage --> LogicManager
+deactivate Storage
+end
+
+[<--LogicManager
+deactivate LogicManager
+@enduml

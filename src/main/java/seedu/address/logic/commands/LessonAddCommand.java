@@ -69,7 +69,8 @@ public class LessonAddCommand extends Command {
         if (student.getLessons().contains(lesson)) {
             throw new CommandException(MESSAGE_DUPLICATE);
         }
-        List<String> clashingLessons = LessonSchedule.from(students).stream()
+        // A search can hide students, but their lessons still occupy the shared weekly schedule.
+        List<String> clashingLessons = LessonSchedule.from(model.getAddressBook().getStudentList()).stream()
                 .filter(entry -> lesson.clashesWith(entry.lesson()))
                 .map(entry -> entry.student().getName() + "; " + entry.lesson())
                 .toList();

@@ -13,8 +13,11 @@ import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.commons.util.JsonUtil;
 import seedu.address.model.AddressBook;
 import seedu.address.model.homework.DueDate;
-import seedu.address.model.homework.Score;
+import seedu.address.model.student.Student;
 import seedu.address.model.student.StudentPhone;
+import seedu.address.testutil.AddressBookBuilder;
+import seedu.address.testutil.HomeworkBuilder;
+import seedu.address.testutil.StudentBuilder;
 import seedu.address.testutil.TypicalStudents;
 
 public class JsonSerializableAddressBookTest {
@@ -23,7 +26,8 @@ public class JsonSerializableAddressBookTest {
     private static final Path TYPICAL_STUDENTS_FILE = TEST_DATA_FOLDER.resolve("typicalStudentsAddressBook.json");
     private static final Path INVALID_STUDENT_FILE = TEST_DATA_FOLDER.resolve("invalidStudentAddressBook.json");
     private static final Path INVALID_HOMEWORK_FILE = TEST_DATA_FOLDER.resolve("invalidHomeworkAddressBook.json");
-    private static final Path DECIMAL_SCORE_FILE = TEST_DATA_FOLDER.resolve("decimalScoreAddressBook.json");
+    private static final Path SINGLE_NUMBER_SCORE_FILE =
+            TEST_DATA_FOLDER.resolve("singleNumberScoreAddressBook.json");
     private static final Path DUPLICATE_STUDENT_FILE = TEST_DATA_FOLDER.resolve("duplicateStudentAddressBook.json");
     private static final Path MISSING_STUDENTS_FILE = TEST_DATA_FOLDER.resolve("missingStudentsAddressBook.json");
 
@@ -51,10 +55,20 @@ public class JsonSerializableAddressBookTest {
     }
 
     @Test
-    public void toModelType_decimalScore_throwsIllegalValueException() throws Exception {
-        JsonSerializableAddressBook dataFromFile = JsonUtil.readJsonFile(DECIMAL_SCORE_FILE,
+    public void toModelType_singleNumberScore_loadsBareScore() throws Exception {
+        // The number 85, as saved before scores were text, and the text "85" both load as the score 85; the
+        // invalid number 85.5 is dropped, and the rest of the file still loads
+        JsonSerializableAddressBook dataFromFile = JsonUtil.readJsonFile(SINGLE_NUMBER_SCORE_FILE,
                 JsonSerializableAddressBook.class).get();
-        assertThrows(IllegalValueException.class, Score.MESSAGE_CONSTRAINTS, dataFromFile::toModelType);
+        Student expectedStudent = new StudentBuilder().withName("Alice Tan").withPhone("91111111")
+                .withHomeworks(new HomeworkBuilder().withScore("85").build(),
+                        new HomeworkBuilder().withTitle("Revise quadratic equations").withDueDate("2026-10-22")
+                                .withScore("7/10").build(),
+                        new HomeworkBuilder().withTitle("Attempt factorization questions").withDueDate("2026-10-29")
+                                .withScore("85").build(),
+                        new HomeworkBuilder().withTitle("Revise indices").withDueDate("2026-11-05").build())
+                .build();
+        assertEquals(new AddressBookBuilder().withStudent(expectedStudent).build(), dataFromFile.toModelType());
     }
 
     @Test

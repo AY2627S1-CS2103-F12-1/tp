@@ -8,6 +8,7 @@ import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalHomeworks.ATOMIC_STRUCTURE;
 import static seedu.address.testutil.TypicalHomeworks.MECHANICS;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -72,16 +73,21 @@ public class StudentTest {
     }
 
     @Test
-    public void getAssignedHomeworkCount() {
+    public void getUpcomingHomeworkCount() {
+        // ALGEBRA is due on 2026-10-15, ATOMIC_STRUCTURE on 2026-10-18 and MECHANICS on 2026-10-20
+        Student student = new StudentBuilder().withHomeworks(ALGEBRA, ATOMIC_STRUCTURE, MECHANICS).build();
+
         // no homework
-        assertEquals(0, new StudentBuilder().build().getAssignedHomeworkCount());
+        assertEquals(0, new StudentBuilder().build().getUpcomingHomeworkCount(LocalDate.of(2026, 10, 15)));
 
-        // completed homework only
-        assertEquals(0, new StudentBuilder().withHomeworks(ATOMIC_STRUCTURE).build().getAssignedHomeworkCount());
+        // all homework due today or later
+        assertEquals(3, student.getUpcomingHomeworkCount(LocalDate.of(2026, 10, 15)));
 
-        // mixed statuses -> counts assigned only
-        assertEquals(2, new StudentBuilder().withHomeworks(ALGEBRA, ATOMIC_STRUCTURE, MECHANICS).build()
-                .getAssignedHomeworkCount());
+        // homework due before today is not counted
+        assertEquals(2, student.getUpcomingHomeworkCount(LocalDate.of(2026, 10, 16)));
+
+        // all homework overdue
+        assertEquals(0, student.getUpcomingHomeworkCount(LocalDate.of(2026, 10, 21)));
     }
 
     @Test
@@ -91,9 +97,9 @@ public class StudentTest {
         // no homework -> returns false
         assertFalse(new StudentBuilder().build().hasHomework(ALGEBRA));
 
-        // same identity with different title case and status -> returns true
+        // same identity with different title case and score -> returns true
         assertTrue(student.hasHomework(new HomeworkBuilder(ALGEBRA).withTitle("COMPLETE ALGEBRA WORKSHEET")
-                .withScore(70).build()));
+                .withScore("7/10").build()));
 
         // different homework -> returns false
         assertFalse(student.hasHomework(MECHANICS));

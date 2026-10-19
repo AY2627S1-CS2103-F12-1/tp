@@ -62,6 +62,15 @@ public final class StrictArgumentTokenizer {
     }
 
     /**
+     * Tokenizes strict parameters using a command-specific repeated-prefix message.
+     */
+    public static TokenizedArguments tokenize(String arguments, List<String> allowedPrefixes,
+            String invalidFormatMessage, String repeatedPrefixMessage) throws ParseException {
+        return tokenize(arguments, allowedPrefixes, invalidFormatMessage, false, NO_VALUE_TOKENS,
+                repeatedPrefixMessage);
+    }
+
+    /**
      * Returns the prefixed values in {@code arguments}, which must not contain any text before the first prefix.
      * A prefix-shaped token that {@code valueTokenFilter} accepts is kept as part of the preceding value.
      *
@@ -91,6 +100,16 @@ public final class StrictArgumentTokenizer {
     private static TokenizedArguments tokenize(String arguments, List<String> allowedPrefixes,
             String invalidFormatMessage, boolean isPreambleAllowed, ValueTokenFilter valueTokenFilter)
             throws ParseException {
+        return tokenize(arguments, allowedPrefixes, invalidFormatMessage, isPreambleAllowed, valueTokenFilter,
+                MESSAGE_REPEATED_PREFIX);
+    }
+
+    /**
+     * Applies the shared quoting and prefix rules with the caller's validation messages.
+     */
+    private static TokenizedArguments tokenize(String arguments, List<String> allowedPrefixes,
+            String invalidFormatMessage, boolean isPreambleAllowed, ValueTokenFilter valueTokenFilter,
+            String repeatedPrefixMessage) throws ParseException {
         requireAllNonNull(arguments, allowedPrefixes, invalidFormatMessage, valueTokenFilter);
         Matcher matcher = PREFIX_PATTERN.matcher(arguments);
         boolean hasNextPrefix = matcher.find();
@@ -119,7 +138,7 @@ public final class StrictArgumentTokenizer {
                 throw new ParseException(invalidFormatMessage);
             }
             if (values.containsKey(prefix) || prefix.equals(previousPrefix)) {
-                throw new ParseException(String.format(MESSAGE_REPEATED_PREFIX, prefix));
+                throw new ParseException(String.format(repeatedPrefixMessage, prefix));
             }
             previousPrefix = prefix;
             previousValueStart = matcher.end();

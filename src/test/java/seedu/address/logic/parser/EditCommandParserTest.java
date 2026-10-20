@@ -47,6 +47,12 @@ public class EditCommandParserTest {
     }
 
     @Test
+    public void parse_quotedNameContainingAllowedPrefix_preservesName() throws ParseException {
+        assertEquals(command(new StudentName("Ravi p/ Kumar"), null, null, null, null, null),
+                parser.parse("1 n/\"Ravi p/ Kumar\""));
+    }
+
+    @Test
     public void parse_missingFields_reportsUsage() {
         assertParseFailure("1", EditCommand.MESSAGE_NO_FIELDS);
         assertParseFailure(" 1   ", EditCommand.MESSAGE_NO_FIELDS);

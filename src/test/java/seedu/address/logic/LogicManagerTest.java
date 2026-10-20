@@ -45,6 +45,7 @@ import seedu.address.model.ModelManager;
 import seedu.address.model.ReadOnlyAddressBook;
 import seedu.address.model.UserPrefs;
 import seedu.address.model.homework.Score;
+import seedu.address.model.student.Student;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
 import seedu.address.storage.StorageManager;
@@ -300,6 +301,26 @@ public class LogicManagerTest {
                 .withGuardianPhone("95554444").withHomeworks(ALGEBRA).withLessons(MONDAY_MATH).build();
         assertEquals(List.of(expected), logic.getStudentList());
         assertEquals(List.of(expected), addressBookStorage.readAddressBook().get().getStudentList());
+    }
+
+    @Test
+    public void execute_editStudentAfterSearch_updatesSelectedStudentAndFilteredView() throws Exception {
+        Student first = new StudentBuilder().build();
+        Student second = new StudentBuilder().withName("Jane Tan").withPhone("92345678").build();
+        AddressBook initial = new AddressBook();
+        initial.addStudent(first);
+        initial.addStudent(second);
+        setUpLogic(initial, addressBookStorage);
+
+        logic.execute("search Jane");
+        logic.execute("edit 1 n/Jenna Tan");
+
+        Student edited = new StudentBuilder().withName("Jenna Tan").withPhone("92345678").build();
+        assertTrue(logic.getStudentList().isEmpty());
+        assertEquals(List.of(first, edited), addressBookStorage.readAddressBook().get().getStudentList());
+
+        logic.execute("list");
+        assertEquals(List.of(first, edited), logic.getStudentList());
     }
 
     @Test

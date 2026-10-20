@@ -1,0 +1,39 @@
+@startuml
+skinparam ParticipantFontColor #FFFFFF
+skinparam ParticipantBackgroundColor #3333C4
+skinparam ParticipantBorderColor #FFFFFF
+skinparam Shadowing false
+skinparam DefaultFontName Arial
+hide footbox
+skinparam ArrowFontStyle plain
+title Homework filter over the current student view (no save)
+participant ":LogicManager" as Logic #3333C4
+participant ":AddressBookParser" as Parser #3333C4
+participant "filter:HomeworkFilterCommand" as Filter #3333C4
+participant "m:ModelManager" as Model #9D0012
+
+[-> Logic : execute("hw filter 1 s/MATH due/2026-10-15")
+activate Logic
+Logic -> Parser : parseCommand(...)
+activate Parser
+note over Parser, Filter : HomeworkCommandParser delegates to HomeworkFilterCommandParser.\nThe parser validates student, subject, exact due date and status\nand creates a filter command. Short dates use the injected Clock.
+Parser --> Logic : filter
+deactivate Parser
+Logic -> Model : getAddressBook()
+Model --> Logic : current data
+note over Logic : Copy data into a snapshot.
+Logic -> Filter : execute(m)
+activate Filter
+Filter -> Model : getStudentList()
+activate Model
+Model --> Filter : displayed students
+deactivate Model
+note over Filter, Model : Validate the optional displayed student index.\nTraverse selected students and homework in insertion order.\nApply every supplied criterion (AND), including explicit status.\nInclude past dates; scores do not imply completion.\nRetain original student and homework indices in result lines.
+Filter --> Logic : CommandResult (matches or no matches)
+deactivate Filter
+Logic -> Model : getAddressBook()
+Model --> Logic : unchanged data
+note over Logic : Data equals snapshot: no storage call.\nStudent filtering and sorting remain unchanged.
+[<-- Logic : CommandResult
+deactivate Logic
+@enduml

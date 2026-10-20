@@ -21,11 +21,14 @@ import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
 import seedu.address.logic.commands.HomeworkEditCommand;
+import seedu.address.logic.commands.HomeworkFilterCommand;
 import seedu.address.logic.commands.HomeworkListCommand;
 import seedu.address.logic.commands.HomeworkMarksCommand;
+import seedu.address.logic.commands.HomeworkStatusCommand;
 import seedu.address.logic.commands.HomeworkUpcomingCommand;
 import seedu.address.logic.commands.LessonAddCommand;
 import seedu.address.logic.commands.LessonDeleteCommand;
+import seedu.address.logic.commands.LessonEditCommand;
 import seedu.address.logic.commands.LessonListCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.SearchCommand;
@@ -55,11 +58,14 @@ public class HelpContentTest {
                 Map.entry("homework list", HomeworkListCommand.MESSAGE_USAGE),
                 Map.entry("homework upcoming", HomeworkUpcomingCommand.MESSAGE_USAGE),
                 Map.entry("homework edit", HomeworkEditCommand.MESSAGE_USAGE),
+                Map.entry("homework filter", HomeworkFilterCommand.MESSAGE_USAGE),
+                Map.entry("homework status", HomeworkStatusCommand.MESSAGE_USAGE),
                 Map.entry("homework marks", HomeworkMarksCommand.MESSAGE_USAGE),
                 Map.entry("homework delete", HomeworkDeleteCommand.MESSAGE_USAGE),
                 Map.entry("lesson add", LessonAddCommand.MESSAGE_USAGE),
                 Map.entry("lesson list", LessonListCommand.MESSAGE_USAGE),
                 Map.entry("lesson delete", LessonDeleteCommand.MESSAGE_USAGE),
+                Map.entry("lesson edit", LessonEditCommand.MESSAGE_USAGE),
                 Map.entry(HelpCommand.COMMAND_WORD, HelpCommand.COMMAND_WORD),
                 Map.entry(ClearCommand.COMMAND_WORD, ClearCommand.COMMAND_WORD),
                 Map.entry(ExitCommand.COMMAND_WORD, ExitCommand.COMMAND_WORD));
@@ -84,11 +90,14 @@ public class HelpContentTest {
                 Map.entry("homework list", HomeworkListCommand.class),
                 Map.entry("homework upcoming", HomeworkUpcomingCommand.class),
                 Map.entry("homework edit", HomeworkEditCommand.class),
+                Map.entry("homework filter", HomeworkFilterCommand.class),
+                Map.entry("homework status", HomeworkStatusCommand.class),
                 Map.entry("homework marks", HomeworkMarksCommand.class),
                 Map.entry("homework delete", HomeworkDeleteCommand.class),
                 Map.entry("lesson add", LessonAddCommand.class),
                 Map.entry("lesson list", LessonListCommand.class),
                 Map.entry("lesson delete", LessonDeleteCommand.class),
+                Map.entry("lesson edit", LessonEditCommand.class),
                 Map.entry(HelpCommand.COMMAND_WORD, HelpCommand.class),
                 Map.entry(ClearCommand.COMMAND_WORD, ClearCommand.class),
                 Map.entry(ExitCommand.COMMAND_WORD, ExitCommand.class));

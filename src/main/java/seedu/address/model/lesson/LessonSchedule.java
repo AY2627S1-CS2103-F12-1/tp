@@ -32,6 +32,22 @@ public final class LessonSchedule {
     }
 
     /**
+     * Returns all clashes with a new lesson in weekly order.
+     */
+    public static List<Entry> findClashes(List<Student> students, RegularLesson candidate) {
+        requireNonNull(candidate);
+        return from(students).stream().filter(entry -> candidate.clashesWith(entry.lesson())).toList();
+    }
+
+    /**
+     * Returns clashes with a proposed edit, excluding its original entry.
+     */
+    public static List<Entry> findClashes(List<Student> students, RegularLesson candidate, Entry original) {
+        requireNonNull(original);
+        return findClashes(students, candidate).stream().filter(entry -> !entry.equals(original)).toList();
+    }
+
+    /**
      * Associates a regular lesson with its owning student.
      */
     public record Entry(Student student, RegularLesson lesson) {

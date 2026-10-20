@@ -115,11 +115,11 @@ public class HomeworkTest {
     @Test
     public void toStringMethod() {
         String expected = Homework.class.getCanonicalName() + "{title=Revise atomic structure, subject=CHEMISTRY, "
-                + "dueDate=2026-10-18, score=17/20}";
+                + "dueDate=2026-10-18, score=17/20, status=ASSIGNED}";
         assertEquals(expected, ATOMIC_STRUCTURE.toString());
 
         String expectedWithoutScore = Homework.class.getCanonicalName() + "{title=Complete algebra worksheet, "
-                + "subject=MATH, dueDate=2026-10-15, score=null}";
+                + "subject=MATH, dueDate=2026-10-15, score=null, status=ASSIGNED}";
         assertEquals(expectedWithoutScore, ALGEBRA.toString());
     }
 }

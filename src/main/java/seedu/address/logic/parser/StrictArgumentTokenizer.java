@@ -44,7 +44,8 @@ public final class StrictArgumentTokenizer {
      */
     public static TokenizedArguments tokenizeWithPreamble(String arguments, List<String> allowedPrefixes,
             String invalidFormatMessage) throws ParseException {
-        return tokenize(arguments, allowedPrefixes, invalidFormatMessage, true, NO_VALUE_TOKENS);
+        return tokenize(arguments, allowedPrefixes, invalidFormatMessage, MESSAGE_REPEATED_PREFIX,
+                true, NO_VALUE_TOKENS);
     }
 
     /**
@@ -62,12 +63,20 @@ public final class StrictArgumentTokenizer {
     }
 
     /**
-     * Tokenizes strict parameters using a command-specific repeated-prefix message.
+     * Returns prefixed values using the supplied format and repeated-prefix error messages.
+     * The repeated-prefix message may contain {@code %s} for the offending prefix.
+     *
+     * @param arguments Arguments to tokenize.
+     * @param allowedPrefixes Prefixes that may appear.
+     * @param invalidFormatMessage Message for a rejected preamble or an unknown prefix.
+     * @param repeatedPrefixMessage Message template for a repeated prefix.
+     * @return The tokenized arguments, with an empty preamble.
+     * @throws ParseException If a preamble, unknown prefix, or repeated prefix is present.
      */
     public static TokenizedArguments tokenize(String arguments, List<String> allowedPrefixes,
             String invalidFormatMessage, String repeatedPrefixMessage) throws ParseException {
-        return tokenize(arguments, allowedPrefixes, invalidFormatMessage, false, NO_VALUE_TOKENS,
-                repeatedPrefixMessage);
+        return tokenize(arguments, allowedPrefixes, invalidFormatMessage, repeatedPrefixMessage,
+                false, NO_VALUE_TOKENS);
     }
 
     /**
@@ -83,7 +92,8 @@ public final class StrictArgumentTokenizer {
      */
     public static TokenizedArguments tokenize(String arguments, List<String> allowedPrefixes,
             String invalidFormatMessage, ValueTokenFilter valueTokenFilter) throws ParseException {
-        return tokenize(arguments, allowedPrefixes, invalidFormatMessage, false, valueTokenFilter);
+        return tokenize(arguments, allowedPrefixes, invalidFormatMessage, MESSAGE_REPEATED_PREFIX,
+                false, valueTokenFilter);
     }
 
     /**
@@ -94,23 +104,15 @@ public final class StrictArgumentTokenizer {
      * @param arguments Arguments to tokenize.
      * @param allowedPrefixes Prefixes that may appear.
      * @param invalidFormatMessage Message for a rejected preamble or an unknown prefix.
+     * @param repeatedPrefixMessage Message template for a repeated prefix.
      * @param isPreambleAllowed Whether text may appear before the first prefix.
      * @param valueTokenFilter Decides which prefix-shaped tokens belong to the preceding value.
      */
     private static TokenizedArguments tokenize(String arguments, List<String> allowedPrefixes,
-            String invalidFormatMessage, boolean isPreambleAllowed, ValueTokenFilter valueTokenFilter)
+            String invalidFormatMessage, String repeatedPrefixMessage, boolean isPreambleAllowed,
+            ValueTokenFilter valueTokenFilter)
             throws ParseException {
-        return tokenize(arguments, allowedPrefixes, invalidFormatMessage, isPreambleAllowed, valueTokenFilter,
-                MESSAGE_REPEATED_PREFIX);
-    }
-
-    /**
-     * Applies the shared quoting and prefix rules with the caller's validation messages.
-     */
-    private static TokenizedArguments tokenize(String arguments, List<String> allowedPrefixes,
-            String invalidFormatMessage, boolean isPreambleAllowed, ValueTokenFilter valueTokenFilter,
-            String repeatedPrefixMessage) throws ParseException {
-        requireAllNonNull(arguments, allowedPrefixes, invalidFormatMessage, valueTokenFilter);
+        requireAllNonNull(arguments, allowedPrefixes, invalidFormatMessage, repeatedPrefixMessage, valueTokenFilter);
         Matcher matcher = PREFIX_PATTERN.matcher(arguments);
         boolean hasNextPrefix = matcher.find();
         String preamble = arguments.substring(0, hasNextPrefix ? matcher.start() : arguments.length()).strip();

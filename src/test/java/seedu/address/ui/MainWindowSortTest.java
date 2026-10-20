@@ -97,8 +97,9 @@ public class MainWindowSortTest {
             Stage stage = new Stage();
             MainWindow window = new MainWindow(stage, createLogic(model), temporaryFolder.resolve("students.json")) {
                 @Override
-                StudentListPanel createStudentListPanel(ObservableList<Student> students) {
-                    return new StudentListPanel(students, (student, index) -> {
+                StudentListPanel createStudentListPanel(ObservableList<Student> students,
+                        Runnable renderingErrorHandler) {
+                    return new StudentListPanel(students, renderingErrorHandler, (student, index) -> {
                         if (shouldFail.getAndSet(false)) {
                             throw new IllegalStateException("Injected rendering failure");
                         }

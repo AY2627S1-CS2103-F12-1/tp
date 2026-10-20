@@ -1,11 +1,15 @@
 package seedu.address.ui;
 
+import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
+
 import java.time.LocalDate;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -17,6 +21,7 @@ import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollBar;
 import javafx.scene.layout.Region;
+import seedu.address.commons.core.LogsCenter;
 import seedu.address.model.student.Student;
 
 /**
@@ -24,8 +29,11 @@ import seedu.address.model.student.Student;
  */
 public class StudentListPanel extends UiPart<Region> {
     private static final String FXML = "StudentListPanel.fxml";
+    private static final Logger logger = LogsCenter.getLogger(StudentListPanel.class);
 
+    private final Runnable renderingErrorHandler;
     private final BiFunction<Student, Integer, Region> cardFactory;
+    private boolean hasRenderingError;
     private Map<Integer, RenderedCard> renderedCards = new HashMap<>();
     private boolean isSorting;
     private RuntimeException renderingFailure;
@@ -39,23 +47,71 @@ public class StudentListPanel extends UiPart<Region> {
      * Creates a panel that updates when the given student list changes.
      */
     public StudentListPanel(ObservableList<Student> students) {
-        this(students, (student, index) -> new StudentCard(student, index, LocalDate.now()).getRoot());
+        this(students, () -> { });
+    }
+
+    /**
+     * Creates a panel that reports ordinary rendering failures after logging their technical cause.
+     */
+    public StudentListPanel(ObservableList<Student> students, Runnable renderingErrorHandler) {
+        this(students, renderingErrorHandler, (student, index) ->
+                new StudentCard(student, index, LocalDate.now()).getRoot());
     }
 
     /**
      * Creates a panel with a controllable card renderer for recovery tests.
      */
     StudentListPanel(ObservableList<Student> students, BiFunction<Student, Integer, Region> cardFactory) {
+        this(students, () -> { }, cardFactory);
+    }
+
+    /**
+     * Creates a panel with a controllable renderer and the owner's rendering error callback.
+     */
+    StudentListPanel(ObservableList<Student> students, Runnable renderingErrorHandler,
+            BiFunction<Student, Integer, Region> cardFactory) {
         super(FXML);
+        requireAllNonNull(students, renderingErrorHandler, cardFactory);
+        this.renderingErrorHandler = renderingErrorHandler;
         this.cardFactory = cardFactory;
+        // Reset before ListView observes new results, retaining the snapshot during sort recovery.
+        students.addListener((ListChangeListener<Student>) change -> {
+            clearRenderingError();
+            if (!isSorting) {
+                renderedCards.clear();
+            }
+            updateStudentCount(students.size());
+        });
         studentListView.setItems(students);
         studentListView.setCellFactory(unused -> new StudentListViewCell());
         updateStudentCount(students.size());
-        students.addListener((ListChangeListener<Student>) change -> updateStudentCount(students.size()));
     }
 
     private void updateStudentCount(int count) {
         studentCount.setText(count == 1 ? "1 student" : count + " students");
+    }
+
+    boolean hasRenderingError() {
+        return hasRenderingError;
+    }
+
+    /**
+     * Starts a new command's rendering attempt without changing the list, selection or scroll position.
+     */
+    void clearRenderingError() {
+        hasRenderingError = false;
+    }
+
+    /**
+     * Logs the technical cause and notifies the owner once per rendering attempt.
+     */
+    private void handleRenderingError(RuntimeException exception) {
+        if (hasRenderingError) {
+            return;
+        }
+        hasRenderingError = true;
+        logger.log(Level.WARNING, "Unexpected error while rendering student results", exception);
+        renderingErrorHandler.run();
     }
 
     /** Clears the current selection and returns to the first student. */
@@ -195,11 +251,13 @@ public class StudentListPanel extends UiPart<Region> {
                 setGraphic(isEmpty() || getItem() == null || getIndex() < 0
                         ? null : renderCard(getItem(), getIndex()));
             } catch (RuntimeException exception) {
-                if (!isSorting) {
-                    throw exception;
-                }
-                if (renderingFailure == null) {
-                    renderingFailure = exception;
+                setGraphic(null);
+                if (isSorting) {
+                    if (renderingFailure == null) {
+                        renderingFailure = exception;
+                    }
+                } else {
+                    handleRenderingError(exception);
                 }
             }
         }

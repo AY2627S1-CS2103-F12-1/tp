@@ -3,6 +3,7 @@ package seedu.address.ui;
 import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URL;
 
 import javafx.fxml.FXMLLoader;
@@ -11,6 +12,7 @@ import seedu.address.MainApp;
 /**
  * Represents a distinct part of the UI. e.g. Windows, dialogs, panels, status bars, etc.
  * It contains a scene graph with a root node of type {@code T}.
+ * FXML loading failures are reported as {@link UncheckedIOException} with the original cause.
  */
 public abstract class UiPart<T> {
 
@@ -70,8 +72,8 @@ public abstract class UiPart<T> {
         fxmlLoader.setRoot(root);
         try {
             fxmlLoader.load();
-        } catch (IOException e) {
-            throw new AssertionError(e);
+        } catch (IOException exception) {
+            throw new UncheckedIOException("Could not load FXML file: " + location, exception);
         }
     }
 

@@ -6,6 +6,7 @@ import seedu.address.logic.commands.AddCommand;
 import seedu.address.logic.commands.ClearCommand;
 import seedu.address.logic.commands.DeleteCommand;
 import seedu.address.logic.commands.ExitCommand;
+import seedu.address.logic.commands.FilterCommand;
 import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
@@ -55,7 +56,11 @@ public final class HelpContent {
                             "Sorts the displayed students by level, subject or day. Order is asc (default) or desc."
                                     + " Missing meetings stay last; ties retain their previous displayed order."
                                     + " Saved roster order is unchanged. Use list to restore it.",
-                            "sort by/level o/desc"))),
+                            "sort by/level o/desc"),
+                    new Entry(FilterCommand.COMMAND_WORD, FilterCommand.MESSAGE_USAGE,
+                            "Shows students matching every supplied filter. Supply at least one filter. "
+                                    + AcademicLevel.MESSAGE_CONSTRAINTS + " " + TuitionSubject.MESSAGE_CONSTRAINTS
+                                    + " Type list to show all students again.", "filter l/S4 s/Math"))),
             new Section(SECTION_HOMEWORK, List.of(
                     new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_ADD,
                             HomeworkAddCommand.MESSAGE_USAGE,

@@ -17,6 +17,7 @@ import seedu.address.commons.core.GuiSettings;
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.logic.Logic;
 import seedu.address.logic.commands.CommandResult;
+import seedu.address.logic.commands.FilterCommand;
 import seedu.address.logic.commands.SortCommand;
 import seedu.address.logic.commands.SortCommandResult;
 import seedu.address.logic.commands.exceptions.CommandException;
@@ -120,11 +121,11 @@ public class MainWindow extends UiPart<Stage> {
      * Fills up all the placeholders of this window.
      */
     void fillInnerParts() {
-        studentListPanel = createStudentListPanel(logic.getStudentList());
-        studentListPanelPlaceholder.getChildren().add(studentListPanel.getRoot());
-
         resultDisplay = new ResultDisplay();
         resultDisplayPlaceholder.getChildren().add(resultDisplay.getRoot());
+
+        studentListPanel = createStudentListPanel(logic.getStudentList(), this::handleStudentRenderingError);
+        studentListPanelPlaceholder.getChildren().add(studentListPanel.getRoot());
 
         StatusBarFooter statusBarFooter = new StatusBarFooter(dataFilePath);
         statusbarPlaceholder.getChildren().add(statusBarFooter.getRoot());
@@ -135,10 +136,17 @@ public class MainWindow extends UiPart<Stage> {
     }
 
     /**
-     * Creates the roster panel, allowing tests to supply a renderer that fails predictably.
+     * Creates the panel for {@code students}, reporting rendering failures through {@code renderingErrorHandler}.
      */
-    StudentListPanel createStudentListPanel(ObservableList<Student> students) {
-        return new StudentListPanel(students);
+    StudentListPanel createStudentListPanel(ObservableList<Student> students, Runnable renderingErrorHandler) {
+        return new StudentListPanel(students, renderingErrorHandler);
+    }
+
+    /**
+     * Shows a safe rendering error after the student panel has logged its technical cause.
+     */
+    private void handleStudentRenderingError() {
+        resultDisplay.setFeedbackToUser(FilterCommand.MESSAGE_INTERNAL_ERROR);
     }
 
     /**
@@ -196,11 +204,14 @@ public class MainWindow extends UiPart<Stage> {
      * @see seedu.address.logic.Logic#execute(String)
      */
     private CommandResult executeCommand(String commandText) throws CommandException, ParseException {
+        studentListPanel.clearRenderingError();
         try {
             boolean isSortRequest = commandText.strip().split("\\s+", 2)[0].equals(SortCommand.COMMAND_WORD);
             CommandResult commandResult = isSortRequest ? executeStudentSort(commandText) : logic.execute(commandText);
             logger.info("Result: " + commandResult.getFeedbackToUser());
-            resultDisplay.setFeedbackToUser(commandResult.getFeedbackToUser());
+            if (!studentListPanel.hasRenderingError()) {
+                resultDisplay.setFeedbackToUser(commandResult.getFeedbackToUser());
+            }
 
             if (commandResult.isShowStudentList()) {
                 studentListPanel.showFromTop();

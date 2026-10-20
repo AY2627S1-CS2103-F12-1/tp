@@ -78,6 +78,26 @@ public class StrictArgumentTokenizerTest {
     }
 
     @Test
+    public void tokenize_customRepeatedMessage_usesSuppliedMessage() {
+        String repeatedMessage = "Each filter may only be specified once";
+        for (String arguments : List.of(" t/a t/b", " t/a n/b t/c", " t/\"a\" t/b")) {
+            assertThrows(ParseException.class, repeatedMessage, () ->
+                    StrictArgumentTokenizer.tokenize(arguments, PREFIXES, MESSAGE_INVALID_FORMAT, repeatedMessage));
+        }
+    }
+
+    @Test
+    public void tokenize_customRepeatedMessage_preservesOtherRules() throws ParseException {
+        String repeatedMessage = "Repeated filter";
+        assertEquals(Map.of("t/", "a x/b", "n/", "c"), StrictArgumentTokenizer.tokenize(
+                " t/\"a x/b\" n/c", PREFIXES, MESSAGE_INVALID_FORMAT, repeatedMessage).values());
+        assertThrows(ParseException.class, MESSAGE_INVALID_FORMAT, () -> StrictArgumentTokenizer.tokenize(
+                " t/a x/b", PREFIXES, MESSAGE_INVALID_FORMAT, repeatedMessage));
+        assertThrows(ParseException.class, MESSAGE_INVALID_FORMAT, () -> StrictArgumentTokenizer.tokenize(
+                " text t/a", PREFIXES, MESSAGE_INVALID_FORMAT, repeatedMessage));
+    }
+
+    @Test
     public void tokenize_textBeforeFirstPrefix_throwsParseException() {
         // text before a prefix
         assertThrows(ParseException.class, MESSAGE_INVALID_FORMAT, () ->

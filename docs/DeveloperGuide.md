@@ -130,7 +130,7 @@ The `Model` component,
 
 * stores all app data in an `AddressBook` object: the student roster (a `StudentRoster` of `Student` objects in insertion order), in which each immutable `Student` holds its own `Homework` records and `RegularLesson` entries.
 * uses `LessonSchedule#from` to provide a view of all regular lessons ordered by weekday, start time, and student name without changing roster order.
-* exposes the displayed students as an unmodifiable `ObservableList<Student>` backed by a `FilteredList`, so the UI updates when the roster or search predicate changes. `ModelManager` passes roster mutations (`hasStudent`, `addStudent`, `setStudent`, `deleteStudent`) to its `AddressBook`; `getStudentList` returns the filtered view.
+* exposes the displayed students as an unmodifiable `ObservableList<Student>` backed by a `StudentDisplayList` over a `FilteredList`, so the UI updates when roster, predicate or display order changes. `ModelManager` passes roster mutations (`hasStudent`, `addStudent`, `setStudent`, `deleteStudent`) to its `AddressBook`; `getStudentList` returns the display view. The stored roster stays in insertion order.
 * stores a `UserPrefs` object that represents the user’s preferences (currently, just the GUI settings). This is exposed to the outside as a `ReadOnlyUserPrefs` object.
 * does not depend on any of the other three components (as the `Model` represents data entities of the domain, they should make sense on their own without depending on other components)
 
@@ -185,7 +185,7 @@ This section describes some noteworthy details on how certain features are imple
 
 ### Splitting arguments at prefixes
 
-`StrictArgumentTokenizer` splits the arguments of `add`, `lesson add`, `lesson delete` and every homework subcommand into a preamble (the text before the first prefix, such as the indices in `hw e 1 2 t/Algebra`) and the value of each prefix. Any lowercase word followed by `/` at the start of the arguments or after whitespace is a prefix, so a `/` inside a word such as `3/4` does not start one. Each prefix is checked in the order it appears: an unknown prefix gives the caller's "Invalid command format." message, and a repeated prefix gives `Prefix X must be specified exactly once.` A caller may also pass a `ValueTokenFilter`, which keeps some prefix-shaped words in the previous value; `StudentAddParser` uses one so that names can contain words such as `s/o` and `d/o`.
+`StrictArgumentTokenizer` splits the arguments of `add`, `filter`, `lesson add`, `lesson delete` and every homework subcommand into a preamble (the text before the first prefix, such as the indices in `hw e 1 2 t/Algebra`) and the value of each prefix. Any lowercase word followed by `/` at the start of the arguments or after whitespace is a prefix, so a `/` inside a word such as `3/4` does not start one. Each prefix is checked in the order it appears: an unknown prefix gives the caller's "Invalid command format." message, and a repeated prefix gives `Prefix X must be specified exactly once.` A caller may also pass a `ValueTokenFilter`, which keeps some prefix-shaped words in the previous value; `StudentAddParser` uses one so that names can contain words such as `s/o` and `d/o`.
 
 **Quoted values.** A value wrapped in double quotes may contain prefix-shaped words. After reading a prefix, `StrictArgumentTokenizer#findQuotedValueEnd` decides whether its value is quoted:
 
@@ -227,7 +227,7 @@ For example, with the allowed prefixes `title/`, `t/`, `s/` and `due/` of `hw ad
 
 `AddressBookParser` routes `list` and its alias `ls` to `ListCommandParser`, which rejects non-blank arguments. `ListCommand` resets the displayed-student predicate, reads `Model#getStudentList()`, and asks the UI to show the roster from the top. It reports `No students found.` for an empty roster, `Listed 1 student.` for one student, and `Listed N students.` otherwise. Because the stored roster is unchanged, `LogicManager` does not save the data file.
 
-`AddressBookParser` routes `search KEYWORD` to `SearchCommandParser`, which rejects a blank keyword. `SearchCommand` compares the stripped keyword with the student and guardian names and phone numbers, ignoring case for names. It sets the predicate of `ModelManager`'s `FilteredList<Student>`, whose source is the full roster. The UI observes an unmodifiable view of that list, so it refreshes the displayed cards and numbers automatically. Repeated searches examine the full roster, not just the previous results. The stored `AddressBook` is unchanged, so searching is never saved. Index-based student and homework commands use `Model#getStudentList()` and therefore act on the student currently shown at that index. `list`, a successful `add` and `homework upcoming` restore the full roster.
+`AddressBookParser` routes `search KEYWORD` to `SearchCommandParser`, which rejects a blank keyword. `SearchCommand` compares the stripped keyword with the student and guardian names and phone numbers, ignoring case for names. It sets the predicate of `ModelManager`'s `FilteredList<Student>`, whose source is the full roster. The UI observes an unmodifiable `StudentDisplayList` over the filtered results, so it refreshes the displayed cards and numbers automatically. Repeated searches examine the full roster, not just the previous results. The stored `AddressBook` is unchanged, so searching is never saved. Index-based student and homework commands use `Model#getStudentList()` and therefore act on the student currently shown at that index. `list`, a successful `add` and `homework upcoming` restore the full roster.
 
 `AddressBookParser` routes `delete INDEX` to `DeleteCommandParser`. It uses `ParserUtil#parseStrictIndex`, so zero, signs, leading zeroes, extra arguments, and numbers beyond the supported integer range are rejected before execution. `DeleteCommand` checks the one-based index against the current roster, then calls `Model#deleteStudent` for that student. The remaining students retain their order and receive new displayed indexes. Homework and regular lessons belong to the deleted `Student`, so they are removed with it. `LogicManager` saves the changed roster; if saving fails, it restores the previous roster, including that student's homework and lessons.
 
@@ -238,9 +238,91 @@ prefix tokenizer and field value types as `add`; its name-token rule preserves `
 At least one replacement field is required. `EditCommand` applies only supplied fields to a new immutable `Student`,
 retaining its homework and lessons. Before calling `Model#setStudent`, it rejects an unchanged profile, a name-and-phone
 identity already used by another student, or subjects that would leave existing homework or lessons unsupported.
-`StudentRoster#setStudent` replaces the student in place, refreshing the observable card without renumbering other
-students. `LogicManager` saves the change and restores the original roster if saving fails. The command builds its
-feedback before the replacement, logs unexpected runtime failures, and supplies an edit-specific save-failure message.
+`Model#setStudent` replaces the student in the stored roster without changing its stored position. The displayed
+card keeps its position if the edited student still matches the active search or filter; otherwise it disappears.
+An earlier sort is not reapplied until the user explicitly sorts again. `LogicManager` saves the change and restores
+the original roster if saving fails. The command builds its feedback before the replacement, logs unexpected runtime
+failures, and supplies an edit-specific save-failure message.
+
+### Sorting students
+
+`AddressBookParser` routes `sort by/KEY [o/ORDER]` to `SortCommandParser`. It uses the shared
+`StrictArgumentTokenizer` with sort-specific repeated-prefix feedback; existing callers retain their messages.
+The parser validates syntax and maps stripped, case-insensitive values to `SortKey` and `SortOrder` before execution.
+`SortCommand` returns normal feedback for empty and single-student views.
+
+`StudentSorter` stable-sorts a copy of the immediately preceding displayed list. Level uses the academic enum's
+school order, subject uses the alphabetically smallest subject name, and day uses the smallest weekday.
+For descending days, only the weekday comparator is reversed before applying `nullsLast`; reversing the complete
+result would incorrectly move missing meetings first and reverse ties.
+
+`StudentDisplayList` keeps a permutation of filtered-source occurrence indices and publishes a complete candidate
+only after validating its references and multiplicities. Equal students and repeated references remain separate.
+Source changes preserve surviving display positions and update replaced immutable students. Each
+`updateFilteredStudentList` call resets the permutation, including when the predicate still matches all students.
+Consequently `list`, a new search, successful `add` and `homework upcoming` do not retain an earlier sort.
+Student-index commands continue to use `Model#getStudentList`; lesson-schedule numbering remains independent.
+The stored `AddressBook` does not change, so `LogicManager` skips persistence.
+
+Sorting is a one-time permutation; the model does not retain an active comparator. `Model#setStudent` preserves
+the displayed position of a replacement that still matches the active predicate, even when its academic level,
+subjects or earliest meeting day changes. A replacement that no longer matches disappears from the view.
+An explicit `sort` uses the updated values. The student-edit command uses `Model#setStudent` without resetting
+the predicate or display order, following the same behavior as lesson and homework updates.
+
+`SortCommandResult` retains an order-restoration action for the UI boundary. `MainWindow` captures the panel state
+before a sort request and verifies rendering before reporting success. `StudentListPanel` retains previous cards,
+selection, focus and scrollbar positions, checks every candidate card, and forces visible cell layout. Cell callbacks
+record runtime failures while this boundary is active; recovery restores old cards before restoring model order.
+Cached candidate cards also cover later virtualized cells. During a sort, the panel retains failures for
+`MainWindow` to recover and log; ordinary filter rendering failures use the panel callback instead. This avoids
+reporting one sort failure through both error paths. No rendering or recovery work is performed in assertions.
+
+The sorting helper and parser have isolated tests. `SortIntegrationTest` exercises real logic/model/storage
+interactions, including zero save calls during sorting, subsequent displayed-index operations and failed saves.
+It also checks changes to each sort key through `Model#setStudent`, retention of the displayed position until
+another explicit sort, and removal of replacements that no longer match the active filter.
+`StudentSortRenderingTest` and `MainWindowSortTest` use controllable renderers on the JavaFX thread to verify
+selection/scroll recovery, exact feedback and diagnostic ownership. See the [logging guide](Logging.md).
+
+### Filtering students
+
+`AddressBookParser` routes `filter [l/LEVEL] [s/SUBJECT]` to `FilterCommandParser`. The parser allows one or both
+prefixes, rejects unknown and repeated prefixes, and normalizes values through `AcademicLevel#parse` and
+`TuitionSubject#parse`. Its error messages follow issue #77, including the same field error for empty and unsupported
+values. The tokenizer overload accepts the filter-specific repeated-prefix message while keeping existing callers'
+messages unchanged. Structural validation completes before value validation; values are checked in prefix order.
+No parser failure changes the displayed list or requests a UI refresh.
+
+`StudentFilterPredicate` holds optional typed criteria and requires at least one to be present. It compares levels
+for equality and checks membership in `TuitionSubjects#getSubjects()`, combining both results with AND. `FilterCommand`
+replaces the predicate of the existing `FilteredList`, whose source is the full stored roster. It never sorts or
+deduplicates results. Existing roster uniqueness checks remain in place; a synthetic duplicate-containing source
+verifies that filtering itself preserves every matching entry independently.
+
+The result is `Found N student(s)` or `No students match the selected filters`. A successful command requests the
+existing `showFromTop` action. Displayed student indices therefore identify filtered students, while lesson scheduling
+and clash checks continue to use `Model#getAddressBook().getStudentList()`. `list`, `ls`, a successful student addition
+and `homework upcoming` restore the full roster. Search and filter commands replace each other's criteria.
+
+**Persistence.** Only the displayed predicate changes. The stored `AddressBook` remains equal to the snapshot taken
+by `LogicManager`, so `Storage#saveAddressBook` is never called and no storage format change is needed.
+
+**Rendering errors and logging.** `FilterCommand` catches unexpected execution exceptions and logs the cause at
+`WARNING`. `StudentListPanel` handles card-rendering exceptions, including cells created after command execution,
+clears the failing graphic and logs the cause once per rendering attempt. Its callback makes `MainWindow` show the
+specified internal-error message. The rendering-error flag prevents command success feedback from overwriting a
+synchronous rendering failure. All display updates within one command share a rendering attempt, including predicate
+changes followed by order resets. A subsequent command or an independent displayed-list update starts another attempt.
+`UiPart` wraps FXML loading I/O failures in `UncheckedIOException`; genuine assertion failures are not caught
+by this recovery path.
+Existing command/result `INFO` logging is reused, with criteria and match counts available at `FINE`.
+
+**Verification.** Predicate and parser tests cover criterion combinations, normalization, ordering, duplicate entries
+and exact validation messages. `FilterIntegrationTest` checks storage-call counts, unchanged file bytes, displayed
+indices, hidden-student lessons and view-reset commands. `FilterUiTest` verifies real JavaFX card indices, selection
+and viewport preservation, synchronous/deferred rendering errors and recovery. `StudentListPanelTest` checks the
+warning level, original cause, one diagnostic per attempt and propagation of assertion failures.
 
 ### Homework management
 
@@ -606,6 +688,51 @@ testers are expected to do more *exploratory* testing.
 
    1. Try `delete 0`, `delete 01`, and an index larger than the roster size.<br>
       Expected: Each shows an error and leaves the roster unchanged.
+
+### Sorting students
+
+1. Prerequisite: a roster with different academic levels, multiple subjects, several regular meeting days,
+   at least one student without meetings, and enough records to scroll.
+1. Run `search Tan`, then `sort by/level o/desc`.<br>
+   Expected: only the search matches remain, ordered from J2 down to S1. The student count is unchanged,
+   and equal levels retain their order before the sort. Each card has its new consecutive displayed index.
+1. Run `sort by/subject`, then `sort by/day o/desc`.<br>
+   Expected: subject uses the alphabetically first subject, and day uses the earliest weekday for each student.
+   Students without meetings stay last; equal days retain their order from the subject sort.
+1. Select a student, scroll down, then enter `sort by/day by/level`.<br>
+   Expected: `Each sort parameter may only be specified once`; order, count, selection and scroll stay unchanged.
+1. Compare the data file before and after valid sorts and rejected commands.<br>
+   Expected: identical data. Persistence-call counts and injected internal/rendering failures are checked by
+   automated tests; unchanged file contents alone do not establish that no save was attempted.
+1. Run `homework list INDEX` for a newly displayed index, then `list` and a new `search`.<br>
+   Expected: homework belongs to the displayed student. `list` restores stored order, and the new search uses
+   roster order. A successful `add` and `homework upcoming` also discard the transient sort.
+1. Use a test roster of two students, one meeting only on Monday and another meeting on Tuesday.
+   Run `list`, then `sort by/day`.
+   Delete the Monday student's only meeting with `lesson delete 1 1`.<br>
+   Expected: that student remains first with no meetings. Run `sort by/day` again: the Tuesday student moves first,
+   and the student without meetings moves last. The stored roster order stays unchanged.
+
+### Filtering students
+
+1. Use a test roster containing Alice (S4, MATH and PHYSICS), Ben (S4, CHEMISTRY) and Cara (J1, MATH), in that order.
+   1. Run `filter l/S4`.<br>
+      Expected: Alice and Ben are displayed as students 1 and 2; feedback is `Found 2 student(s)`.
+   1. Run `filter s/Math`.<br>
+      Expected: Alice and Cara are displayed as students 1 and 2, even though Cara was hidden by the previous filter.
+   1. Run `filter l/S4 s/Math`, then `filter s/Math l/S4`.<br>
+      Expected: Both commands display only Alice, with `Found 1 student(s)`.
+   1. Run `filter l/S5`.<br>
+      Expected: The roster is empty and feedback is `No students match the selected filters`.
+   1. Run `list`.<br>
+      Expected: All three students reappear in their original order.
+
+1. With enough matching students to scroll, select a student and scroll partway down the results.
+   1. Run `filter`, `filter x/value`, `filter l/S4 l/S4`, `filter l/`, and `filter s/BIOLOGY` separately.<br>
+      Expected: The specified validation error is shown each time. The displayed students, selected student and
+      visible scroll position remain unchanged. The data file is unchanged.
+   1. Run a valid filter with a read-only data file.<br>
+      Expected: Filtering still succeeds because it never attempts a save.
 
 ### Listing, editing and scoring homework
 

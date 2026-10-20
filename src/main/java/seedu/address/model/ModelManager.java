@@ -3,6 +3,7 @@ package seedu.address.model;
 import static java.util.Objects.requireNonNull;
 import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 
+import java.util.List;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
 
@@ -12,6 +13,7 @@ import javafx.collections.transformation.FilteredList;
 import seedu.address.commons.core.GuiSettings;
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.model.student.Student;
+import seedu.address.model.student.StudentDisplayList;
 
 /**
  * Represents the in-memory model of the app data.
@@ -22,7 +24,8 @@ public class ModelManager implements Model {
     private final AddressBook addressBook;
     private final UserPrefs userPrefs;
     private final FilteredList<Student> filteredStudents;
-    private final ObservableList<Student> unmodifiableFilteredStudents;
+    private final StudentDisplayList displayedStudents;
+    private final ObservableList<Student> unmodifiableDisplayedStudents;
 
     /**
      * Initializes a ModelManager with the given addressBook and userPrefs.
@@ -35,7 +38,8 @@ public class ModelManager implements Model {
         this.addressBook = new AddressBook(addressBook);
         this.userPrefs = new UserPrefs(userPrefs);
         filteredStudents = new FilteredList<>(this.addressBook.getStudentList());
-        unmodifiableFilteredStudents = FXCollections.unmodifiableObservableList(filteredStudents);
+        displayedStudents = new StudentDisplayList(filteredStudents);
+        unmodifiableDisplayedStudents = FXCollections.unmodifiableObservableList(displayedStudents);
     }
 
     public ModelManager() {
@@ -98,12 +102,18 @@ public class ModelManager implements Model {
 
     @Override
     public ObservableList<Student> getStudentList() {
-        return unmodifiableFilteredStudents;
+        return unmodifiableDisplayedStudents;
     }
 
     @Override
     public void updateFilteredStudentList(Predicate<Student> predicate) {
         filteredStudents.setPredicate(requireNonNull(predicate));
+        displayedStudents.resetOrder();
+    }
+
+    @Override
+    public void setStudentListOrder(List<Student> students) {
+        displayedStudents.setOrder(students);
     }
 
     @Override

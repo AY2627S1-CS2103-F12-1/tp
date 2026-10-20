@@ -91,7 +91,7 @@ TutorFlow is a **desktop application for private tutors to manage their students
 
 ### Viewing help: `help`
 
-Opens the help window, which lists the commands `add`, `edit`, `list`, `search`, `delete`, `homework add`, `homework list`, `homework upcoming`, `homework edit`, `homework marks`, `homework delete`, `lesson add`, `lesson list`, `lesson delete`, `help`, `clear` and `exit`, grouped into Students, Homework, Lessons and General. Each command is shown with its format, what it does and an example.
+Opens the help window, which lists the commands `add`, `edit`, `list`, `search`, `filter`, `sort`, `delete`, `homework add`, `homework list`, `homework upcoming`, `homework edit`, `homework marks`, `homework delete`, `lesson add`, `lesson list`, `lesson delete`, `help`, `clear` and `exit`, grouped into Students, Homework, Lessons and General. Each command is shown with its format, what it does and an example.
 
 Format: `help`
 
@@ -121,7 +121,7 @@ Examples:
 
 ### Listing all students: `list`
 
-Shows all students in roster order, starting from the top, including after a search. The displayed indexes start at 1.
+Shows all students in stored roster order, starting from the top, including after a search, filter or sort. The displayed indexes start at 1.
 If the roster is empty, the app shows `No students found.` This command does not change the roster.
 With one student, the result says `Listed 1 student.`; with more students, it says `Listed N students.` using the actual count.
 
@@ -131,7 +131,8 @@ Format: `list` or `ls` (no parameters)
 
 Changes one or more details of the student at the displayed index without removing their homework or lessons. The
 change is saved automatically. In the full roster, the updated student card stays in the same position. After a
-search, the card remains visible only if the edited details still match the search keyword.
+search or filter, the card remains visible only if the edited details still match. If the displayed students have
+been sorted, editing does not reorder them; run `sort` again to use the updated values.
 
 Format: `edit INDEX [n/STUDENT_NAME] [l/ACADEMIC_LEVEL] [s/SUBJECTS] [p/STUDENT_PHONE] [gn/GUARDIAN_NAME] [gp/GUARDIAN_PHONE]`
 
@@ -164,6 +165,107 @@ Format: `search KEYWORD`
   search results. Run `list` or `ls` to show the full roster again. Adding a student or running `homework upcoming`
   also restores the full roster.
 * Searching only changes which students are displayed; it does not change the saved roster.
+* A new search replaces any active filter and searches the full roster.
+
+### Filtering students: `filter`
+
+Shows students at an academic level, taking a tuition subject, or satisfying both conditions.
+
+Format: `filter [l/LEVEL] [s/SUBJECT]`
+
+* Supply at least one filter. Each prefix may appear only once, in either order.
+* `LEVEL` must be `S1`, `S2`, `S3`, `S4`, `S5`, `J1` or `J2`.
+* `SUBJECT` must be one of `MATH`, `PHYSICS` or `CHEMISTRY`. A student taking several subjects matches if one
+  of them is the selected subject. Supply only one subject to the filter command.
+* Values ignore letter case and surrounding whitespace, so `s/Math` matches `MATH`.
+* With both filters, a student must match **both**. Matches retain roster order and receive displayed indexes
+  starting at 1. Subsequent student-index commands use these displayed indexes.
+* Each filter examines the full roster and replaces any previous search or filter. To show all students again,
+  run `list` or `ls`. Adding a student or running `homework upcoming` also restores the full roster.
+* Filtering changes only the displayed students. It does not change records or write to the data file.
+
+Examples:
+
+* `filter l/S4` shows every S4 student.
+* `filter s/Math` shows every student taking MATH, including those taking other subjects too.
+* `filter l/S4 s/Math` and `filter s/Math l/S4` both show S4 students taking MATH.
+
+For matches, the feedback is `Found N student(s)`, using the actual count. If nothing matches, including when
+the roster is empty, no student cards are displayed and the feedback is `No students match the selected filters`.
+
+With no filters, TutorFlow shows:
+
+```text
+Invalid Command Format
+Usage: filter [l/LEVEL] [s/SUBJECT]
+At least one filter must be provided
+```
+
+Other invalid commands report:
+
+| Problem | Feedback |
+| --- | --- |
+| Unknown prefix or text before the first prefix | `Invalid command format`, followed by `Usage: filter [l/LEVEL] [s/SUBJECT]` on the next line |
+| Repeated prefix | `Each filter may only be specified once` |
+| Empty or unsupported level | `Academic level must be a non-empty value` |
+| Empty or unsupported subject | `Subject must be a non-empty value` |
+
+Invalid commands leave the displayed students, selection, scroll position and data file unchanged.
+If an internal problem prevents rendering, TutorFlow shows
+`TutorFlow could not display the filtered results due to an internal error`. Student records remain unchanged;
+you can retry the filter or use `list` to show all students again.
+
+### Sorting displayed students: `sort`
+
+Orders the displayed students while preserving any current search or filter results and the saved roster order.
+
+Format: `sort by/KEY [o/ORDER]`
+
+* Give exactly one `by/` parameter. `KEY` is `level`, `subject` or `day`.
+* `ORDER` is `asc` (the default) or `desc`. Values ignore letter case and surrounding spaces.
+  The parameters may appear in either order, and each prefix may appear only once.
+
+Key | Ascending order | Value used per student
+----|-----------------|----------------------
+`level` | `S1`, `S2`, `S3`, `S4`, `S5`, `J1`, `J2` | The student's academic level
+`subject` | Alphabetical, ignoring case | Alphabetically first subject, e.g. `MATH` for `PHYSICS, MATH`
+`day` | Monday through Sunday | Earliest regular meeting day; meeting times are ignored
+
+Descending uses the same value in reverse order. Students without regular meetings stay last in both directions.
+Students with equal values, including those without meetings, retain their order immediately before this command.
+
+Examples:
+
+* `sort by/level` orders students by academic level, ascending.
+* `sort by/subject o/desc` orders students by their alphabetically first subject, descending.
+* `sort o/ASC by/ DAY` orders students by earliest regular meeting day, ascending.
+
+The feedback is `Sorted N student(s) by academic level (ascending).`, with the actual count, key and direction.
+An empty result reports `No students to sort.` Sorting one student also succeeds.
+
+Displayed indexes restart at 1. Subsequent commands such as `delete 1`, `lesson add 1` and `homework list 1`
+use these displayed positions. `list` restores the complete roster in stored order. A new search uses its own
+roster ordering; successful `add` and `homework upcoming` also restore the full roster in stored order.
+A new `filter` command also discards the previous sort and displays matching students in stored roster order.
+Sorting does not edit student records, change the data file or trigger a save.
+
+Sorting is applied once. If a student's academic level, subjects or regular meetings change, the student keeps
+their displayed position while they still match the active search or filter. Students who no longer match disappear
+from the view. Run `sort` again to order the updated values. For example, after `sort by/day`, deleting the first
+student's only meeting leaves them first. Running `sort by/day` again moves them behind students with meetings.
+
+Invalid input leaves the current roster, order, selection and scroll position unchanged:
+
+Condition | Message
+----------|--------
+Missing `by/` | `Invalid command format` followed by `Usage: sort by/KEY [o/ORDER]` and `Exactly one sort key must be provided` on separate lines
+Unknown prefix or text before the parameters | `Invalid command format` followed by `Usage: sort by/KEY [o/ORDER]` on a new line
+Repeated prefix | `Each sort parameter may only be specified once`
+Empty or invalid key | `Sort key must be one of: level, subject, day.`
+Empty or invalid order | `Sort order must be either asc or desc.`
+
+If sorting or rendering fails unexpectedly, TutorFlow restores the previous displayed view and shows
+`TutorFlow could not sort the students due to an internal error.` Technical details are recorded in the logs.
 
 ### Adding homework to a student: `homework add`
 
@@ -219,7 +321,7 @@ Format: `homework|hw upcoming|up [due/DAYS]`
 * `DAYS` must be a whole number from 0 to 365 without signs, decimals, spaces or leading zeroes (`0` itself is accepted). If `due/` is left out, `DAYS` is 7.
 * Homework due before today is left out. Homework is shown whether or not it has marks.
 * The homework of every student is searched, not only the students shown in the student list.
-* Like [`list`](#listing-all-students-list), this command shows all students in the student list again, even when no homework is due. So after a [`search`](#searching-for-students-search), `Student N` still matches the student list.
+* Like [`list`](#listing-all-students-list), this command shows all students in the student list again, even when no homework is due. So after a search or filter, `Student N` still matches the student list.
 * Homework is sorted by due date, earliest first. Homework due on the same date is shown in the order of the students in the student list, and then in the order it was added.
 * The result starts with `Found N homework records due from START to END.` (`record` when there is only one), followed by one line per homework with the student's `STUDENT_INDEX` and name, title, subject, due date and score, e.g. `Student 1: Ethan Lim; Quadratic equations worksheet; MATH; Due: 2026-10-23; Score: 5/10`. Homework without marks shows `Score: Not recorded`.
 * `Student N` is the index of the student in the displayed student list, the `STUDENT_INDEX` that other commands take. It tells apart students with the same name.
@@ -393,7 +495,7 @@ Listed 2 regular lessons.
 
 TutorFlow saves your students, homework and regular lessons automatically after every command that changes them. You do not need to save manually.
 
-* Commands that do not change the data, such as `homework list`, `homework upcoming`, `lesson list`, `help` and `exit`, do not write to the data file.
+* Commands that do not change the data, such as `filter`, `search`, `list`, `homework list`, `homework upcoming`, `lesson list`, `help` and `exit`, do not write to the data file.
 * If TutorFlow cannot save the data (for example, because the data file is read-only), the command is cancelled: its changes are undone and an error message is shown. Homework and lesson commands state that their respective data was not changed.
 
 ### Editing the data file
@@ -481,6 +583,8 @@ Action | Format, Examples
 **Edit student** | `edit INDEX [n/STUDENT_NAME] [l/ACADEMIC_LEVEL] [s/SUBJECTS] [p/STUDENT_PHONE] [gn/GUARDIAN_NAME] [gp/GUARDIAN_PHONE]`<br> e.g., `edit 1 l/S4 p/91234568`
 **List** | `list` or `ls`
 **Search** | `search KEYWORD`<br> e.g., `search Tan`
+**Filter** | `filter [l/LEVEL] [s/SUBJECT]`<br> e.g., `filter l/S4 s/Math`
+**Sort** | `sort by/KEY [o/ORDER]`<br> e.g., `sort by/level`, `sort by/day o/desc`
 **Homework add** | <code>homework&#124;hw add STUDENT_INDEX title/&#124;t/TITLE s/SUBJECT due/YYYY-MM-DD&#124;MM-DD</code><br> e.g., `homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15`, `hw add 1 t/"Speed in km/h" s/PHYSICS due/2026-11-01`
 **Homework delete** | <code>homework&#124;hw delete&#124;del STUDENT_INDEX HOMEWORK_INDEX</code><br> e.g., `homework delete 1 2`
 **Homework edit** | <code>homework&#124;hw edit&#124;e STUDENT_INDEX HOMEWORK_INDEX [title/&#124;t/TITLE] [s/SUBJECT] [due/YYYY-MM-DD&#124;MM-DD]</code><br> e.g., `hw edit 1 2 t/Revise mechanics s/PHYSICS due/2026-11-10`

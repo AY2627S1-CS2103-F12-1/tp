@@ -72,7 +72,10 @@ The **API** of this component is specified in [`Ui.java`](https://github.com/AY2
 
 ![Structure of the UI Component](images/UiClassDiagram.png)
 
-The UI consists of a `MainWindow` and its parts, such as `CommandBox`, `ResultDisplay`, `StudentListPanel`, and `StatusBarFooter`. All of these, including `MainWindow`, inherit from the abstract `UiPart` class, which captures common behavior among classes that represent visible GUI parts.
+The UI diagram shows the references after successful startup. The UI consists of a `MainWindow` and its parts,
+such as `CommandBox`, `ResultDisplay`, `StudentListPanel`, and `StatusBarFooter`. All of these, including
+`MainWindow`, inherit from the abstract `UiPart` class, which captures common behavior among classes that
+represent visible GUI parts.
 
 The `HelpWindow` lists the commands from `HelpContent`, a plain Java class that groups the commands into sections. Each command format in `HelpContent` is the usage constant of the command (e.g. `HomeworkAddCommand.MESSAGE_USAGE`), so the help window shows the same format as the parser error messages, and `HelpContentTest` checks that every example in it parses into the listed command.
 
@@ -87,20 +90,27 @@ The `UI` component,
 
 `MainWindow` shows one `StudentListPanel`, which lists every student as a `StudentCard`, and a `StatusBarFooter` that shows the path of the data file.
 
+`StudentListPanel` creates `StudentCard` objects and caches their rendered roots. It observes the displayed
+student list; the [sort recovery activity](#sorting-students) explains how the previous view is retained during sorting.
+
 ### Logic component
 
 **API** : [`Logic.java`](https://github.com/AY2627S1-CS2103-F12-1/tp/blob/master/src/main/java/seedu/address/logic/Logic.java)
 
 Here's a (partial) class diagram of the `Logic` component:
 
-<img src="images/LogicClassDiagram.png" width="550"/>
+<img src="images/LogicClassDiagram.png" width="800" alt="Logic manager, parser and command dependencies" />
+
+`XYZCommand` represents concrete commands such as `AddCommand`, `FilterCommand`, `SortCommand` and
+`HomeworkAddCommand`. `LogicManager` retains the `Model` and `Storage` interfaces; each command uses the
+model temporarily during execution and returns a `CommandResult` (or a subclass such as `SortCommandResult`).
 
 The sequence diagram below illustrates the interactions within the `Logic` component, taking `execute("hw del 1 2")` API call as an example.
 
 ![Interactions Inside the Logic Component for the `hw del 1 2` Command](images/HomeworkDeleteSequenceDiagram.png)
 
-<div markdown="span" class="alert alert-info">:information_source: **Note:** The lifelines for `HomeworkCommandParser` and `HomeworkDeleteCommandParser` should end at the destroy markers (X), but due to a limitation of PlantUML, they continue to the end of the diagram.
-</div>
+Parser destruction, validation details and the immutable student-copy interactions are omitted. `updatedStudent`
+and `updatedData` name the prepared student replacement and the updated address-book data passed to storage.
 
 How the `Logic` component works:
 
@@ -113,18 +123,21 @@ How the `Logic` component works:
 
 Here are the other classes in `Logic` (omitted from the class diagram above) that are used for parsing a user command:
 
-<img src="images/ParserClasses.png" width="600"/>
+<img src="images/ParserClasses.png" width="800" alt="Shared parser helpers and Add Student delegation" />
 
 How the parsing works:
-* When called upon to parse a user command, the `AddressBookParser` class creates an `XYZCommandParser` (`XYZ` is a placeholder for the specific command name, e.g., `AddCommandParser`). The parser uses the other classes shown above to parse the user command and create an `XYZCommand` object (e.g., `AddCommand`). The `AddressBookParser` returns that object as a `Command` object.
+* When called upon to parse a user command, the `AddressBookParser` class creates an `XYZCommandParser` (`XYZ` is a placeholder for the specific command name, e.g., `FilterCommandParser`, `SortCommandParser` or `HomeworkAddCommandParser`). The parser uses the other classes shown above to parse the user command and create an `XYZCommand` object. The `AddressBookParser` returns that object as a `Command` object.
 * All `XYZCommandParser` classes, such as `AddCommandParser` and `HomeworkAddCommandParser`, implement the `Parser` interface so they can be treated similarly where appropriate, for example during testing.
+* `AddCommandParser` retains a `StudentAddParser` to validate the six student fields and construct a `Student`. It then wraps that student in an `AddCommand`. The other parsers use only the helpers relevant to their command; the diagram groups representative dependencies rather than requiring every parser to use every helper.
 
 ### Model component
 **API** : [`Model.java`](https://github.com/AY2627S1-CS2103-F12-1/tp/blob/master/src/main/java/seedu/address/model/Model.java)
 
-<img src="images/ModelClassDiagram.png" width="450" />
+<img src="images/ModelClassDiagram.png" width="700" alt="Student roster, profile fields and homework model" />
 
 This partial diagram shows the student and homework classes. Students also hold regular lessons, as described below.
+Profile and homework references use ordinary associations because immutable values and unchanged homework
+records can be shared when a student or homework is copied. `AddressBook` owns its internal `StudentRoster`.
 
 The `Model` component,
 
@@ -135,6 +148,15 @@ The `Model` component,
 * does not depend on any of the other three components (as the `Model` represents data entities of the domain, they should make sense on their own without depending on other components)
 
 The classes keep AB3's names (`AddressBook`, `ReadOnlyAddressBook`, `JsonAddressBookStorage`) to keep the change from AB3 small, but they now hold TutorFlow's students, homework, and regular lessons.
+
+The following class diagram separates the stored roster from its filtered and displayed views. Library list
+implementation details and the unmodifiable wrapper returned by `getStudentList()` are omitted.
+
+<img src="images/StudentViewClassDiagram.png" width="900" alt="Stored roster, filter predicate and transient displayed order" />
+
+`StudentDisplayList` refers to the filtered occurrences rather than copying student records. A new search or filter
+replaces the predicate and resets the permutation; a sort changes only the permutation. Both operations leave
+the stored roster and data file unchanged. The UI and student-index commands use the displayed view.
 
 ### Storage component
 
@@ -223,6 +245,23 @@ For example, with the allowed prefixes `title/`, `t/`, `s/` and `due/` of `hw ad
   * Pros: Quotes would mean "exactly this text", as in a shell.
   * Cons: `due/" 3 "` would be rejected while `due/ 3 ` is accepted, and every value class would see spaces it never sees from unquoted input.
 
+### Adding students
+
+`AddressBookParser` dispatches `add` to `AddCommandParser`, which delegates the six profile fields to
+`StudentAddParser`. Parsing validates the fields and constructs an immutable `Student` without modifying the
+roster. `AddCommand` rejects a duplicate identity (the same normalized name and student phone), adds a unique
+student, and restores the full displayed roster in stored order. This also discards an earlier filter or sort.
+
+The sequence below shows the current integrated design for a successful addition. Parsing and list-observer
+callbacks are summarized so the diagram focuses on roster changes and saving. Persistence and save-failure
+rollback use the shared [saving mechanism](#saving-after-a-command).
+
+The student-command sequence diagrams start after successful parsing and command construction, inside
+`LogicManager#execute`. The earlier parsing calls and the manager's activation bar are omitted. Command
+lifelines therefore represent existing objects; their execution, model interactions and subsequent saving are shown.
+
+<img src="images/AddStudentSequenceDiagram.png" width="900" alt="Successful Add Student command and shared save flow" />
+
 ### Listing and deleting students
 
 `AddressBookParser` routes `list` and its alias `ls` to `ListCommandParser`, which rejects non-blank arguments. `ListCommand` resets the displayed-student predicate, reads `Model#getStudentList()`, and asks the UI to show the roster from the top. It reports `No students found.` for an empty roster, `Listed 1 student.` for one student, and `Listed N students.` otherwise. Because the stored roster is unchanged, `LogicManager` does not save the data file.
@@ -237,6 +276,12 @@ For example, with the allowed prefixes `title/`, `t/`, `s/` and `due/` of `hw ad
 `StrictArgumentTokenizer` with sort-specific repeated-prefix feedback; existing callers retain their messages.
 The parser validates syntax and maps stripped, case-insensitive values to `SortKey` and `SortOrder` before execution.
 `SortCommand` returns normal feedback for empty and single-student views.
+
+The following sequence focuses on Logic/Model interactions for a successful, nonempty `sort by/day o/desc`.
+Parsing and observable-list callbacks are omitted. The UI boundary is shown separately in the recovery activity:
+the previous view is captured before execution and rendering is verified before showing success.
+
+<img src="images/SortSequenceDiagram.png" width="900" alt="Compute and publish a display-only student sort" />
 
 `StudentSorter` stable-sorts a copy of the immediately preceding displayed list. Level uses the academic enum's
 school order, subject uses the alphabetically smallest subject name, and day uses the smallest weekday.
@@ -265,6 +310,14 @@ Cached candidate cards also cover later virtualized cells. During a sort, the pa
 `MainWindow` to recover and log; ordinary filter rendering failures use the panel callback instead. This avoids
 reporting one sort failure through both error paths. No rendering or recovery work is performed in assertions.
 
+The activity below focuses on a rendering failure after a completed sort. Recovery first makes the previous
+cards available, then restores the model's display order, and finally restores selection, focus and scrolling.
+If a restoration step fails, the remaining steps are skipped and the recovery failure is retained in the logs.
+The sort boundary ends before success or error feedback is displayed. Parsing rejection, ordering failures
+and empty views are outside this diagram's scope.
+
+<img src="images/StudentSortRecoveryActivityDiagram.png" width="900" alt="Sort rendering verification and ordered recovery" />
+
 The sorting helper and parser have isolated tests. `SortIntegrationTest` exercises real logic/model/storage
 interactions, including zero save calls during sorting, subsequent displayed-index operations and failed saves.
 It also checks changes to each sort key through `Model#setStudent`, retention of the displayed position until
@@ -291,6 +344,12 @@ The result is `Found N student(s)` or `No students match the selected filters`. 
 existing `showFromTop` action. Displayed student indices therefore identify filtered students, while lesson scheduling
 and clash checks continue to use `Model#getAddressBook().getStudentList()`. `list`, `ls`, a successful student addition
 and `homework upcoming` restore the full roster. Search and filter commands replace each other's criteria.
+
+The sequence below shows `filter l/S4 s/MATH` with successful rendering. Model updates notify the panel through
+the observable displayed list; those callbacks and parsing details are summarized. The result requests
+`showFromTop()` after execution. An invalid command is rejected before the predicate or display order changes.
+
+<img src="images/FilterSequenceDiagram.png" width="900" alt="Filter the full roster and display matching students" />
 
 **Persistence.** Only the displayed predicate changes. The stored `AddressBook` remains equal to the snapshot taken
 by `LogicManager`, so `Storage#saveAddressBook` is never called and no storage format change is needed.

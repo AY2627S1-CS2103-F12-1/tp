@@ -1,0 +1,47 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+
+participant ":LogicManager" as Logic LOGIC_COLOR
+participant ":AddCommand" as Command LOGIC_COLOR
+participant ":ModelManager" as Model MODEL_COLOR
+participant ":StorageManager" as Storage STORAGE_COLOR
+
+note over Logic, Command
+  Inside LogicManager.execute(...), after parsing.
+  AddCommand and Student already exist;
+  the LogicManager activation is omitted.
+end note
+note right of Logic : The pre-command data snapshot is omitted.
+Logic -> Command : execute(model)
+activate Command
+Command -> Model : hasStudent(student)
+activate Model
+Model --> Command : false
+deactivate Model
+Command -> Model : addStudent(student)
+activate Model
+Model --> Command
+deactivate Model
+Command -> Model : updateFilteredStudentList(...)
+activate Model
+note right of Model
+  Restore the full displayed roster
+  and discard transient sorting.
+  The panel observes the list changes.
+end note
+Model --> Command
+deactivate Model
+Command --> Logic : success result
+deactivate Command
+Logic -> Storage : saveAddressBook(updatedData)
+activate Storage
+Storage --> Logic
+deactivate Storage
+[<-- Logic : result
+
+note over Logic, Storage
+  Current integrated design: valid fields, unique student, successful save.
+  Save-failure rollback is described in "Saving after a command".
+end note
+@enduml

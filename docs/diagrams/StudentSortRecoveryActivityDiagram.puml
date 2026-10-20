@@ -1,0 +1,41 @@
+@startuml
+!include style.puml
+skinparam activityBackgroundColor UI_COLOR
+skinparam activityFontColor #FFFFFF
+skinparam activityDiamondBackgroundColor #FFFFFF
+skinparam activityDiamondFontColor #000000
+skinparam ArrowFontStyle plain
+
+start
+:Capture previous cards, selection,\nfocus and scroll positions;
+:Execute a valid, nonempty sort\nand publish its display order;
+:Verify candidate cards\nand visible cell layout;
+if (Rendering outcome) then ([rendering succeeded])
+  :End the sort boundary;
+  :Show success feedback;
+else ([rendering failed])
+  :Attempt restoration;
+  note right
+    In order:
+    1. prepareRestore(previousState)
+    2. completedSort.restorePreviousOrder()
+    3. restoreViewState(previousState)
+    Steps 1 and 3 belong to StudentListPanel.
+    Stop and retain the cause if a step fails.
+  end note
+  if (Recovery outcome) then ([restoration succeeded])
+    :Log rendering failure at WARNING;
+  else ([restoration failed])
+    :Log rendering and recovery failures\nat SEVERE;
+  endif
+  :End the sort boundary;
+  :Show the internal-error feedback;
+endif
+stop
+
+legend bottom
+  Scope: rendering recovery after a completed sort.
+  Parsing, ordering failures and empty views are omitted.
+  The stored roster and data file are unchanged.
+endlegend
+@enduml

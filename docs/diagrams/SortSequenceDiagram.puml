@@ -1,0 +1,52 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+
+participant ":LogicManager" as Logic LOGIC_COLOR
+participant ":SortCommand" as Command LOGIC_COLOR
+participant "<<class>>\nStudentSorter" as Sorter MODEL_COLOR
+participant ":ModelManager" as Model MODEL_COLOR
+
+note over Logic, Command
+  sort by/day o/desc: execution after parsing.
+  SortCommand already holds DAY and DESCENDING;
+  the LogicManager activation is omitted.
+end note
+Logic -> Command : execute(model)
+activate Command
+Command -> Model : getStudentList()
+activate Model
+Model --> Command : displayed students
+deactivate Model
+note left of Command : Copy the displayed list\nas previousStudents.
+Command -> Sorter : sort(previousStudents,\nkey, order)
+activate Sorter
+note over Sorter, Model
+  Stable-sort a copy.
+  Missing meeting days stay last.
+end note
+Sorter --> Command : sortedStudents
+deactivate Sorter
+Command -> Model : setStudentListOrder(sortedStudents)
+activate Model
+note over Command, Model
+  Publish the display permutation.
+  Observable UI updates are omitted.
+end note
+Model --> Command
+deactivate Model
+Command --> Logic : result: SortCommandResult
+deactivate Command
+note right of Logic
+  Result retains the previous-order restoration action.
+  Stored data is unchanged, so persistence is skipped.
+end note
+[<-- Logic : result
+
+note over Logic, Model
+  Successful, nonempty sort; the active predicate is kept.
+  MainWindow captures the old view before execution,
+  then verifies rendering before reporting success.
+  See the recovery activity for the UI boundary.
+end note
+@enduml

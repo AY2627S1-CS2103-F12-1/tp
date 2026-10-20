@@ -64,6 +64,28 @@ public class HomeworkMarksCommandParserTest {
     }
 
     @Test
+    public void parse_quotedScore_success() {
+        assertParseSuccess(parser, "1 2 score/\"17\"",
+                new HomeworkMarksCommand(Index.fromOneBased(1), Index.fromOneBased(2), new Score(17)));
+        assertParseSuccess(parser, "1 2 score/\"17/20\"",
+                new HomeworkMarksCommand(Index.fromOneBased(1), Index.fromOneBased(2), new Score(17, 20)));
+
+        // spaces at both ends inside the quotes are removed
+        assertParseSuccess(parser, "1 2 score/\" 17 \"",
+                new HomeworkMarksCommand(Index.fromOneBased(1), Index.fromOneBased(2), new Score(17)));
+
+        // empty quotes clear the marks, like an empty unquoted value
+        assertParseSuccess(parser, "1 2 score/\"\"",
+                new HomeworkMarksCommand(Index.fromOneBased(1), Index.fromOneBased(2)));
+    }
+
+    @Test
+    public void parse_invalidQuotedScore_failure() {
+        // spaces between digits are kept
+        assertParseFailure(parser, "1 2 score/\"1 7\"", Score.MESSAGE_CONSTRAINTS);
+    }
+
+    @Test
     public void parse_emptyScore_returnsClearCommand() {
         HomeworkMarksCommand expectedCommand = new HomeworkMarksCommand(Index.fromOneBased(1), Index.fromOneBased(2));
 

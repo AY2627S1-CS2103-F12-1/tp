@@ -6,17 +6,20 @@ import seedu.address.logic.commands.AddCommand;
 import seedu.address.logic.commands.ClearCommand;
 import seedu.address.logic.commands.DeleteCommand;
 import seedu.address.logic.commands.ExitCommand;
+import seedu.address.logic.commands.FilterCommand;
 import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
 import seedu.address.logic.commands.HomeworkEditCommand;
 import seedu.address.logic.commands.HomeworkListCommand;
 import seedu.address.logic.commands.HomeworkMarksCommand;
+import seedu.address.logic.commands.HomeworkUpcomingCommand;
 import seedu.address.logic.commands.LessonAddCommand;
 import seedu.address.logic.commands.LessonDeleteCommand;
 import seedu.address.logic.commands.LessonListCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.SearchCommand;
+import seedu.address.logic.commands.SortCommand;
 import seedu.address.logic.parser.HomeworkCommandParser;
 import seedu.address.logic.parser.LessonCommandParser;
 import seedu.address.model.homework.DueDate;
@@ -48,7 +51,16 @@ public final class HelpContent {
                     new Entry(ListCommand.COMMAND_WORD, ListCommand.MESSAGE_USAGE,
                             "Shows all students in roster order, starting from the top.", ListCommand.COMMAND_WORD),
                     new Entry(SearchCommand.COMMAND_WORD, SearchCommand.MESSAGE_USAGE,
-                            "Finds students by student or guardian name or phone number.", "search Tan"))),
+                            "Finds students by student or guardian name or phone number.", "search Tan"),
+                    new Entry(SortCommand.COMMAND_WORD, SortCommand.MESSAGE_USAGE,
+                            "Sorts the displayed students by level, subject or day. Order is asc (default) or desc."
+                                    + " Missing meetings stay last; ties retain their previous displayed order."
+                                    + " Saved roster order is unchanged. Use list to restore it.",
+                            "sort by/level o/desc"),
+                    new Entry(FilterCommand.COMMAND_WORD, FilterCommand.MESSAGE_USAGE,
+                            "Shows students matching every supplied filter. Supply at least one filter. "
+                                    + AcademicLevel.MESSAGE_CONSTRAINTS + " " + TuitionSubject.MESSAGE_CONSTRAINTS
+                                    + " Type list to show all students again.", "filter l/S4 s/Math"))),
             new Section(SECTION_HOMEWORK, List.of(
                     new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_ADD,
                             HomeworkAddCommand.MESSAGE_USAGE,
@@ -62,6 +74,14 @@ public final class HelpContent {
                                     + " first, with its score. Add all to list overdue homework too. Each homework"
                                     + " keeps its number, the HOMEWORK_INDEX used by the other homework commands.",
                             "hw ls 1"),
+                    new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_UPCOMING,
+                            HomeworkUpcomingCommand.MESSAGE_USAGE,
+                            "Lists the homework of all students that is due from today to DAYS days later, earliest"
+                                    + " first, with its score. Each line starts with the STUDENT_INDEX of the"
+                                    + " student. DAYS is a number of days from 0 to 365, not a date, and is 7 if"
+                                    + " not given. The lines are not numbered by HOMEWORK_INDEX; use homework list"
+                                    + " STUDENT_INDEX to find it.",
+                            "hw up due/3"),
                     new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_EDIT,
                             HomeworkEditCommand.MESSAGE_USAGE,
                             "Changes the title, subject or due date of homework number HOMEWORK_INDEX, as numbered"

@@ -8,6 +8,7 @@ import static seedu.address.testutil.TypicalRegularLessons.MONDAY_MATH;
 import static seedu.address.testutil.TypicalRegularLessons.TUESDAY_PHYSICS;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 
@@ -169,6 +170,59 @@ public class MainWindowTest {
 
                 assertEquals(0, lessonListView.getItems().size());
                 assertEquals(0, homeworkListView.getItems().size());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    @Test
+    public void filterAndSortCommands_changeRosterButNotUpcomingPanel() throws Exception {
+        ModelManager model = new ModelManager();
+        Student john = new StudentBuilder().withLessons(MONDAY_MATH).withHomeworks(ALGEBRA).build();
+        Student amy = new StudentBuilder().withName("Amy Lim").withPhone("91234568").withSubjects("PHYSICS")
+                .withLessons(TUESDAY_PHYSICS).build();
+        model.addStudent(john);
+        model.addStudent(amy);
+        StorageManager storage = new StorageManager(
+                new JsonAddressBookStorage(temporaryFolder.resolve("tutorflow.json")),
+                new JsonUserPrefsStorage(temporaryFolder.resolve("userPrefs.json")));
+        Logic logic = new LogicManager(model, storage);
+
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+            new MainWindow(stage, logic, Path.of("data", "tutorflow.json")).fillInnerParts();
+            try {
+                Region root = (Region) stage.getScene().getRoot();
+                root.applyCss();
+                root.layout();
+                TextField commandBox = (TextField) root.lookup("#commandTextField");
+                TextArea resultDisplay = (TextArea) root.lookup("#resultDisplay");
+                ListView<?> studentListView = (ListView<?>) root.lookup("#studentListView");
+                ListView<?> lessonListView = (ListView<?>) root.lookup("#lessonListView");
+                ListView<?> homeworkListView = (ListView<?>) root.lookup("#homeworkListView");
+                List<?> lessonsBefore = List.copyOf(lessonListView.getItems());
+                List<?> homeworkBefore = List.copyOf(homeworkListView.getItems());
+
+                commandBox.setText("filter s/PHYSICS");
+                commandBox.getOnAction().handle(new ActionEvent());
+                assertEquals(List.of(amy), studentListView.getItems());
+                assertEquals(lessonsBefore, lessonListView.getItems());
+                assertEquals(homeworkBefore, homeworkListView.getItems());
+
+                commandBox.setText("sort by/day o/desc");
+                commandBox.getOnAction().handle(new ActionEvent());
+                assertEquals(List.of(amy), studentListView.getItems());
+
+                commandBox.setText("list");
+                commandBox.getOnAction().handle(new ActionEvent());
+                commandBox.setText("sort by/day o/desc");
+                commandBox.getOnAction().handle(new ActionEvent());
+                assertEquals(List.of(amy, john), studentListView.getItems());
+                assertEquals(lessonsBefore, lessonListView.getItems());
+                assertEquals(homeworkBefore, homeworkListView.getItems());
+                assertEquals("Sorted 2 student(s) by regular meeting day (descending).",
+                        resultDisplay.getText());
             } finally {
                 stage.close();
             }

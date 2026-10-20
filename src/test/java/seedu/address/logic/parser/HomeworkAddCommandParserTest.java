@@ -136,6 +136,44 @@ public class HomeworkAddCommandParserTest {
     }
 
     @Test
+    public void parse_quotedTitleWithLowercaseSlashWord_success() {
+        Homework expectedHomework = new HomeworkBuilder().withTitle("Speed in km/h").withSubject("PHYSICS")
+                .withDueDate("2026-11-01").build();
+
+        assertParseSuccess(parser, "1 t/\"Speed in km/h\" s/PHYSICS due/2026-11-01",
+                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, false));
+
+        // spaces at both ends inside the quotes are removed
+        assertParseSuccess(parser, "1 t/\"  Speed in km/h  \" s/PHYSICS due/2026-11-01",
+                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, false));
+    }
+
+    @Test
+    public void parse_titleWithQuotesInside_keepsQuotes() {
+        // not wrapped in quotes
+        assertParseSuccess(parser, "1 t/Read \"Hamlet\" act 1 s/MATH due/2026-10-15", new HomeworkAddCommand(
+                Index.fromOneBased(1), new HomeworkBuilder().withTitle("Read \"Hamlet\" act 1").build(), false));
+
+        // wrapped in quotes, with quotes inside
+        assertParseSuccess(parser, "1 t/\"Read \"Hamlet\" km/h\" s/MATH due/2026-10-15", new HomeworkAddCommand(
+                Index.fromOneBased(1), new HomeworkBuilder().withTitle("Read \"Hamlet\" km/h").build(), false));
+    }
+
+    @Test
+    public void parse_unclosedQuotedTitle_failure() {
+        // km/ is read as an unknown prefix
+        assertParseFailure(parser, "1 t/\"Speed in km/h s/MATH due/2026-10-15", MESSAGE_INVALID_FORMAT);
+    }
+
+    @Test
+    public void parse_emptyQuotedTitle_failure() {
+        assertParseFailure(parser, "1 t/\"\" s/MATH due/2026-10-15", Title.MESSAGE_CONSTRAINTS);
+
+        // only spaces inside the quotes
+        assertParseFailure(parser, "1 t/\" \" s/MATH due/2026-10-15", Title.MESSAGE_CONSTRAINTS);
+    }
+
+    @Test
     public void parse_titleWithLowercaseSlashWord_failure() {
         // km/ is read as an unknown prefix
         assertParseFailure(parser, "1 title/Speed in km/h s/MATH due/2026-10-15", MESSAGE_INVALID_FORMAT);

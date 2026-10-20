@@ -69,6 +69,18 @@ TutorFlow is a **desktop application for private tutors to manage their students
 * Parameters can be in any order.<br>
   For example, if the command specifies `n/NAME p/PHONE_NUMBER`, `p/PHONE_NUMBER n/NAME` is also acceptable.
 
+* A lowercase word directly followed by `/` after a space (such as `km/h` or `and/or`) is read as a prefix. To use such a word in a value, wrap the whole value in double quotes (`"`). The outer quotes are removed before the value is checked. This works for every value that follows a prefix.<br>
+  For example, `hw add 1 t/"Speed in km/h" s/PHYSICS due/2026-11-01` adds homework titled `Speed in km/h`, while `hw add 1 t/Speed in km/h s/PHYSICS due/2026-11-01` is rejected because `km/` is not a prefix of `hw add`.
+
+* Spaces at both ends of a quoted value are removed, both outside and inside the quotes, as they are for a value without quotes. Spaces between words are kept.<br>
+  For example, `n/" Ravi s/o Kumar "` gives the name `Ravi s/o Kumar`, and `hw up due/" 3 "` is the same as `hw up due/3`. Empty quotes (`""`), or quotes with only spaces inside, give an empty value, which is treated like a prefix with nothing after it: `t/""` is rejected like `t/`.
+
+* A quoted value ends at the first `"` that is followed by the end of the command, or by a space and another prefix of the same command. Any other `"` is kept as typed.<br>
+  For example, `t/Read "Hamlet" act 1` gives the title `Read "Hamlet" act 1`, and `t/"Read "Hamlet" km/h"` gives `Read "Hamlet" km/h`.
+
+* A value whose opening `"` is never closed in this way is read as typed, as if it had no quotes.<br>
+  For example, `t/"Speed" extra` gives the title `"Speed" extra`, and `hw add 1 t/"Speed in km/h s/PHYSICS due/2026-11-01` is rejected because the quote is not closed, so `km/` is read as a prefix.
+
 * Extraneous parameters for commands that take no parameters, such as `help`, `exit`, and `clear`, are ignored. The `list` command rejects extra parameters.<br>
   For example, `help 123` is interpreted as `help`.
 
@@ -85,7 +97,7 @@ Drag the dividers to resize the command box, result display, student list and si
 
 ### Viewing help: `help`
 
-Opens the help window, which lists the commands `add`, `list`, `search`, `delete`, `homework add`, `homework list`, `homework edit`, `homework marks`, `homework delete`, `lesson add`, `lesson list`, `lesson delete`, `help`, `clear` and `exit`, grouped into Students, Homework, Lessons and General. Each command is shown with its format, what it does and an example.
+Opens the help window, which lists the commands `add`, `list`, `search`, `filter`, `sort`, `delete`, `homework add`, `homework list`, `homework upcoming`, `homework edit`, `homework marks`, `homework delete`, `lesson add`, `lesson list`, `lesson delete`, `help`, `clear` and `exit`, grouped into Students, Homework, Lessons and General. Each command is shown with its format, what it does and an example.
 
 Format: `help`
 
@@ -102,7 +114,7 @@ Format: `add n/STUDENT_NAME l/ACADEMIC_LEVEL s/SUBJECTS p/STUDENT_PHONE gn/GUARD
 
 * All six fields are required, and each prefix must appear exactly once.
 * `STUDENT_NAME` and `GUARDIAN_NAME` must be 1 to 70 characters long and may contain letters, numbers, spaces, apostrophes, hyphens, periods, parentheses and `/`. Extra spaces are removed, and capitalization is kept.
-* A name may contain words such as `s/o` and `d/o`, but not this command's other prefixes (such as `p/` or `gn/`) after a space.
+* A name may contain words such as `s/o` and `d/o`, but not this command's other prefixes (such as `p/` or `gn/`) after a space, unless the whole name is wrapped in double quotes (see the [notes about the command format](#features)).
 * `ACADEMIC_LEVEL` must be one of `S1`, `S2`, `S3`, `S4`, `S5`, `J1` or `J2` (in any case).
 * `SUBJECTS` is one or more of `MATH`, `PHYSICS` and `CHEMISTRY` (in any case), separated by commas, with no subject repeated. The student card shows the subjects in the order you type them.
 * `STUDENT_PHONE` and `GUARDIAN_PHONE` must each be an 8-digit Singapore number starting with 6, 8 or 9, or an international number written as `+` followed by 8 to 15 digits, without spaces.
@@ -115,7 +127,7 @@ Examples:
 
 ### Listing all students: `list`
 
-Shows all students in roster order, starting from the top, including after a search. The displayed indexes start at 1.
+Shows all students in stored roster order, starting from the top, including after a search, filter or sort. The displayed indexes start at 1.
 If the roster is empty, the app shows `No students found.` This command does not change the roster.
 With one student, the result says `Listed 1 student.`; with more students, it says `Listed N students.` using the actual count.
 
@@ -134,8 +146,110 @@ Format: `search KEYWORD`
   `No students found for "Nobody".` and displays no student cards. In both cases, the feedback reminds you to type
   `list` to show all students again.
 * Student indexes in subsequent commands, such as `delete 1` or `homework list 1`, refer to the currently displayed
-  search results. Run `list` or `ls` to show the full roster again. Adding a student also restores the full roster.
+  search results. Run `list` or `ls` to show the full roster again. Adding a student or running `homework upcoming`
+  also restores the full roster.
 * Searching only changes which students are displayed; it does not change the saved roster.
+* A new search replaces any active filter and searches the full roster.
+
+### Filtering students: `filter`
+
+Shows students at an academic level, taking a tuition subject, or satisfying both conditions.
+
+Format: `filter [l/LEVEL] [s/SUBJECT]`
+
+* Supply at least one filter. Each prefix may appear only once, in either order.
+* `LEVEL` must be `S1`, `S2`, `S3`, `S4`, `S5`, `J1` or `J2`.
+* `SUBJECT` must be one of `MATH`, `PHYSICS` or `CHEMISTRY`. A student taking several subjects matches if one
+  of them is the selected subject. Supply only one subject to the filter command.
+* Values ignore letter case and surrounding whitespace, so `s/Math` matches `MATH`.
+* With both filters, a student must match **both**. Matches retain roster order and receive displayed indexes
+  starting at 1. Subsequent student-index commands use these displayed indexes.
+* Each filter examines the full roster and replaces any previous search or filter. To show all students again,
+  run `list` or `ls`. Adding a student or running `homework upcoming` also restores the full roster.
+* Filtering changes only the displayed students. It does not change records or write to the data file.
+
+Examples:
+
+* `filter l/S4` shows every S4 student.
+* `filter s/Math` shows every student taking MATH, including those taking other subjects too.
+* `filter l/S4 s/Math` and `filter s/Math l/S4` both show S4 students taking MATH.
+
+For matches, the feedback is `Found N student(s)`, using the actual count. If nothing matches, including when
+the roster is empty, no student cards are displayed and the feedback is `No students match the selected filters`.
+
+With no filters, TutorFlow shows:
+
+```text
+Invalid Command Format
+Usage: filter [l/LEVEL] [s/SUBJECT]
+At least one filter must be provided
+```
+
+Other invalid commands report:
+
+| Problem | Feedback |
+| --- | --- |
+| Unknown prefix or text before the first prefix | `Invalid command format`, followed by `Usage: filter [l/LEVEL] [s/SUBJECT]` on the next line |
+| Repeated prefix | `Each filter may only be specified once` |
+| Empty or unsupported level | `Academic level must be a non-empty value` |
+| Empty or unsupported subject | `Subject must be a non-empty value` |
+
+Invalid commands leave the displayed students, selection, scroll position and data file unchanged.
+If an internal problem prevents rendering, TutorFlow shows
+`TutorFlow could not display the filtered results due to an internal error`. Student records remain unchanged;
+you can retry the filter or use `list` to show all students again.
+
+### Sorting displayed students: `sort`
+
+Orders the displayed students while preserving any current search or filter results and the saved roster order.
+
+Format: `sort by/KEY [o/ORDER]`
+
+* Give exactly one `by/` parameter. `KEY` is `level`, `subject` or `day`.
+* `ORDER` is `asc` (the default) or `desc`. Values ignore letter case and surrounding spaces.
+  The parameters may appear in either order, and each prefix may appear only once.
+
+Key | Ascending order | Value used per student
+----|-----------------|----------------------
+`level` | `S1`, `S2`, `S3`, `S4`, `S5`, `J1`, `J2` | The student's academic level
+`subject` | Alphabetical, ignoring case | Alphabetically first subject, e.g. `MATH` for `PHYSICS, MATH`
+`day` | Monday through Sunday | Earliest regular meeting day; meeting times are ignored
+
+Descending uses the same value in reverse order. Students without regular meetings stay last in both directions.
+Students with equal values, including those without meetings, retain their order immediately before this command.
+
+Examples:
+
+* `sort by/level` orders students by academic level, ascending.
+* `sort by/subject o/desc` orders students by their alphabetically first subject, descending.
+* `sort o/ASC by/ DAY` orders students by earliest regular meeting day, ascending.
+
+The feedback is `Sorted N student(s) by academic level (ascending).`, with the actual count, key and direction.
+An empty result reports `No students to sort.` Sorting one student also succeeds.
+
+Displayed indexes restart at 1. Subsequent commands such as `delete 1`, `lesson add 1` and `homework list 1`
+use these displayed positions. `list` restores the complete roster in stored order. A new search uses its own
+roster ordering; successful `add` and `homework upcoming` also restore the full roster in stored order.
+A new `filter` command also discards the previous sort and displays matching students in stored roster order.
+Sorting does not edit student records, change the data file or trigger a save.
+
+Sorting is applied once. If a student's academic level, subjects or regular meetings change, the student keeps
+their displayed position while they still match the active search or filter. Students who no longer match disappear
+from the view. Run `sort` again to order the updated values. For example, after `sort by/day`, deleting the first
+student's only meeting leaves them first. Running `sort by/day` again moves them behind students with meetings.
+
+Invalid input leaves the current roster, order, selection and scroll position unchanged:
+
+Condition | Message
+----------|--------
+Missing `by/` | `Invalid command format` followed by `Usage: sort by/KEY [o/ORDER]` and `Exactly one sort key must be provided` on separate lines
+Unknown prefix or text before the parameters | `Invalid command format` followed by `Usage: sort by/KEY [o/ORDER]` on a new line
+Repeated prefix | `Each sort parameter may only be specified once`
+Empty or invalid key | `Sort key must be one of: level, subject, day.`
+Empty or invalid order | `Sort order must be either asc or desc.`
+
+If sorting or rendering fails unexpectedly, TutorFlow restores the previous displayed view and shows
+`TutorFlow could not sort the students due to an internal error.` Technical details are recorded in the logs.
 
 ### Adding homework to a student: `homework add`
 
@@ -146,7 +260,7 @@ Format: `homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|M
 * `homework` can be shortened to `hw`, and `title/` can be shortened to `t/`.
 * `STUDENT_INDEX` refers to the index number shown in the displayed student list. It **must be a positive whole number without leading zeroes**, such as 1, 2, 3, …​
 * `TITLE` must be 1 to 100 characters long and must not contain line breaks or control characters (such as tabs). Extra spaces are removed, and capitalization is kept.
-* A lowercase word directly followed by `/` in `TITLE` (such as `km/h` or `and/or`) is read as a prefix, so the command is rejected. Write such words with a capital letter or with spaces around the `/` instead, e.g. `And/or`, `and / or` or `km / h`.
+* A lowercase word directly followed by `/` in `TITLE` (such as `km/h` or `and/or`) is read as a prefix, so the command is rejected. Wrap the title in double quotes to keep such words, e.g. `t/"Speed in km/h"` (see the [notes about the command format](#features)).
 * `SUBJECT` must be `MATH`, `PHYSICS` or `CHEMISTRY` (in any case), and the student must take that subject.
 * The due date must be a real calendar date in `YYYY-MM-DD` format. Past dates are accepted, so you can record homework that was assigned earlier.
 * The due date can also be given as `MM-DD`. The year is then this year, or next year if that date has already passed this year, and the result shows the year used.
@@ -160,6 +274,7 @@ Examples:
 * `hw add 1 t/Attempt mechanics questions 1-5 s/PHYSICS due/2026-10-20`
 * `homework add 2 due/10-18 s/chemistry title/Revise atomic structure` adds homework due on 18 October of this year, or of next year if 18 October has passed.
 * `hw add 1 t/Read chapter 3 s/physics due/10-5` adds homework due on 5 October of this year, or of next year if 5 October has passed.
+* `hw add 1 t/"Speed in km/h" s/PHYSICS due/2026-11-01` adds homework titled `Speed in km/h`; the quotes keep `km/h` in the title.
 
 ### Listing a student's homework: `homework list`
 
@@ -178,6 +293,37 @@ Format: `homework|hw list|ls STUDENT_INDEX [all]`
 Examples:
 * `homework list 1`
 * `hw ls 2 all` lists all homework of the 2nd student, including overdue homework.
+
+### Listing upcoming homework of all students: `homework upcoming`
+
+Shows the homework of all students that is due in the next few days, earliest due date first, with the score of each.
+
+Format: `homework|hw upcoming|up [due/DAYS]`
+
+* `homework` can be shortened to `hw`, and `upcoming` can be shortened to `up`.
+* `DAYS` is a **number of days, not a date**: the homework shown is due from today to `DAYS` days after today, both days included. For example, on 2026-10-17, `due/3` shows homework due from 2026-10-17 to 2026-10-20, and `due/0` shows homework due today only.
+* `DAYS` must be a whole number from 0 to 365 without signs, decimals, spaces or leading zeroes (`0` itself is accepted). If `due/` is left out, `DAYS` is 7.
+* Homework due before today is left out. Homework is shown whether or not it has marks.
+* The homework of every student is searched, not only the students shown in the student list.
+* Like [`list`](#listing-all-students-list), this command shows all students in the student list again, even when no homework is due. So after a search or filter, `Student N` still matches the student list.
+* Homework is sorted by due date, earliest first. Homework due on the same date is shown in the order of the students in the student list, and then in the order it was added.
+* The result starts with `Found N homework records due from START to END.` (`record` when there is only one), followed by one line per homework with the student's `STUDENT_INDEX` and name, title, subject, due date and score, e.g. `Student 1: Ethan Lim; Quadratic equations worksheet; MATH; Due: 2026-10-23; Score: 5/10`. Homework without marks shows `Score: Not recorded`.
+* `Student N` is the index of the student in the displayed student list, the `STUDENT_INDEX` that other commands take. It tells apart students with the same name.
+* If no homework is due in that period, the result is `No homework due from START to END.`
+* The lines are not numbered, and their order is not the `HOMEWORK_INDEX` used by other homework commands. To edit, score or delete a record shown here, find its number with [`homework list STUDENT_INDEX`](#listing-a-students-homework-homework-list), using the student index shown after `Student`.
+* This command does not change your data.
+
+Examples:
+* `hw up` shows the homework due in the next 7 days. With the sample students on 2026-10-17, the result is:
+
+  ```
+  Found 1 homework record due from 2026-10-17 to 2026-10-24.
+  Student 1: Ethan Lim; Quadratic equations worksheet; MATH; Due: 2026-10-23; Score: Not recorded
+  ```
+* `hw up due/3` shows the homework due from today to 3 days later. With the sample students on 2026-10-17, the result is `No homework due from 2026-10-17 to 2026-10-20.`
+* `hw up due/7` is the same as `hw up`.
+* `hw up due/0` shows the homework due today.
+* `hw upcoming due/7` is the same as `hw up due/7`.
 
 ### Editing a student's homework: `homework edit`
 
@@ -208,6 +354,7 @@ Examples:
   3. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-09 - score Not recorded
   ```
 * `hw edit 1 2 t/Revise mechanics s/PHYSICS due/2026-11-10` changes the title, subject and due date together.
+* `hw e 1 2 t/"Speed in km/h"` changes the title to `Speed in km/h`.
 * `hw e 3 1 due/10-5` moves the due date to 5 October of this year, or of next year if 5 October has passed.
 
 ### Recording homework marks: `homework marks`
@@ -332,7 +479,7 @@ Listed 2 regular lessons.
 
 TutorFlow saves your students, homework and regular lessons automatically after every command that changes them. You do not need to save manually.
 
-* Commands that do not change the data, such as `homework list`, `lesson list`, `help` and `exit`, do not write to the data file.
+* Commands that do not change the data, such as `filter`, `search`, `list`, `homework list`, `homework upcoming`, `lesson list`, `help` and `exit`, do not write to the data file.
 * If TutorFlow cannot save the data (for example, because the data file is read-only), the command is cancelled: its changes are undone and an error message is shown. Homework and lesson commands state that their respective data was not changed.
 
 ### Editing the data file
@@ -419,11 +566,14 @@ Action | Format, Examples
 **Delete student** | `delete INDEX`<br> e.g., `delete 2`
 **List** | `list` or `ls`
 **Search** | `search KEYWORD`<br> e.g., `search Tan`
-**Homework add** | <code>homework&#124;hw add STUDENT_INDEX title/&#124;t/TITLE s/SUBJECT due/YYYY-MM-DD&#124;MM-DD</code><br> e.g., `homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15`
+**Filter** | `filter [l/LEVEL] [s/SUBJECT]`<br> e.g., `filter l/S4 s/Math`
+**Sort** | `sort by/KEY [o/ORDER]`<br> e.g., `sort by/level`, `sort by/day o/desc`
+**Homework add** | <code>homework&#124;hw add STUDENT_INDEX title/&#124;t/TITLE s/SUBJECT due/YYYY-MM-DD&#124;MM-DD</code><br> e.g., `homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15`, `hw add 1 t/"Speed in km/h" s/PHYSICS due/2026-11-01`
 **Homework delete** | <code>homework&#124;hw delete&#124;del STUDENT_INDEX HOMEWORK_INDEX</code><br> e.g., `homework delete 1 2`
 **Homework edit** | <code>homework&#124;hw edit&#124;e STUDENT_INDEX HOMEWORK_INDEX [title/&#124;t/TITLE] [s/SUBJECT] [due/YYYY-MM-DD&#124;MM-DD]</code><br> e.g., `hw edit 1 2 t/Revise mechanics s/PHYSICS due/2026-11-10`
 **Homework list** | <code>homework&#124;hw list&#124;ls STUDENT_INDEX [all]</code><br> e.g., `homework list 1`, `hw ls 2 all`
 **Homework marks** | <code>homework&#124;hw marks&#124;m STUDENT_INDEX HOMEWORK_INDEX score/[SCORE]</code><br> e.g., `hw m 1 2 score/5/10`, `hw m 1 2 score/17`, `hw m 1 2 score/`
+**Homework upcoming** | <code>homework&#124;hw upcoming&#124;up [due/DAYS]</code><br> e.g., `hw up`, `hw up due/3`
 **Lesson add** | `lesson add INDEX s/SUBJECT d/DAY st/START_TIME et/END_TIME`<br> e.g., `lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00`
 **Lesson list** | `lesson list`
 **Lesson delete** | `lesson delete LESSON_INDEX`<br> e.g., `lesson delete 2`

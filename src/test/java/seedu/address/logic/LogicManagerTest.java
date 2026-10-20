@@ -2,6 +2,7 @@ package seedu.address.logic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX;
 import static seedu.address.logic.Messages.MESSAGE_UNKNOWN_COMMAND;
 import static seedu.address.testutil.Assert.assertThrows;
@@ -15,8 +16,13 @@ import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -168,6 +174,24 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_homeworkUpcomingAfterSearch_studentIndexMatchesHomeworkList() throws Exception {
+        // today is 2026-10-19, so the mechanics homework of Alice Tan (1st) and Carl Ng (3rd) is upcoming
+        setUpLogic(getTypicalAddressBook(), addressBookStorage,
+                Clock.fixed(Instant.parse("2026-10-19T00:00:00Z"), ZoneOffset.UTC));
+        logic.execute("search Carl");
+
+        String upcomingFeedback = logic.execute("hw up").getFeedbackToUser();
+
+        assertEquals(3, logic.getStudentList().size());
+        Matcher carlLine = Pattern.compile("\nStudent (\\d+): Carl Ng;").matcher(upcomingFeedback);
+        assertTrue(carlLine.find());
+        assertEquals("Listed 1 upcoming homework record for Carl Ng.\nHomework for Carl Ng:\n"
+                + "1. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded",
+                logic.execute("hw ls " + carlLine.group(1)).getFeedbackToUser());
+        assertFalse(Files.exists(dataFilePath));
+    }
+
+    @Test
     public void execute_addStudent_savesStudent() throws Exception {
         logic.execute(ADD_STUDENT_COMMAND);
 
@@ -239,6 +263,7 @@ public class LogicManagerTest {
         setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
 
         logic.execute("hw ls 1");
+        logic.execute("hw up due/365");
         logic.execute("help");
 
         assertEquals(new ModelManager(getTypicalAddressBook(), new UserPrefs()), model);
@@ -422,9 +447,17 @@ public class LogicManagerTest {
      * Replaces {@code model} with one holding {@code data}, and {@code logic} with one using {@code storage}.
      */
     private void setUpLogic(ReadOnlyAddressBook data, JsonAddressBookStorage storage) {
+        setUpLogic(data, storage, Clock.systemDefaultZone());
+    }
+
+    /**
+     * Replaces {@code model} with one holding {@code data}, and {@code logic} with one using {@code storage} and
+     * taking today's date from {@code clock}.
+     */
+    private void setUpLogic(ReadOnlyAddressBook data, JsonAddressBookStorage storage, Clock clock) {
         model = new ModelManager(data, new UserPrefs());
         JsonUserPrefsStorage userPrefsStorage = new JsonUserPrefsStorage(temporaryFolder.resolve("userPrefs.json"));
-        logic = new LogicManager(model, new StorageManager(storage, userPrefsStorage));
+        logic = new LogicManager(model, new StorageManager(storage, userPrefsStorage), clock);
     }
 
     /**

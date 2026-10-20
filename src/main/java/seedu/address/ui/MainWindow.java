@@ -1,8 +1,10 @@
 package seedu.address.ui;
 
 import java.nio.file.Path;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.MenuItem;
@@ -15,8 +17,12 @@ import seedu.address.commons.core.GuiSettings;
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.logic.Logic;
 import seedu.address.logic.commands.CommandResult;
+import seedu.address.logic.commands.FilterCommand;
+import seedu.address.logic.commands.SortCommand;
+import seedu.address.logic.commands.SortCommandResult;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.logic.parser.exceptions.ParseException;
+import seedu.address.model.student.Student;
 
 /**
  * The Main Window. Provides the basic application layout containing
@@ -26,7 +32,7 @@ public class MainWindow extends UiPart<Stage> {
 
     private static final String FXML = "MainWindow.fxml";
 
-    private final Logger logger = LogsCenter.getLogger(getClass());
+    private final Logger logger = LogsCenter.getLogger(MainWindow.class);
 
     private Stage primaryStage;
     private Logic logic;
@@ -119,14 +125,14 @@ public class MainWindow extends UiPart<Stage> {
      * Fills up all the placeholders of this window.
      */
     void fillInnerParts() {
-        studentListPanel = new StudentListPanel(logic.getStudentList());
+        resultDisplay = new ResultDisplay();
+        resultDisplayPlaceholder.getChildren().add(resultDisplay.getRoot());
+
+        studentListPanel = createStudentListPanel(logic.getStudentList(), this::handleStudentRenderingError);
         studentListPanelPlaceholder.getChildren().add(studentListPanel.getRoot());
 
         upcomingPanel = new UpcomingPanel(logic.getAllStudentList());
         upcomingPanelPlaceholder.getChildren().add(upcomingPanel.getRoot());
-
-        resultDisplay = new ResultDisplay();
-        resultDisplayPlaceholder.getChildren().add(resultDisplay.getRoot());
 
         StatusBarFooter statusBarFooter = new StatusBarFooter(dataFilePath);
         statusbarPlaceholder.getChildren().add(statusBarFooter.getRoot());
@@ -134,6 +140,20 @@ public class MainWindow extends UiPart<Stage> {
         commandBox = new CommandBox(this::executeCommand);
         commandBoxPlaceholder.getChildren().add(commandBox.getRoot());
         helpWindow.getRoot().setOnHidden(unused -> focusCommandBox());
+    }
+
+    /**
+     * Creates the panel for {@code students}, reporting rendering failures through {@code renderingErrorHandler}.
+     */
+    StudentListPanel createStudentListPanel(ObservableList<Student> students, Runnable renderingErrorHandler) {
+        return new StudentListPanel(students, renderingErrorHandler);
+    }
+
+    /**
+     * Shows a safe rendering error after the student panel has logged its technical cause.
+     */
+    private void handleStudentRenderingError() {
+        resultDisplay.setFeedbackToUser(FilterCommand.MESSAGE_INTERNAL_ERROR);
     }
 
     /**
@@ -191,10 +211,14 @@ public class MainWindow extends UiPart<Stage> {
      * @see seedu.address.logic.Logic#execute(String)
      */
     private CommandResult executeCommand(String commandText) throws CommandException, ParseException {
+        studentListPanel.beginCommandRendering();
         try {
-            CommandResult commandResult = logic.execute(commandText);
+            boolean isSortRequest = commandText.strip().split("\\s+", 2)[0].equals(SortCommand.COMMAND_WORD);
+            CommandResult commandResult = isSortRequest ? executeStudentSort(commandText) : logic.execute(commandText);
             logger.info("Result: " + commandResult.getFeedbackToUser());
-            resultDisplay.setFeedbackToUser(commandResult.getFeedbackToUser());
+            if (!studentListPanel.hasRenderingError()) {
+                resultDisplay.setFeedbackToUser(commandResult.getFeedbackToUser());
+            }
 
             if (commandResult.isShowStudentList()) {
                 studentListPanel.showFromTop();
@@ -213,6 +237,61 @@ public class MainWindow extends UiPart<Stage> {
             logger.info("An error occurred while executing command: " + commandText);
             resultDisplay.setFeedbackToUser(e.getMessage());
             throw e;
+        } finally {
+            studentListPanel.endCommandRendering();
+        }
+    }
+
+    /**
+     * Keeps the previous view available until the sorted cards and visible layout have been verified.
+     */
+    private CommandResult executeStudentSort(String commandText) throws CommandException, ParseException {
+        StudentListPanel.ViewState previousState = studentListPanel.beginSort();
+        SortCommandResult completedSort = null;
+        try {
+            CommandResult result = logic.execute(commandText);
+            if (result instanceof SortCommandResult sortedResult) {
+                completedSort = sortedResult;
+                studentListPanel.verifySortRendering();
+            } else {
+                studentListPanel.prepareRestore(previousState);
+            }
+            return result;
+        } catch (CommandException | ParseException exception) {
+            if (!restoreStudentSort(null, previousState, exception)) {
+                logger.log(Level.SEVERE, "Student sort view recovery failed after command rejection", exception);
+                throw new CommandException(SortCommand.MESSAGE_INTERNAL_ERROR, exception);
+            }
+            throw exception;
+        } catch (RuntimeException exception) {
+            boolean isRestored = restoreStudentSort(completedSort, previousState, exception);
+            logger.log(isRestored ? Level.WARNING : Level.SEVERE,
+                    "Student sort failed: phase=rendering, recovery=" + (isRestored ? "restored" : "failed")
+                    + ", context=" + (completedSort == null ? "execution" : completedSort.getFeedbackToUser()),
+                    exception);
+            throw new CommandException(SortCommand.MESSAGE_INTERNAL_ERROR, exception);
+        } finally {
+            studentListPanel.endSort();
+        }
+    }
+
+    /**
+     * Restores cards before notifying observers, then restores selection and viewport without hiding failures.
+     */
+    private boolean restoreStudentSort(SortCommandResult completedSort, StudentListPanel.ViewState previousState,
+            Exception failure) {
+        try {
+            studentListPanel.prepareRestore(previousState);
+            if (completedSort != null) {
+                completedSort.restorePreviousOrder();
+            }
+            studentListPanel.restoreViewState(previousState);
+            return true;
+        } catch (RuntimeException recoveryFailure) {
+            if (recoveryFailure != failure) {
+                failure.addSuppressed(recoveryFailure);
+            }
+            return false;
         }
     }
 }

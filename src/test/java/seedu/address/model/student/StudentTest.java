@@ -91,6 +91,20 @@ public class StudentTest {
     }
 
     @Test
+    public void getOverdueHomeworkCount() {
+        LocalDate today = LocalDate.of(2026, 10, 15);
+        Homework scoredHomework = new HomeworkBuilder(ALGEBRA).withScore("0/10").build();
+        Student student = new StudentBuilder().withHomeworks(ALGEBRA, ATOMIC_STRUCTURE, MECHANICS).build();
+
+        assertEquals(0, new StudentBuilder().build().getOverdueHomeworkCount(today));
+        assertEquals(0, student.getOverdueHomeworkCount(today));
+        assertEquals(1, student.getOverdueHomeworkCount(today.plusDays(1)));
+        assertEquals(2, student.getOverdueHomeworkCount(today.plusDays(6)));
+        assertEquals(0, new StudentBuilder().withHomeworks(scoredHomework).build()
+                .getOverdueHomeworkCount(today.plusDays(1)));
+    }
+
+    @Test
     public void hasHomework() {
         Student student = new StudentBuilder().withHomeworks(ALGEBRA).build();
 

@@ -91,11 +91,11 @@ public class UpcomingPanel extends UiPart<Region> {
         overdueHomeworkEntries.clear();
         LocalDate today = LocalDate.now(clock);
         outstandingHomework.stream()
-                .filter(entry -> entry.homework().getDueDate().getDate().isBefore(today))
+                .filter(entry -> entry.homework().isOverdue(today))
                 .map(entry -> formatHomework(entry, true))
                 .forEach(overdueHomeworkEntries::add);
         homeworkEntries.setAll(outstandingHomework.stream()
-                .map(entry -> formatHomework(entry, entry.homework().getDueDate().getDate().isBefore(today)))
+                .map(entry -> formatHomework(entry, entry.homework().isOverdue(today)))
                 .toList());
         lessonCount.setText(formatCount(lessonEntries.size(), "lesson"));
         homeworkCount.setText(formatCount(homeworkEntries.size(), "task"));

@@ -67,6 +67,13 @@ public final class Homework {
     }
 
     /**
+     * Returns true if this homework has no score and was due before {@code today}.
+     */
+    public boolean isOverdue(LocalDate today) {
+        return score == null && !isUpcoming(today);
+    }
+
+    /**
      * Returns true if both homework records have the same normalized title ignoring case, the same subject and the
      * same due date. The score does not affect identity.
      */

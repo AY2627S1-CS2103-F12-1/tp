@@ -59,6 +59,18 @@ public class HomeworkTest {
     }
 
     @Test
+    public void isOverdue() {
+        assertFalse(ALGEBRA.isOverdue(LocalDate.of(2026, 10, 14)));
+        assertFalse(ALGEBRA.isOverdue(LocalDate.of(2026, 10, 15)));
+        assertTrue(ALGEBRA.isOverdue(LocalDate.of(2026, 10, 16)));
+
+        Homework scoredHomework = new HomeworkBuilder(ALGEBRA).withScore("0/10").build();
+        assertFalse(scoredHomework.isOverdue(LocalDate.of(2026, 10, 14)));
+        assertFalse(scoredHomework.isOverdue(LocalDate.of(2026, 10, 15)));
+        assertFalse(scoredHomework.isOverdue(LocalDate.of(2026, 10, 16)));
+    }
+
+    @Test
     public void isSameHomework() {
         // same object -> returns true
         assertTrue(ALGEBRA.isSameHomework(ALGEBRA));

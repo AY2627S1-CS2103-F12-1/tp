@@ -46,13 +46,6 @@ public class StudentCard extends UiPart<Region> {
         guardianName.setText("Guardian: " + student.getGuardianName());
         guardianPhone.setText("Guardian phone: " + student.getGuardianPhone());
         upcomingHomeworkCount.setText("Upcoming homework: " + student.getUpcomingHomeworkCount(today));
-        overdueHomeworkCount.setText("Overdue homework: " + getOverdueHomeworkCount(student, today));
-    }
-
-    private int getOverdueHomeworkCount(Student student, LocalDate today) {
-        return (int) student.getHomeworks().stream()
-                .filter(homework -> homework.getScore().isEmpty())
-                .filter(homework -> homework.getDueDate().getDate().isBefore(today))
-                .count();
+        overdueHomeworkCount.setText("Overdue homework: " + student.getOverdueHomeworkCount(today));
     }
 }

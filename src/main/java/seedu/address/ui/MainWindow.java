@@ -3,6 +3,7 @@ package seedu.address.ui;
 import java.nio.file.Path;
 import java.util.logging.Logger;
 
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.MenuItem;
@@ -15,8 +16,10 @@ import seedu.address.commons.core.GuiSettings;
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.logic.Logic;
 import seedu.address.logic.commands.CommandResult;
+import seedu.address.logic.commands.FilterCommand;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.logic.parser.exceptions.ParseException;
+import seedu.address.model.student.Student;
 
 /**
  * The Main Window. Provides the basic application layout containing
@@ -115,11 +118,11 @@ public class MainWindow extends UiPart<Stage> {
      * Fills up all the placeholders of this window.
      */
     void fillInnerParts() {
-        studentListPanel = new StudentListPanel(logic.getStudentList());
-        studentListPanelPlaceholder.getChildren().add(studentListPanel.getRoot());
-
         resultDisplay = new ResultDisplay();
         resultDisplayPlaceholder.getChildren().add(resultDisplay.getRoot());
+
+        studentListPanel = createStudentListPanel(logic.getStudentList(), this::handleStudentRenderingError);
+        studentListPanelPlaceholder.getChildren().add(studentListPanel.getRoot());
 
         StatusBarFooter statusBarFooter = new StatusBarFooter(dataFilePath);
         statusbarPlaceholder.getChildren().add(statusBarFooter.getRoot());
@@ -127,6 +130,20 @@ public class MainWindow extends UiPart<Stage> {
         commandBox = new CommandBox(this::executeCommand);
         commandBoxPlaceholder.getChildren().add(commandBox.getRoot());
         helpWindow.getRoot().setOnHidden(unused -> focusCommandBox());
+    }
+
+    /**
+     * Creates the panel for {@code students}, reporting rendering failures through {@code renderingErrorHandler}.
+     */
+    StudentListPanel createStudentListPanel(ObservableList<Student> students, Runnable renderingErrorHandler) {
+        return new StudentListPanel(students, renderingErrorHandler);
+    }
+
+    /**
+     * Shows a safe rendering error after the student panel has logged its technical cause.
+     */
+    private void handleStudentRenderingError() {
+        resultDisplay.setFeedbackToUser(FilterCommand.MESSAGE_INTERNAL_ERROR);
     }
 
     /**
@@ -184,10 +201,13 @@ public class MainWindow extends UiPart<Stage> {
      * @see seedu.address.logic.Logic#execute(String)
      */
     private CommandResult executeCommand(String commandText) throws CommandException, ParseException {
+        studentListPanel.clearRenderingError();
         try {
             CommandResult commandResult = logic.execute(commandText);
             logger.info("Result: " + commandResult.getFeedbackToUser());
-            resultDisplay.setFeedbackToUser(commandResult.getFeedbackToUser());
+            if (!studentListPanel.hasRenderingError()) {
+                resultDisplay.setFeedbackToUser(commandResult.getFeedbackToUser());
+            }
 
             if (commandResult.isShowStudentList()) {
                 studentListPanel.showFromTop();

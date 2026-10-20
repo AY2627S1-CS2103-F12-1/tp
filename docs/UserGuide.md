@@ -75,6 +75,14 @@ TutorFlow is a **desktop application for private tutors to manage their students
 * If you are using a PDF version of this document, be careful when copying and pasting commands that span multiple lines as space characters surrounding line-breaks may be omitted when copied over to the application.
 </div>
 
+### Viewing lessons and homework at a glance
+
+The **At a glance** panel on the right shows every student's regular lessons in weekly chronological order and every homework record without a score in due-date order, earliest first. Each entry includes the student's name and subject. Homework entries also show the due date; overdue homework (unscored and due before today) is marked `(overdue)` in bold red text.
+
+The headings show the total number of lessons and outstanding homework tasks. Empty sections show `No regular lessons` or `No outstanding homework`. The panel updates when roster data changes and always covers all students, even while `search` filters the student cards.
+
+Drag the dividers to resize the command box, result display, student list and sidebar. You can scroll over a section's heading or padding as well as its entries while keeping the cursor in the command box.
+
 ### Viewing help: `help`
 
 Opens the help window, which lists the commands `add`, `list`, `search`, `delete`, `homework add`, `homework list`, `homework edit`, `homework marks`, `homework delete`, `lesson add`, `lesson list`, `lesson delete`, `help`, `clear` and `exit`, grouped into Students, Homework, Lessons and General. Each command is shown with its format, what it does and an example.
@@ -145,7 +153,7 @@ Format: `homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|M
 * For 29 February (`02-29` or `2-29`), the year is this year only if this year is a leap year and 29 February has not passed yet. Otherwise it is next year, and if next year is not a leap year, the date is rejected. For example, `due/2-29` is rejected throughout 2026, and gives `2028-02-29` throughout 2027.
 * In both formats, the month and day may have 1 or 2 digits, so `2026-2-5` means 5 February 2026 and `10-5` means 5 October. The year must have 4 digits.
 * A student cannot have two homework records with the same title (ignoring case), subject and due date. The same homework can be added to different students.
-* Each student card shows `Upcoming homework: N`, the number of the student's homework records due today or later.
+* Each student card shows `Upcoming homework: N`, the number of the student's homework records due today or later (including scored homework), and `Overdue homework: N`, the number of unscored homework records due before today.
 
 Examples:
 * `homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15`

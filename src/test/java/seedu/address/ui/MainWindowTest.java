@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalRegularLessons.MONDAY_MATH;
+import static seedu.address.testutil.TypicalRegularLessons.TUESDAY_PHYSICS;
 
 import java.nio.file.Path;
 import java.util.concurrent.FutureTask;
@@ -125,6 +126,52 @@ public class MainWindowTest {
             assertEquals(-1, listView.getSelectionModel().getSelectedIndex());
             assertEquals("Listed 2 students.", resultDisplay.getText());
             assertEquals("", commandBox.getText());
+        });
+    }
+
+    @Test
+    public void searchCommand_filtersRosterButNotUpcomingPanel() throws Exception {
+        ModelManager model = new ModelManager();
+        model.addStudent(new StudentBuilder().withLessons(MONDAY_MATH).withHomeworks(ALGEBRA).build());
+        model.addStudent(new StudentBuilder().withName("Amy Lim").withPhone("91234568").withSubjects("PHYSICS")
+                .withLessons(TUESDAY_PHYSICS).build());
+        StorageManager storage = new StorageManager(
+                new JsonAddressBookStorage(temporaryFolder.resolve("tutorflow.json")),
+                new JsonUserPrefsStorage(temporaryFolder.resolve("userPrefs.json")));
+        Logic logic = new LogicManager(model, storage);
+
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+            new MainWindow(stage, logic, Path.of("data", "tutorflow.json")).fillInnerParts();
+            try {
+                stage.getScene().getRoot().applyCss();
+                TextField commandBox = (TextField) stage.getScene().getRoot().lookup("#commandTextField");
+                ListView<?> studentListView = (ListView<?>) stage.getScene().getRoot().lookup("#studentListView");
+                ListView<?> lessonListView = (ListView<?>) stage.getScene().getRoot().lookup("#lessonListView");
+                ListView<?> homeworkListView = (ListView<?>) stage.getScene().getRoot().lookup("#homeworkListView");
+
+                commandBox.setText("search Amy");
+                commandBox.getOnAction().handle(new ActionEvent());
+
+                assertEquals(1, studentListView.getItems().size());
+                assertEquals(2, lessonListView.getItems().size());
+                assertEquals(1, homeworkListView.getItems().size());
+
+                commandBox.setText("search Nobody");
+                commandBox.getOnAction().handle(new ActionEvent());
+
+                assertEquals(0, studentListView.getItems().size());
+                assertEquals(2, lessonListView.getItems().size());
+                assertEquals(1, homeworkListView.getItems().size());
+
+                commandBox.setText("clear");
+                commandBox.getOnAction().handle(new ActionEvent());
+
+                assertEquals(0, lessonListView.getItems().size());
+                assertEquals(0, homeworkListView.getItems().size());
+            } finally {
+                stage.close();
+            }
         });
     }
 

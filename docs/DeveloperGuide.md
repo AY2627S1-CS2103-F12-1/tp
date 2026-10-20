@@ -251,6 +251,12 @@ Consequently `list`, a new search, successful `add` and `homework upcoming` do n
 Student-index commands continue to use `Model#getStudentList`; lesson-schedule numbering remains independent.
 The stored `AddressBook` does not change, so `LogicManager` skips persistence.
 
+Sorting is a one-time permutation; the model does not retain an active comparator. `Model#setStudent` preserves
+the displayed position of a replacement that still matches the active predicate, even when its academic level,
+subjects or earliest meeting day changes. A replacement that no longer matches disappears from the view.
+An explicit `sort` uses the updated values. Future student-edit commands should use `Model#setStudent` without
+resetting the predicate or display order, so editing follows the same behavior as lesson and homework updates.
+
 `SortCommandResult` retains an order-restoration action for the UI boundary. `MainWindow` captures the panel state
 before a sort request and verifies rendering before reporting success. `StudentListPanel` retains previous cards,
 selection, focus and scrollbar positions, checks every candidate card, and forces visible cell layout. Cell callbacks
@@ -261,6 +267,8 @@ reporting one sort failure through both error paths. No rendering or recovery wo
 
 The sorting helper and parser have isolated tests. `SortIntegrationTest` exercises real logic/model/storage
 interactions, including zero save calls during sorting, subsequent displayed-index operations and failed saves.
+It also checks changes to each sort key through `Model#setStudent`, retention of the displayed position until
+another explicit sort, and removal of replacements that no longer match the active filter.
 `StudentSortRenderingTest` and `MainWindowSortTest` use controllable renderers on the JavaFX thread to verify
 selection/scroll recovery, exact feedback and diagnostic ownership. See the [logging guide](Logging.md).
 
@@ -686,6 +694,11 @@ testers are expected to do more *exploratory* testing.
 1. Run `homework list INDEX` for a newly displayed index, then `list` and a new `search`.<br>
    Expected: homework belongs to the displayed student. `list` restores stored order, and the new search uses
    roster order. A successful `add` and `homework upcoming` also discard the transient sort.
+1. Use a test roster of two students, one meeting only on Monday and another meeting on Tuesday.
+   Run `list`, then `sort by/day`.
+   Delete the Monday student's only meeting with `lesson delete 1 1`.<br>
+   Expected: that student remains first with no meetings. Run `sort by/day` again: the Tuesday student moves first,
+   and the student without meetings moves last. The stored roster order stays unchanged.
 
 ### Filtering students
 

@@ -225,6 +225,11 @@ roster ordering; successful `add` and `homework upcoming` also restore the full 
 A new `filter` command also discards the previous sort and displays matching students in stored roster order.
 Sorting does not edit student records, change the data file or trigger a save.
 
+Sorting is applied once. If a student's academic level, subjects or regular meetings change, the student keeps
+their displayed position while they still match the active search or filter. Students who no longer match disappear
+from the view. Run `sort` again to order the updated values. For example, after `sort by/day`, deleting the first
+student's only meeting leaves them first. Running `sort by/day` again moves them behind students with meetings.
+
 Invalid input leaves the current roster, order, selection and scroll position unchanged:
 
 Condition | Message

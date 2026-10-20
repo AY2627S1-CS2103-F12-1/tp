@@ -49,6 +49,8 @@ public interface Model {
      * Replaces the given student {@code target} with {@code editedStudent}, keeping its position in the roster.
      * {@code target} must exist in the roster.
      * The identity of {@code editedStudent} must not be the same as another existing student in the roster.
+     * A displayed student keeps its position if it still matches the active predicate, even if a sort key changes.
+     * Sorting is applied only by an explicit sort request; replacement does not reset or reapply it.
      */
     void setStudent(Student target, Student editedStudent);
 

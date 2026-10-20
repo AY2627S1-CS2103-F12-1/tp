@@ -8,7 +8,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.time.DayOfWeek;
 import java.time.Instant;
+import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.util.List;
 
@@ -21,10 +23,13 @@ import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.ModelManager;
 import seedu.address.model.ReadOnlyAddressBook;
 import seedu.address.model.UserPrefs;
+import seedu.address.model.lesson.RegularLesson;
 import seedu.address.model.student.Student;
+import seedu.address.model.student.TuitionSubject;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
 import seedu.address.storage.StorageManager;
+import seedu.address.testutil.AddressBookBuilder;
 import seedu.address.testutil.StudentBuilder;
 
 public class SortIntegrationTest {
@@ -185,6 +190,79 @@ public class SortIntegrationTest {
         assertEquals(List.of("Target Junior"), displayedNames());
         assertEquals(List.of("Target Junior", "Hidden Student"), storedNames());
         assertEquals(model.getAddressBook(), storage.readAddressBook().orElseThrow());
+    }
+
+    @Test
+    public void execute_levelChangeAfterSort_keepsPositionUntilExplicitSort() throws Exception {
+        Student original = new StudentBuilder().withName("Changed Student").withAcademicLevel("S1").build();
+        Student edited = new StudentBuilder().withName("Changed Student").withAcademicLevel("J2").build();
+        Student other = new StudentBuilder().withName("Other Student").withAcademicLevel("S3").build();
+
+        assertReplacementKeepsPositionUntilSort("level", original, edited, other);
+    }
+
+    @Test
+    public void execute_subjectChangeAfterSort_keepsPositionUntilExplicitSort() throws Exception {
+        Student original = new StudentBuilder().withName("Changed Student").withSubjects("CHEMISTRY").build();
+        Student edited = new StudentBuilder().withName("Changed Student").withSubjects("PHYSICS").build();
+        Student other = new StudentBuilder().withName("Other Student").withSubjects("MATH").build();
+
+        assertReplacementKeepsPositionUntilSort("subject", original, edited, other);
+    }
+
+    @Test
+    public void execute_dayChangeAfterSort_keepsPositionUntilExplicitSort() throws Exception {
+        Student original = new StudentBuilder().withName("Changed Student")
+                .withLessons(lessonOn(DayOfWeek.MONDAY)).build();
+        Student edited = original.withLessons(List.of(lessonOn(DayOfWeek.FRIDAY)));
+        Student other = new StudentBuilder().withName("Other Student")
+                .withLessons(lessonOn(DayOfWeek.WEDNESDAY)).build();
+
+        assertReplacementKeepsPositionUntilSort("day", original, edited, other);
+    }
+
+    @Test
+    public void execute_replacementNoLongerMatchesFilter_removesStudentWithoutExposingOtherStudents() throws Exception {
+        setUpSubjectFilter();
+        logic.execute("filter s/MATH");
+        logic.execute("sort by/level");
+        Student original = model.getStudentList().getFirst();
+        Student edited = new StudentBuilder().withName("Target Secondary").withAcademicLevel("S1")
+                .withSubjects("CHEMISTRY").build();
+
+        model.setStudent(original, edited);
+
+        assertEquals(List.of("Target Junior"), displayedNames());
+        assertEquals(edited, model.getAddressBook().getStudentList().get(2));
+        logic.execute("sort by/subject");
+        assertEquals(List.of("Target Junior"), displayedNames());
+        assertEquals(List.of("Target Junior", "Hidden Student", "Target Secondary"), storedNames());
+    }
+
+    /**
+     * Checks the model boundary for future student edits without introducing an edit command or resetting the view.
+     */
+    private void assertReplacementKeepsPositionUntilSort(String key, Student original, Student edited, Student other)
+            throws Exception {
+        Student hidden = new StudentBuilder().withName("Hidden Person").build();
+        model.setAddressBook(new AddressBookBuilder().withStudent(other).withStudent(hidden)
+                .withStudent(original).build());
+        logic.execute("search Student");
+        logic.execute("sort by/" + key);
+        assertEquals(List.of(original, other), model.getStudentList());
+
+        model.setStudent(original, edited);
+
+        assertEquals(List.of(edited, other), model.getStudentList());
+        assertEquals(List.of(other, hidden, edited), model.getAddressBook().getStudentList());
+        logic.execute("sort by/" + key);
+        assertEquals(List.of(other, edited), model.getStudentList());
+        assertEquals(List.of(other, hidden, edited), model.getAddressBook().getStudentList());
+        assertEquals(0, storage.saveCount);
+    }
+
+    private static RegularLesson lessonOn(DayOfWeek day) {
+        return new RegularLesson(TuitionSubject.MATH, day, LocalTime.of(14, 0), LocalTime.of(15, 0));
     }
 
     /**

@@ -143,6 +143,60 @@ public class SortIntegrationTest {
         assertEquals(0, storage.saveCount);
     }
 
+    @Test
+    public void execute_sortAfterFilter_preservesMatchesAndNeverWritesData() throws Exception {
+        setUpSubjectFilter();
+        String savedBefore = Files.readString(dataPath);
+        logic.execute("filter s/MATH");
+        logic.execute("sort by/level");
+
+        assertEquals(List.of("Target Secondary", "Target Junior"), displayedNames());
+        assertEquals(List.of("Target Junior", "Hidden Student", "Target Secondary"), storedNames());
+        assertEquals(savedBefore, Files.readString(dataPath));
+        assertEquals(0, storage.saveCount);
+    }
+
+    @Test
+    public void execute_filterAfterSort_resetsOrderAndExaminesFullRoster() throws Exception {
+        setUpSubjectFilter();
+        logic.execute("filter s/MATH");
+        logic.execute("sort by/level");
+        logic.execute("filter s/MATH");
+        assertEquals(List.of("Target Junior", "Target Secondary"), displayedNames());
+
+        logic.execute("search Hidden");
+        logic.execute("sort by/day");
+        logic.execute("filter s/MATH");
+        assertEquals(List.of("Target Junior", "Target Secondary"), displayedNames());
+        assertEquals(0, storage.saveCount);
+    }
+
+    @Test
+    public void execute_indexedCommandsAfterFilteredSort_targetCorrectStudent() throws Exception {
+        setUpSubjectFilter();
+        logic.execute("filter s/MATH");
+        logic.execute("sort by/level");
+        logic.execute("hw add 1 t/Filtered homework s/MATH due/2026-10-21");
+
+        assertEquals("Filtered homework", model.getAddressBook().getStudentList().get(2).getHomeworks()
+                .getFirst().getTitle().toString());
+        assertEquals(List.of("Target Secondary", "Target Junior"), displayedNames());
+        logic.execute("delete 1");
+        assertEquals(List.of("Target Junior"), displayedNames());
+        assertEquals(List.of("Target Junior", "Hidden Student"), storedNames());
+        assertEquals(model.getAddressBook(), storage.readAddressBook().orElseThrow());
+    }
+
+    /**
+     * Persists a fixture where the hidden student does not match the other students' subject.
+     */
+    private void setUpSubjectFilter() throws IOException {
+        Student hidden = model.getAddressBook().getStudentList().get(1);
+        model.setStudent(hidden, new StudentBuilder().withName("Hidden Student").withSubjects("CHEMISTRY").build());
+        storage.saveAddressBook(model.getAddressBook());
+        storage.saveCount = 0;
+    }
+
     private List<String> displayedNames() {
         return model.getStudentList().stream().map(student -> student.getName().toString()).toList();
     }

@@ -89,10 +89,32 @@ public class MainWindowSortTest {
     }
 
     @Test
+    public void sortCommand_emptyFilterResults_succeedsWithoutChangingStoredRoster() throws Exception {
+        runOnFxThread(() -> {
+            ModelManager model = createModel();
+            List<Student> storedBefore = List.copyOf(model.getAddressBook().getStudentList());
+            Stage stage = new Stage();
+            MainWindow window = new MainWindow(stage, createLogic(model), temporaryFolder.resolve("students.json"));
+            window.fillInnerParts();
+            Parent root = stage.getScene().getRoot();
+            enterCommand(root, "filter l/S5");
+            enterCommand(root, "sort by/level");
+
+            assertEquals("No students to sort.", feedback(root));
+            assertEquals(List.of(), model.getStudentList());
+            assertEquals(storedBefore, model.getAddressBook().getStudentList());
+            assertEquals("", ((TextField) root.lookup("#commandTextField")).getText());
+            enterCommand(root, "list");
+            assertEquals(storedBefore, model.getStudentList());
+        });
+    }
+
+    @Test
     public void sortCommand_renderFailure_restoresPreviousViewAndReportsFriendlyError() throws Exception {
         runOnFxThread(() -> {
             ModelManager model = createModel();
-            List<Student> before = List.copyOf(model.getStudentList());
+            model.addStudent(new StudentBuilder().withName("Hidden Student").withSubjects("CHEMISTRY").build());
+            List<Student> storedBefore = List.copyOf(model.getAddressBook().getStudentList());
             AtomicBoolean shouldFail = new AtomicBoolean();
             Stage stage = new Stage();
             MainWindow window = new MainWindow(stage, createLogic(model), temporaryFolder.resolve("students.json")) {
@@ -111,6 +133,8 @@ public class MainWindowSortTest {
             Parent root = stage.getScene().getRoot();
             root.applyCss();
             root.layout();
+            enterCommand(root, "filter s/MATH");
+            List<Student> before = List.copyOf(model.getStudentList());
             ListView<Student> listView = getListView(root);
             listView.getSelectionModel().select(1);
             shouldFail.set(true);
@@ -124,10 +148,49 @@ public class MainWindowSortTest {
             }
             assertEquals(SortCommand.MESSAGE_INTERNAL_ERROR, feedback(root));
             assertEquals(before, model.getStudentList());
-            assertEquals(before, model.getAddressBook().getStudentList());
+            assertEquals(storedBefore, model.getAddressBook().getStudentList());
             assertEquals(1, listView.getSelectionModel().getSelectedIndex());
             assertEquals("sort by/level", ((TextField) root.lookup("#commandTextField")).getText());
             assertFalse(temporaryFolder.resolve("students.json").toFile().exists());
+        });
+    }
+
+    @Test
+    public void filterAfterSort_renderFailure_logsOnceForTheWholeCommand() throws Exception {
+        runOnFxThread(() -> {
+            ModelManager model = createModel();
+            AtomicBoolean shouldFail = new AtomicBoolean();
+            Stage stage = new Stage();
+            MainWindow window = new MainWindow(stage, createLogic(model), temporaryFolder.resolve("students.json")) {
+                @Override
+                StudentListPanel createStudentListPanel(ObservableList<Student> students,
+                        Runnable renderingErrorHandler) {
+                    return new StudentListPanel(students, renderingErrorHandler, (student, index) -> {
+                        if (shouldFail.get()) {
+                            throw new IllegalStateException("Injected filter rendering failure");
+                        }
+                        return new StudentCard(student, index, LocalDate.of(2026, 10, 20)).getRoot();
+                    });
+                }
+            };
+            window.fillInnerParts();
+            Parent root = stage.getScene().getRoot();
+            root.applyCss();
+            root.layout();
+            enterCommand(root, "sort by/level");
+            shouldFail.set(true);
+
+            try (LogRecorder panelLogs = new LogRecorder(StudentListPanel.class);
+                    LogRecorder windowLogs = new LogRecorder(MainWindow.class)) {
+                enterCommand(root, "filter s/MATH");
+                assertEquals(1, panelLogs.getFailures().size());
+                assertEquals(Level.WARNING, panelLogs.getFailures().getFirst().getLevel());
+                assertEquals(0, windowLogs.getFailures().size());
+            }
+            assertEquals("TutorFlow could not display the filtered results due to an internal error", feedback(root));
+            shouldFail.set(false);
+            enterCommand(root, "list");
+            assertEquals("Listed 2 students.", feedback(root));
         });
     }
 

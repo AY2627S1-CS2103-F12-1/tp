@@ -28,6 +28,10 @@ display its friendly message without logging the same stack trace again. The com
 `TutorFlow could not sort the students due to an internal error.`; diagnostic causes remain in the logs.
 New sort diagnostics do not dump student objects, names, phone numbers or the roster.
 
+When filtering follows a sort, predicate replacement and restoring roster order can emit separate display updates.
+Those updates share one command rendering attempt, so the panel reports one technical failure. A later command
+or an independent display update can begin a new attempt; sort rollback retains its own diagnostic owner.
+
 `LogRecorder` captures records with an in-memory handler in tests. Tests check severity, cause and failure-record
 count, then close the recorder to remove its handler and restore the previous logger level. They do not depend
 on timestamps, stack-trace text, file rotation or the contents of application log files.

@@ -34,6 +34,7 @@ public class StudentListPanel extends UiPart<Region> {
     private final Runnable renderingErrorHandler;
     private final BiFunction<Student, Integer, Region> cardFactory;
     private boolean hasRenderingError;
+    private boolean isExecutingCommand;
     private Map<Integer, RenderedCard> renderedCards = new HashMap<>();
     private boolean isSorting;
     private RuntimeException renderingFailure;
@@ -74,9 +75,11 @@ public class StudentListPanel extends UiPart<Region> {
         requireAllNonNull(students, renderingErrorHandler, cardFactory);
         this.renderingErrorHandler = renderingErrorHandler;
         this.cardFactory = cardFactory;
-        // Reset before ListView observes new results, retaining the snapshot during sort recovery.
+        // Register before ListView so independent updates reset diagnostics before rendering starts.
         students.addListener((ListChangeListener<Student>) change -> {
-            clearRenderingError();
+            if (!isExecutingCommand) {
+                clearRenderingError();
+            }
             if (!isSorting) {
                 renderedCards.clear();
             }
@@ -100,6 +103,21 @@ public class StudentListPanel extends UiPart<Region> {
      */
     void clearRenderingError() {
         hasRenderingError = false;
+    }
+
+    /**
+     * Starts one rendering attempt shared by all display updates emitted during the command.
+     */
+    void beginCommandRendering() {
+        isExecutingCommand = true;
+        clearRenderingError();
+    }
+
+    /**
+     * Allows a later, independent display update to start a fresh rendering attempt.
+     */
+    void endCommandRendering() {
+        isExecutingCommand = false;
     }
 
     /**

@@ -291,8 +291,10 @@ by `LogicManager`, so `Storage#saveAddressBook` is never called and no storage f
 `WARNING`. `StudentListPanel` handles card-rendering exceptions, including cells created after command execution,
 clears the failing graphic and logs the cause once per rendering attempt. Its callback makes `MainWindow` show the
 specified internal-error message. The rendering-error flag prevents command success feedback from overwriting a
-synchronous rendering failure. A subsequent command or displayed-list update begins another attempt. `UiPart` wraps
-FXML loading I/O failures in `UncheckedIOException`; genuine assertion failures are not caught by this recovery path.
+synchronous rendering failure. All display updates within one command share a rendering attempt, including predicate
+changes followed by order resets. A subsequent command or an independent displayed-list update starts another attempt.
+`UiPart` wraps FXML loading I/O failures in `UncheckedIOException`; genuine assertion failures are not caught
+by this recovery path.
 Existing command/result `INFO` logging is reused, with criteria and match counts available at `FINE`.
 
 **Verification.** Predicate and parser tests cover criterion combinations, normalization, ordering, duplicate entries

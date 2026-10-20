@@ -204,7 +204,7 @@ public class MainWindow extends UiPart<Stage> {
      * @see seedu.address.logic.Logic#execute(String)
      */
     private CommandResult executeCommand(String commandText) throws CommandException, ParseException {
-        studentListPanel.clearRenderingError();
+        studentListPanel.beginCommandRendering();
         try {
             boolean isSortRequest = commandText.strip().split("\\s+", 2)[0].equals(SortCommand.COMMAND_WORD);
             CommandResult commandResult = isSortRequest ? executeStudentSort(commandText) : logic.execute(commandText);
@@ -230,6 +230,8 @@ public class MainWindow extends UiPart<Stage> {
             logger.info("An error occurred while executing command: " + commandText);
             resultDisplay.setFeedbackToUser(e.getMessage());
             throw e;
+        } finally {
+            studentListPanel.endCommandRendering();
         }
     }
 

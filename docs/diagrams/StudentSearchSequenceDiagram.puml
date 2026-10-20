@@ -1,0 +1,67 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+
+box UI UI_COLOR_T1
+participant ":MainWindow" as MainWindow UI_COLOR
+end box
+
+box Logic LOGIC_COLOR_T1
+participant ":LogicManager" as LogicManager LOGIC_COLOR
+participant ":AddressBookParser" as AddressBookParser LOGIC_COLOR
+participant ":SearchCommandParser" as SearchCommandParser LOGIC_COLOR
+participant "s:SearchCommand" as SearchCommand LOGIC_COLOR
+end box
+
+box Model MODEL_COLOR_T1
+participant ":ModelManager" as ModelManager MODEL_COLOR
+participant "students:FilteredList<Student>" as FilteredStudents MODEL_COLOR
+end box
+
+MainWindow -> LogicManager : execute("search Jane")
+activate LogicManager
+
+LogicManager -> AddressBookParser : parseCommand("search Jane")
+activate AddressBookParser
+
+create SearchCommandParser
+AddressBookParser -> SearchCommandParser
+AddressBookParser -> SearchCommandParser : parse(" Jane")
+activate SearchCommandParser
+
+create SearchCommand
+SearchCommandParser -> SearchCommand
+SearchCommandParser --> AddressBookParser : s
+deactivate SearchCommandParser
+AddressBookParser --> LogicManager : s
+deactivate AddressBookParser
+
+LogicManager -> SearchCommand : execute(model)
+activate SearchCommand
+SearchCommand -> ModelManager : updateFilteredStudentList(predicate)
+activate ModelManager
+ModelManager -> FilteredStudents : setPredicate(predicate)
+ModelManager --> SearchCommand
+deactivate ModelManager
+
+SearchCommand -> ModelManager : getStudentList()
+activate ModelManager
+ModelManager --> SearchCommand : matching students
+deactivate ModelManager
+
+SearchCommand --> LogicManager : CommandResult
+deactivate SearchCommand
+
+note over LogicManager
+  The stored AddressBook is unchanged,
+  so LogicManager does not save it.
+end note
+
+LogicManager --> MainWindow : CommandResult
+deactivate LogicManager
+
+note over ModelManager, FilteredStudents
+  The student list panel observes the filtered list
+  and refreshes when its predicate changes.
+end note
+@enduml

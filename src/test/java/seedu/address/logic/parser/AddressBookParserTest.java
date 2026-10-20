@@ -10,6 +10,7 @@ import static seedu.address.testutil.TypicalHomeworks.MECHANICS;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
 
@@ -29,6 +30,7 @@ import seedu.address.logic.commands.HomeworkListCommand;
 import seedu.address.logic.commands.LessonDeleteCommand;
 import seedu.address.logic.commands.LessonListCommand;
 import seedu.address.logic.commands.ListCommand;
+import seedu.address.logic.commands.SearchCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.homework.Homework;
 import seedu.address.model.student.Student;
@@ -88,6 +90,13 @@ public class AddressBookParserTest {
     }
 
     @Test
+    public void parseCommand_search() throws Exception {
+        assertEquals(new SearchCommand("Mary Tan"), parser.parseCommand("search Mary Tan"));
+        assertThrows(ParseException.class, SearchCommand.MESSAGE_INVALID_FORMAT, () ->
+                parser.parseCommand("search   "));
+    }
+
+    @Test
     public void parseCommand_homework() throws Exception {
         HomeworkAddCommand command = (HomeworkAddCommand) parser.parseCommand(
                 "homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15");
@@ -118,8 +127,9 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_homeworkAliasList() throws Exception {
-        HomeworkListCommand command = (HomeworkListCommand) parser.parseCommand("hw ls 5");
-        assertEquals(new HomeworkListCommand(Index.fromOneBased(5)), command);
+        Clock clock = Clock.fixed(Instant.parse("2026-10-05T00:00:00Z"), ZoneOffset.UTC);
+        HomeworkListCommand command = (HomeworkListCommand) new AddressBookParser(clock).parseCommand("hw ls 5");
+        assertEquals(new HomeworkListCommand(Index.fromOneBased(5), LocalDate.of(2026, 10, 5), false), command);
     }
 
     @Test

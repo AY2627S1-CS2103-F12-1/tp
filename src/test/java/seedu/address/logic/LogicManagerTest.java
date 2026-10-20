@@ -2,6 +2,7 @@ package seedu.address.logic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX;
 import static seedu.address.logic.Messages.MESSAGE_UNKNOWN_COMMAND;
 import static seedu.address.testutil.Assert.assertThrows;
@@ -15,7 +16,13 @@ import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,6 +33,8 @@ import seedu.address.logic.commands.CommandResult;
 import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
+import seedu.address.logic.commands.HomeworkEditCommand;
+import seedu.address.logic.commands.HomeworkMarksCommand;
 import seedu.address.logic.commands.LessonAddCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.exceptions.CommandException;
@@ -35,6 +44,7 @@ import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.ReadOnlyAddressBook;
 import seedu.address.model.UserPrefs;
+import seedu.address.model.homework.Score;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
 import seedu.address.storage.StorageManager;
@@ -112,6 +122,56 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_searchFiltersDisplayWithoutSavingData() throws Exception {
+        setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+        AddressBook before = new AddressBook(model.getAddressBook());
+
+        CommandResult result = logic.execute("search Alice");
+
+        assertEquals("Found 1 student for \"Alice\".\nType list to show all students.",
+                result.getFeedbackToUser());
+        assertEquals(1, logic.getStudentList().size());
+        assertEquals(before, model.getAddressBook());
+        assertFalse(Files.exists(dataFilePath));
+    }
+
+    @Test
+    public void execute_lessonClashHiddenBySearch_preservesSavedRoster() throws Exception {
+        logic.execute(ADD_STUDENT_COMMAND);
+        logic.execute("add n/Alex Lim l/S3 s/MATH p/92345678 gn/Jane Lim gp/98765433");
+        logic.execute("lesson add 1 s/MATH d/MONDAY st/14:00 et/16:00");
+        String savedBefore = Files.readString(dataFilePath);
+        AddressBook rosterBefore = new AddressBook(model.getAddressBook());
+        logic.execute("search Alex");
+
+        assertCommandException("lesson add 1 s/MATH d/MONDAY st/15:00 et/17:00",
+                LessonAddCommand.MESSAGE_CLASH + "John Tan; MATH; MONDAY; 14:00-16:00");
+
+        assertEquals(1, logic.getStudentList().size());
+        assertEquals(rosterBefore, model.getAddressBook());
+        assertEquals(savedBefore, Files.readString(dataFilePath));
+        assertEquals(rosterBefore, new AddressBook(addressBookStorage.readAddressBook().get()));
+    }
+
+    @Test
+    public void execute_homeworkUpcomingAfterSearch_studentIndexMatchesHomeworkList() throws Exception {
+        // today is 2026-10-19, so the mechanics homework of Alice Tan (1st) and Carl Ng (3rd) is upcoming
+        setUpLogic(getTypicalAddressBook(), addressBookStorage,
+                Clock.fixed(Instant.parse("2026-10-19T00:00:00Z"), ZoneOffset.UTC));
+        logic.execute("search Carl");
+
+        String upcomingFeedback = logic.execute("hw up").getFeedbackToUser();
+
+        assertEquals(3, logic.getStudentList().size());
+        Matcher carlLine = Pattern.compile("\nStudent (\\d+): Carl Ng;").matcher(upcomingFeedback);
+        assertTrue(carlLine.find());
+        assertEquals("Listed 1 upcoming homework record for Carl Ng.\nHomework for Carl Ng:\n"
+                + "1. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded",
+                logic.execute("hw ls " + carlLine.group(1)).getFeedbackToUser());
+        assertFalse(Files.exists(dataFilePath));
+    }
+
+    @Test
     public void execute_addStudent_savesStudent() throws Exception {
         logic.execute(ADD_STUDENT_COMMAND);
 
@@ -135,6 +195,40 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_homeworkEdit_savesEditedHomework() throws Exception {
+        setUpLogic(getTypicalAddressBook(), addressBookStorage);
+
+        logic.execute("hw e 1 1 t/Complete algebra questions 1-10");
+
+        ReadOnlyAddressBook savedData = addressBookStorage.readAddressBook().get();
+        assertEquals("Complete algebra questions 1-10",
+                savedData.getStudentList().get(0).getHomeworks().get(0).getTitle().toString());
+        assertEquals(model.getAddressBook(), new AddressBook(savedData));
+    }
+
+    @Test
+    public void execute_homeworkMarks_savesScore() throws Exception {
+        setUpLogic(getTypicalAddressBook(), addressBookStorage);
+
+        logic.execute("hw m 1 2 score/5/10");
+
+        ReadOnlyAddressBook savedData = addressBookStorage.readAddressBook().get();
+        assertEquals(Optional.of(new Score(5, 10)), savedData.getStudentList().get(0).getHomeworks().get(1).getScore());
+        assertEquals(model.getAddressBook(), new AddressBook(savedData));
+    }
+
+    @Test
+    public void execute_homeworkMarksClear_savesClearedScore() throws Exception {
+        setUpLogic(getTypicalAddressBook(), addressBookStorage);
+
+        logic.execute("hw m 1 3 score/");
+
+        ReadOnlyAddressBook savedData = addressBookStorage.readAddressBook().get();
+        assertEquals(Optional.empty(), savedData.getStudentList().get(0).getHomeworks().get(2).getScore());
+        assertEquals(model.getAddressBook(), new AddressBook(savedData));
+    }
+
+    @Test
     public void execute_clear_savesNoStudents() throws Exception {
         setUpLogic(getTypicalAddressBook(), addressBookStorage);
 
@@ -149,6 +243,7 @@ public class LogicManagerTest {
         setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
 
         logic.execute("hw ls 1");
+        logic.execute("hw up due/365");
         logic.execute("help");
 
         assertEquals(new ModelManager(getTypicalAddressBook(), new UserPrefs()), model);
@@ -273,6 +368,33 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_homeworkEditSaveFails_rollsBackEdit() {
+        setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+
+        assertCommandFailure("hw edit 1 2 t/Revise mechanics s/PHYSICS due/2026-11-10", CommandException.class,
+                HomeworkEditCommand.MESSAGE_SAVE_FAILURE, new ModelManager(getTypicalAddressBook(), new UserPrefs()));
+        assertFalse(Files.exists(dataFilePath));
+    }
+
+    @Test
+    public void execute_homeworkMarksSaveFails_rollsBackScore() {
+        setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_AD_EXCEPTION));
+
+        assertCommandFailure("hw marks 1 3 score/0/10", CommandException.class,
+                HomeworkMarksCommand.MESSAGE_SAVE_FAILURE, new ModelManager(getTypicalAddressBook(), new UserPrefs()));
+        assertFalse(Files.exists(dataFilePath));
+    }
+
+    @Test
+    public void execute_homeworkMarksClearSaveFails_keepsScore() {
+        setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_AD_EXCEPTION));
+
+        assertCommandFailure("hw m 1 3 score/", CommandException.class,
+                HomeworkMarksCommand.MESSAGE_SAVE_FAILURE, new ModelManager(getTypicalAddressBook(), new UserPrefs()));
+        assertFalse(Files.exists(dataFilePath));
+    }
+
+    @Test
     public void getStudentList_modifyList_throwsUnsupportedOperationException() {
         assertThrows(UnsupportedOperationException.class, () -> logic.getStudentList().remove(0));
     }
@@ -348,9 +470,17 @@ public class LogicManagerTest {
      * Replaces {@code model} with one holding {@code data}, and {@code logic} with one using {@code storage}.
      */
     private void setUpLogic(ReadOnlyAddressBook data, JsonAddressBookStorage storage) {
+        setUpLogic(data, storage, Clock.systemDefaultZone());
+    }
+
+    /**
+     * Replaces {@code model} with one holding {@code data}, and {@code logic} with one using {@code storage} and
+     * taking today's date from {@code clock}.
+     */
+    private void setUpLogic(ReadOnlyAddressBook data, JsonAddressBookStorage storage, Clock clock) {
         model = new ModelManager(data, new UserPrefs());
         JsonUserPrefsStorage userPrefsStorage = new JsonUserPrefsStorage(temporaryFolder.resolve("userPrefs.json"));
-        logic = new LogicManager(model, new StorageManager(storage, userPrefsStorage));
+        logic = new LogicManager(model, new StorageManager(storage, userPrefsStorage), clock);
     }
 
     /**

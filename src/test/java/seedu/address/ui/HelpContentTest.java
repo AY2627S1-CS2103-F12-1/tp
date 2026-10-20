@@ -20,11 +20,15 @@ import seedu.address.logic.commands.ExitCommand;
 import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
+import seedu.address.logic.commands.HomeworkEditCommand;
 import seedu.address.logic.commands.HomeworkListCommand;
+import seedu.address.logic.commands.HomeworkMarksCommand;
+import seedu.address.logic.commands.HomeworkUpcomingCommand;
 import seedu.address.logic.commands.LessonAddCommand;
 import seedu.address.logic.commands.LessonDeleteCommand;
 import seedu.address.logic.commands.LessonListCommand;
 import seedu.address.logic.commands.ListCommand;
+import seedu.address.logic.commands.SearchCommand;
 import seedu.address.logic.parser.AddressBookParser;
 
 public class HelpContentTest {
@@ -44,8 +48,12 @@ public class HelpContentTest {
                 Map.entry(DeleteCommand.COMMAND_WORD, DeleteCommand.MESSAGE_USAGE),
                 Map.entry(EditCommand.COMMAND_WORD, EditCommand.MESSAGE_USAGE),
                 Map.entry(ListCommand.COMMAND_WORD, ListCommand.MESSAGE_USAGE),
+                Map.entry(SearchCommand.COMMAND_WORD, SearchCommand.MESSAGE_USAGE),
                 Map.entry("homework add", HomeworkAddCommand.MESSAGE_USAGE),
                 Map.entry("homework list", HomeworkListCommand.MESSAGE_USAGE),
+                Map.entry("homework upcoming", HomeworkUpcomingCommand.MESSAGE_USAGE),
+                Map.entry("homework edit", HomeworkEditCommand.MESSAGE_USAGE),
+                Map.entry("homework marks", HomeworkMarksCommand.MESSAGE_USAGE),
                 Map.entry("homework delete", HomeworkDeleteCommand.MESSAGE_USAGE),
                 Map.entry("lesson add", LessonAddCommand.MESSAGE_USAGE),
                 Map.entry("lesson list", LessonListCommand.MESSAGE_USAGE),
@@ -68,8 +76,12 @@ public class HelpContentTest {
                 Map.entry(DeleteCommand.COMMAND_WORD, DeleteCommand.class),
                 Map.entry(EditCommand.COMMAND_WORD, EditCommand.class),
                 Map.entry(ListCommand.COMMAND_WORD, ListCommand.class),
+                Map.entry(SearchCommand.COMMAND_WORD, SearchCommand.class),
                 Map.entry("homework add", HomeworkAddCommand.class),
                 Map.entry("homework list", HomeworkListCommand.class),
+                Map.entry("homework upcoming", HomeworkUpcomingCommand.class),
+                Map.entry("homework edit", HomeworkEditCommand.class),
+                Map.entry("homework marks", HomeworkMarksCommand.class),
                 Map.entry("homework delete", HomeworkDeleteCommand.class),
                 Map.entry("lesson add", LessonAddCommand.class),
                 Map.entry("lesson list", LessonListCommand.class),

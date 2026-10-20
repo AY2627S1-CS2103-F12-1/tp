@@ -22,6 +22,9 @@ import seedu.address.model.student.Student;
 
 public class SampleDataUtilTest {
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-05T00:00:00Z"), ZoneOffset.UTC);
+    /** Date of the documented {@code homework upcoming} results. */
+    private static final Clock UPCOMING_EXAMPLE_CLOCK =
+            Clock.fixed(Instant.parse("2026-10-17T00:00:00Z"), ZoneOffset.UTC);
 
     private final Student[] sampleStudents = SampleDataUtil.getSampleStudents();
 
@@ -92,7 +95,19 @@ public class SampleDataUtilTest {
             {"homework add 2 due/10-18 s/chemistry title/Revise atomic structure"},
             {"hw add 1 t/Read chapter 3 s/physics due/10-5"},
             {"homework list 1"},
-            {"hw ls 3"},
+            {"hw ls 2 all"},
+            {"hw up"},
+            {"hw up due/3"},
+            {"hw up due/7"},
+            {"hw up due/0"},
+            {"hw upcoming due/7"},
+            {"hw e 1 2 t/Complete algebra questions 1-10"},
+            {"hw e 2 1 due/2026-11-05"},
+            {"hw edit 1 2 t/Revise mechanics s/PHYSICS due/2026-11-10"},
+            {"hw e 3 1 due/10-5"},
+            {"hw m 1 2 score/5/10"},
+            {"hw m 2 1 score/35/50"},
+            {"homework marks 4 2 score/0/10"},
             {"homework list 1", "homework delete 1 2"},
             {"hw del 3 1"},
             {"lesson list"}
@@ -104,5 +119,32 @@ public class SampleDataUtilTest {
                 assertDoesNotThrow(() -> parser.parseCommand(commandText).execute(model), commandText);
             }
         }
+    }
+
+    @Test
+    public void getSampleStudents_userGuideEditExample_showsDocumentedResult() throws Exception {
+        String expectedMessage = "Edited homework:\n"
+                + "Priya Nair; Title: Integration by parts exercise; Subject: MATH; Due: 2026-11-05\n"
+                + "Listed 3 upcoming homework records for Priya Nair.\n"
+                + "Homework for Priya Nair:\n"
+                + "2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-02 - score Not recorded\n"
+                + "1. Integration by parts exercise (MATH) - due 2026-11-05 - score Not recorded\n"
+                + "3. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-09 - score Not recorded";
+        Model model = getModelWithStudents(List.of(sampleStudents));
+
+        assertEquals(expectedMessage, new AddressBookParser(CLOCK).parseCommand("hw e 2 1 due/2026-11-05")
+                .execute(model).getFeedbackToUser());
+    }
+
+    @Test
+    public void getSampleStudents_userGuideUpcomingExamples_showDocumentedResults() throws Exception {
+        AddressBookParser parser = new AddressBookParser(UPCOMING_EXAMPLE_CLOCK);
+        Model model = getModelWithStudents(List.of(sampleStudents));
+
+        assertEquals("Found 1 homework record due from 2026-10-17 to 2026-10-24.\n"
+                + "Student 1: Ethan Lim; Quadratic equations worksheet; MATH; Due: 2026-10-23; Score: Not recorded",
+                parser.parseCommand("hw up").execute(model).getFeedbackToUser());
+        assertEquals("No homework due from 2026-10-17 to 2026-10-20.",
+                parser.parseCommand("hw up due/3").execute(model).getFeedbackToUser());
     }
 }

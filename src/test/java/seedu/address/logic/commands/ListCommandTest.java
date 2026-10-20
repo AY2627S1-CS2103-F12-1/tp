@@ -3,6 +3,8 @@ package seedu.address.logic.commands;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
 import seedu.address.model.ModelManager;
@@ -52,5 +54,20 @@ public class ListCommandTest {
         assertEquals(first, model.getStudentList().get(0));
         assertEquals(second, model.getStudentList().get(1));
         assertTrue(result.isShowStudentList());
+    }
+
+    @Test
+    public void execute_afterSearch_restoresEveryStudent() throws Exception {
+        ModelManager model = new ModelManager();
+        Student first = new StudentBuilder().build();
+        Student second = new StudentBuilder().withName("Jane Tan").build();
+        model.addStudent(first);
+        model.addStudent(second);
+        new SearchCommand("Jane").execute(model);
+
+        CommandResult result = new ListCommand().execute(model);
+
+        assertEquals("Listed 2 students.", result.getFeedbackToUser());
+        assertEquals(List.of(first, second), model.getStudentList());
     }
 }

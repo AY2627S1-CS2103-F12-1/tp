@@ -144,9 +144,114 @@ public class StrictArgumentTokenizerTest {
     }
 
     @Test
+    public void tokenize_quotedValueWithPrefixShapedWord_removesQuotes() throws ParseException {
+        // unknown prefix-shaped word inside, value ends before an allowed prefix
+        assertEquals(Map.of("t/", "Speed in km/h", "n/", "A"),
+                tokenizeValues(" t/\"Speed in km/h\" n/A"));
+        // allowed prefix inside, value is the last one
+        assertEquals(Map.of("n/", "A", "t/", "Read t/2 and due/3"),
+                tokenizeValues(" n/A t/\"Read t/2 and due/3\""));
+    }
+
+    @Test
+    public void tokenize_quotesInsideValue_keptAsTyped() throws ParseException {
+        // value not wrapped in quotes
+        assertEquals(Map.of("t/", "Read \"Hamlet\" act 1", "n/", "A"),
+                tokenizeValues(" t/Read \"Hamlet\" act 1 n/A"));
+        // inner quotes not followed by an allowed prefix or the end do not close the value
+        assertEquals(Map.of("t/", "Read \"Hamlet\" km/h", "n/", "A"),
+                tokenizeValues(" t/\"Read \"Hamlet\" km/h\" n/A"));
+        // quote followed by an unknown prefix-shaped word does not close the value
+        assertEquals(Map.of("t/", "a\" km/h"), tokenizeValues(" t/\"a\" km/h\""));
+    }
+
+    @Test
+    public void tokenize_quoteFollowedByAllowedPrefix_closesValue() throws ParseException {
+        // the first quote followed by an allowed prefix closes the value, so the rest is the next value
+        assertEquals(Map.of("t/", "a", "n/", "b\""), tokenizeValues(" t/\"a\" n/b\""));
+
+        // a closed value followed by its own prefix is a repeat
+        assertThrows(ParseException.class, String.format(StrictArgumentTokenizer.MESSAGE_REPEATED_PREFIX, "t/"), () ->
+                tokenizeValues(" t/\"a\" t/b\""));
+    }
+
+    @Test
+    public void tokenize_unclosedQuote_readAsUnquoted() throws ParseException {
+        // prefix-shaped word inside is read as an unknown prefix
+        assertThrows(ParseException.class, MESSAGE_INVALID_FORMAT, () ->
+                tokenizeValues(" t/\"Speed in km/h n/A"));
+        // opening quote kept as typed
+        assertEquals(Map.of("t/", "\"Speed", "n/", "A"), tokenizeValues(" t/\"Speed n/A"));
+        // a lone quote
+        assertEquals(Map.of("t/", "\""), tokenizeValues(" t/\""));
+    }
+
+    @Test
+    public void tokenize_quoteFollowedByText_keptAsTyped() throws ParseException {
+        assertEquals(Map.of("t/", "\"Speed\" extra", "n/", "A"), tokenizeValues(" t/\"Speed\" extra n/A"));
+    }
+
+    @Test
+    public void tokenize_emptyQuotes_returnsEmptyValue() throws ParseException {
+        // last value
+        assertEquals(Map.of("t/", ""), tokenizeValues(" t/\"\""));
+        // before another prefix
+        assertEquals(Map.of("t/", "", "n/", "A"), tokenizeValues(" t/\"\" n/A"));
+        // only whitespace inside
+        assertEquals(Map.of("t/", "", "n/", "A"), tokenizeValues(" t/\"   \" n/A"));
+    }
+
+    @Test
+    public void tokenize_whitespaceAroundQuotes_stripsBothSides() throws ParseException {
+        // whitespace outside and at both ends inside the quotes is removed, whitespace between words is kept
+        assertEquals(Map.of("t/", "a  km/h", "n/", "A"), tokenizeValues(" t/   \"  a  km/h \t\"   n/A"));
+        // trailing whitespace after the last quoted value
+        assertEquals(Map.of("t/", "km/h"), tokenizeValues(" t/ \"km/h\"  \t"));
+        // tab between the closing quote and the next prefix
+        assertEquals(Map.of("t/", "km/h", "n/", "A"), tokenizeValues(" t/\"km/h\"\tn/A"));
+    }
+
+    @Test
+    public void tokenizeWithPreamble_quotedValue_removesQuotes() throws ParseException {
+        TokenizedArguments result = StrictArgumentTokenizer.tokenizeWithPreamble("1 \"2\" t/\"km/h\" due/3",
+                PREFIXES, MESSAGE_INVALID_FORMAT);
+
+        // quotes in the preamble are not special
+        assertEquals("1 \"2\"", result.preamble());
+        assertEquals(Map.of("t/", "km/h", "due/", "3"), result.values());
+    }
+
+    @Test
+    public void tokenize_quotedValueWithFilter_filterSkipsQuotedText() throws ParseException {
+        List<String> filteredPrefixes = new ArrayList<>();
+        ValueTokenFilter recordingFilter = (arguments, prefixEnd, previousPrefix, prefix) -> {
+            filteredPrefixes.add(prefix);
+            return ACCEPT_X_PREFIX.isPartOfValue(arguments, prefixEnd, previousPrefix, prefix);
+        };
+
+        // x/ inside the quotes is never passed to the filter, nor is the prefix after the closing quote
+        assertEquals(Map.of("n/", "A x/b", "t/", "c x/d"), StrictArgumentTokenizer.tokenize(" n/\"A x/b\" t/c x/d",
+                PREFIXES, MESSAGE_INVALID_FORMAT, recordingFilter).values());
+        assertEquals(List.of("n/", "x/"), filteredPrefixes);
+    }
+
+    @Test
+    public void tokenize_tokenAfterQuotedValue_notPartOfValue() throws ParseException {
+        // the filter would accept t/ after n/, but the quotes already ended the value
+        ValueTokenFilter acceptAfterName = (arguments, prefixEnd, previousPrefix, prefix) ->
+                "n/".equals(previousPrefix);
+        assertEquals(Map.of("n/", "A", "t/", "b"), StrictArgumentTokenizer.tokenize(" n/\"A\" t/b", PREFIXES,
+                MESSAGE_INVALID_FORMAT, acceptAfterName).values());
+    }
+
+    @Test
     public void tokenizedArguments_valuesUnmodifiable() throws ParseException {
         TokenizedArguments result = StrictArgumentTokenizer.tokenize(" n/John", PREFIXES, MESSAGE_INVALID_FORMAT);
 
         assertThrows(UnsupportedOperationException.class, () -> result.values().put("t/", "x"));
+    }
+
+    private static Map<String, String> tokenizeValues(String arguments) throws ParseException {
+        return StrictArgumentTokenizer.tokenize(arguments, PREFIXES, MESSAGE_INVALID_FORMAT).values();
     }
 }

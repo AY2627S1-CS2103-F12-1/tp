@@ -30,5 +30,5 @@
     <Label fx:id="guardianName" maxWidth="${details.width}" styleClass="student-card-detail" />
     <Label fx:id="guardianPhone" maxWidth="${details.width}" styleClass="student-card-detail" />
   </FlowPane>
-  <Label fx:id="assignedHomeworkCount" styleClass="student-card-detail" />
+  <Label fx:id="upcomingHomeworkCount" styleClass="student-card-detail" />
 </VBox>

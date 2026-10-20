@@ -2,6 +2,7 @@ package seedu.address.model.student;
 
 import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 
@@ -86,9 +87,9 @@ public final class Student {
         return homeworks;
     }
 
-    /** Returns the number of this student's homework records that are still assigned. */
-    public int getAssignedHomeworkCount() {
-        return (int) homeworks.stream().filter(Homework::isAssigned).count();
+    /** Returns the number of this student's homework records due on or after {@code today}. */
+    public int getUpcomingHomeworkCount(LocalDate today) {
+        return (int) homeworks.stream().filter(homework -> homework.isUpcoming(today)).count();
     }
 
     /**

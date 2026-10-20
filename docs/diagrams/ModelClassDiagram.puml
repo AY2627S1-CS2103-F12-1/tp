@@ -23,7 +23,6 @@ Class Homework
 Class Title
 Class TuitionSubject
 Class DueDate
-Class HomeworkStatus
 Class Score
 }
 
@@ -51,6 +50,5 @@ TuitionSubjects --> "1..*" TuitionSubject
 Homework *--> Title
 Homework *--> TuitionSubject
 Homework *--> DueDate
-Homework *--> HomeworkStatus
 Homework *--> "0..1" Score
 @enduml

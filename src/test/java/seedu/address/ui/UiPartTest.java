@@ -1,9 +1,12 @@
 package seedu.address.ui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static seedu.address.testutil.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Path;
 
@@ -31,17 +34,19 @@ public class UiPartTest {
     }
 
     @Test
-    public void constructor_missingFileUrl_throwsAssertionError() throws Exception {
+    public void constructor_missingFileUrl_throwsUncheckedIoException() throws Exception {
         URL missingFileUrl = new URL(testFolder.toUri().toURL(), MISSING_FILE_PATH);
-        assertThrows(AssertionError.class, () -> new TestUiPart<Object>(missingFileUrl));
-        assertThrows(AssertionError.class, () -> new TestUiPart<Object>(missingFileUrl, new Object()));
+        assertThrows(UncheckedIOException.class, () -> new TestUiPart<Object>(missingFileUrl));
+        assertThrows(UncheckedIOException.class, () -> new TestUiPart<Object>(missingFileUrl, new Object()));
     }
 
     @Test
-    public void constructor_invalidFileUrl_throwsAssertionError() {
+    public void constructor_invalidFileUrl_throwsUncheckedIoException() {
         URL invalidFileUrl = getTestFileUrl(INVALID_FILE_PATH);
-        assertThrows(AssertionError.class, () -> new TestUiPart<Object>(invalidFileUrl));
-        assertThrows(AssertionError.class, () -> new TestUiPart<Object>(invalidFileUrl, new Object()));
+        UncheckedIOException exception = assertThrows(UncheckedIOException.class, () ->
+                new TestUiPart<Object>(invalidFileUrl));
+        assertInstanceOf(IOException.class, exception.getCause());
+        assertThrows(UncheckedIOException.class, () -> new TestUiPart<Object>(invalidFileUrl, new Object()));
     }
 
     @Test
@@ -70,9 +75,9 @@ public class UiPartTest {
     }
 
     @Test
-    public void constructor_invalidFileName_throwsAssertionError() {
-        assertThrows(AssertionError.class, () -> new TestUiPart<Object>(INVALID_FILE_PATH));
-        assertThrows(AssertionError.class, () -> new TestUiPart<Object>(INVALID_FILE_PATH, new Object()));
+    public void constructor_invalidFileName_throwsUncheckedIoException() {
+        assertThrows(UncheckedIOException.class, () -> new TestUiPart<Object>(INVALID_FILE_PATH));
+        assertThrows(UncheckedIOException.class, () -> new TestUiPart<Object>(INVALID_FILE_PATH, new Object()));
     }
 
     private URL getTestFileUrl(String testFilePath) {

@@ -19,6 +19,7 @@ import seedu.address.logic.commands.LessonDeleteCommand;
 import seedu.address.logic.commands.LessonListCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.SearchCommand;
+import seedu.address.logic.commands.SortCommand;
 import seedu.address.logic.parser.HomeworkCommandParser;
 import seedu.address.logic.parser.LessonCommandParser;
 import seedu.address.model.homework.DueDate;
@@ -51,6 +52,11 @@ public final class HelpContent {
                             "Shows all students in roster order, starting from the top.", ListCommand.COMMAND_WORD),
                     new Entry(SearchCommand.COMMAND_WORD, SearchCommand.MESSAGE_USAGE,
                             "Finds students by student or guardian name or phone number.", "search Tan"),
+                    new Entry(SortCommand.COMMAND_WORD, SortCommand.MESSAGE_USAGE,
+                            "Sorts the displayed students by level, subject or day. Order is asc (default) or desc."
+                                    + " Missing meetings stay last; ties retain their previous displayed order."
+                                    + " Saved roster order is unchanged. Use list to restore it.",
+                            "sort by/level o/desc"),
                     new Entry(FilterCommand.COMMAND_WORD, FilterCommand.MESSAGE_USAGE,
                             "Shows students matching every supplied filter. Supply at least one filter. "
                                     + AcademicLevel.MESSAGE_CONSTRAINTS + " " + TuitionSubject.MESSAGE_CONSTRAINTS

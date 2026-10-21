@@ -58,6 +58,10 @@ public class LessonEditCommand extends Command {
         }
     }
 
+    /**
+     * Resolves the target in the full weekly schedule and validates a replacement before updating its owner.
+     * The original owner/lesson pair is excluded from clash checks, even when the owner is hidden in the student view.
+     */
     private CommandResult editLesson(Model model) throws CommandException {
         List<Student> students = model.getAddressBook().getStudentList();
         List<LessonSchedule.Entry> schedule = LessonSchedule.from(students);

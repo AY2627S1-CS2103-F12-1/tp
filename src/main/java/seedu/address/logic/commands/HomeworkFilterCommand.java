@@ -62,6 +62,10 @@ public class HomeworkFilterCommand extends Command {
         }
     }
 
+    /**
+     * Reports homework matching every supplied criterion without changing the current student view or saved data.
+     * Results retain displayed student indices and original homework insertion indices for later commands.
+     */
     private CommandResult filterHomework(Model model) throws CommandException {
         List<Student> students = model.getStudentList();
         if (studentIndex.isPresent() && studentIndex.get().getZeroBased() >= students.size()) {

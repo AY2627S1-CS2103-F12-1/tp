@@ -30,6 +30,8 @@ TutorFlow is a **desktop application for private tutors to manage their students
 
    * `list` : Lists all students.
 
+   * `edit 1 n/Updated Student` : Changes the name of the 1st student shown in the list.
+
    * `search Tan` : Shows students whose name, phone, guardian name or guardian phone contains `Tan`.
 
    * `homework list 1` : Lists the upcoming homework of the 1st student shown in the student list.
@@ -89,7 +91,7 @@ TutorFlow is a **desktop application for private tutors to manage their students
 
 ### Viewing help: `help`
 
-Opens the help window, which lists the commands `add`, `list`, `search`, `filter`, `sort`, `delete`, `homework add`, `homework list`, `homework upcoming`, `homework edit`, `homework marks`, `homework delete`, `homework filter`, `homework status`, `lesson add`, `lesson list`, `lesson delete`, `lesson edit`, `help`, `clear` and `exit`, grouped into Students, Homework, Lessons and General. Each command is shown with its format, what it does and an example.
+Opens the help window, which lists the commands `add`, `edit`, `list`, `search`, `filter`, `sort`, `delete`, `homework add`, `homework list`, `homework upcoming`, `homework edit`, `homework marks`, `homework delete`, `homework filter`, `homework status`, `lesson add`, `lesson list`, `lesson delete`, `lesson edit`, `help`, `clear` and `exit`, grouped into Students, Homework, Lessons and General. Each command is shown with its format, what it does and an example.
 
 Format: `help`
 
@@ -124,6 +126,28 @@ If the roster is empty, the app shows `No students found.` This command does not
 With one student, the result says `Listed 1 student.`; with more students, it says `Listed N students.` using the actual count.
 
 Format: `list` or `ls` (no parameters)
+
+### Editing a student: `edit`
+
+Changes one or more details of the student at the displayed index without removing their homework or lessons. The
+change is saved automatically. In the full roster, the updated student card stays in the same position. After a
+search or filter, the card remains visible only if the edited details still match. If the displayed students have
+been sorted, editing does not reorder them; run `sort` again to use the updated values.
+
+Format: `edit INDEX [n/STUDENT_NAME] [l/ACADEMIC_LEVEL] [s/SUBJECTS] [p/STUDENT_PHONE] [gn/GUARDIAN_NAME] [gp/GUARDIAN_PHONE]`
+
+* `INDEX` is a positive whole number without leading zeroes, as shown beside the student. At least one field prefix
+  must be supplied; fields you omit stay unchanged. Prefixes may be in any order, but must not be repeated.
+* Edited values follow the same rules as in `add`. The new name and student phone must not duplicate another
+  student's name and phone; changes to other fields do not affect identity.
+* A subject cannot be removed if any of this student's homework or lessons uses it. You can add subjects while
+  retaining all used subjects.
+* If all supplied values are identical to the existing details, or the index is invalid, nothing is changed. If
+  saving fails, the original profile, homework and lessons are restored.
+
+Examples:
+* `edit 1 l/S4 p/91234568` changes the first student's academic level and phone.
+* `edit 2 gn/Ramesh s/o Krishnan gp/96543210` changes the guardian's name and phone.
 
 ### Searching for students: `search`
 
@@ -620,6 +644,7 @@ Action | Format, Examples
 **Add** | `add n/STUDENT_NAME l/ACADEMIC_LEVEL s/SUBJECTS p/STUDENT_PHONE gn/GUARDIAN_NAME gp/GUARDIAN_PHONE` <br> e.g., `add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777`
 **Clear** | `clear`
 **Delete student** | `delete INDEX`<br> e.g., `delete 2`
+**Edit student** | `edit INDEX [n/STUDENT_NAME] [l/ACADEMIC_LEVEL] [s/SUBJECTS] [p/STUDENT_PHONE] [gn/GUARDIAN_NAME] [gp/GUARDIAN_PHONE]`<br> e.g., `edit 1 l/S4 p/91234568`
 **List** | `list` or `ls`
 **Search** | `search KEYWORD`<br> e.g., `search Tan`
 **Filter** | `filter [l/LEVEL] [s/SUBJECT]`<br> e.g., `filter l/S4 s/Math`

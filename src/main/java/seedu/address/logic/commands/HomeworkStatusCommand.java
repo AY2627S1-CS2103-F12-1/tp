@@ -56,6 +56,10 @@ public class HomeworkStatusCommand extends Command {
         }
     }
 
+    /**
+     * Replaces one homework at its insertion index, preserving its score, details and the owner's other records.
+     * Invalid targets and unchanged status are rejected before the model is modified.
+     */
     private CommandResult updateStatus(Model model) throws CommandException {
         List<Student> students = model.getStudentList();
         if (studentIndex.getZeroBased() >= students.size()) {

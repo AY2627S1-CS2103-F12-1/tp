@@ -5,6 +5,7 @@ import java.util.List;
 import seedu.address.logic.commands.AddCommand;
 import seedu.address.logic.commands.ClearCommand;
 import seedu.address.logic.commands.DeleteCommand;
+import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.ExitCommand;
 import seedu.address.logic.commands.FilterCommand;
 import seedu.address.logic.commands.HelpCommand;
@@ -49,6 +50,9 @@ public final class HelpContent {
                             "Adds a student. " + AcademicLevel.MESSAGE_CONSTRAINTS + " "
                                     + TuitionSubjects.MESSAGE_CONSTRAINTS,
                             "add n/John Tan l/S3 s/MATH, PHYSICS p/91234567 gn/Mary Tan gp/98765432"),
+                    new Entry(EditCommand.COMMAND_WORD, EditCommand.MESSAGE_USAGE,
+                            "Edits one or more student details without losing homework or lessons.",
+                            "edit 1 l/S4 p/91234568"),
                     new Entry(DeleteCommand.COMMAND_WORD, DeleteCommand.MESSAGE_USAGE,
                             "Deletes the student at INDEX and all of their homework and lessons.", "delete 1"),
                     new Entry(ListCommand.COMMAND_WORD, ListCommand.MESSAGE_USAGE,

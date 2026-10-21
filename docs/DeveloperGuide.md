@@ -231,6 +231,19 @@ For example, with the allowed prefixes `title/`, `t/`, `s/` and `due/` of `hw ad
 
 `AddressBookParser` routes `delete INDEX` to `DeleteCommandParser`. It uses `ParserUtil#parseStrictIndex`, so zero, signs, leading zeroes, extra arguments, and numbers beyond the supported integer range are rejected before execution. `DeleteCommand` checks the one-based index against the current roster, then calls `Model#deleteStudent` for that student. The remaining students retain their order and receive new displayed indexes. Homework and regular lessons belong to the deleted `Student`, so they are removed with it. `LogicManager` saves the changed roster; if saving fails, it restores the previous roster, including that student's homework and lessons.
 
+### Editing students
+
+`AddressBookParser` routes `edit INDEX` to `EditCommandParser`. The parser uses strict index parsing and the same
+prefix tokenizer and field value types as `add`; its name-token rule preserves `s/o` in student and guardian names.
+At least one replacement field is required. `EditCommand` applies only supplied fields to a new immutable `Student`,
+retaining its homework and lessons. Before calling `Model#setStudent`, it rejects an unchanged profile, a name-and-phone
+identity already used by another student, or subjects that would leave existing homework or lessons unsupported.
+`Model#setStudent` replaces the student in the stored roster without changing its stored position. The displayed
+card keeps its position if the edited student still matches the active search or filter; otherwise it disappears.
+An earlier sort is not reapplied until the user explicitly sorts again. `LogicManager` saves the change and restores
+the original roster if saving fails. The command builds its feedback before the replacement, logs unexpected runtime
+failures, and supplies an edit-specific save-failure message.
+
 ### Sorting students
 
 `AddressBookParser` routes `sort by/KEY [o/ORDER]` to `SortCommandParser`. It uses the shared
@@ -254,8 +267,8 @@ The stored `AddressBook` does not change, so `LogicManager` skips persistence.
 Sorting is a one-time permutation; the model does not retain an active comparator. `Model#setStudent` preserves
 the displayed position of a replacement that still matches the active predicate, even when its academic level,
 subjects or earliest meeting day changes. A replacement that no longer matches disappears from the view.
-An explicit `sort` uses the updated values. Future student-edit commands should use `Model#setStudent` without
-resetting the predicate or display order, so editing follows the same behavior as lesson and homework updates.
+An explicit `sort` uses the updated values. The student-edit command uses `Model#setStudent` without resetting
+the predicate or display order, following the same behavior as lesson and homework updates.
 
 `SortCommandResult` retains an order-restoration action for the UI boundary. `MainWindow` captures the panel state
 before a sort request and verifies rendering before reporting success. `StudentListPanel` retains previous cards,

@@ -27,17 +27,15 @@ public class StudentBuilder {
         return this;
     }
 
-    /** Returns this builder with a different student phone. */
-    public StudentBuilder withPhone(String phone) {
-        this.phone = phone;
+    /** Returns this builder with a different academic level. */
+    public StudentBuilder withAcademicLevel(String academicLevel) {
+        this.academicLevel = academicLevel;
         return this;
     }
 
-    /**
-     * Returns this builder with a different academic level.
-     */
-    public StudentBuilder withAcademicLevel(String academicLevel) {
-        this.academicLevel = academicLevel;
+    /** Returns this builder with a different student phone. */
+    public StudentBuilder withPhone(String phone) {
+        this.phone = phone;
         return this;
     }
 

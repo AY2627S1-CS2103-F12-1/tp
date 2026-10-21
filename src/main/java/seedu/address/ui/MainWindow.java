@@ -8,10 +8,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javafx.animation.PauseTransition;
+import javafx.beans.binding.Bindings;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.SplitPane;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
@@ -64,6 +66,9 @@ public class MainWindow extends UiPart<Stage> {
 
     @FXML
     private StackPane upcomingPanelPlaceholder;
+
+    @FXML
+    private SplitPane contentSplitPane;
 
     @FXML
     private StackPane resultDisplayPlaceholder;
@@ -150,6 +155,13 @@ public class MainWindow extends UiPart<Stage> {
 
         upcomingPanel = new UpcomingPanel(logic.getAllStudentList(), clock);
         upcomingPanelPlaceholder.getChildren().add(upcomingPanel.getRoot());
+        // Wrapped headings need a minimum computed at each section's actual width.
+        contentSplitPane.minHeightProperty().bind(Bindings.createDoubleBinding(() -> Math.max(
+                studentListPanelPlaceholder.minHeight(studentListPanelPlaceholder.getWidth()),
+                upcomingPanelPlaceholder.minHeight(upcomingPanelPlaceholder.getWidth()))
+                + contentSplitPane.getInsets().getTop() + contentSplitPane.getInsets().getBottom(),
+                studentListPanelPlaceholder.widthProperty(), upcomingPanelPlaceholder.widthProperty(),
+                contentSplitPane.insetsProperty()));
 
         StatusBarFooter statusBarFooter = new StatusBarFooter(dataFilePath);
         statusbarPlaceholder.getChildren().add(statusBarFooter.getRoot());

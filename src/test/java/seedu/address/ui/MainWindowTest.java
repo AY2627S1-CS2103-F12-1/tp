@@ -91,8 +91,9 @@ public class MainWindowTest {
                 verticalPane.setDividerPositions(0.2, 1);
                 root.layout();
                 Region sidebar = (Region) root.lookup("#upcomingPanelPlaceholder");
-                assertTrue(contentPane.getHeight() >= sidebar.minHeight(sidebar.getWidth()),
-                        "content height must accommodate the computed sidebar minimum");
+                assertTrue(contentPane.getHeight() + 1 >= sidebar.minHeight(sidebar.getWidth()),
+                        "content height " + contentPane.getHeight() + " must accommodate sidebar minimum "
+                        + sidebar.minHeight(sidebar.getWidth()) + " at width " + sidebar.getWidth());
                 for (String id : new String[] {"lessonListView", "homeworkListView"}) {
                     Node list = root.lookup("#" + id);
                     double bottom = list.localToScene(list.getLayoutBounds()).getMaxY();

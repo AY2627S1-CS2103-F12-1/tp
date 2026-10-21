@@ -105,8 +105,9 @@ overdue only when its status is `ASSIGNED` and its due date is before today, reg
 `UpcomingPanel` and `MainWindow` accept a `Clock` for deterministic UI tests. `MainWindow` schedules a refresh
 at the next local date boundary, rechecks on window activation and before commands, and rebuilds cached
 student cards and sidebar entries using the same date. The timer stops when the window is hidden and restarts
-when shown. The content split pane derives its minimum height from its children so the sidebar remains within
-its bounds. Both lists show entry counts and empty-state placeholders. `MainWindow.fxml` uses split panes to
+when shown. The content split pane binds its minimum height to its children's minimum heights at their actual
+widths, accounting for wrapped headings so the sidebar remains within its bounds. Both lists show entry counts
+and empty-state placeholders. `MainWindow.fxml` uses split panes to
 resize sections, and `ScrollSupport` lets users scroll over headings and padding while retaining command-box
 focus.
 

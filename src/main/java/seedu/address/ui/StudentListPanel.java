@@ -3,6 +3,10 @@ package seedu.address.ui;
 import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 
 import java.time.LocalDate;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -10,9 +14,12 @@ import java.util.logging.Logger;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.geometry.Orientation;
+import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.ScrollBar;
 import javafx.scene.layout.Region;
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.model.student.Student;
@@ -25,8 +32,12 @@ public class StudentListPanel extends UiPart<Region> {
     private static final Logger logger = LogsCenter.getLogger(StudentListPanel.class);
 
     private final Runnable renderingErrorHandler;
-    private final BiFunction<Student, Integer, Region> studentCardFactory;
+    private final BiFunction<Student, Integer, Region> cardFactory;
     private boolean hasRenderingError;
+    private boolean isExecutingCommand;
+    private Map<Integer, RenderedCard> renderedCards = new HashMap<>();
+    private boolean isSorting;
+    private RuntimeException renderingFailure;
 
     @FXML
     private Label studentCount;
@@ -41,7 +52,7 @@ public class StudentListPanel extends UiPart<Region> {
     }
 
     /**
-     * Creates a panel that runs {@code renderingErrorHandler} after logging an unexpected card-rendering failure.
+     * Creates a panel that reports ordinary rendering failures after logging their technical cause.
      */
     public StudentListPanel(ObservableList<Student> students, Runnable renderingErrorHandler) {
         this(students, renderingErrorHandler, (student, index) ->
@@ -49,17 +60,29 @@ public class StudentListPanel extends UiPart<Region> {
     }
 
     /**
-     * Creates a panel with an injectable card factory so rendering failures can be tested independently.
+     * Creates a panel with a controllable card renderer for recovery tests.
+     */
+    StudentListPanel(ObservableList<Student> students, BiFunction<Student, Integer, Region> cardFactory) {
+        this(students, () -> { }, cardFactory);
+    }
+
+    /**
+     * Creates a panel with a controllable renderer and the owner's rendering error callback.
      */
     StudentListPanel(ObservableList<Student> students, Runnable renderingErrorHandler,
-            BiFunction<Student, Integer, Region> studentCardFactory) {
+            BiFunction<Student, Integer, Region> cardFactory) {
         super(FXML);
-        requireAllNonNull(students, renderingErrorHandler, studentCardFactory);
+        requireAllNonNull(students, renderingErrorHandler, cardFactory);
         this.renderingErrorHandler = renderingErrorHandler;
-        this.studentCardFactory = studentCardFactory;
-        // Register before ListView so a new result set starts a fresh rendering attempt.
+        this.cardFactory = cardFactory;
+        // Register before ListView so independent updates reset diagnostics before rendering starts.
         students.addListener((ListChangeListener<Student>) change -> {
-            clearRenderingError();
+            if (!isExecutingCommand) {
+                clearRenderingError();
+            }
+            if (!isSorting) {
+                renderedCards.clear();
+            }
             updateStudentCount(students.size());
         });
         studentListView.setItems(students);
@@ -83,6 +106,21 @@ public class StudentListPanel extends UiPart<Region> {
     }
 
     /**
+     * Starts one rendering attempt shared by all display updates emitted during the command.
+     */
+    void beginCommandRendering() {
+        isExecutingCommand = true;
+        clearRenderingError();
+    }
+
+    /**
+     * Allows a later, independent display update to start a fresh rendering attempt.
+     */
+    void endCommandRendering() {
+        isExecutingCommand = false;
+    }
+
+    /**
      * Logs the technical cause and notifies the owner once per rendering attempt.
      */
     private void handleRenderingError(RuntimeException exception) {
@@ -101,22 +139,144 @@ public class StudentListPanel extends UiPart<Region> {
     }
 
     /**
-     * Displays a student card with its current one-based roster index.
+     * Captures the visible state and retains old cards before a sort can notify the list view.
      */
+    public ViewState beginSort() {
+        Map<Orientation, Double> scrollPositions = new EnumMap<>(Orientation.class);
+        for (Node node : studentListView.lookupAll(".scroll-bar")) {
+            ScrollBar scrollBar = (ScrollBar) node;
+            scrollPositions.put(scrollBar.getOrientation(), scrollBar.getValue());
+        }
+        ViewState state = new ViewState(List.copyOf(studentListView.getSelectionModel().getSelectedIndices()),
+                studentListView.getFocusModel().getFocusedIndex(), scrollPositions, new HashMap<>(renderedCards));
+        isSorting = true;
+        renderingFailure = null;
+        renderedCards = new HashMap<>();
+        return state;
+    }
+
+    /**
+     * Checks every candidate card, including offscreen records, and forces the visible cell layout.
+     */
+    public void verifySortRendering() {
+        for (int i = 0; i < studentListView.getItems().size(); i++) {
+            renderCard(studentListView.getItems().get(i), i);
+        }
+        studentListView.refresh();
+        getRoot().applyCss();
+        getRoot().layout();
+        if (renderingFailure != null) {
+            throw renderingFailure;
+        }
+    }
+
+    /**
+     * Makes the previous cards available before the model restores its previous order.
+     */
+    public void prepareRestore(ViewState state) {
+        renderedCards = new HashMap<>(state.renderedCards);
+        renderingFailure = null;
+    }
+
+    /**
+     * Restores selection, focus and scrollbar positions after the previous order is restored.
+     */
+    public void restoreViewState(ViewState state) {
+        studentListView.refresh();
+        getRoot().applyCss();
+        getRoot().layout();
+        studentListView.getSelectionModel().clearSelection();
+        for (int index : state.selectedIndices) {
+            studentListView.getSelectionModel().select(index);
+        }
+        studentListView.getFocusModel().focus(state.focusedIndex);
+        for (Node node : studentListView.lookupAll(".scroll-bar")) {
+            ScrollBar scrollBar = (ScrollBar) node;
+            Double position = state.scrollPositions.get(scrollBar.getOrientation());
+            if (position != null) {
+                scrollBar.setValue(position);
+            }
+        }
+        if (renderingFailure != null) {
+            throw renderingFailure;
+        }
+    }
+
+    /**
+     * Ends the sort rendering boundary after successful rendering or restoration.
+     */
+    public void endSort() {
+        isSorting = false;
+        renderingFailure = null;
+    }
+
+    /**
+     * Reuses verified cards so later virtualized cells do not repeat candidate card creation.
+     */
+    private Region renderCard(Student student, int index) {
+        RenderedCard rendered = renderedCards.get(index);
+        if (rendered == null || rendered.student() != student) {
+            rendered = new RenderedCard(student, cardFactory.apply(student, index + 1));
+            renderedCards.put(index, rendered);
+        }
+        return rendered.root();
+    }
+
+    /**
+     * Holds an occurrence's rendered card without using student equality as its identity.
+     */
+    private record RenderedCard(Student student, Region root) {
+    }
+
+    /**
+     * Holds the previous UI state privately while a sort is being rendered.
+     */
+    public static final class ViewState {
+        private final List<Integer> selectedIndices;
+        private final int focusedIndex;
+        private final Map<Orientation, Double> scrollPositions;
+        private final Map<Integer, RenderedCard> renderedCards;
+
+        private ViewState(List<Integer> selectedIndices, int focusedIndex,
+                Map<Orientation, Double> scrollPositions, Map<Integer, RenderedCard> renderedCards) {
+            this.selectedIndices = selectedIndices;
+            this.focusedIndex = focusedIndex;
+            this.scrollPositions = scrollPositions;
+            this.renderedCards = renderedCards;
+        }
+    }
+
+    /** Displays a student card with its current one-based roster index. */
     private class StudentListViewCell extends ListCell<Student> {
         @Override
         protected void updateItem(Student student, boolean isEmpty) {
             super.updateItem(student, isEmpty);
+            updateCard();
+        }
+
+        @Override
+        public void updateIndex(int index) {
+            super.updateIndex(index);
+            updateCard();
+        }
+
+        /**
+         * Records cell callback failures at the sort boundary instead of losing them in event dispatch.
+         */
+        private void updateCard() {
             setText(null);
-            if (isEmpty || student == null) {
-                setGraphic(null);
-                return;
-            }
             try {
-                setGraphic(studentCardFactory.apply(student, getIndex() + 1));
+                setGraphic(isEmpty() || getItem() == null || getIndex() < 0
+                        ? null : renderCard(getItem(), getIndex()));
             } catch (RuntimeException exception) {
                 setGraphic(null);
-                handleRenderingError(exception);
+                if (isSorting) {
+                    if (renderingFailure == null) {
+                        renderingFailure = exception;
+                    }
+                } else {
+                    handleRenderingError(exception);
+                }
             }
         }
     }

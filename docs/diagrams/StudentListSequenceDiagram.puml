@@ -16,6 +16,7 @@ end box
 box Model MODEL_COLOR_T1
 participant ":ModelManager" as ModelManager MODEL_COLOR
 participant "students:FilteredList<Student>" as FilteredStudents MODEL_COLOR
+participant "displayed:StudentDisplayList" as DisplayedStudents MODEL_COLOR
 end box
 
 MainWindow -> LogicManager : execute("list")
@@ -41,12 +42,13 @@ activate ListCommand
 ListCommand -> ModelManager : updateFilteredStudentList(showAll)
 activate ModelManager
 ModelManager -> FilteredStudents : setPredicate(showAll)
+ModelManager -> DisplayedStudents : resetOrder()
 ModelManager --> ListCommand
 deactivate ModelManager
 
 ListCommand -> ModelManager : getStudentList()
 activate ModelManager
-ModelManager --> ListCommand : all students
+ModelManager --> ListCommand : displayed students in roster order
 deactivate ModelManager
 
 ListCommand --> LogicManager : CommandResult
@@ -60,8 +62,8 @@ end note
 LogicManager --> MainWindow : CommandResult
 deactivate LogicManager
 
-note over ModelManager, FilteredStudents
-  The student list panel observes the filtered list
-  and refreshes to show all students.
+note over ModelManager, DisplayedStudents
+  The student list panel observes the StudentDisplayList.
+  Its roster order discards any previous sort.
 end note
 @enduml

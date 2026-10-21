@@ -5,6 +5,7 @@ import java.util.List;
 import seedu.address.logic.commands.AddCommand;
 import seedu.address.logic.commands.ClearCommand;
 import seedu.address.logic.commands.DeleteCommand;
+import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.ExitCommand;
 import seedu.address.logic.commands.FilterCommand;
 import seedu.address.logic.commands.HelpCommand;
@@ -19,6 +20,7 @@ import seedu.address.logic.commands.LessonDeleteCommand;
 import seedu.address.logic.commands.LessonListCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.SearchCommand;
+import seedu.address.logic.commands.SortCommand;
 import seedu.address.logic.parser.HomeworkCommandParser;
 import seedu.address.logic.parser.LessonCommandParser;
 import seedu.address.model.homework.DueDate;
@@ -45,12 +47,20 @@ public final class HelpContent {
                             "Adds a student. " + AcademicLevel.MESSAGE_CONSTRAINTS + " "
                                     + TuitionSubjects.MESSAGE_CONSTRAINTS,
                             "add n/John Tan l/S3 s/MATH, PHYSICS p/91234567 gn/Mary Tan gp/98765432"),
+                    new Entry(EditCommand.COMMAND_WORD, EditCommand.MESSAGE_USAGE,
+                            "Edits one or more student details without losing homework or lessons.",
+                            "edit 1 l/S4 p/91234568"),
                     new Entry(DeleteCommand.COMMAND_WORD, DeleteCommand.MESSAGE_USAGE,
                             "Deletes the student at INDEX and all of their homework and lessons.", "delete 1"),
                     new Entry(ListCommand.COMMAND_WORD, ListCommand.MESSAGE_USAGE,
                             "Shows all students in roster order, starting from the top.", ListCommand.COMMAND_WORD),
                     new Entry(SearchCommand.COMMAND_WORD, SearchCommand.MESSAGE_USAGE,
                             "Finds students by student or guardian name or phone number.", "search Tan"),
+                    new Entry(SortCommand.COMMAND_WORD, SortCommand.MESSAGE_USAGE,
+                            "Sorts the displayed students by level, subject or day. Order is asc (default) or desc."
+                                    + " Missing meetings stay last; ties retain their previous displayed order."
+                                    + " Saved roster order is unchanged. Use list to restore it.",
+                            "sort by/level o/desc"),
                     new Entry(FilterCommand.COMMAND_WORD, FilterCommand.MESSAGE_USAGE,
                             "Shows students matching every supplied filter. Supply at least one filter. "
                                     + AcademicLevel.MESSAGE_CONSTRAINTS + " " + TuitionSubject.MESSAGE_CONSTRAINTS

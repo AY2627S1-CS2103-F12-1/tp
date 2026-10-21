@@ -16,6 +16,7 @@ end box
 box Model MODEL_COLOR_T1
 participant ":ModelManager" as ModelManager MODEL_COLOR
 participant "students:FilteredList<Student>" as FilteredStudents MODEL_COLOR
+participant "displayed:StudentDisplayList" as DisplayedStudents MODEL_COLOR
 end box
 
 MainWindow -> LogicManager : execute("search Jane")
@@ -41,12 +42,13 @@ activate SearchCommand
 SearchCommand -> ModelManager : updateFilteredStudentList(predicate)
 activate ModelManager
 ModelManager -> FilteredStudents : setPredicate(predicate)
+ModelManager -> DisplayedStudents : resetOrder()
 ModelManager --> SearchCommand
 deactivate ModelManager
 
 SearchCommand -> ModelManager : getStudentList()
 activate ModelManager
-ModelManager --> SearchCommand : matching students
+ModelManager --> SearchCommand : matches in roster order
 deactivate ModelManager
 
 SearchCommand --> LogicManager : CommandResult
@@ -60,8 +62,8 @@ end note
 LogicManager --> MainWindow : CommandResult
 deactivate LogicManager
 
-note over ModelManager, FilteredStudents
-  The student list panel observes the filtered list
-  and refreshes when its predicate changes.
+note over ModelManager, DisplayedStudents
+  The student list panel observes the StudentDisplayList.
+  Its roster order discards any previous sort.
 end note
 @enduml

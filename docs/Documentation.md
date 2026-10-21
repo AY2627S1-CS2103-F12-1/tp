@@ -23,6 +23,11 @@ title: Documentation guide
 **Diagrams:**
 
 * See the [_[se-edu/guides] **Using PlantUML**_](https://se-education.org/guides/tutorials/plantUml.html)
+* Keep the editable sources in `docs/diagrams` and their rendered PNGs in `docs/images` together. The student
+  diagrams were rendered with PlantUML `1.2026.9`. From the repository root, regenerate them with
+  `java -jar /path/to/plantuml.jar -charset UTF-8 -tpng -o ../images "docs/diagrams/*.puml"`.
+  Inspect the generated images and their size in the Developer Guide. Changes to `style.puml` require regenerating
+  all diagrams, as it is their shared stylesheet.
 
 **Converting a document to the PDF format:**
 

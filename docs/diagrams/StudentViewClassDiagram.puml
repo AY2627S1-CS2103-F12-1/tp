@@ -1,0 +1,50 @@
+@startuml
+!include style.puml
+skinparam arrowColor MODEL_COLOR
+skinparam classBackgroundColor MODEL_COLOR
+skinparam nodesep 30
+skinparam ranksep 35
+
+class "<<interface>>\nModel" as Model
+class ModelManager
+class AddressBook
+class StudentRoster
+class "<<interface>>\nObservableList<Student>" as RosterList
+class "FilteredList<Student>" as FilteredStudents
+class StudentDisplayList
+class "<<interface>>\nPredicate<Student>" as Predicate
+class StudentFilterPredicate
+
+ModelManager .up.|> Model
+ModelManager --> "1" AddressBook
+AddressBook *--> "1" StudentRoster
+StudentRoster --> "1" RosterList : roster view
+ModelManager --> "1" FilteredStudents : filteredStudents
+ModelManager --> "1" StudentDisplayList : displayedStudents
+StudentDisplayList --> "1" FilteredStudents : source
+FilteredStudents --> "1" RosterList : source
+FilteredStudents --> "0..1" Predicate : predicate
+StudentFilterPredicate .up.|> Predicate
+
+note bottom of RosterList
+  Students remain in stored roster order.
+  List implementation details are omitted.
+end note
+
+note bottom of StudentFilterPredicate
+  Optional level and subject criteria use AND.
+  Search can supply a different predicate.
+end note
+
+note bottom of StudentDisplayList
+  Keeps a permutation of filtered occurrences.
+  Model#getStudentList() returns an unmodifiable view.
+  A new predicate resets the display order.
+  Sorting changes neither records nor roster order.
+end note
+
+legend bottom
+  Partial view of ModelManager's list wiring.
+  Inherited library source references are shown directly.
+endlegend
+@enduml

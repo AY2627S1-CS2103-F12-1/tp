@@ -454,7 +454,7 @@ Example: `lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00`
 * `SUBJECT` must be MATH, PHYSICS or CHEMISTRY and must be one of the student's tuition subjects.
 * `DAY` must be a full weekday name, such as MONDAY. Subjects and days ignore case and surrounding spaces.
 * Times must use the 24-hour `HH:mm` format, such as `09:00`. End time must be later than start time on the same day; overnight lessons are not supported.
-* An identical lesson for the same student is rejected. Overlapping lessons across any students are rejected with the conflicting student's name and lesson details. Lessons that meet exactly at an endpoint are allowed.
+* An identical lesson for the same student is rejected. A lesson that overlaps any existing lesson, for any student, is rejected. TutorFlow lists every conflicting lesson, with its student's name and lesson details, in weekly order. Lessons that meet exactly at an endpoint are allowed.
 
 On success, TutorFlow shows `New lesson added: John Tan; MATH; MONDAY; 16:00-18:00` and saves the lesson automatically. The student's position, profile and homework remain unchanged. If saving fails, the addition is undone and TutorFlow reports that no lesson data was changed.
 

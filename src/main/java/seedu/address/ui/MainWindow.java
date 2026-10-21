@@ -155,12 +155,13 @@ public class MainWindow extends UiPart<Stage> {
 
         upcomingPanel = new UpcomingPanel(logic.getAllStudentList(), clock);
         upcomingPanelPlaceholder.getChildren().add(upcomingPanel.getRoot());
-        // Wrapped headings need a minimum computed at each section's actual width.
+        // Reserve enough height for wrapped headings at each section's narrowest permitted width.
         contentSplitPane.minHeightProperty().bind(Bindings.createDoubleBinding(() -> Math.max(
-                studentListPanelPlaceholder.minHeight(studentListPanelPlaceholder.getWidth()),
-                upcomingPanelPlaceholder.minHeight(upcomingPanelPlaceholder.getWidth()))
+                studentListPanelPlaceholder.minHeight(studentListPanelPlaceholder.minWidth(-1)),
+                upcomingPanelPlaceholder.minHeight(upcomingPanelPlaceholder.minWidth(-1)))
                 + contentSplitPane.getInsets().getTop() + contentSplitPane.getInsets().getBottom(),
                 studentListPanelPlaceholder.widthProperty(), upcomingPanelPlaceholder.widthProperty(),
+                studentListPanelPlaceholder.minWidthProperty(), upcomingPanelPlaceholder.minWidthProperty(),
                 contentSplitPane.insetsProperty()));
 
         StatusBarFooter statusBarFooter = new StatusBarFooter(dataFilePath);

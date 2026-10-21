@@ -93,7 +93,8 @@ public class MainWindowTest {
                 Region sidebar = (Region) root.lookup("#upcomingPanelPlaceholder");
                 assertTrue(contentPane.getHeight() + 1 >= sidebar.minHeight(sidebar.getWidth()),
                         "content height " + contentPane.getHeight() + " must accommodate sidebar minimum "
-                        + sidebar.minHeight(sidebar.getWidth()) + " at width " + sidebar.getWidth());
+                        + sidebar.minHeight(sidebar.getWidth()) + " at width " + sidebar.getWidth()
+                        + "; bound minimum " + contentPane.getMinHeight());
                 for (String id : new String[] {"lessonListView", "homeworkListView"}) {
                     Node list = root.lookup("#" + id);
                     double bottom = list.localToScene(list.getLayoutBounds()).getMaxY();

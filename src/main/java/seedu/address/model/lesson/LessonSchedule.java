@@ -32,7 +32,8 @@ public final class LessonSchedule {
     }
 
     /**
-     * Returns all clashes with a new lesson in weekly order.
+     * Returns all same-day overlaps with a new lesson in weekly order, allowing adjacent time slots.
+     * Callers must supply the full student roster so hidden students' lessons are also checked.
      */
     public static List<Entry> findClashes(List<Student> students, RegularLesson candidate) {
         requireNonNull(candidate);
@@ -40,7 +41,8 @@ public final class LessonSchedule {
     }
 
     /**
-     * Returns clashes with a proposed edit, excluding its original entry.
+     * Returns clashes with a proposed edit in weekly order, excluding only its original owner/lesson pair.
+     * Other lessons belonging to the same owner and identical lessons belonging to other students are still checked.
      */
     public static List<Entry> findClashes(List<Student> students, RegularLesson candidate, Entry original) {
         requireNonNull(original);

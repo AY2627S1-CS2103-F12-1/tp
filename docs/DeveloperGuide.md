@@ -485,7 +485,9 @@ The diagram shows a successful edit, with parsing details and the snapshot copy 
 
 On success, the command replaces the original at its insertion position in a copied lesson list, then calls `Model.setStudent(owner, owner.withLessons(updated))`. The immutable replacement preserves homework and all student details. The weekly schedule may be reordered by the changed day/time, so later lesson operations should use a refreshed `lesson list`. `LogicManager` saves the changed data; on an `IOException` it restores its snapshot and uses `LessonEditCommand.MESSAGE_SAVE_FAILURE`. No JSON schema change is needed.
 
-**Design choice:** Use the existing global lesson index, matching deletion, rather than adding a second student-local lesson numbering scheme. Partial edits reuse existing values, so a tutor can move a lesson by specifying only its weekday. The shared schedule clash helper accepts an excluded entry for editing; a two-argument overload supports checking a new lesson. This keeps the edit implementation compatible with the add-only clash-reporting work in issue #64 / PR #65 without requiring the unmerged PR.
+**Design choice:** Use the existing global lesson index, matching deletion, rather than adding a second student-local lesson numbering scheme. Partial edits reuse existing values, so a tutor can move a lesson by specifying only its weekday. Both `LessonAddCommand` and `LessonEditCommand` use `LessonSchedule.findClashes` over the full roster. The two-argument overload checks a new lesson; the three-argument overload excludes the original owner/lesson pair for an edit. It still checks the owner's other lessons and other students' lessons, regardless of subject or visibility in the student view.
+
+**Validation:** `LessonEditIntegrationTest` exercises commands through `LogicManager` and real JSON storage. It checks one-minute overlaps, containment, changes to the weekday or subject, same-owner conflicts, hidden students, all-conflict reporting, adjacency, schedule renumbering and reloads. Rejected clashes leave model data, displayed student order and saved bytes unchanged and make no save calls. `LessonEditUiTest` smoke-tests the rendered main window's command box: a clash identifies the hidden student's lesson, retains the rejected input and current selection, and a corrected edit clears the error and persists successfully.
 
 ### Filtering homework
 
@@ -1054,6 +1056,31 @@ testers are expected to do more *exploratory* testing.
    1. Other incorrect delete commands to try: `lesson delete`, `lesson delete 1 2`, `lesson delete x` (where x is
       larger than the number of displayed lessons)<br>
       Expected: Similar to previous.
+
+### Preventing clashes after lesson edits
+
+1. Use a separate test data file with an empty roster.
+
+   1. Add `add n/John Tan l/S3 s/MATH,PHYSICS p/91234567 gn/Mary Tan gp/98765432` and `add n/Mary Lim l/S4 s/MATH p/91234568 gn/Amy Lim gp/98765433`.
+   1. Add `lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00` and `lesson add 2 s/MATH d/MONDAY st/18:00 et/19:00`. Run `search John` and select John's card.
+   1. Run `lesson edit 1 et/18:01`.<br>
+      Expected: Rejected with Mary's name and `MATH; MONDAY; 18:00-19:00`, even though Mary is hidden. John's lesson, student selection, filtered roster and data file remain unchanged. The rejected command remains in the input box.
+   1. Run `lesson edit 1 st/17:00`, then `lesson edit 1 s/PHYSICS`.<br>
+      Expected: Both succeed. The original lesson does not clash with itself, changing only its subject is allowed, and ending at Mary's start time is allowed. Homework and student details remain unchanged.
+   1. Run `lesson edit 1 st/19:00 et/20:00`, then `lesson list`.<br>
+      Expected: Succeeds because starting at Mary's end time is allowed. Mary is now lesson 1 and John is lesson 2 in the weekly schedule.
+   1. Restart and run `lesson edit 2 st/18:59`.<br>
+      Expected: John's saved 19:00-20:00 lesson is restored and the edit is rejected because it overlaps Mary's lesson by one minute.
+   1. Run `lesson edit 2 d/TUESDAY`, then `lesson list`.<br>
+      Expected: Succeeds because the weekdays differ. Monday 19:00-20:00 is free again.
+
+1. Checking conflicts with the same student's other lessons and multiple students
+
+   1. Continue from the preceding test. Run `list`, then `lesson add 1 s/MATH d/TUESDAY st/20:00 et/21:00` and `lesson add 2 s/MATH d/TUESDAY st/22:00 et/23:00`.
+   1. Run `lesson edit 2 et/22:30`.<br>
+      Expected: Rejected with both John Tan's 20:00-21:00 lesson and Mary Lim's 22:00-23:00 lesson, in that order. Only the target lesson is excluded from the checks. The schedule and saved file remain unchanged.
+
+The automated smoke check is `./gradlew test --tests '*LessonEditUiTest' --tests '*LessonEditIntegrationTest'` (use `gradlew.bat` on Windows). Run `./gradlew check coverage` for the complete test and coding-standard checks.
 
 ### Saving data
 

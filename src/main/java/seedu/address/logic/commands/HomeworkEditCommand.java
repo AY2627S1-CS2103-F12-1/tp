@@ -24,7 +24,7 @@ import seedu.address.model.student.TuitionSubject;
 
 /**
  * Edits the title, subject or due date of one homework record, identified by its index in the homework list of a
- * student identified by its displayed index. The homework keeps its position in the list and its score. On success,
+ * student identified by its displayed index. The homework keeps its position, score and completion status. On success,
  * the student's upcoming homework is listed as by {@link HomeworkListCommand}.
  */
 public class HomeworkEditCommand extends Command {
@@ -183,13 +183,13 @@ public class HomeworkEditCommand extends Command {
      * @param dueDate New due date, or null to keep the due date.
      */
     public record EditHomeworkDescriptor(Title title, TuitionSubject subject, DueDate dueDate) {
-        /** Returns a copy of {@code homework} with the edited fields replaced; the score is kept. */
+        /** Returns a copy with edited fields replaced, preserving score and completion status. */
         public Homework applyTo(Homework homework) {
             requireNonNull(homework);
             return new Homework(Objects.requireNonNullElse(title, homework.getTitle()),
                     Objects.requireNonNullElse(subject, homework.getSubject()),
                     Objects.requireNonNullElse(dueDate, homework.getDueDate()),
-                    homework.getScore().orElse(null));
+                    homework.getScore().orElse(null), homework.getStatus());
         }
     }
 }

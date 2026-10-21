@@ -31,11 +31,14 @@ import org.junit.jupiter.api.io.TempDir;
 import javafx.collections.ObservableList;
 import seedu.address.logic.commands.ClearCommand;
 import seedu.address.logic.commands.CommandResult;
+import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
 import seedu.address.logic.commands.HomeworkEditCommand;
 import seedu.address.logic.commands.HomeworkMarksCommand;
+import seedu.address.logic.commands.HomeworkStatusCommand;
 import seedu.address.logic.commands.LessonAddCommand;
+import seedu.address.logic.commands.LessonEditCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.logic.parser.exceptions.ParseException;
@@ -44,6 +47,7 @@ import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.ReadOnlyAddressBook;
 import seedu.address.model.UserPrefs;
+import seedu.address.model.homework.HomeworkStatus;
 import seedu.address.model.homework.Score;
 import seedu.address.model.student.Student;
 import seedu.address.storage.JsonAddressBookStorage;
@@ -71,6 +75,105 @@ public class LogicManagerTest {
         JsonUserPrefsStorage userPrefsStorage = new JsonUserPrefsStorage(temporaryFolder.resolve("userPrefs.json"));
         StorageManager storage = new StorageManager(addressBookStorage, userPrefsStorage);
         logic = new LogicManager(model, storage);
+    }
+
+    @Test
+    public void execute_studentEditAfterHomeworkCompletion_preservesStatusAndLessonsAcrossReload() throws Exception {
+        logic.execute(ADD_STUDENT_COMMAND);
+        logic.execute("hw add 1 t/Algebra s/MATH due/2026-10-15");
+        logic.execute("lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00");
+        logic.execute("hw status 1 1 status/COMPLETED");
+        logic.execute("edit 1 n/John Lim");
+
+        var savedStudent = addressBookStorage.readAddressBook().orElseThrow().getStudentList().getFirst();
+        assertEquals("John Lim", savedStudent.getName().toString());
+        assertEquals(HomeworkStatus.COMPLETED, savedStudent.getHomeworks().getFirst().getStatus());
+        assertEquals(1, savedStudent.getLessons().size());
+        assertEquals(model.getAddressBook(), new AddressBook(addressBookStorage.readAddressBook().orElseThrow()));
+    }
+
+    @Test
+    public void execute_statusCompleteAndReopen_persistIndependentlyOfScore() throws Exception {
+        logic.execute(ADD_STUDENT_COMMAND);
+        logic.execute("hw add 1 t/Algebra s/MATH due/2026-10-15");
+        logic.execute("hw status 1 1 status/COMPLETED");
+        ReadOnlyAddressBook reloaded = addressBookStorage.readAddressBook().orElseThrow();
+        assertEquals(HomeworkStatus.COMPLETED, reloaded.getStudentList().getFirst().getHomeworks().getFirst()
+                .getStatus());
+        assertEquals(Optional.empty(), reloaded.getStudentList().getFirst().getHomeworks().getFirst().getScore());
+        setUpLogic(reloaded, addressBookStorage);
+        logic.execute("hw marks 1 1 score/17");
+        logic.execute("hw edit 1 1 t/Updated algebra");
+        reloaded = addressBookStorage.readAddressBook().orElseThrow();
+        assertEquals(HomeworkStatus.COMPLETED, reloaded.getStudentList().getFirst().getHomeworks().getFirst()
+                .getStatus());
+        logic.execute("hw status 1 1 status/ASSIGNED");
+        reloaded = addressBookStorage.readAddressBook().orElseThrow();
+        var savedHomework = reloaded.getStudentList().getFirst().getHomeworks().getFirst();
+        assertEquals(HomeworkStatus.ASSIGNED, savedHomework.getStatus());
+        assertEquals(Optional.of(new Score(17)), savedHomework.getScore());
+        assertEquals(model.getAddressBook(), new AddressBook(reloaded));
+    }
+
+    @Test
+    public void execute_statusSaveFailure_restoresOriginalStatusAndFile() throws Exception {
+        logic.execute(ADD_STUDENT_COMMAND);
+        logic.execute("hw add 1 t/Algebra s/MATH due/2026-10-15");
+        for (String nextStatus : List.of("COMPLETED", "ASSIGNED")) {
+            AddressBook before = new AddressBook(model.getAddressBook());
+            String fileBefore = Files.readString(dataFilePath);
+            setUpLogic(before, getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+            assertCommandException("hw status 1 1 status/" + nextStatus, HomeworkStatusCommand.MESSAGE_SAVE_FAILURE);
+            assertEquals(before, model.getAddressBook());
+            assertEquals(fileBefore, Files.readString(dataFilePath));
+            setUpLogic(before, addressBookStorage);
+            logic.execute("hw status 1 1 status/" + nextStatus);
+        }
+    }
+
+    @Test
+    public void execute_completionFilter_neverSaves() throws Exception {
+        setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+        logic.execute("hw filter status/ASSIGNED");
+        logic.execute("hw filter status/COMPLETED");
+        assertFalse(Files.exists(dataFilePath));
+    }
+
+    @Test
+    public void execute_lessonEdit_persistsReplacementAcrossReload() throws Exception {
+        logic.execute(ADD_STUDENT_COMMAND);
+        logic.execute("lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00");
+        logic.execute("lesson edit 1 st/17:00");
+        ReadOnlyAddressBook saved = addressBookStorage.readAddressBook().get();
+        assertEquals(model.getAddressBook(), new AddressBook(saved));
+        assertEquals(java.time.LocalTime.of(17, 0), saved.getStudentList().getFirst().getLessons().getFirst()
+                .getStartTime());
+    }
+
+    @Test
+    public void execute_lessonEditSaveFails_restoresOriginalAndFile() throws Exception {
+        logic.execute(ADD_STUDENT_COMMAND);
+        logic.execute("lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00");
+        AddressBook before = new AddressBook(model.getAddressBook());
+        String savedBefore = Files.readString(dataFilePath);
+        setUpLogic(before, getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+        assertCommandException("lesson edit 1 st/17:00", LessonEditCommand.MESSAGE_SAVE_FAILURE);
+        assertEquals(before, model.getAddressBook());
+        assertEquals(savedBefore, Files.readString(dataFilePath));
+    }
+
+    @Test
+    public void execute_homeworkFilter_neverSavesOrChangesDisplayedView() throws Exception {
+        setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+        logic.execute("search Alice");
+        List<seedu.address.model.student.Student> displayed = List.copyOf(model.getStudentList());
+        AddressBook before = new AddressBook(model.getAddressBook());
+        logic.execute("hw filter 1");
+        logic.execute("hw filter s/PHYSICS due/2026-10-20");
+        logic.execute("hw filter s/MATH due/2026-01-01");
+        assertEquals(before, model.getAddressBook());
+        assertEquals(displayed, model.getStudentList());
+        assertFalse(Files.exists(dataFilePath));
     }
 
     @Test
@@ -186,7 +289,8 @@ public class LogicManagerTest {
         Matcher carlLine = Pattern.compile("\nStudent (\\d+): Carl Ng;").matcher(upcomingFeedback);
         assertTrue(carlLine.find());
         assertEquals("Listed 1 upcoming homework record for Carl Ng.\nHomework for Carl Ng:\n"
-                + "1. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded",
+                + "1. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded"
+                + " - status ASSIGNED",
                 logic.execute("hw ls " + carlLine.group(1)).getFeedbackToUser());
         assertFalse(Files.exists(dataFilePath));
     }
@@ -305,6 +409,69 @@ public class LogicManagerTest {
 
         assertCommandFailure("delete 1", CommandException.class, expectedMessage,
                 new ModelManager(initial, new UserPrefs()));
+    }
+
+    @Test
+    public void execute_editStudent_savesProfileAndPreservesLinkedRecordsAcrossReload() throws Exception {
+        AddressBook initial = new AddressBook();
+        initial.addStudent(new StudentBuilder().withHomeworks(ALGEBRA).withLessons(MONDAY_MATH).build());
+        setUpLogic(initial, addressBookStorage);
+
+        logic.execute("edit 1 n/Jane Tan l/S4 s/MATH, PHYSICS p/92345678 gn/May Tan gp/95554444");
+
+        var expected = new StudentBuilder().withName("Jane Tan").withAcademicLevel("S4")
+                .withSubjects("MATH, PHYSICS").withPhone("92345678").withGuardianName("May Tan")
+                .withGuardianPhone("95554444").withHomeworks(ALGEBRA).withLessons(MONDAY_MATH).build();
+        assertEquals(List.of(expected), logic.getStudentList());
+        assertEquals(List.of(expected), addressBookStorage.readAddressBook().get().getStudentList());
+    }
+
+    @Test
+    public void execute_editStudentAfterSearch_updatesSelectedStudentAndFilteredView() throws Exception {
+        Student first = new StudentBuilder().build();
+        Student second = new StudentBuilder().withName("Jane Tan").withPhone("92345678").build();
+        AddressBook initial = new AddressBook();
+        initial.addStudent(first);
+        initial.addStudent(second);
+        setUpLogic(initial, addressBookStorage);
+
+        logic.execute("search Jane");
+        logic.execute("edit 1 n/Jenna Tan");
+
+        Student edited = new StudentBuilder().withName("Jenna Tan").withPhone("92345678").build();
+        assertTrue(logic.getStudentList().isEmpty());
+        assertEquals(List.of(first, edited), addressBookStorage.readAddressBook().get().getStudentList());
+
+        logic.execute("list");
+        assertEquals(List.of(first, edited), logic.getStudentList());
+    }
+
+    @Test
+    public void execute_editStudentSaveFails_restoresProfileAndPreservesFile() throws Exception {
+        logic.execute(ADD_STUDENT_COMMAND);
+        logic.execute("hw add 1 t/Algebra s/MATH due/2026-10-15");
+        logic.execute("lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00");
+        String beforeFile = Files.readString(dataFilePath);
+        AddressBook before = new AddressBook(model.getAddressBook());
+        setUpLogic(before, getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+
+        assertCommandException("edit 1 n/Jane Tan", EditCommand.MESSAGE_SAVE_FAILURE);
+
+        assertEquals(before, model.getAddressBook());
+        assertEquals(beforeFile, Files.readString(dataFilePath));
+    }
+
+    @Test
+    public void execute_editStudentRejectedOrUnchanged_doesNotSave() throws Exception {
+        AddressBook initial = new AddressBook();
+        initial.addStudent(new StudentBuilder().withHomeworks(ALGEBRA).withLessons(MONDAY_MATH).build());
+        setUpLogic(initial, getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+
+        assertCommandException("edit 1 gn/Mary Tan", EditCommand.MESSAGE_NO_CHANGES);
+        assertCommandException("edit 1 s/PHYSICS", EditCommand.MESSAGE_SUBJECT_IN_USE);
+
+        assertEquals(initial, model.getAddressBook());
+        assertFalse(Files.exists(dataFilePath));
     }
 
     @Test

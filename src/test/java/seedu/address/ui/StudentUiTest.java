@@ -35,6 +35,8 @@ import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollBar;
 import javafx.scene.layout.Region;
+import seedu.address.model.homework.Homework;
+import seedu.address.model.homework.HomeworkStatus;
 import seedu.address.model.student.Student;
 import seedu.address.testutil.HomeworkBuilder;
 import seedu.address.testutil.StudentBuilder;
@@ -216,7 +218,8 @@ public class StudentUiTest {
         runOnFxThread(() -> {
             ObservableList<Student> students = FXCollections.observableArrayList(
                     new StudentBuilder().withName("Zoe Tan").withLessons(TUESDAY_PHYSICS)
-                            .withHomeworks(MECHANICS, ATOMIC_STRUCTURE).build(),
+                            .withHomeworks(MECHANICS, ATOMIC_STRUCTURE.withStatus(
+                                    HomeworkStatus.COMPLETED)).build(),
                     new StudentBuilder().withName("Amy Lim").withPhone("91234568").withLessons(MONDAY_MATH)
                             .withHomeworks(ALGEBRA).build());
             Parent panel = (Parent) new UpcomingPanel(students,
@@ -226,10 +229,11 @@ public class StudentUiTest {
             @SuppressWarnings("unchecked")
             ListView<String> homeworkListView = (ListView<String>) panel.lookup("#homeworkListView");
 
-            assertEquals(List.of("MON 17:00 - 18:30\nAmy Lim \u00b7 MATH",
-                    "TUE 19:00 - 20:30\nZoe Tan \u00b7 PHYSICS"), lessonListView.getItems());
-            assertEquals(List.of("Complete algebra worksheet (overdue)\nAmy Lim \u00b7 MATH \u00b7 Due 2026-10-15",
-                    "Attempt mechanics questions 1-5\nZoe Tan \u00b7 PHYSICS \u00b7 Due 2026-10-20"),
+            assertEquals(List.of("MON 17:00 - 18:30\nAmy Lim (91234568) \u00b7 MATH",
+                    "TUE 19:00 - 20:30\nZoe Tan (91234567) \u00b7 PHYSICS"), lessonListView.getItems());
+            assertEquals(List.of("Complete algebra worksheet (overdue)\nAmy Lim (91234568)"
+                    + " \u00b7 MATH \u00b7 Due 2026-10-15",
+                    "Attempt mechanics questions 1-5\nZoe Tan (91234567) \u00b7 PHYSICS \u00b7 Due 2026-10-20"),
                     homeworkListView.getItems());
             assertEquals("2 lessons", labelText(panel, "lessonCount"));
             assertEquals("2 tasks", labelText(panel, "homeworkCount"));
@@ -246,9 +250,54 @@ public class StudentUiTest {
 
             students.set(0, students.get(0).withLessons(List.of()).withHomeworks(List.of()));
 
-            assertEquals(List.of("MON 17:00 - 18:30\nAmy Lim \u00b7 MATH"), lessonListView.getItems());
-            assertEquals(List.of("Complete algebra worksheet (overdue)\nAmy Lim \u00b7 MATH \u00b7 Due 2026-10-15"),
+            assertEquals(List.of("MON 17:00 - 18:30\nAmy Lim (91234568) \u00b7 MATH"), lessonListView.getItems());
+            assertEquals(List.of("Complete algebra worksheet (overdue)\nAmy Lim (91234568)"
+                    + " \u00b7 MATH \u00b7 Due 2026-10-15"),
                     homeworkListView.getItems());
+        });
+    }
+
+    @Test
+    public void upcomingPanel_sameNameDifferentPhones_distinguishesBothReports() throws Exception {
+        runOnFxThread(() -> {
+            Student first = new StudentBuilder().withName("Sam Tan").withPhone("91234567")
+                    .withLessons(MONDAY_MATH).withHomeworks(ALGEBRA).build();
+            Student second = new StudentBuilder().withName("Sam Tan").withPhone("91234568")
+                    .withLessons(MONDAY_MATH).withHomeworks(ALGEBRA).build();
+            Parent panel = (Parent) new UpcomingPanel(FXCollections.observableArrayList(second, first)).getRoot();
+            ListView<?> lessons = (ListView<?>) panel.lookup("#lessonListView");
+            ListView<?> homework = (ListView<?>) panel.lookup("#homeworkListView");
+
+            for (ListView<?> list : List.of(lessons, homework)) {
+                assertEquals(2, list.getItems().size());
+                assertTrue(list.getItems().stream().anyMatch(entry -> entry.toString().contains("Sam Tan (91234567)")));
+                assertTrue(list.getItems().stream().anyMatch(entry -> entry.toString().contains("Sam Tan (91234568)")));
+            }
+        });
+    }
+
+    @Test
+    public void upcomingPanel_completionIndependentOfScore_updatesEntriesAndCardCounts() throws Exception {
+        runOnFxThread(() -> {
+            Homework scoredAssigned = new HomeworkBuilder(ALGEBRA).withScore("1/10").build();
+            Homework unscoredCompleted = new HomeworkBuilder(MECHANICS).withStatus("COMPLETED").build();
+            Student student = new StudentBuilder().withHomeworks(scoredAssigned, unscoredCompleted).build();
+            ObservableList<Student> students = FXCollections.observableArrayList(student);
+            Clock clock = Clock.fixed(Instant.parse("2026-10-21T00:00:00Z"), ZoneOffset.UTC);
+            Parent panel = (Parent) new UpcomingPanel(students, clock).getRoot();
+            ListView<?> homework = (ListView<?>) panel.lookup("#homeworkListView");
+
+            assertEquals(1, homework.getItems().size());
+            assertTrue(homework.getItems().getFirst().toString().contains("Complete algebra worksheet (overdue)"));
+            Parent card = (Parent) new StudentCard(student, 1, LocalDate.now(clock)).getRoot();
+            assertEquals("Overdue homework: 1", labelText(card, "overdueHomeworkCount"));
+
+            students.set(0, student.withHomeworks(List.of(scoredAssigned.withStatus(HomeworkStatus.COMPLETED),
+                    unscoredCompleted)));
+            assertTrue(homework.getItems().isEmpty());
+            assertEquals("0 tasks", labelText(panel, "homeworkCount"));
+            card = (Parent) new StudentCard(students.getFirst(), 1, LocalDate.now(clock)).getRoot();
+            assertEquals("Overdue homework: 0", labelText(card, "overdueHomeworkCount"));
         });
     }
 

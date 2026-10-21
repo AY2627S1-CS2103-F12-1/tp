@@ -12,6 +12,7 @@ import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.model.homework.DueDate;
 import seedu.address.model.homework.Homework;
+import seedu.address.model.homework.HomeworkStatus;
 import seedu.address.model.homework.Score;
 import seedu.address.model.homework.Title;
 import seedu.address.model.student.TuitionSubject;
@@ -31,6 +32,7 @@ class JsonAdaptedHomework {
     private final String subject;
     private final String dueDate;
     private final JsonNode score;
+    private final String status;
 
     /**
      * Constructs a {@code JsonAdaptedHomework} with the given homework details, as read from the JSON file.
@@ -41,13 +43,23 @@ class JsonAdaptedHomework {
      * @param score Score as text in {@code MARKS} or {@code MARKS_OBTAINED/TOTAL_MARKS} format, a number as saved
      *         before scores were text, or null if none is recorded.
      */
+    public JsonAdaptedHomework(String title, String subject, String dueDate, JsonNode score) {
+        this(title, subject, dueDate, score, null);
+    }
+
+    /**
+     * Reads explicit completion state, defaulting missing or null legacy status to ASSIGNED.
+     * Scores never determine the default status.
+     */
     @JsonCreator
     public JsonAdaptedHomework(@JsonProperty("title") String title, @JsonProperty("subject") String subject,
-            @JsonProperty("dueDate") String dueDate, @JsonProperty("score") JsonNode score) {
+            @JsonProperty("dueDate") String dueDate, @JsonProperty("score") JsonNode score,
+            @JsonProperty("status") String status) {
         this.title = title;
         this.subject = subject;
         this.dueDate = dueDate;
         this.score = score;
+        this.status = status;
     }
 
     /**
@@ -58,6 +70,7 @@ class JsonAdaptedHomework {
         subject = source.getSubject().name();
         dueDate = source.getDueDate().toString();
         score = source.getScore().map(modelScore -> TextNode.valueOf(modelScore.toString())).orElse(null);
+        status = source.getStatus().name();
     }
 
     /**
@@ -73,7 +86,9 @@ class JsonAdaptedHomework {
         final DueDate modelDueDate = toModelValue("dueDate", dueDate, DueDate::parseFullDate,
                 DueDate.MESSAGE_FULL_DATE_CONSTRAINTS);
         final Score modelScore = toModelScore(modelTitle);
-        return new Homework(modelTitle, modelSubject, modelDueDate, modelScore);
+        final HomeworkStatus modelStatus = status == null ? HomeworkStatus.ASSIGNED
+                : toModelValue("status", status, HomeworkStatus::parse, HomeworkStatus.MESSAGE_CONSTRAINTS);
+        return new Homework(modelTitle, modelSubject, modelDueDate, modelScore, modelStatus);
     }
 
     /**

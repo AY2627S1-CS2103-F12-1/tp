@@ -54,15 +54,9 @@ deactivate HomeworkDeleteCommand
 
 HomeworkDeleteCommandParser --> HomeworkCommandParser : d
 deactivate HomeworkDeleteCommandParser
-'Hidden arrow to position the destroy marker below the end of the activation bar.
-HomeworkDeleteCommandParser -[hidden]-> HomeworkCommandParser
-destroy HomeworkDeleteCommandParser
 
 HomeworkCommandParser --> AddressBookParser : d
 deactivate HomeworkCommandParser
-'Hidden arrow to position the destroy marker below the end of the activation bar.
-HomeworkCommandParser -[hidden]-> AddressBookParser
-destroy HomeworkCommandParser
 
 AddressBookParser --> LogicManager : d
 deactivate AddressBookParser
@@ -76,7 +70,11 @@ activate Model
 Model --> HomeworkDeleteCommand : students
 deactivate Model
 
-HomeworkDeleteCommand -> Model : setStudent(s, s.withHomeworks(remaining))
+note over HomeworkDeleteCommand, Model
+  Validate indices and prepare updatedStudent locally.
+  Immutable-copy and validation interactions are omitted.
+end note
+HomeworkDeleteCommand -> Model : setStudent(student, updatedStudent)
 activate Model
 
 Model --> HomeworkDeleteCommand
@@ -93,7 +91,7 @@ HomeworkDeleteCommand --> LogicManager : r
 deactivate HomeworkDeleteCommand
 
 opt data changed
-LogicManager -> Storage : saveAddressBook(m.getAddressBook())
+LogicManager -> Storage : saveAddressBook(updatedData)
 activate Storage
 
 Storage --> LogicManager

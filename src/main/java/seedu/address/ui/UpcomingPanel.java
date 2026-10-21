@@ -19,6 +19,7 @@ import javafx.scene.control.ListView;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import seedu.address.model.homework.Homework;
+import seedu.address.model.homework.HomeworkStatus;
 import seedu.address.model.lesson.LessonSchedule;
 import seedu.address.model.student.Student;
 
@@ -30,12 +31,13 @@ public class UpcomingPanel extends UiPart<Region> {
     private static final Comparator<HomeworkEntry> HOMEWORK_ORDER = Comparator
             .comparing((HomeworkEntry entry) -> entry.homework().getDueDate().getDate())
             .thenComparing(entry -> entry.student().getName().toString(), String.CASE_INSENSITIVE_ORDER)
-            .thenComparing(entry -> entry.homework().getTitle().toString(), String.CASE_INSENSITIVE_ORDER);
+            .thenComparing(entry -> entry.homework().getTitle().toString(), String.CASE_INSENSITIVE_ORDER)
+            .thenComparing(entry -> entry.student().getPhone().toString());
 
     private final ObservableList<String> lessonEntries = FXCollections.observableArrayList();
     private final ObservableList<String> homeworkEntries = FXCollections.observableArrayList();
     private final Set<String> overdueHomeworkEntries = new HashSet<>();
-    private final Clock clock;
+    private final ObservableList<Student> students;
 
     @FXML
     private Label homeworkCount;
@@ -62,7 +64,7 @@ public class UpcomingPanel extends UiPart<Region> {
      */
     UpcomingPanel(ObservableList<Student> students, Clock clock) {
         super(FXML);
-        this.clock = clock;
+        this.students = students;
         lessonListView.setItems(lessonEntries);
         homeworkListView.setItems(homeworkEntries);
         lessonListView.setCellFactory(unused -> new WrappedTextListCell(entry -> false));
@@ -72,24 +74,33 @@ public class UpcomingPanel extends UiPart<Region> {
         ScrollSupport.enableScrolling(lessonSection, lessonListView);
         ScrollSupport.enableScrolling(homeworkSection, homeworkListView);
 
-        updateEntries(students);
-        students.addListener((ListChangeListener<Student>) change -> updateEntries(students));
+        updateEntries(students, LocalDate.now(clock));
+        students.addListener((ListChangeListener<Student>) change -> updateEntries(students, LocalDate.now(clock)));
     }
 
-    private void updateEntries(List<Student> students) {
+    /**
+     * Refreshes date-dependent entries using the same local date as the student cards.
+     */
+    void refreshDate(LocalDate today) {
+        updateEntries(students, today);
+    }
+
+    /**
+     * Rebuilds both reports and their counts from the full roster, highlighting homework overdue on the given date.
+     */
+    private void updateEntries(List<Student> students, LocalDate today) {
         lessonEntries.setAll(LessonSchedule.from(students).stream()
                 .map(entry -> entry.lesson().getDayOfWeek().name().substring(0, 3)
                         + " " + entry.lesson().getStartTime() + " - " + entry.lesson().getEndTime()
-                        + "\n" + entry.student().getName() + " \u00b7 " + entry.lesson().getSubject())
+                        + "\n" + formatStudent(entry.student()) + " \u00b7 " + entry.lesson().getSubject())
                 .toList());
         List<HomeworkEntry> outstandingHomework = students.stream()
                 .flatMap(student -> student.getHomeworks().stream()
-                        .filter(homework -> homework.getScore().isEmpty())
+                        .filter(homework -> homework.getStatus() == HomeworkStatus.ASSIGNED)
                         .map(homework -> new HomeworkEntry(student, homework)))
                 .sorted(HOMEWORK_ORDER)
                 .toList();
         overdueHomeworkEntries.clear();
-        LocalDate today = LocalDate.now(clock);
         outstandingHomework.stream()
                 .filter(entry -> entry.homework().isOverdue(today))
                 .map(entry -> formatHomework(entry, true))
@@ -102,8 +113,12 @@ public class UpcomingPanel extends UiPart<Region> {
     }
 
     private String formatHomework(HomeworkEntry entry, boolean isOverdue) {
-        return entry.homework().getTitle() + (isOverdue ? " (overdue)" : "") + "\n" + entry.student().getName()
+        return entry.homework().getTitle() + (isOverdue ? " (overdue)" : "") + "\n" + formatStudent(entry.student())
                 + " \u00b7 " + entry.homework().getSubject() + " \u00b7 Due " + entry.homework().getDueDate();
+    }
+
+    private String formatStudent(Student student) {
+        return student.getName() + " (" + student.getPhone() + ")";
     }
 
     private String formatCount(int count, String singular) {

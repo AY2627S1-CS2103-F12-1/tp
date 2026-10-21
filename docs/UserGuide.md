@@ -30,6 +30,8 @@ TutorFlow is a **desktop application for private tutors to manage their students
 
    * `list` : Lists all students.
 
+   * `edit 1 n/Updated Student` : Changes the name of the 1st student shown in the list.
+
    * `search Tan` : Shows students whose name, phone, guardian name or guardian phone contains `Tan`.
 
    * `homework list 1` : Lists the upcoming homework of the 1st student shown in the student list.
@@ -89,15 +91,15 @@ TutorFlow is a **desktop application for private tutors to manage their students
 
 ### Viewing lessons and homework at a glance
 
-The **At a glance** panel on the right shows every student's regular lessons in weekly chronological order and every homework record without a score in due-date order, earliest first. Each entry includes the student's name and subject. Homework entries also show the due date; overdue homework (unscored and due before today) is marked `(overdue)` in bold red text.
+The **At a glance** panel on the right shows every student's regular lessons in weekly chronological order and every homework record with status `ASSIGNED`, regardless of score, in due-date order, earliest first. Each entry includes the student's name, phone number and subject, so students sharing a name can be distinguished. Homework entries also show the due date; overdue homework (`ASSIGNED` and due before today) is marked `(overdue)` in bold red text.
 
-The headings show the total number of lessons and outstanding homework tasks. Empty sections show `No regular lessons` or `No outstanding homework`. The panel updates when roster data changes and always covers all students, even while `search` filters the student cards.
+The headings show the total number of lessons and outstanding homework tasks. Empty sections show `No regular lessons` or `No outstanding homework`. The panel updates when roster data changes and always covers all students, even while `search`, `filter` or `sort` changes the displayed student cards. Marking homework `COMPLETED` removes it from the sidebar and overdue count; recording a score alone does not. Date-sensitive entries and card counts refresh at midnight, when the window becomes active again, and before a command is run.
 
 Drag the dividers to resize the command box, result display, student list and sidebar. You can scroll over a section's heading or padding as well as its entries while keeping the cursor in the command box.
 
 ### Viewing help: `help`
 
-Opens the help window, which lists the commands `add`, `list`, `search`, `filter`, `sort`, `delete`, `homework add`, `homework list`, `homework upcoming`, `homework edit`, `homework marks`, `homework delete`, `lesson add`, `lesson list`, `lesson delete`, `help`, `clear` and `exit`, grouped into Students, Homework, Lessons and General. Each command is shown with its format, what it does and an example.
+Opens the help window, which lists the commands `add`, `edit`, `list`, `search`, `filter`, `sort`, `delete`, `homework add`, `homework list`, `homework upcoming`, `homework edit`, `homework marks`, `homework delete`, `homework filter`, `homework status`, `lesson add`, `lesson list`, `lesson delete`, `lesson edit`, `help`, `clear` and `exit`, grouped into Students, Homework, Lessons and General. Each command is shown with its format, what it does and an example.
 
 Format: `help`
 
@@ -132,6 +134,28 @@ If the roster is empty, the app shows `No students found.` This command does not
 With one student, the result says `Listed 1 student.`; with more students, it says `Listed N students.` using the actual count.
 
 Format: `list` or `ls` (no parameters)
+
+### Editing a student: `edit`
+
+Changes one or more details of the student at the displayed index without removing their homework or lessons. The
+change is saved automatically. In the full roster, the updated student card stays in the same position. After a
+search or filter, the card remains visible only if the edited details still match. If the displayed students have
+been sorted, editing does not reorder them; run `sort` again to use the updated values.
+
+Format: `edit INDEX [n/STUDENT_NAME] [l/ACADEMIC_LEVEL] [s/SUBJECTS] [p/STUDENT_PHONE] [gn/GUARDIAN_NAME] [gp/GUARDIAN_PHONE]`
+
+* `INDEX` is a positive whole number without leading zeroes, as shown beside the student. At least one field prefix
+  must be supplied; fields you omit stay unchanged. Prefixes may be in any order, but must not be repeated.
+* Edited values follow the same rules as in `add`. The new name and student phone must not duplicate another
+  student's name and phone; changes to other fields do not affect identity.
+* A subject cannot be removed if any of this student's homework or lessons uses it. You can add subjects while
+  retaining all used subjects.
+* If all supplied values are identical to the existing details, or the index is invalid, nothing is changed. If
+  saving fails, the original profile, homework and lessons are restored.
+
+Examples:
+* `edit 1 l/S4 p/91234568` changes the first student's academic level and phone.
+* `edit 2 gn/Ramesh s/o Krishnan gp/96543210` changes the guardian's name and phone.
 
 ### Searching for students: `search`
 
@@ -266,8 +290,8 @@ Format: `homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|M
 * The due date can also be given as `MM-DD`. The year is then this year, or next year if that date has already passed this year, and the result shows the year used.
 * For 29 February (`02-29` or `2-29`), the year is this year only if this year is a leap year and 29 February has not passed yet. Otherwise it is next year, and if next year is not a leap year, the date is rejected. For example, `due/2-29` is rejected throughout 2026, and gives `2028-02-29` throughout 2027.
 * In both formats, the month and day may have 1 or 2 digits, so `2026-2-5` means 5 February 2026 and `10-5` means 5 October. The year must have 4 digits.
-* A student cannot have two homework records with the same title (ignoring case), subject and due date. The same homework can be added to different students.
-* Each student card shows `Upcoming homework: N`, the number of the student's homework records due today or later (including scored homework), and `Overdue homework: N`, the number of unscored homework records due before today.
+* A student cannot have two homework records with the same title (ignoring case), subject and due date. The same homework can be added to different students. New homework starts as `ASSIGNED` with no recorded score.
+* Each student card shows `Upcoming homework: N`, the number of the student's homework records due today or later (including scored or completed homework), and `Overdue homework: N`, the number of `ASSIGNED` homework records due before today, regardless of score.
 
 Examples:
 * `homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15`
@@ -278,7 +302,7 @@ Examples:
 
 ### Listing a student's homework: `homework list`
 
-Shows a student's homework that is due today or later, earliest due date first, with the score of each. Add `all` to also show overdue homework.
+Shows a student's homework that is due today or later, earliest due date first, with the score and completion status of each. Add `all` to also show overdue homework. Listing includes both assigned and completed homework; use `homework filter` to narrow by completion status.
 
 Format: `homework|hw list|ls STUDENT_INDEX [all]`
 
@@ -286,7 +310,7 @@ Format: `homework|hw list|ls STUDENT_INDEX [all]`
 * `STUDENT_INDEX` follows the same rules as in `homework add`.
 * Without `all`, homework due before today is left out. With `all` (in lowercase), all of the student's homework is shown.
 * Homework is sorted by due date, earliest first. Homework due on the same date is shown in the order it was added.
-* The result starts with `Listed N upcoming homework records for NAME.` (`Listed N homework records for NAME.` with `all`, and `record` when there is only one) and `Homework for NAME:`, followed by one line per homework with its number, title, subject, due date and score, e.g. `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score 5/10`. Homework without marks shows `score Not recorded`.
+* The result starts with `Listed N upcoming homework records for NAME.` (`Listed N homework records for NAME.` with `all`, and `record` when there is only one) and `Homework for NAME:`, followed by one line per homework with its number, title, subject, due date, score and status, e.g. `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score 5/10 - status ASSIGNED`. Homework without marks shows `score Not recorded`.
 * Each homework is numbered by its position in the order the homework was added, so the numbers may appear out of order. These numbers are the `HOMEWORK_INDEX` values used by `homework edit`, `homework marks` and `homework delete`. They change only when homework is deleted.
 * If the student has no homework, the result is `No homework found for NAME.` If none of the student's homework is due today or later, the result is `No upcoming homework found for NAME.`; use `all` to see the overdue homework.
 
@@ -303,11 +327,11 @@ Format: `homework|hw upcoming|up [due/DAYS]`
 * `homework` can be shortened to `hw`, and `upcoming` can be shortened to `up`.
 * `DAYS` is a **number of days, not a date**: the homework shown is due from today to `DAYS` days after today, both days included. For example, on 2026-10-17, `due/3` shows homework due from 2026-10-17 to 2026-10-20, and `due/0` shows homework due today only.
 * `DAYS` must be a whole number from 0 to 365 without signs, decimals, spaces or leading zeroes (`0` itself is accepted). If `due/` is left out, `DAYS` is 7.
-* Homework due before today is left out. Homework is shown whether or not it has marks.
+* Homework due before today is left out. Homework is shown whether or not it has marks, including completed homework. Upcoming lists and student-card counts are based on due dates; use `homework filter status/ASSIGNED` to find unfinished work.
 * The homework of every student is searched, not only the students shown in the student list.
 * Like [`list`](#listing-all-students-list), this command shows all students in the student list again, even when no homework is due. So after a search or filter, `Student N` still matches the student list.
 * Homework is sorted by due date, earliest first. Homework due on the same date is shown in the order of the students in the student list, and then in the order it was added.
-* The result starts with `Found N homework records due from START to END.` (`record` when there is only one), followed by one line per homework with the student's `STUDENT_INDEX` and name, title, subject, due date and score, e.g. `Student 1: Ethan Lim; Quadratic equations worksheet; MATH; Due: 2026-10-23; Score: 5/10`. Homework without marks shows `Score: Not recorded`.
+* The result starts with `Found N homework records due from START to END.` (`record` when there is only one), followed by one line per homework with the student's `STUDENT_INDEX` and name, title, subject, due date, score and status, e.g. `Student 1: Ethan Lim; Quadratic equations worksheet; MATH; Due: 2026-10-23; Score: 5/10; Status: ASSIGNED`. Homework without marks shows `Score: Not recorded`.
 * `Student N` is the index of the student in the displayed student list, the `STUDENT_INDEX` that other commands take. It tells apart students with the same name.
 * If no homework is due in that period, the result is `No homework due from START to END.`
 * The lines are not numbered, and their order is not the `HOMEWORK_INDEX` used by other homework commands. To edit, score or delete a record shown here, find its number with [`homework list STUDENT_INDEX`](#listing-a-students-homework-homework-list), using the student index shown after `Student`.
@@ -318,7 +342,7 @@ Examples:
 
   ```
   Found 1 homework record due from 2026-10-17 to 2026-10-24.
-  Student 1: Ethan Lim; Quadratic equations worksheet; MATH; Due: 2026-10-23; Score: Not recorded
+  Student 1: Ethan Lim; Quadratic equations worksheet; MATH; Due: 2026-10-23; Score: Not recorded; Status: ASSIGNED
   ```
 * `hw up due/3` shows the homework due from today to 3 days later. With the sample students on 2026-10-17, the result is `No homework due from 2026-10-17 to 2026-10-20.`
 * `hw up due/7` is the same as `hw up`.
@@ -336,7 +360,7 @@ Format: `homework|hw edit|e STUDENT_INDEX HOMEWORK_INDEX [title/|t/TITLE] [s/SUB
 * `HOMEWORK_INDEX` refers to the number shown by `homework list STUDENT_INDEX` (or by `homework list STUDENT_INDEX all` for overdue homework). It **must be a positive whole number without leading zeroes**.
 * Give at least one of `title/` (or `t/`), `s/` and `due/`, in any order and each at most once. `title/` and `t/` cannot be used together. The details you do not give stay unchanged.
 * `TITLE`, `SUBJECT` and the due date follow the same rules as in [`homework add`](#adding-homework-to-a-student-homework-add). A due date in `MM-DD` form gets its year in the same way, and the result shows the year used.
-* The homework keeps its number and its score. To change the score, use [`homework marks`](#recording-homework-marks-homework-marks).
+* The homework keeps its number, score and completion status. To change the score, use [`homework marks`](#recording-homework-marks-homework-marks).
 * The edit is rejected if it changes nothing (`No changes made; the supplied values are identical to the existing homework details.`), or if the edited homework would have the same title (ignoring case), subject and due date as another homework of the student (`This edit would make the homework a duplicate of an existing homework record.`).
 * On success, the result shows the edited homework, followed by the student's upcoming homework in the format of `homework list STUDENT_INDEX`.
 
@@ -349,9 +373,9 @@ Examples:
   Priya Nair; Title: Integration by parts exercise; Subject: MATH; Due: 2026-11-05
   Listed 3 upcoming homework records for Priya Nair.
   Homework for Priya Nair:
-  2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-02 - score Not recorded
-  1. Integration by parts exercise (MATH) - due 2026-11-05 - score Not recorded
-  3. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-09 - score Not recorded
+  2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-02 - score Not recorded - status ASSIGNED
+  1. Integration by parts exercise (MATH) - due 2026-11-05 - score Not recorded - status ASSIGNED
+  3. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-09 - score Not recorded - status ASSIGNED
   ```
 * `hw edit 1 2 t/Revise mechanics s/PHYSICS due/2026-11-10` changes the title, subject and due date together.
 * `hw e 1 2 t/"Speed in km/h"` changes the title to `Speed in km/h`.
@@ -411,6 +435,50 @@ Examples:
 * `homework list 1` followed by `homework delete 1 2` deletes the 2nd homework of the 1st student.
 * `hw del 3 1`
 
+### Updating homework completion: `homework status`
+
+Marks homework completed or reopens it as assigned, independently of its score.
+
+Format: `homework|hw status STUDENT_INDEX HOMEWORK_INDEX status/STATUS`
+
+* `STUDENT_INDEX` selects a student in the current displayed order. `HOMEWORK_INDEX` is the original homework number shown by `homework list STUDENT_INDEX all` or `homework filter`. Both indices must be positive whole numbers without leading zeroes.
+* `STATUS` is `ASSIGNED` or `COMPLETED`, ignoring case and surrounding spaces. Supply `status/` exactly once. Empty or unsupported values and extra arguments are rejected.
+* `COMPLETED` marks homework complete, even if it has no score. `ASSIGNED` reopens it, retaining any score. Recording, replacing or clearing a score does not change completion status. Editing the homework's title, subject or due date also preserves status.
+* The homework retains its insertion position and all other fields. If it already has the requested status, TutorFlow reports that no changes were made.
+* Changes are saved automatically. If saving fails, TutorFlow restores the original homework and reports that no homework data was changed.
+
+Examples:
+
+* `hw status 1 2 status/COMPLETED` marks homework 2 of displayed student 1 completed.
+* `hw status 1 2 status/ASSIGNED` reopens that homework without changing its score.
+* `hw filter 1 status/COMPLETED` shows that student's completed homework, including overdue records.
+
+### Filtering homework: `homework filter`
+
+Lists homework matching a student, subject, exact due date and/or completion status.
+
+Format: `homework|hw filter [STUDENT_INDEX] [s/SUBJECT] [due/DATE] [status/STATUS]`
+
+* Supply at least one criterion. All supplied criteria must match (AND).
+* Without `STUDENT_INDEX`, searches homework of every currently displayed student. Run `list` first to include the full roster. An index selects one student in the current displayed order, including after searching, filtering or sorting students.
+* `STUDENT_INDEX` must be a positive whole number without leading zeroes. Put it before the prefixes.
+* `SUBJECT` is MATH, PHYSICS or CHEMISTRY, ignoring case. Each prefix may appear once, in any order; unknown prefixes and empty values are rejected.
+* `DATE` is an exact due date in `YYYY-MM-DD` or `MM-DD` format, with one or two digits for the month and day. Short dates infer this year or the next year if the date has passed, as in `homework add`. Use a full date to find overdue homework. Here `due/` takes a date; in `homework upcoming` it takes a number of days.
+* Includes overdue homework and homework with or without scores. `STATUS` is `ASSIGNED` or `COMPLETED`, ignoring case; it must match the explicit status, independently of the score. Omit `status/` to include both states.
+* Results follow displayed student order, then homework insertion order. Each line identifies both `Student N` and `Homework M`, which can be used directly in homework edit, marks and delete commands while the lists remain unchanged. The command preserves the displayed students, sorting and stored data.
+* If nothing matches, TutorFlow reports `No homework matches the supplied filters.`
+
+Examples:
+
+* `hw filter 1` lists all homework of displayed student 1, including overdue homework.
+* `hw filter s/PHYSICS` lists Physics homework among displayed students.
+* `hw filter due/2026-10-20` lists homework due on 20 October 2026.
+* `hw filter 1 s/MATH due/2026-10-15` lists student 1's Math homework due on 15 October 2026.
+* `hw filter 1 s/MATH due/2026-10-15 status/ASSIGNED` adds the condition that the homework is still assigned.
+* `hw filter status/COMPLETED` lists completed homework among displayed students, whether or not a score is recorded.
+
+For a matching assignment, a result line looks like `Student 1: John Tan; Homework 2: Algebra; MATH; Due: 2026-10-15; Score: Not recorded; Status: ASSIGNED`. Use `hw edit 1 2 t/Algebra practice` to edit that assignment.
+
 ### Clearing all students: `clear`
 
 Deletes all students together with their homework and regular lessons.
@@ -438,9 +506,27 @@ Example: `lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00`
 * `SUBJECT` must be MATH, PHYSICS or CHEMISTRY and must be one of the student's tuition subjects.
 * `DAY` must be a full weekday name, such as MONDAY. Subjects and days ignore case and surrounding spaces.
 * Times must use the 24-hour `HH:mm` format, such as `09:00`. End time must be later than start time on the same day; overnight lessons are not supported.
-* An identical lesson for the same student is rejected. Overlapping lessons across any students are rejected with the conflicting student's name and lesson details. Lessons that meet exactly at an endpoint are allowed.
+* An identical lesson for the same student is rejected. A lesson that overlaps any existing lesson, for any student, is rejected. TutorFlow lists every conflicting lesson, with its student's name and lesson details, in weekly order. Lessons that meet exactly at an endpoint are allowed.
 
 On success, TutorFlow shows `New lesson added: John Tan; MATH; MONDAY; 16:00-18:00` and saves the lesson automatically. The student's position, profile and homework remain unchanged. If saving fails, the addition is undone and TutorFlow reports that no lesson data was changed.
+
+### Editing a regular lesson: `lesson edit`
+
+Updates a regular lesson identified by its number in `lesson list`.
+
+Format: `lesson edit LESSON_INDEX [s/SUBJECT] [d/DAY] [st/START_TIME] [et/END_TIME]`
+
+* Run `lesson list` first. `LESSON_INDEX` is a positive whole number without leading zeroes, referring to the full weekly schedule, including lessons whose students are hidden by a student search or filter.
+* Supply at least one field. Omitted fields retain their original values. Prefixes may appear once, in any order; unknown prefixes and empty values are rejected. Subjects, weekdays and times follow the rules for `lesson add`.
+* The proposed end must be after the proposed start, using the existing value for any omitted time. The student must take the proposed subject.
+* TutorFlow checks for clashes across the full roster while excluding the original lesson being edited. Adjacent lessons are allowed. If there are multiple clashes, all are listed in weekly order. Duplicates and edits that change no values are rejected.
+* The lesson remains with the same student, preserving their profile, homework and lesson insertion order. Its weekly schedule number may change after an edit; run `lesson list` again before another edit or deletion.
+* The edit is saved automatically. If saving fails, TutorFlow restores the original data and reports that no lesson data was changed.
+
+Examples:
+
+* `lesson edit 1 d/TUESDAY` moves the first lesson to Tuesday, retaining its subject and times.
+* `lesson edit 1 st/17:00 et/19:00` changes both times of the first lesson.
 
 ### Deleting a regular lesson: `lesson delete`
 
@@ -503,7 +589,8 @@ The data file holds a list of `students`. Each student can hold `homeworks` and 
       "title" : "Quadratic equations worksheet",
       "subject" : "MATH",
       "dueDate" : "2026-10-23",
-      "score" : null
+      "score" : null,
+      "status" : "ASSIGNED"
     } ],
     "lessons" : [ {
       "subject" : "MATH",
@@ -527,7 +614,8 @@ When editing the file, follow these rules:
 * A student cannot have two homework records with the same title (ignoring case), subject and due date.
 * Values such as `math` or `s3` are accepted in any case, and extra spaces in names and titles are removed. TutorFlow writes them in its own format the next time it saves.
 * Spell every key exactly as shown above. A misspelled key that may be left out (`homeworks`, `lessons` or `score`) is ignored without an error: for example, with `homework` instead of `homeworks`, the student loads with no homework, and the next command that changes the data removes that homework from the file. A misspelled required key, such as `phne` instead of `phone`, makes the data file invalid (see the caution below).
-* Keys that TutorFlow does not use are ignored and removed the next time TutorFlow saves. For example, a data file saved by an older version of TutorFlow, in which each homework has a `status` key, still loads.
+* `status` is `"ASSIGNED"` or `"COMPLETED"`, independent of `score`. Older files that include this key retain their explicit status. Missing or `null` status loads as `ASSIGNED`, including for scored homework; update historical records with `homework status` when needed. An invalid explicit status makes the data file invalid.
+* Keys that TutorFlow does not use are ignored and removed the next time TutorFlow saves.
 
 <div markdown="span" class="alert alert-warning">:exclamation: **Caution:**
 If your changes make the data file invalid, TutorFlow starts with no students at the next run (not with the sample students). The invalid file remains on disk until you run a command that changes the data, which overwrites it. So if TutorFlow starts with no students after you edit the file, close it without changing anything, fix the file and start TutorFlow again. Still, we recommend backing up the file before editing it.<br>
@@ -564,6 +652,7 @@ Action | Format, Examples
 **Add** | `add n/STUDENT_NAME l/ACADEMIC_LEVEL s/SUBJECTS p/STUDENT_PHONE gn/GUARDIAN_NAME gp/GUARDIAN_PHONE` <br> e.g., `add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777`
 **Clear** | `clear`
 **Delete student** | `delete INDEX`<br> e.g., `delete 2`
+**Edit student** | `edit INDEX [n/STUDENT_NAME] [l/ACADEMIC_LEVEL] [s/SUBJECTS] [p/STUDENT_PHONE] [gn/GUARDIAN_NAME] [gp/GUARDIAN_PHONE]`<br> e.g., `edit 1 l/S4 p/91234568`
 **List** | `list` or `ls`
 **Search** | `search KEYWORD`<br> e.g., `search Tan`
 **Filter** | `filter [l/LEVEL] [s/SUBJECT]`<br> e.g., `filter l/S4 s/Math`
@@ -574,8 +663,11 @@ Action | Format, Examples
 **Homework list** | <code>homework&#124;hw list&#124;ls STUDENT_INDEX [all]</code><br> e.g., `homework list 1`, `hw ls 2 all`
 **Homework marks** | <code>homework&#124;hw marks&#124;m STUDENT_INDEX HOMEWORK_INDEX score/[SCORE]</code><br> e.g., `hw m 1 2 score/5/10`, `hw m 1 2 score/17`, `hw m 1 2 score/`
 **Homework upcoming** | <code>homework&#124;hw upcoming&#124;up [due/DAYS]</code><br> e.g., `hw up`, `hw up due/3`
+**Homework filter** | <code>homework&#124;hw filter [STUDENT_INDEX] [s/SUBJECT] [due/DATE] [status/STATUS]</code><br> e.g., `hw filter 1 s/MATH due/2026-10-15 status/ASSIGNED`
+**Homework status** | <code>homework&#124;hw status STUDENT_INDEX HOMEWORK_INDEX status/STATUS</code><br> e.g., `hw status 1 2 status/COMPLETED`, `hw status 1 2 status/ASSIGNED`
 **Lesson add** | `lesson add INDEX s/SUBJECT d/DAY st/START_TIME et/END_TIME`<br> e.g., `lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00`
 **Lesson list** | `lesson list`
 **Lesson delete** | `lesson delete LESSON_INDEX`<br> e.g., `lesson delete 2`
+**Lesson edit** | `lesson edit LESSON_INDEX [s/SUBJECT] [d/DAY] [st/START_TIME] [et/END_TIME]`<br> e.g., `lesson edit 1 d/TUESDAY`
 **Help** | `help`
 **Exit** | `exit`

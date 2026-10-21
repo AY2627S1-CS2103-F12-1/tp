@@ -15,17 +15,21 @@ import seedu.address.logic.commands.AddCommand;
 import seedu.address.logic.commands.ClearCommand;
 import seedu.address.logic.commands.Command;
 import seedu.address.logic.commands.DeleteCommand;
+import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.ExitCommand;
 import seedu.address.logic.commands.FilterCommand;
 import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
 import seedu.address.logic.commands.HomeworkEditCommand;
+import seedu.address.logic.commands.HomeworkFilterCommand;
 import seedu.address.logic.commands.HomeworkListCommand;
 import seedu.address.logic.commands.HomeworkMarksCommand;
+import seedu.address.logic.commands.HomeworkStatusCommand;
 import seedu.address.logic.commands.HomeworkUpcomingCommand;
 import seedu.address.logic.commands.LessonAddCommand;
 import seedu.address.logic.commands.LessonDeleteCommand;
+import seedu.address.logic.commands.LessonEditCommand;
 import seedu.address.logic.commands.LessonListCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.SearchCommand;
@@ -47,6 +51,7 @@ public class HelpContentTest {
         Map<String, String> expectedFormats = Map.ofEntries(
                 Map.entry(AddCommand.COMMAND_WORD, AddCommand.MESSAGE_USAGE),
                 Map.entry(DeleteCommand.COMMAND_WORD, DeleteCommand.MESSAGE_USAGE),
+                Map.entry(EditCommand.COMMAND_WORD, EditCommand.MESSAGE_USAGE),
                 Map.entry(ListCommand.COMMAND_WORD, ListCommand.MESSAGE_USAGE),
                 Map.entry(SearchCommand.COMMAND_WORD, SearchCommand.MESSAGE_USAGE),
                 Map.entry(SortCommand.COMMAND_WORD, SortCommand.MESSAGE_USAGE),
@@ -55,11 +60,14 @@ public class HelpContentTest {
                 Map.entry("homework list", HomeworkListCommand.MESSAGE_USAGE),
                 Map.entry("homework upcoming", HomeworkUpcomingCommand.MESSAGE_USAGE),
                 Map.entry("homework edit", HomeworkEditCommand.MESSAGE_USAGE),
+                Map.entry("homework filter", HomeworkFilterCommand.MESSAGE_USAGE),
+                Map.entry("homework status", HomeworkStatusCommand.MESSAGE_USAGE),
                 Map.entry("homework marks", HomeworkMarksCommand.MESSAGE_USAGE),
                 Map.entry("homework delete", HomeworkDeleteCommand.MESSAGE_USAGE),
                 Map.entry("lesson add", LessonAddCommand.MESSAGE_USAGE),
                 Map.entry("lesson list", LessonListCommand.MESSAGE_USAGE),
                 Map.entry("lesson delete", LessonDeleteCommand.MESSAGE_USAGE),
+                Map.entry("lesson edit", LessonEditCommand.MESSAGE_USAGE),
                 Map.entry(HelpCommand.COMMAND_WORD, HelpCommand.COMMAND_WORD),
                 Map.entry(ClearCommand.COMMAND_WORD, ClearCommand.COMMAND_WORD),
                 Map.entry(ExitCommand.COMMAND_WORD, ExitCommand.COMMAND_WORD));
@@ -76,6 +84,7 @@ public class HelpContentTest {
         Map<String, Class<? extends Command>> expectedCommandTypes = Map.ofEntries(
                 Map.entry(AddCommand.COMMAND_WORD, AddCommand.class),
                 Map.entry(DeleteCommand.COMMAND_WORD, DeleteCommand.class),
+                Map.entry(EditCommand.COMMAND_WORD, EditCommand.class),
                 Map.entry(ListCommand.COMMAND_WORD, ListCommand.class),
                 Map.entry(SearchCommand.COMMAND_WORD, SearchCommand.class),
                 Map.entry(SortCommand.COMMAND_WORD, SortCommand.class),
@@ -84,11 +93,14 @@ public class HelpContentTest {
                 Map.entry("homework list", HomeworkListCommand.class),
                 Map.entry("homework upcoming", HomeworkUpcomingCommand.class),
                 Map.entry("homework edit", HomeworkEditCommand.class),
+                Map.entry("homework filter", HomeworkFilterCommand.class),
+                Map.entry("homework status", HomeworkStatusCommand.class),
                 Map.entry("homework marks", HomeworkMarksCommand.class),
                 Map.entry("homework delete", HomeworkDeleteCommand.class),
                 Map.entry("lesson add", LessonAddCommand.class),
                 Map.entry("lesson list", LessonListCommand.class),
                 Map.entry("lesson delete", LessonDeleteCommand.class),
+                Map.entry("lesson edit", LessonEditCommand.class),
                 Map.entry(HelpCommand.COMMAND_WORD, HelpCommand.class),
                 Map.entry(ClearCommand.COMMAND_WORD, ClearCommand.class),
                 Map.entry(ExitCommand.COMMAND_WORD, ExitCommand.class));

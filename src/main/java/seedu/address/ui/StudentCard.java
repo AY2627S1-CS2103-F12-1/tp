@@ -34,7 +34,7 @@ public class StudentCard extends UiPart<Region> {
 
     /**
      * Creates a card for the student at the specified one-based displayed index, counting the homework due on or
-     * after {@code today} and overdue unscored homework before it.
+     * after {@code today} and overdue assigned homework before it.
      */
     public StudentCard(Student student, int displayedIndex, LocalDate today) {
         super(FXML);

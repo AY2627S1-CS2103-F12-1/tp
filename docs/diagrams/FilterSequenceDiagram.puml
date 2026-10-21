@@ -1,0 +1,42 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+
+participant ":LogicManager" as Logic LOGIC_COLOR
+participant ":FilterCommand" as Command LOGIC_COLOR
+participant ":ModelManager" as Model MODEL_COLOR
+
+note over Logic, Command
+  filter l/S4 s/MATH: execution after parsing.
+  FilterCommand and its predicate already exist;
+  the LogicManager activation is omitted.
+end note
+Logic -> Command : execute(model)
+activate Command
+Command -> Model : updateFilteredStudentList(predicate)
+activate Model
+note over Command, Model
+  Set the predicate on the full roster's FilteredList.
+  Reset StudentDisplayList to filtered source order.
+  Observable changes refresh the panel
+  (listener and cell callbacks omitted).
+end note
+Model --> Command
+deactivate Model
+Command -> Model : getStudentList()
+activate Model
+Model --> Command : displayed students
+deactivate Model
+Command --> Logic : result (showStudentList = true)
+deactivate Command
+note right of Logic
+  Stored data is unchanged:
+  no saveAddressBook call.
+end note
+[<-- Logic : result
+note over Logic, Model
+  MainWindow displays the feedback and calls
+  StudentListPanel.showFromTop() after execution.
+  Successful rendering is assumed.
+end note
+@enduml

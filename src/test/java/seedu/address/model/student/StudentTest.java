@@ -99,8 +99,11 @@ public class StudentTest {
         assertEquals(0, new StudentBuilder().build().getOverdueHomeworkCount(today));
         assertEquals(0, student.getOverdueHomeworkCount(today));
         assertEquals(1, student.getOverdueHomeworkCount(today.plusDays(1)));
-        assertEquals(2, student.getOverdueHomeworkCount(today.plusDays(6)));
-        assertEquals(0, new StudentBuilder().withHomeworks(scoredHomework).build()
+        assertEquals(3, student.getOverdueHomeworkCount(today.plusDays(6)));
+        assertEquals(1, new StudentBuilder().withHomeworks(scoredHomework).build()
+                .getOverdueHomeworkCount(today.plusDays(1)));
+        Homework completedHomework = new HomeworkBuilder(ALGEBRA).withStatus("COMPLETED").build();
+        assertEquals(0, new StudentBuilder().withHomeworks(completedHomework).build()
                 .getOverdueHomeworkCount(today.plusDays(1)));
     }
 

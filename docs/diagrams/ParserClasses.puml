@@ -6,11 +6,14 @@ skinparam classBackgroundColor LOGIC_COLOR
 
 Class "{abstract}\nCommand" as Command
 Class XYZCommand
+Class AddCommand
 
 package "Parser classes"{
 Class "<<interface>>\nParser" as Parser
 Class AddressBookParser
 Class XYZCommandParser
+Class AddCommandParser
+Class StudentAddParser
 Class ParserUtil
 Class StrictArgumentTokenizer
 Class TokenizedArguments
@@ -29,4 +32,12 @@ XYZCommandParser ..> TokenizedArguments
 StrictArgumentTokenizer .left.> TokenizedArguments : <<create>>
 XYZCommandParser ..> ParserUtil
 XYZCommand -up-|> Command
+
+AddressBookParser ..> AddCommandParser : <<create>>
+AddCommandParser .up.|> Parser
+AddCommandParser --> "1" StudentAddParser
+StudentAddParser ..> StrictArgumentTokenizer
+AddCommandParser ..> AddCommand : <<create>>
+AddCommand -up-|> Command
+
 @enduml

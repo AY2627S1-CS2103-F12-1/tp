@@ -4,7 +4,7 @@ skinparam arrowThickness 1.1
 skinparam arrowColor MODEL_COLOR
 skinparam classBackgroundColor MODEL_COLOR
 
-Package Model as ModelPackage <<Rectangle>>{
+Package Model as ModelPackage {
 Class "<<interface>>\nReadOnlyAddressBook" as ReadOnlyAddressBook
 Class "<<interface>>\nReadOnlyUserPrefs" as ReadOnlyUserPrefs
 Class "<<interface>>\nModel" as Model
@@ -15,13 +15,14 @@ Class UserPrefs
 Class StudentRoster
 Class Student
 Class StudentName
-Class AcademicLevel
+Enum "<<enumeration>>\nAcademicLevel" as AcademicLevel
 Class TuitionSubjects
 Class StudentPhone
 
 Class Homework
+Enum "<<enumeration>>\nHomeworkStatus" as HomeworkStatus
 Class Title
-Class TuitionSubject
+Enum "<<enumeration>>\nTuitionSubject" as TuitionSubject
 Class DueDate
 Class Score
 }
@@ -40,15 +41,18 @@ UserPrefs .up.|> ReadOnlyUserPrefs
 
 AddressBook *--> "1" StudentRoster
 StudentRoster --> "*" Student
-Student *--> "2" StudentName
-Student *--> AcademicLevel
-Student *--> TuitionSubjects
-Student *--> "2" StudentPhone
-Student *--> "*" Homework
+Student --> "1" StudentName : name
+Student --> "1" StudentName : guardianName
+Student --> "1" AcademicLevel
+Student --> "1" TuitionSubjects
+Student --> "1" StudentPhone : phone
+Student --> "1" StudentPhone : guardianPhone
+Student --> "*" Homework : homeworks
 
 TuitionSubjects --> "1..*" TuitionSubject
-Homework *--> Title
-Homework *--> TuitionSubject
-Homework *--> DueDate
-Homework *--> "0..1" Score
+Homework --> "1" Title
+Homework --> "1" TuitionSubject
+Homework --> "1" DueDate
+Homework --> "0..1" Score
+Homework --> "1" HomeworkStatus : status
 @enduml

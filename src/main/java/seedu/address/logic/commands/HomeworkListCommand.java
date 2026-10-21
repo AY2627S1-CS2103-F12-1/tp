@@ -28,7 +28,7 @@ public class HomeworkListCommand extends Command {
     public static final String MESSAGE_USAGE = "homework|hw list|ls STUDENT_INDEX [all]";
     public static final String MESSAGE_SUCCESS = "Listed %d upcoming homework %s for %s.\nHomework for %s:";
     public static final String MESSAGE_SUCCESS_ALL = "Listed %d homework %s for %s.\nHomework for %s:";
-    public static final String MESSAGE_HOMEWORK_LINE = "\n%d. %s (%s) - due %s - score %s";
+    public static final String MESSAGE_HOMEWORK_LINE = "\n%d. %s (%s) - due %s - score %s - status %s";
     public static final String MESSAGE_NO_HOMEWORK = "No homework found for %s.";
     public static final String MESSAGE_NO_UPCOMING_HOMEWORK = "No upcoming homework found for %s.";
     public static final String MESSAGE_RECORD_SINGULAR = "record";
@@ -114,7 +114,8 @@ public class HomeworkListCommand extends Command {
         for (int zeroBasedIndex : listedIndices) {
             Homework homework = homeworks.get(zeroBasedIndex);
             message.append(String.format(MESSAGE_HOMEWORK_LINE, zeroBasedIndex + 1, homework.getTitle(),
-                    homework.getSubject(), homework.getDueDate(), Messages.formatScore(homework)));
+                    homework.getSubject(), homework.getDueDate(), Messages.formatScore(homework),
+                    homework.getStatus()));
         }
         return message.toString();
     }

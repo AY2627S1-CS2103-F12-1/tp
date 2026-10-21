@@ -4,7 +4,7 @@ skinparam arrowThickness 1.1
 skinparam arrowColor UI_COLOR_T4
 skinparam classBackgroundColor UI_COLOR
 
-package UI <<Rectangle>>{
+package UI {
 Class "<<interface>>\nUi" as Ui
 Class "{abstract}\nUiPart" as UiPart
 Class UiManager
@@ -13,16 +13,17 @@ Class HelpWindow
 Class ResultDisplay
 Class StudentListPanel
 Class StudentCard
+Class UpcomingPanel
 Class StatusBarFooter
 Class CommandBox
 }
 
-package Model <<Rectangle>> {
-Class HiddenModel #FFFFFF
+package Model as ModelPackage {
+Class Student MODEL_COLOR
 }
 
-package Logic <<Rectangle>> {
-Class HiddenLogic #FFFFFF
+package Logic as LogicPackage {
+Class "<<interface>>\nLogic" as Logic LOGIC_COLOR
 }
 
 Class HiddenOutside #FFFFFF
@@ -33,10 +34,11 @@ UiManager -down-> "1" MainWindow
 MainWindow *-down->  "1" CommandBox
 MainWindow *-down-> "1" ResultDisplay
 MainWindow *-down-> "1" StudentListPanel
+MainWindow *-down-> "1" UpcomingPanel
 MainWindow *-down-> "1" StatusBarFooter
-MainWindow --> "0..1" HelpWindow
+MainWindow --> "1" HelpWindow
 
-StudentListPanel -down-> "*" StudentCard
+StudentListPanel .down.> StudentCard : <<create>>
 
 MainWindow -left-|> UiPart
 
@@ -44,12 +46,14 @@ ResultDisplay --|> UiPart
 CommandBox --|> UiPart
 StudentListPanel --|> UiPart
 StudentCard --|> UiPart
+UpcomingPanel --|> UiPart
 StatusBarFooter --|> UiPart
 HelpWindow --|> UiPart
 
-StudentCard ..> Model
-UiManager -right-> Logic
-MainWindow -left-> Logic
+StudentCard .down.> Student
+UpcomingPanel .down.> Student
+UiManager -up-> "1" Logic
+MainWindow -up-> "1" Logic
 
 StudentListPanel -[hidden]left- HelpWindow
 HelpWindow -[hidden]left- CommandBox

@@ -142,6 +142,14 @@ public class StudentListPanel extends UiPart<Region> {
     }
 
     /**
+     * Rebuilds cached cards after a local-date change without changing selection or scroll position.
+     */
+    void refreshDate() {
+        renderedCards.clear();
+        studentListView.refresh();
+    }
+
+    /**
      * Captures the visible state and retains old cards before a sort can notify the list view.
      */
     public ViewState beginSort() {

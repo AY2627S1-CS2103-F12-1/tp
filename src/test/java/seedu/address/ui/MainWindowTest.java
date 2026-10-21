@@ -86,9 +86,13 @@ public class MainWindowTest {
 
                 // Dragging the dividers toward the bottom must leave enough room for both sidebar lists.
                 SplitPane verticalPane = (SplitPane) root.lookup("#verticalSplitPane");
+                SplitPane contentPane = (SplitPane) root.lookup("#contentSplitPane");
+                contentPane.setDividerPositions(1);
                 verticalPane.setDividerPositions(0.2, 1);
                 root.layout();
                 Region sidebar = (Region) root.lookup("#upcomingPanelPlaceholder");
+                assertTrue(contentPane.getHeight() >= sidebar.minHeight(sidebar.getWidth()),
+                        "content height must accommodate the computed sidebar minimum");
                 for (String id : new String[] {"lessonListView", "homeworkListView"}) {
                     Node list = root.lookup("#" + id);
                     double bottom = list.localToScene(list.getLayoutBounds()).getMaxY();

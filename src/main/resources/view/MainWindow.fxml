@@ -48,7 +48,7 @@
               </padding>
             </StackPane>
 
-            <SplitPane fx:id="contentSplitPane" dividerPositions="0.66" minHeight="170">
+            <SplitPane fx:id="contentSplitPane" dividerPositions="0.66">
               <items>
                 <StackPane fx:id="studentListPanelPlaceholder" minWidth="300" />
                 <StackPane fx:id="upcomingPanelPlaceholder" minWidth="220" prefWidth="280" />

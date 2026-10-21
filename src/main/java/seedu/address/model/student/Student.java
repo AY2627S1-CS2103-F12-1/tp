@@ -93,7 +93,7 @@ public final class Student {
     }
 
     /**
-     * Returns the number of this student's unscored homework records due before {@code today}.
+     * Returns the number of this student's assigned homework records due before {@code today}.
      */
     public int getOverdueHomeworkCount(LocalDate today) {
         return (int) homeworks.stream().filter(homework -> homework.isOverdue(today)).count();

@@ -1,0 +1,49 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+title Updating homework completion and recovering from a failed save
+
+participant ":LogicManager" as Logic LOGIC_COLOR
+participant "command:HomeworkStatusCommand" as Command LOGIC_COLOR
+participant "m:ModelManager" as Model MODEL_COLOR
+participant ":StorageManager" as Storage STORAGE_COLOR
+
+[-> Logic : execute("hw status 1 2 status/COMPLETED")
+activate Logic
+note over Logic, Command : AddressBookParser delegates to HomeworkCommandParser,\nthen HomeworkStatusCommandParser. Parsing is abbreviated.\nThe command contains displayed student index 1,\noriginal homework insertion index 2 and COMPLETED.
+Logic -> Model : getAddressBook()
+Model --> Logic : current data
+note over Logic : Copy data into a snapshot before execution.
+Logic -> Command : execute(m)
+activate Command
+Command -> Model : getStudentList()
+activate Model
+Model --> Command : displayed students
+deactivate Model
+note over Command : Resolve the displayed student and original homework index.\nReject invalid targets or an unchanged status before mutation.\nFor a valid changed target, homework.withStatus(COMPLETED)\npreserves its title, subject, due date and optional score.\nReplace the homework at its original insertion position\nin a copy of its owner's homework list.
+Command -> Model : setStudent(student, student.withHomeworks(replacements))
+activate Model
+Model --> Command
+deactivate Model
+Command --> Logic : CommandResult
+deactivate Command
+Logic -> Model : getAddressBook()
+Model --> Logic : changed data
+note over Logic : Equality includes completion status,\nso this change requires a save.
+Logic -> Storage : saveAddressBook(m.getAddressBook())
+activate Storage
+alt save succeeds
+    Storage --> Logic
+    [<-- Logic : CommandResult
+else save throws IOException
+    Storage --> Logic : IOException
+    Logic -> Model : setAddressBook(snapshot)
+    activate Model
+    Model --> Logic
+    deactivate Model
+    note over Logic : Use command.getSaveFailureMessage(...).\nThe original status and other data are restored.
+    [<-- Logic : CommandException
+end
+deactivate Storage
+deactivate Logic
+@enduml

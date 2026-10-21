@@ -256,19 +256,84 @@ The sequence below shows the current integrated design for a successful addition
 callbacks are summarized so the diagram focuses on roster changes and saving. Persistence and save-failure
 rollback use the shared [saving mechanism](#saving-after-a-command).
 
-The student-command sequence diagrams start after successful parsing and command construction, inside
+The Add Student, Filter and Sort sequence diagrams start after successful parsing and command construction, inside
 `LogicManager#execute`. The earlier parsing calls and the manager's activation bar are omitted. Command
 lifelines therefore represent existing objects; their execution, model interactions and subsequent saving are shown.
 
 <img src="images/AddStudentSequenceDiagram.png" width="900" alt="Successful Add Student command and shared save flow" />
 
-### Listing and deleting students
+### Listing students
 
-`AddressBookParser` routes `list` and its alias `ls` to `ListCommandParser`, which rejects non-blank arguments. `ListCommand` resets the displayed-student predicate, reads `Model#getStudentList()`, and asks the UI to show the roster from the top. It reports `No students found.` for an empty roster, `Listed 1 student.` for one student, and `Listed N students.` otherwise. Because the stored roster is unchanged, `LogicManager` does not save the data file.
+**Parsing.** `AddressBookParser` routes both `list` and its alias `ls` to `ListCommandParser`. The parser accepts no arguments, so `list 1` fails before a command is executed.
 
-`AddressBookParser` routes `search KEYWORD` to `SearchCommandParser`, which rejects a blank keyword. `SearchCommand` compares the stripped keyword with the student and guardian names and phone numbers, ignoring case for names. It sets the predicate of `ModelManager`'s `FilteredList<Student>`, whose source is the full roster. The UI observes an unmodifiable `StudentDisplayList` over the filtered results, so it refreshes the displayed cards and numbers automatically. Repeated searches examine the full roster, not just the previous results. The stored `AddressBook` is unchanged, so searching is never saved. Index-based student and homework commands use `Model#getStudentList()` and therefore act on the student currently shown at that index. `list`, a successful `add` and `homework upcoming` restore the full roster.
+**Displayed view.** `ListCommand` calls `Model#updateFilteredStudentList` with `PREDICATE_SHOW_ALL_STUDENTS`, replacing any predicate left by `search` or `filter`. `ModelManager` applies this to its `FilteredList<Student>`, which is backed by the full roster, then resets its `StudentDisplayList` to roster order, discarding any earlier `sort`. The `StudentListPanel` observes an unmodifiable view of the `StudentDisplayList`, so its cards and count update without rebuilding the stored roster. The command returns a `CommandResult` that makes `MainWindow` clear the selection and scroll to the first card.
 
-`AddressBookParser` routes `delete INDEX` to `DeleteCommandParser`. It uses `ParserUtil#parseStrictIndex`, so zero, signs, leading zeroes, extra arguments, and numbers beyond the supported integer range are rejected before execution. `DeleteCommand` checks the one-based index against the current roster, then calls `Model#deleteStudent` for that student. The remaining students retain their order and receive new displayed indexes. Homework and regular lessons belong to the deleted `Student`, so they are removed with it. `LogicManager` saves the changed roster; if saving fails, it restores the previous roster, including that student's homework and lessons.
+**Feedback and storage.** `ListCommand` counts the students in the restored view and reports `No students found.`, `Listed 1 student.`, or `Listed N students.` as appropriate. Resetting a filter does not alter the `AddressBook`; `LogicManager` therefore skips the save (see [Saving after a command](#saving-after-a-command)). This also means `list` can be used to return from an empty search result.
+
+The sequence diagram below shows how `list` restores the full student view without changing the stored roster:
+
+![Student list sequence diagram](images/StudentListSequenceDiagram.png)
+
+### Searching students
+
+**Parsing and matching.** `AddressBookParser` routes `search KEYWORD` to `SearchCommandParser`, which rejects a blank keyword. `SearchCommand` strips surrounding whitespace and performs a case-insensitive substring match against the student's name, the guardian's name, and both phone numbers. A numeric keyword can therefore find a student by either phone number; the command does not treat numbers as a separate search mode.
+
+**Displayed view.** `SearchCommand` passes the matching predicate to `Model#updateFilteredStudentList`. `ModelManager` applies it to a `FilteredList<Student>` backed by the full roster, resets its `StudentDisplayList` to roster order, discarding any earlier `sort`, and exposes an unmodifiable view of the `StudentDisplayList` to the UI. Changing the predicate updates the visible cards and count; it does not remove students from the roster. A new search replaces any previous search or filter predicate and examines the full roster, even if the previous command showed no matches. The command returns a `CommandResult` that scrolls the list to the top.
+
+**Feedback, indexes, and storage.** The result reports the number of matches, repeats the stripped keyword, and tells the user to type `list` to show all students. Index-based student and homework commands use `Model#getStudentList()`, so their indexes refer to the students currently displayed after a search. `list`, a successful `add`, and `homework upcoming` restore the full view. Searching leaves the stored `AddressBook` unchanged, so `LogicManager` does not save it.
+
+The sequence diagram below shows how `search Jane` reaches the filtered view without changing the stored roster:
+
+![Student search sequence diagram](images/StudentSearchSequenceDiagram.png)
+
+#### Design considerations:
+
+**Aspect: How search results are displayed:**
+
+* **Alternative 1 (current choice):** Apply a predicate to a `FilteredList` backed by the roster.
+  * Pros: Repeated searches always examine the full roster, and the observable UI list updates when the predicate or roster changes.
+  * Cons: Index-based commands must deliberately use the displayed list, and commands such as `list` must explicitly reset the predicate and any transient sort order.
+
+* **Alternative 2:** Copy matching students into a separate results list.
+  * Pros: The search result could be handled as an independent snapshot.
+  * Cons: The copy could become stale after a student is edited or deleted, so it would need to be rebuilt or kept in sync with the roster.
+
+### Deleting students
+
+**Parsing and selection.** `AddressBookParser` routes `delete INDEX` to `DeleteCommandParser`. `ParserUtil#parseStrictIndex` rejects zero, signs, leading zeroes, extra arguments, and values beyond the supported integer range. `DeleteCommand` then checks the one-based index against `Model#getStudentList()`, which is the currently displayed list. If a search, filter or sort is active, `delete 1` selects the first displayed student, not necessarily the first student in the full roster. An out-of-range index fails without changing data.
+
+**Model update.** The command passes the selected `Student` to `Model#deleteStudent`. `ModelManager` delegates to `AddressBook`, which removes that student from `StudentRoster`. The remaining students keep their relative order; the observable list updates the displayed cards and their one-based indexes. Homework and regular lessons are held by the deleted `Student`, so they are removed with that student rather than deleted separately.
+
+**Persistence and failure.** Unlike list and search, deletion changes the `AddressBook`, so `LogicManager` saves the updated roster. It keeps a copy of the previous roster before execution; if saving throws an `IOException`, it restores that copy, including the deleted student's homework and lessons. The screen and data file therefore remain consistent (see [Saving after a command](#saving-after-a-command)).
+
+The sequence diagram below shows a successful `delete 1`, including the storage update:
+
+![Student delete sequence diagram](images/StudentDeleteSequenceDiagram.png)
+
+#### Design considerations:
+
+**Aspect: Which student an index identifies:**
+
+* **Alternative 1 (current choice):** Resolve the index against the displayed list.
+  * Pros: The number beside a student card always identifies the student that `delete` will remove, even after `search`, `filter` or `sort`.
+  * Cons: The same index may identify a different student after the visible list changes; `list` restores full-roster numbering.
+
+* **Alternative 2:** Resolve the index against the full roster regardless of the current filter.
+  * Pros: An index would not change meaning when a search filter is applied.
+  * Cons: The visible card number could point to a different student from the one actually deleted.
+
+### Editing students
+
+`AddressBookParser` routes `edit INDEX` to `EditCommandParser`. The parser uses strict index parsing and the same
+prefix tokenizer and field value types as `add`; its name-token rule preserves `s/o` in student and guardian names.
+At least one replacement field is required. `EditCommand` applies only supplied fields to a new immutable `Student`,
+retaining its homework and lessons. Before calling `Model#setStudent`, it rejects an unchanged profile, a name-and-phone
+identity already used by another student, or subjects that would leave existing homework or lessons unsupported.
+`Model#setStudent` replaces the student in the stored roster without changing its stored position. The displayed
+card keeps its position if the edited student still matches the active search or filter; otherwise it disappears.
+An earlier sort is not reapplied until the user explicitly sorts again. `LogicManager` saves the change and restores
+the original roster if saving fails. The command builds its feedback before the replacement, logs unexpected runtime
+failures, and supplies an edit-specific save-failure message.
 
 ### Sorting students
 
@@ -299,8 +364,8 @@ The stored `AddressBook` does not change, so `LogicManager` skips persistence.
 Sorting is a one-time permutation; the model does not retain an active comparator. `Model#setStudent` preserves
 the displayed position of a replacement that still matches the active predicate, even when its academic level,
 subjects or earliest meeting day changes. A replacement that no longer matches disappears from the view.
-An explicit `sort` uses the updated values. Future student-edit commands should use `Model#setStudent` without
-resetting the predicate or display order, so editing follows the same behavior as lesson and homework updates.
+An explicit `sort` uses the updated values. The student-edit command uses `Model#setStudent` without resetting
+the predicate or display order, following the same behavior as lesson and homework updates.
 
 `SortCommandResult` retains an order-restoration action for the UI boundary. `MainWindow` captures the panel state
 before a sort request and verifies rendering before reporting success. `StudentListPanel` retains previous cards,
@@ -717,7 +782,7 @@ testers are expected to do more *exploratory* testing.
 
 1. _{ more test cases …​ }_
 
-### Listing and deleting students
+### Listing, searching, and deleting students
 
 1. Listing students
 
@@ -727,6 +792,17 @@ testers are expected to do more *exploratory* testing.
    1. In a test copy of the data, leave exactly one student and run `list`. Then delete that student and run `list` again.<br>
       Expected: The first result says `Listed 1 student.` and the second says `No students found.`
 
+1. Searching students
+
+   1. In a fresh test folder, run `add n/Zoe Quest l/S2 s/MATH p/91238888 gn/Ivy Quest gp/97665555`.<br>
+      Expected: Zoe Quest is added to the roster.
+
+   1. Run `search Zoe`, then `search no-such-student`, then `search 9766`.<br>
+      Expected: The first search shows Zoe Quest, the second shows `No students found for "no-such-student".`, and the third shows Zoe Quest again by guardian phone. Each result repeats its keyword and offers `list` to show all students; the third search checks that a previous empty result does not restrict the next search.
+
+   1. Run `search` without a keyword, then run `list`.<br>
+      Expected: The blank search shows a format error without changing the roster; `list` shows all students again.
+
 1. Deleting a student with related records
 
    1. In a fresh test folder, add a student taking MATH. Use the index shown on their card to add a homework record and a regular lesson, then run `delete INDEX` using that student's index.<br>
@@ -734,6 +810,9 @@ testers are expected to do more *exploratory* testing.
 
    1. Try `delete 0`, `delete 01`, and an index larger than the roster size.<br>
       Expected: Each shows an error and leaves the roster unchanged.
+
+   1. In a fresh test folder, add `Zoe Quest` as above, run `search Zoe`, then run `delete 1` and `list`.<br>
+      Expected: Zoe Quest, the first displayed search result, is deleted rather than the first student in the full roster. The other students remain, and Zoe Quest is still absent after restarting the app.
 
 ### Sorting students
 

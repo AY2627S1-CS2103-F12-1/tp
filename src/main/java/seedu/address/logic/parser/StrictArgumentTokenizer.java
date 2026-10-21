@@ -48,6 +48,13 @@ public final class StrictArgumentTokenizer {
                 true, NO_VALUE_TOKENS);
     }
 
+    /** Returns the preamble and fields, keeping prefix-shaped name tokens accepted by {@code valueTokenFilter}. */
+    public static TokenizedArguments tokenizeWithPreamble(String arguments, List<String> allowedPrefixes,
+            String invalidFormatMessage, ValueTokenFilter valueTokenFilter) throws ParseException {
+        return tokenize(arguments, allowedPrefixes, invalidFormatMessage, MESSAGE_REPEATED_PREFIX,
+                true, valueTokenFilter);
+    }
+
     /**
      * Returns the prefixed values in {@code arguments}, which must not contain any text before the first prefix.
      *

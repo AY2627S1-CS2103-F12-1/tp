@@ -27,7 +27,7 @@ import seedu.address.model.student.Student;
 public class HomeworkUpcomingCommand extends Command {
     public static final String MESSAGE_USAGE = "homework|hw upcoming|up [due/DAYS]";
     public static final String MESSAGE_SUCCESS = "Found %d homework %s due from %s to %s.";
-    public static final String MESSAGE_HOMEWORK_LINE = "\nStudent %d: %s; %s; %s; Due: %s; Score: %s";
+    public static final String MESSAGE_HOMEWORK_LINE = "\nStudent %d: %s; %s; %s; Due: %s; Score: %s; Status: %s";
     public static final String MESSAGE_NO_HOMEWORK = "No homework due from %s to %s.";
     public static final String MESSAGE_INTERNAL_ERROR =
             "TutorFlow could not display upcoming homework due to an internal error.";
@@ -98,7 +98,7 @@ public class HomeworkUpcomingCommand extends Command {
             Homework homework = entry.getValue();
             message.append(String.format(MESSAGE_HOMEWORK_LINE, Index.fromZeroBased(position).getOneBased(),
                     students.get(position).getName(), homework.getTitle(), homework.getSubject(),
-                    homework.getDueDate(), Messages.formatScore(homework)));
+                    homework.getDueDate(), Messages.formatScore(homework), homework.getStatus()));
         }
         return message.toString();
     }

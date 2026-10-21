@@ -58,9 +58,10 @@ public class HomeworkEditCommandTest {
                 + "Alice Tan; Title: Complete algebra questions 1-10; Subject: MATH; Due: 2026-10-15\n"
                 + "Listed 3 upcoming homework records for Alice Tan.\n"
                 + "Homework for Alice Tan:\n"
-                + "1. Complete algebra questions 1-10 (MATH) - due 2026-10-15 - score Not recorded\n"
-                + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20\n"
-                + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded";
+                + "1. Complete algebra questions 1-10 (MATH) - due 2026-10-15 - score Not recorded - status ASSIGNED\n"
+                + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20 - status ASSIGNED\n"
+                + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded"
+                + " - status ASSIGNED";
         Model expectedModel = getModelWithStudents(List.of(
                 ALICE.withHomeworks(List.of(editedAlgebra, MECHANICS, ATOMIC_STRUCTURE)), BENSON, CARL));
 
@@ -78,9 +79,9 @@ public class HomeworkEditCommandTest {
                 + "Alice Tan; Title: Revise mechanics; Subject: CHEMISTRY; Due: 2026-11-10\n"
                 + "Listed 3 upcoming homework records for Alice Tan.\n"
                 + "Homework for Alice Tan:\n"
-                + "1. Complete algebra worksheet (MATH) - due 2026-10-15 - score Not recorded\n"
-                + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20\n"
-                + "2. Revise mechanics (CHEMISTRY) - due 2026-11-10 - score Not recorded";
+                + "1. Complete algebra worksheet (MATH) - due 2026-10-15 - score Not recorded - status ASSIGNED\n"
+                + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20 - status ASSIGNED\n"
+                + "2. Revise mechanics (CHEMISTRY) - due 2026-11-10 - score Not recorded - status ASSIGNED";
         Model expectedModel = getModelWithStudents(List.of(
                 ALICE.withHomeworks(List.of(ALGEBRA, editedMechanics, ATOMIC_STRUCTURE)), BENSON, CARL));
 
@@ -97,9 +98,10 @@ public class HomeworkEditCommandTest {
                 + "Alice Tan; Title: Revise atomic structure; Subject: CHEMISTRY; Due: 2026-11-05\n"
                 + "Listed 3 upcoming homework records for Alice Tan.\n"
                 + "Homework for Alice Tan:\n"
-                + "1. Complete algebra worksheet (MATH) - due 2026-10-15 - score Not recorded\n"
-                + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded\n"
-                + "3. Revise atomic structure (CHEMISTRY) - due 2026-11-05 - score 17/20";
+                + "1. Complete algebra worksheet (MATH) - due 2026-10-15 - score Not recorded - status ASSIGNED\n"
+                + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded"
+                + " - status ASSIGNED\n"
+                + "3. Revise atomic structure (CHEMISTRY) - due 2026-11-05 - score 17/20 - status ASSIGNED";
         Model expectedModel = getModelWithStudents(List.of(
                 ALICE.withHomeworks(List.of(ALGEBRA, MECHANICS, editedAtomicStructure)), BENSON, CARL));
 
@@ -117,7 +119,8 @@ public class HomeworkEditCommandTest {
                 + "Inferred year: 2027\n"
                 + "Listed 1 upcoming homework record for Carl Ng.\n"
                 + "Homework for Carl Ng:\n"
-                + "1. Attempt mechanics questions 1-5 (PHYSICS) - due 2027-01-05 - score Not recorded";
+                + "1. Attempt mechanics questions 1-5 (PHYSICS) - due 2027-01-05 - score Not recorded"
+                + " - status ASSIGNED";
         Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON,
                 CARL.withHomeworks(List.of(editedMechanics))));
 
@@ -137,9 +140,10 @@ public class HomeworkEditCommandTest {
                 + "Alice Tan; Title: COMPLETE algebra worksheet; Subject: MATH; Due: 2026-10-15\n"
                 + "Listed 3 upcoming homework records for Alice Tan.\n"
                 + "Homework for Alice Tan:\n"
-                + "1. COMPLETE algebra worksheet (MATH) - due 2026-10-15 - score Not recorded\n"
-                + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20\n"
-                + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded";
+                + "1. COMPLETE algebra worksheet (MATH) - due 2026-10-15 - score Not recorded - status ASSIGNED\n"
+                + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20 - status ASSIGNED\n"
+                + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded"
+                + " - status ASSIGNED";
 
         assertCommandSuccess(new HomeworkEditCommand(FIRST, FIRST, descriptor, false, TODAY), model, expectedMessage,
                 expectedModel);
@@ -153,8 +157,9 @@ public class HomeworkEditCommandTest {
                 + "Alice Tan; Title: Complete algebra questions 1-10; Subject: MATH; Due: 2026-10-15\n"
                 + "Listed 2 upcoming homework records for Alice Tan.\n"
                 + "Homework for Alice Tan:\n"
-                + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20\n"
-                + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded";
+                + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20 - status ASSIGNED\n"
+                + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded"
+                + " - status ASSIGNED";
         Model expectedModel = getModelWithStudents(List.of(
                 ALICE.withHomeworks(List.of(editedAlgebra, MECHANICS, ATOMIC_STRUCTURE)), BENSON, CARL));
 

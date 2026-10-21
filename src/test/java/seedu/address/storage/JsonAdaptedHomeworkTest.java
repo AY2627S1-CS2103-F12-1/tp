@@ -24,6 +24,7 @@ import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.commons.util.JsonUtil;
 import seedu.address.model.homework.DueDate;
 import seedu.address.model.homework.Homework;
+import seedu.address.model.homework.HomeworkStatus;
 import seedu.address.model.homework.Score;
 import seedu.address.model.homework.Title;
 import seedu.address.model.student.TuitionSubject;
@@ -33,6 +34,36 @@ public class JsonAdaptedHomeworkTest {
     private static final String VALID_TITLE = "Complete algebra worksheet";
     private static final String VALID_SUBJECT = "MATH";
     private static final String VALID_DUE_DATE = "2026-10-15";
+
+    @Test
+    public void toModelType_missingOrNullStatus_defaultsAssignedEvenWithScore() throws Exception {
+        for (String statusField : List.of("", ",\"status\":null")) {
+            Homework homework = JsonUtil.fromJsonString("{\"title\":\"Algebra\",\"subject\":\"MATH\","
+                    + "\"dueDate\":\"2026-10-15\",\"score\":\"17/20\"" + statusField + "}",
+                    JsonAdaptedHomework.class).toModelType();
+            assertEquals(HomeworkStatus.ASSIGNED, homework.getStatus());
+            assertEquals(new Score(17, 20), homework.getScore().orElseThrow());
+        }
+    }
+
+    @Test
+    public void toModelType_explicitStatusRoundTrip_preservesIndependentScore() throws Exception {
+        Homework completed = new HomeworkBuilder().withStatus("COMPLETED").build();
+        assertEquals(completed, new JsonAdaptedHomework(completed).toModelType());
+        Homework assignedScored = new HomeworkBuilder().withScore("17/20").build();
+        assertEquals(assignedScored, new JsonAdaptedHomework(assignedScored).toModelType());
+        assertEquals(completed, new JsonAdaptedHomework(VALID_TITLE, VALID_SUBJECT, VALID_DUE_DATE,
+                null, " completed ").toModelType());
+    }
+
+    @Test
+    public void toModelType_invalidExplicitStatus_rejected() {
+        for (String status : List.of("", "done", "true", "COMPLETED extra")) {
+            JsonAdaptedHomework adapted = new JsonAdaptedHomework(VALID_TITLE, VALID_SUBJECT, VALID_DUE_DATE,
+                    null, status);
+            assertThrows(IllegalValueException.class, HomeworkStatus.MESSAGE_CONSTRAINTS, adapted::toModelType);
+        }
+    }
 
     @Test
     public void toModelType_validHomeworkDetails_returnsHomework() throws Exception {
@@ -112,9 +143,9 @@ public class JsonAdaptedHomeworkTest {
     }
 
     @Test
-    public void toModelType_oldStatusKeyInJson_ignoresStatus() throws Exception {
-        // Files saved before homework status was removed still have a status key
-        assertEquals(new HomeworkBuilder().build(), JsonUtil.fromJsonString("{\"title\": \"" + VALID_TITLE
+    public void toModelType_oldStatusKeyInJson_preservesCompletion() throws Exception {
+        assertEquals(new HomeworkBuilder().withStatus("COMPLETED").build(), JsonUtil.fromJsonString("{\"title\": \""
+                + VALID_TITLE
                 + "\", \"subject\": \"MATH\", \"dueDate\": \"2026-10-15\", \"status\": \"COMPLETED\"}",
                 JsonAdaptedHomework.class).toModelType());
     }

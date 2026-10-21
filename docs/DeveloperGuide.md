@@ -505,6 +505,13 @@ The PlantUML sources for these diagrams are in `docs/diagrams`. Generate their P
 
 ![Homework completion and score are independent](images/HomeworkCompletionClassDiagram.png)
 
+The Model class diagram also shows the required `HomeworkStatus` association alongside the optional `Score`.
+The sequence below follows a status change through the displayed-index lookup, immutable replacement, automatic
+save, and recovery if saving fails. Parser delegation and value construction are abbreviated; validation failures
+are described in the notes and do not reach `setStudent`.
+
+![Homework completion update and save recovery](images/HomeworkStatusSequenceDiagram.png)
+
 `Homework` holds exactly one `HomeworkStatus` enum value (`ASSIGNED` or `COMPLETED`), independently of its optional `Score`. New homework defaults to `ASSIGNED`. Equality and hashing include status so that `LogicManager` detects status changes; duplicate identity continues to use normalized title, subject and due date only. `Homework.withStatus` copies all other values. `HomeworkEditCommand` and `HomeworkMarksCommand` preserve the original status when constructing replacement homework.
 
 `HomeworkStatusCommandParser` parses `homework|hw status STUDENT_INDEX HOMEWORK_INDEX status/STATUS` using strict displayed student and insertion-order homework indices. The command rejects invalid targets and unchanged status before mutating the model. It replaces one homework in a copied list and updates its immutable owner using `withHomeworks`, preserving other homework, lessons and student data. The standard save/rollback mechanism applies, with `HomeworkStatusCommand.MESSAGE_SAVE_FAILURE` on failure.

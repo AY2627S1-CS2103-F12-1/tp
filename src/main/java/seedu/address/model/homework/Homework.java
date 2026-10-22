@@ -81,9 +81,18 @@ public final class Homework {
         return new Homework(title, subject, dueDate, score, newStatus);
     }
 
-    /** Returns true if this homework is due on or after {@code today}. */
+    /**
+     * Returns true if this homework is due on or after {@code today}.
+     */
     public boolean isUpcoming(LocalDate today) {
         return !dueDate.getDate().isBefore(today);
+    }
+
+    /**
+     * Returns true if this homework is assigned and was due before {@code today}, regardless of its score.
+     */
+    public boolean isOverdue(LocalDate today) {
+        return status == HomeworkStatus.ASSIGNED && !isUpcoming(today);
     }
 
     /**

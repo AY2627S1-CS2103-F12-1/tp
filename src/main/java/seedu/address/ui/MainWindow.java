@@ -1,18 +1,25 @@
 package seedu.address.ui;
 
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javafx.animation.PauseTransition;
+import javafx.beans.binding.Bindings;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.SplitPane;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 import seedu.address.commons.core.GuiSettings;
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.logic.Logic;
@@ -37,9 +44,13 @@ public class MainWindow extends UiPart<Stage> {
     private Stage primaryStage;
     private Logic logic;
     private Path dataFilePath;
+    private final Clock clock;
+    private LocalDate displayDate;
+    private final PauseTransition dateRefreshTimer = new PauseTransition();
 
     // Independent Ui parts residing in this Ui container
     private StudentListPanel studentListPanel;
+    private UpcomingPanel upcomingPanel;
     private ResultDisplay resultDisplay;
     private HelpWindow helpWindow;
     private CommandBox commandBox;
@@ -54,6 +65,12 @@ public class MainWindow extends UiPart<Stage> {
     private StackPane studentListPanelPlaceholder;
 
     @FXML
+    private StackPane upcomingPanelPlaceholder;
+
+    @FXML
+    private SplitPane contentSplitPane;
+
+    @FXML
     private StackPane resultDisplayPlaceholder;
 
     @FXML
@@ -64,7 +81,16 @@ public class MainWindow extends UiPart<Stage> {
      * and the data file path to show in the status bar.
      */
     public MainWindow(Stage primaryStage, Logic logic, Path dataFilePath) {
+        this(primaryStage, logic, dataFilePath, Clock.systemDefaultZone());
+    }
+
+    /**
+     * Creates a window whose sidebar and student cards share the given clock for date-sensitive displays.
+     */
+    MainWindow(Stage primaryStage, Logic logic, Path dataFilePath, Clock clock) {
         super(FXML, primaryStage);
+        this.clock = clock;
+        displayDate = LocalDate.now(clock);
 
         // Set dependencies
         this.primaryStage = primaryStage;
@@ -127,19 +153,64 @@ public class MainWindow extends UiPart<Stage> {
         studentListPanel = createStudentListPanel(logic.getStudentList(), this::handleStudentRenderingError);
         studentListPanelPlaceholder.getChildren().add(studentListPanel.getRoot());
 
+        upcomingPanel = new UpcomingPanel(logic.getAllStudentList(), clock);
+        upcomingPanelPlaceholder.getChildren().add(upcomingPanel.getRoot());
+        // Reserve enough height for wrapped headings at each section's narrowest permitted width.
+        contentSplitPane.minHeightProperty().bind(Bindings.createDoubleBinding(() -> Math.max(
+                studentListPanelPlaceholder.minHeight(studentListPanelPlaceholder.minWidth(-1)),
+                upcomingPanelPlaceholder.minHeight(upcomingPanelPlaceholder.minWidth(-1)))
+                + contentSplitPane.getInsets().getTop() + contentSplitPane.getInsets().getBottom(),
+                studentListPanelPlaceholder.widthProperty(), upcomingPanelPlaceholder.widthProperty(),
+                studentListPanelPlaceholder.minWidthProperty(), upcomingPanelPlaceholder.minWidthProperty(),
+                contentSplitPane.insetsProperty()));
+
         StatusBarFooter statusBarFooter = new StatusBarFooter(dataFilePath);
         statusbarPlaceholder.getChildren().add(statusBarFooter.getRoot());
 
         commandBox = new CommandBox(this::executeCommand);
         commandBoxPlaceholder.getChildren().add(commandBox.getRoot());
         helpWindow.getRoot().setOnHidden(unused -> focusCommandBox());
+        dateRefreshTimer.setOnFinished(unused -> refreshDate());
+        primaryStage.showingProperty().addListener((observable, wasShowing, isShowing) -> {
+            if (isShowing) {
+                refreshDate();
+            } else {
+                dateRefreshTimer.stop();
+            }
+        });
+        primaryStage.focusedProperty().addListener((observable, wasFocused, isFocused) -> {
+            if (isFocused) {
+                refreshDate();
+            }
+        });
+        refreshDate();
+    }
+
+    /**
+     * Rechecks the local date after midnight, window activation or a command, keeping both displays consistent.
+     */
+    void refreshDate() {
+        LocalDate today = LocalDate.now(clock);
+        if (!today.equals(displayDate)) {
+            displayDate = today;
+            upcomingPanel.refreshDate(today);
+            studentListPanel.refreshDate();
+        }
+        if (primaryStage.isShowing()) {
+            ZonedDateTime now = ZonedDateTime.now(clock);
+            ZonedDateTime nextDay = now.toLocalDate().plusDays(1).atStartOfDay(clock.getZone());
+            long delay = java.time.Duration.between(now, nextDay).toMillis();
+            dateRefreshTimer.setDuration(Duration.millis(Math.max(1, delay)));
+            dateRefreshTimer.playFromStart();
+        }
     }
 
     /**
      * Creates the panel for {@code students}, reporting rendering failures through {@code renderingErrorHandler}.
      */
     StudentListPanel createStudentListPanel(ObservableList<Student> students, Runnable renderingErrorHandler) {
-        return new StudentListPanel(students, renderingErrorHandler);
+        return new StudentListPanel(students, renderingErrorHandler, (student, index) ->
+                new StudentCard(student, index, displayDate).getRoot());
     }
 
     /**
@@ -204,6 +275,7 @@ public class MainWindow extends UiPart<Stage> {
      * @see seedu.address.logic.Logic#execute(String)
      */
     private CommandResult executeCommand(String commandText) throws CommandException, ParseException {
+        refreshDate();
         studentListPanel.beginCommandRendering();
         try {
             boolean isSortRequest = commandText.strip().split("\\s+", 2)[0].equals(SortCommand.COMMAND_WORD);

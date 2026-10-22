@@ -95,6 +95,11 @@ public class LogicManager implements Logic {
     }
 
     @Override
+    public ObservableList<Student> getAllStudentList() {
+        return model.getAddressBook().getStudentList();
+    }
+
+    @Override
     public GuiSettings getGuiSettings() {
         return model.getGuiSettings();
     }

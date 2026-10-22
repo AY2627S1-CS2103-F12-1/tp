@@ -28,6 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import javafx.collections.ObservableList;
 import seedu.address.logic.commands.ClearCommand;
 import seedu.address.logic.commands.CommandResult;
 import seedu.address.logic.commands.EditCommand;
@@ -222,6 +223,25 @@ public class LogicManagerTest {
     public void execute_listCommand_doesNotSaveData() throws Exception {
         assertCommandSuccess(ListCommand.COMMAND_WORD, ListCommand.MESSAGE_EMPTY, model);
         assertFalse(Files.exists(dataFilePath));
+    }
+
+    @Test
+    public void getAllStudentList_searchAndRosterChanges_returnsLiveUnmodifiableRoster() throws Exception {
+        model.setAddressBook(getTypicalAddressBook());
+        ObservableList<Student> allStudents = logic.getAllStudentList();
+        List<Student> expectedStudents = List.copyOf(allStudents);
+
+        logic.execute("search Alice");
+        assertEquals(1, logic.getStudentList().size());
+        assertEquals(expectedStudents, allStudents);
+        assertThrows(UnsupportedOperationException.class, () -> allStudents.remove(0));
+
+        logic.execute("clear");
+        assertEquals(List.of(), allStudents);
+
+        Student student = new StudentBuilder().build();
+        model.addStudent(student);
+        assertEquals(List.of(student), allStudents);
     }
 
     @Test

@@ -87,6 +87,7 @@ public class StudentListPanel extends UiPart<Region> {
         });
         studentListView.setItems(students);
         studentListView.setCellFactory(unused -> new StudentListViewCell());
+        ScrollSupport.enableScrolling(getRoot(), studentListView);
         updateStudentCount(students.size());
     }
 
@@ -132,10 +133,20 @@ public class StudentListPanel extends UiPart<Region> {
         renderingErrorHandler.run();
     }
 
-    /** Clears the current selection and returns to the first student. */
+    /**
+     * Clears the current selection and returns to the first student.
+     */
     public void showFromTop() {
         studentListView.getSelectionModel().clearSelection();
         studentListView.scrollTo(0);
+    }
+
+    /**
+     * Rebuilds cached cards after a local-date change without changing selection or scroll position.
+     */
+    void refreshDate() {
+        renderedCards.clear();
+        studentListView.refresh();
     }
 
     /**
@@ -246,7 +257,9 @@ public class StudentListPanel extends UiPart<Region> {
         }
     }
 
-    /** Displays a student card with its current one-based roster index. */
+    /**
+     * Displays a student card with its current one-based roster index.
+     */
     private class StudentListViewCell extends ListCell<Student> {
         @Override
         protected void updateItem(Student student, boolean isEmpty) {

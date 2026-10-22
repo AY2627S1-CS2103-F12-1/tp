@@ -73,8 +73,8 @@ The **API** of this component is specified in [`Ui.java`](https://github.com/AY2
 ![Structure of the UI Component](images/UiClassDiagram.png)
 
 The UI diagram shows the references after successful startup. The UI consists of a `MainWindow` and its parts,
-such as `CommandBox`, `ResultDisplay`, `StudentListPanel`, and `StatusBarFooter`. All of these, including
-`MainWindow`, inherit from the abstract `UiPart` class, which captures common behavior among classes that
+such as `CommandBox`, `ResultDisplay`, `StudentListPanel`, `UpcomingPanel`, and `StatusBarFooter`. All of these,
+including `MainWindow`, inherit from the abstract `UiPart` class, which captures common behavior among classes that
 represent visible GUI parts.
 
 The `HelpWindow` lists the commands from `HelpContent`, a plain Java class that groups the commands into sections. Each command format in `HelpContent` is the usage constant of the command (e.g. `HomeworkAddCommand.MESSAGE_USAGE`), so the help window shows the same format as the parser error messages, and `HelpContentTest` checks that every example in it parses into the listed command.
@@ -88,7 +88,27 @@ The `UI` component,
 * keeps a reference to the `Logic` component, because the `UI` relies on the `Logic` to execute commands.
 * depends on some classes in the `Model` component because it displays `Student` objects from the model.
 
-`MainWindow` shows one `StudentListPanel`, which lists every student as a `StudentCard`, and a `StatusBarFooter` that shows the path of the data file.
+`MainWindow` shows one `StudentListPanel`, which lists the displayed students (after any `search`, `filter` or
+`sort`) as `StudentCard` objects, and a `StatusBarFooter` that shows the path of the data file. Each card
+displays `Student#getUpcomingHomeworkCount(today)` and `Student#getOverdueHomeworkCount(today)`.
+
+`UpcomingPanel` displays the **At a glance** sidebar. It observes the full, unmodifiable roster from
+`Logic#getAllStudentList()`, rather than the displayed list from `Logic#getStudentList()`, so `search`, `filter` and `sort`
+do not hide lessons or homework. Its list-change listener rebuilds the weekly schedule through
+`LessonSchedule#from` and sorts `ASSIGNED` homework by due date, then student name, title and phone. Both
+reports include student phone numbers to distinguish students sharing a name. The same observable roster is
+retained when data is reset, so updates continue after `clear` or a failed save is rolled back.
+
+The sidebar evaluates `Homework#isOverdue(today)` to mark overdue entries in bold red;
+`Student#getOverdueHomeworkCount(today)` uses the same model rule for student cards. A homework record is
+overdue only when its status is `ASSIGNED` and its due date is before today, regardless of its score.
+`UpcomingPanel` and `MainWindow` accept a `Clock` for deterministic UI tests. `MainWindow` schedules a refresh
+at the next local date boundary, rechecks on window activation and before commands, and rebuilds cached
+student cards and sidebar entries using the same date. The timer stops when the window is hidden and restarts
+when shown. The content split pane binds its minimum height to its children's minimum heights at their
+narrowest permitted widths, accounting for wrapped headings so the sidebar remains within its bounds. Both
+lists show entry counts and empty-state placeholders. `MainWindow.fxml` uses split panes to resize sections,
+and `ScrollSupport` lets users scroll over headings and padding while retaining command-box focus.
 
 `StudentListPanel` creates `StudentCard` objects and caches their rendered roots. It observes the displayed
 student list; the [sort recovery activity](#sorting-students) explains how the previous view is retained during sorting.

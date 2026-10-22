@@ -24,6 +24,11 @@ public interface Logic {
     ObservableList<Student> getStudentList();
 
     /**
+     * Returns an unmodifiable view of every student in the roster, ignoring any search filter.
+     */
+    ObservableList<Student> getAllStudentList();
+
+    /**
      * Returns the user prefs' GUI settings.
      */
     GuiSettings getGuiSettings();

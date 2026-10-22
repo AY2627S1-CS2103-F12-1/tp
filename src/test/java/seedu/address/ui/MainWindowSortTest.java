@@ -97,6 +97,7 @@ public class MainWindowSortTest {
             MainWindow window = new MainWindow(stage, createLogic(model), temporaryFolder.resolve("students.json"));
             window.fillInnerParts();
             Parent root = stage.getScene().getRoot();
+            root.applyCss();
             enterCommand(root, "filter l/S5");
             enterCommand(root, "sort by/level");
 

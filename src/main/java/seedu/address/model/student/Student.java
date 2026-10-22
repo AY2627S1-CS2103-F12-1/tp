@@ -93,6 +93,13 @@ public final class Student {
     }
 
     /**
+     * Returns the number of this student's assigned homework records due before {@code today}.
+     */
+    public int getOverdueHomeworkCount(LocalDate today) {
+        return (int) homeworks.stream().filter(homework -> homework.isOverdue(today)).count();
+    }
+
+    /**
      * Returns true if this student already has homework with the same identity as {@code homework}, as defined by
      * {@link Homework#isSameHomework(Homework)}.
      */

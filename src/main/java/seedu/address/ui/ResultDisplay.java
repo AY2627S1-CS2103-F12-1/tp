@@ -16,8 +16,12 @@ public class ResultDisplay extends UiPart<Region> {
     @FXML
     private TextArea resultDisplay;
 
+    /**
+     * Creates a result display that scrolls without requiring keyboard focus.
+     */
     public ResultDisplay() {
         super(FXML);
+        ScrollSupport.enableScrolling(getRoot(), resultDisplay);
     }
 
     public void setFeedbackToUser(String feedbackToUser) {

@@ -519,7 +519,9 @@ Format: `lesson edit LESSON_INDEX [s/SUBJECT] [d/DAY] [st/START_TIME] [et/END_TI
 * Run `lesson list` first. `LESSON_INDEX` is a positive whole number without leading zeroes, referring to the full weekly schedule, including lessons whose students are hidden by a student search or filter.
 * Supply at least one field. Omitted fields retain their original values. Prefixes may appear once, in any order; unknown prefixes and empty values are rejected. Subjects, weekdays and times follow the rules for `lesson add`.
 * The proposed end must be after the proposed start, using the existing value for any omitted time. The student must take the proposed subject.
-* TutorFlow checks for clashes across the full roster while excluding the original lesson being edited. Adjacent lessons are allowed. If there are multiple clashes, all are listed in weekly order. Duplicates and edits that change no values are rejected.
+* TutorFlow checks the proposed day and times against every other lesson in the full roster, including the same student's other lessons and lessons hidden by a student search or filter. Only the original lesson is excluded. Changing just the subject is allowed when it is one of the student's tuition subjects.
+* Lessons clash when they share a weekday and their times overlap, even by one minute. Lessons on different weekdays and lessons that meet exactly at an endpoint are allowed. If there are multiple clashes, all are listed in weekly order. Duplicates and edits that change no values are rejected.
+* A rejected edit leaves the original lesson, displayed student list and saved data unchanged. The error identifies each conflicting student's name, subject, weekday and times so you can choose another slot.
 * The lesson remains with the same student, preserving their profile, homework and lesson insertion order. Its weekly schedule number may change after an edit; run `lesson list` again before another edit or deletion.
 * The edit is saved automatically. If saving fails, TutorFlow restores the original data and reports that no lesson data was changed.
 
@@ -527,6 +529,8 @@ Examples:
 
 * `lesson edit 1 d/TUESDAY` moves the first lesson to Tuesday, retaining its subject and times.
 * `lesson edit 1 st/17:00 et/19:00` changes both times of the first lesson.
+
+For example, suppose John Tan has a Monday lesson at 16:00-18:00 and Mary Lim has one at 18:00-19:00. Editing John's lesson with `lesson edit 1 et/18:30` is rejected with `This lesson clashes with an existing lesson: Mary Lim; MATH; MONDAY; 18:00-19:00` (assuming Mary's subject is MATH). Editing John's lesson with `lesson edit 1 st/17:00` succeeds: 17:00-18:00 overlaps only its own original slot and ends exactly when Mary's lesson starts. The same checks apply after restarting TutorFlow.
 
 ### Deleting a regular lesson: `lesson delete`
 

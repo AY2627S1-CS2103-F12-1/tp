@@ -20,6 +20,7 @@ Class TuitionSubjects
 Class StudentPhone
 
 Class Homework
+Enum "<<enumeration>>\nHomeworkStatus" as HomeworkStatus
 Class Title
 Enum "<<enumeration>>\nTuitionSubject" as TuitionSubject
 Class DueDate
@@ -53,4 +54,5 @@ Homework --> "1" Title
 Homework --> "1" TuitionSubject
 Homework --> "1" DueDate
 Homework --> "0..1" Score
+Homework --> "1" HomeworkStatus : status
 @enduml

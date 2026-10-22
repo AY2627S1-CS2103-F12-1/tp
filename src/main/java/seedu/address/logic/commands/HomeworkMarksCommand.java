@@ -112,7 +112,7 @@ public class HomeworkMarksCommand extends Command {
         }
 
         Homework scoredHomework = new Homework(homework.getTitle(), homework.getSubject(), homework.getDueDate(),
-                score);
+                score, homework.getStatus());
         List<Homework> updatedHomeworks = new ArrayList<>(homeworks);
         updatedHomeworks.set(homeworkIndex.getZeroBased(), scoredHomework);
         String message = String.format(score == null ? MESSAGE_CLEAR_SUCCESS : MESSAGE_SUCCESS,

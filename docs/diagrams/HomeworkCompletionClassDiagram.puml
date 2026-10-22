@@ -1,0 +1,27 @@
+@startuml
+skinparam ClassAttributeIconSize 0
+skinparam Shadowing false
+skinparam DefaultFontName Arial
+hide methods
+title Independent completion state and homework score
+class Student
+class Homework
+enum HomeworkStatus {
+  ASSIGNED
+  COMPLETED
+}
+class Score
+
+Student --> "0..*" Homework : homework
+Homework --> "1" HomeworkStatus : status
+Homework --> "0..1" Score : score
+note bottom of Homework
+  Immutable record; new homework is ASSIGNED.
+  A status change preserves the score.
+  A score change preserves the status.
+end note
+note right of HomeworkStatus
+  COMPLETED does not require a score.
+  ASSIGNED may have a score.
+end note
+@enduml

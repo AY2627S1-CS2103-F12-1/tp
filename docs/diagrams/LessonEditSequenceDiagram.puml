@@ -1,0 +1,62 @@
+@startuml
+skinparam ParticipantFontColor #FFFFFF
+skinparam ParticipantBackgroundColor #3333C4
+skinparam ParticipantBorderColor #FFFFFF
+skinparam Shadowing false
+skinparam DefaultFontName Arial
+hide footbox
+skinparam ArrowFontStyle plain
+title Successful partial lesson edit (original lesson excluded from clashes)
+participant ":LogicManager" as Logic #3333C4
+participant ":AddressBookParser" as Parser #3333C4
+participant "edit:LessonEditCommand" as Edit #3333C4
+participant "descriptor:EditLessonDescriptor" as Descriptor #3333C4
+participant "<u>LessonSchedule</u>" as Schedule #9D0012
+participant "m:ModelManager" as Model #9D0012
+participant ":StorageManager" as Storage #A38300
+
+[-> Logic : execute("lesson edit 1 st/17:00")
+activate Logic
+Logic -> Parser : parseCommand(...)
+activate Parser
+note over Parser, Descriptor : LessonCommandParser delegates to LessonEditCommandParser.\nThe parser creates the partial descriptor and edit command.
+Parser --> Logic : edit
+deactivate Parser
+Logic -> Model : getAddressBook()
+Model --> Logic : current data
+note over Logic : Copy data into a snapshot.
+Logic -> Edit : execute(m)
+activate Edit
+Edit -> Model : getAddressBook().getStudentList()
+Model --> Edit : full roster
+Edit -> Schedule : from(students)
+activate Schedule
+Schedule --> Edit : weekly schedule
+deactivate Schedule
+note over Edit : Resolve original entry by lesson index.\nIts owner may be hidden in the student view.
+Edit -> Descriptor : applyTo(original.lesson())
+activate Descriptor
+Descriptor --> Edit : replacement
+deactivate Descriptor
+note over Edit : Validate subject, changed values and duplicates.
+Edit -> Schedule : findClashes(students, replacement, original)
+activate Schedule
+note right of Schedule : Exclude the original owner/lesson pair.\nCheck all other lessons in weekly order.
+Schedule --> Edit : empty clash list
+deactivate Schedule
+note over Edit : Replace original at the same insertion position\nin a copy of its owner's lessons.
+Edit -> Model : setStudent(owner, owner.withLessons(updated))
+activate Model
+Model --> Edit
+deactivate Model
+Edit --> Logic : CommandResult
+deactivate Edit
+note over Logic : Data differs from the snapshot.
+Logic -> Storage : saveAddressBook(m.getAddressBook())
+activate Storage
+Storage --> Logic
+deactivate Storage
+[<-- Logic : CommandResult
+deactivate Logic
+note over Logic, Storage : Validation failures do not change data. If saving throws IOException,\nLogicManager restores the snapshot and reports the edit-specific failure message.\nThese failure paths are omitted from this successful scenario.
+@enduml

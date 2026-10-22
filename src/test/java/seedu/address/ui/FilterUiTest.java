@@ -57,6 +57,7 @@ public class FilterUiTest {
         runOnFxThread(() -> {
             Stage stage = new Stage();
             new MainWindow(stage, createLogic(model), temporaryFolder.resolve("tutorflow.json")).fillInnerParts();
+            stage.getScene().getRoot().applyCss();
 
             enterCommand(stage, "filter l/S4");
 
@@ -83,6 +84,7 @@ public class FilterUiTest {
         runOnFxThread(() -> {
             Stage stage = new Stage();
             new MainWindow(stage, createLogic(model), dataFile).fillInnerParts();
+            stage.getScene().getRoot().applyCss();
             enterCommand(stage, "filter l/S4");
             ListView<Student> listView = prepareScrolledStudentList(stage);
             ScrollBar scrollBar = findVerticalScrollBar(listView);
@@ -117,6 +119,7 @@ public class FilterUiTest {
             Stage stage = new Stage();
             AtomicBoolean shouldFail = new AtomicBoolean();
             createWindowWithFailingCards(stage, model, shouldFail).fillInnerParts();
+            stage.getScene().getRoot().applyCss();
             ListCell<Student> cell = createCell(getStudentListView(stage));
             cell.updateIndex(0);
             shouldFail.set(true);
@@ -138,12 +141,14 @@ public class FilterUiTest {
             Stage stage = new Stage();
             AtomicBoolean shouldFail = new AtomicBoolean();
             createWindowWithFailingCards(stage, model, shouldFail).fillInnerParts();
+            stage.getScene().getRoot().applyCss();
             enterCommand(stage, "filter s/CHEMISTRY");
             assertEquals("Found 20 student(s)", getFeedback(stage));
             ListCell<Student> cell = createCell(getStudentListView(stage));
             shouldFail.set(true);
 
-            cell.updateIndex(0);
+            // Render an offscreen record whose card has not been cached by the initial layout.
+            cell.updateIndex(19);
 
             assertEquals("TutorFlow could not display the filtered results due to an internal error",
                     getFeedback(stage));

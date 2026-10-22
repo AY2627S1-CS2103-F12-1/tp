@@ -8,7 +8,7 @@ import javafx.scene.layout.Region;
 import seedu.address.model.student.Student;
 
 /**
- * Displays the six fields of a student in the roster and the number of homework records due today or later.
+ * Displays a student's roster details and the counts of upcoming and overdue homework.
  */
 public class StudentCard extends UiPart<Region> {
     private static final String FXML = "StudentListCard.fxml";
@@ -29,10 +29,12 @@ public class StudentCard extends UiPart<Region> {
     private Label guardianPhone;
     @FXML
     private Label upcomingHomeworkCount;
+    @FXML
+    private Label overdueHomeworkCount;
 
     /**
      * Creates a card for the student at the specified one-based displayed index, counting the homework due on or
-     * after {@code today}.
+     * after {@code today} and overdue assigned homework before it.
      */
     public StudentCard(Student student, int displayedIndex, LocalDate today) {
         super(FXML);
@@ -44,5 +46,6 @@ public class StudentCard extends UiPart<Region> {
         guardianName.setText("Guardian: " + student.getGuardianName());
         guardianPhone.setText("Guardian phone: " + student.getGuardianPhone());
         upcomingHomeworkCount.setText("Upcoming homework: " + student.getUpcomingHomeworkCount(today));
+        overdueHomeworkCount.setText("Overdue homework: " + student.getOverdueHomeworkCount(today));
     }
 }

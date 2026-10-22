@@ -6,6 +6,7 @@
 <?import javafx.scene.control.Menu?>
 <?import javafx.scene.control.MenuBar?>
 <?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
@@ -32,20 +33,29 @@
           </Menu>
         </MenuBar>
 
-        <StackPane VBox.vgrow="NEVER" fx:id="commandBoxPlaceholder" styleClass="pane-with-border">
-          <padding>
-            <Insets top="5" right="10" bottom="5" left="10" />
-          </padding>
-        </StackPane>
+        <SplitPane fx:id="verticalSplitPane" orientation="VERTICAL" dividerPositions="0.14, 0.46"
+                   VBox.vgrow="ALWAYS">
+          <items>
+            <StackPane fx:id="commandBoxPlaceholder" styleClass="pane-with-border" minHeight="40">
+              <padding>
+                <Insets top="5" right="10" bottom="5" left="10" />
+              </padding>
+            </StackPane>
 
-        <StackPane VBox.vgrow="NEVER" fx:id="resultDisplayPlaceholder" styleClass="pane-with-border"
-                   minHeight="80" prefHeight="180" maxHeight="180">
-          <padding>
-            <Insets top="5" right="10" bottom="5" left="10" />
-          </padding>
-        </StackPane>
+            <StackPane fx:id="resultDisplayPlaceholder" styleClass="pane-with-border" minHeight="60">
+              <padding>
+                <Insets top="5" right="10" bottom="5" left="10" />
+              </padding>
+            </StackPane>
 
-        <StackPane fx:id="studentListPanelPlaceholder" VBox.vgrow="ALWAYS" minHeight="200" prefHeight="230" />
+            <SplitPane fx:id="contentSplitPane" dividerPositions="0.66">
+              <items>
+                <StackPane fx:id="studentListPanelPlaceholder" minWidth="300" />
+                <StackPane fx:id="upcomingPanelPlaceholder" minWidth="220" prefWidth="280" />
+              </items>
+            </SplitPane>
+          </items>
+        </SplitPane>
 
         <StackPane fx:id="statusbarPlaceholder" VBox.vgrow="NEVER" />
       </VBox>

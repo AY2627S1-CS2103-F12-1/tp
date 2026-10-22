@@ -59,6 +59,23 @@ public class HomeworkTest {
     }
 
     @Test
+    public void isOverdue() {
+        assertFalse(ALGEBRA.isOverdue(LocalDate.of(2026, 10, 14)));
+        assertFalse(ALGEBRA.isOverdue(LocalDate.of(2026, 10, 15)));
+        assertTrue(ALGEBRA.isOverdue(LocalDate.of(2026, 10, 16)));
+
+        Homework scoredHomework = new HomeworkBuilder(ALGEBRA).withScore("0/10").build();
+        assertFalse(scoredHomework.isOverdue(LocalDate.of(2026, 10, 14)));
+        assertFalse(scoredHomework.isOverdue(LocalDate.of(2026, 10, 15)));
+        assertTrue(scoredHomework.isOverdue(LocalDate.of(2026, 10, 16)));
+
+        Homework completedHomework = new HomeworkBuilder(ALGEBRA).withStatus("COMPLETED").build();
+        assertFalse(completedHomework.isOverdue(LocalDate.of(2026, 10, 16)));
+        assertFalse(new HomeworkBuilder(completedHomework).withScore("0/10").build()
+                .isOverdue(LocalDate.of(2026, 10, 16)));
+    }
+
+    @Test
     public void isSameHomework() {
         // same object -> returns true
         assertTrue(ALGEBRA.isSameHomework(ALGEBRA));
@@ -115,11 +132,11 @@ public class HomeworkTest {
     @Test
     public void toStringMethod() {
         String expected = Homework.class.getCanonicalName() + "{title=Revise atomic structure, subject=CHEMISTRY, "
-                + "dueDate=2026-10-18, score=17/20}";
+                + "dueDate=2026-10-18, score=17/20, status=ASSIGNED}";
         assertEquals(expected, ATOMIC_STRUCTURE.toString());
 
         String expectedWithoutScore = Homework.class.getCanonicalName() + "{title=Complete algebra worksheet, "
-                + "subject=MATH, dueDate=2026-10-15, score=null}";
+                + "subject=MATH, dueDate=2026-10-15, score=null, status=ASSIGNED}";
         assertEquals(expectedWithoutScore, ALGEBRA.toString());
     }
 }

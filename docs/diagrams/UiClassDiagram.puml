@@ -13,6 +13,7 @@ Class HelpWindow
 Class ResultDisplay
 Class StudentListPanel
 Class StudentCard
+Class UpcomingPanel
 Class StatusBarFooter
 Class CommandBox
 }
@@ -33,6 +34,7 @@ UiManager -down-> "1" MainWindow
 MainWindow *-down->  "1" CommandBox
 MainWindow *-down-> "1" ResultDisplay
 MainWindow *-down-> "1" StudentListPanel
+MainWindow *-down-> "1" UpcomingPanel
 MainWindow *-down-> "1" StatusBarFooter
 MainWindow --> "1" HelpWindow
 
@@ -44,10 +46,12 @@ ResultDisplay --|> UiPart
 CommandBox --|> UiPart
 StudentListPanel --|> UiPart
 StudentCard --|> UiPart
+UpcomingPanel --|> UiPart
 StatusBarFooter --|> UiPart
 HelpWindow --|> UiPart
 
 StudentCard .down.> Student
+UpcomingPanel .down.> Student
 UiManager -up-> "1" Logic
 MainWindow -up-> "1" Logic
 

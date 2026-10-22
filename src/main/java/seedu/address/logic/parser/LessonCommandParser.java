@@ -6,6 +6,7 @@ import seedu.address.logic.Messages;
 import seedu.address.logic.commands.Command;
 import seedu.address.logic.commands.LessonAddCommand;
 import seedu.address.logic.commands.LessonDeleteCommand;
+import seedu.address.logic.commands.LessonEditCommand;
 import seedu.address.logic.commands.LessonListCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 
@@ -15,9 +16,10 @@ public class LessonCommandParser implements Parser<Command> {
     public static final String SUBCOMMAND_ADD = "add";
     public static final String SUBCOMMAND_LIST = "list";
     public static final String SUBCOMMAND_DELETE = "delete";
+    public static final String SUBCOMMAND_EDIT = "edit";
     public static final String MESSAGE_INVALID_FORMAT = String.format(Messages.MESSAGE_INVALID_FORMAT_WITH_USAGE,
             String.join("\n", LessonAddCommand.MESSAGE_USAGE, LessonListCommand.MESSAGE_USAGE,
-                    LessonDeleteCommand.MESSAGE_USAGE));
+                    LessonDeleteCommand.MESSAGE_USAGE, LessonEditCommand.MESSAGE_USAGE));
 
     @Override
     public Command parse(String args) throws ParseException {
@@ -28,6 +30,7 @@ public class LessonCommandParser implements Parser<Command> {
             case SUBCOMMAND_ADD -> new LessonAddCommandParser().parse(commandArgs);
             case SUBCOMMAND_LIST -> new LessonListCommandParser().parse(commandArgs);
             case SUBCOMMAND_DELETE -> new LessonDeleteCommandParser().parse(commandArgs);
+            case SUBCOMMAND_EDIT -> new LessonEditCommandParser().parse(commandArgs);
             default -> throw new ParseException(MESSAGE_INVALID_FORMAT);
         };
     }

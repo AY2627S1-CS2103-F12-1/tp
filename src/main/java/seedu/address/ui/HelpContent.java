@@ -12,11 +12,14 @@ import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
 import seedu.address.logic.commands.HomeworkEditCommand;
+import seedu.address.logic.commands.HomeworkFilterCommand;
 import seedu.address.logic.commands.HomeworkListCommand;
 import seedu.address.logic.commands.HomeworkMarksCommand;
+import seedu.address.logic.commands.HomeworkStatusCommand;
 import seedu.address.logic.commands.HomeworkUpcomingCommand;
 import seedu.address.logic.commands.LessonAddCommand;
 import seedu.address.logic.commands.LessonDeleteCommand;
+import seedu.address.logic.commands.LessonEditCommand;
 import seedu.address.logic.commands.LessonListCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.SearchCommand;
@@ -66,6 +69,15 @@ public final class HelpContent {
                                     + AcademicLevel.MESSAGE_CONSTRAINTS + " " + TuitionSubject.MESSAGE_CONSTRAINTS
                                     + " Type list to show all students again.", "filter l/S4 s/Math"))),
             new Section(SECTION_HOMEWORK, List.of(
+                    new Entry("homework filter", HomeworkFilterCommand.MESSAGE_USAGE,
+                            "Lists homework matching every supplied criterion among displayed students, including"
+                                    + " overdue and scored homework. due/ is an exact date. Keeps student and homework"
+                                    + " indices; use list first to include all students. Supply at least one filter. "
+                                    + "status/ accepts ASSIGNED or COMPLETED, independently of scores.",
+                            "hw filter 1 s/MATH due/2026-10-15"),
+                    new Entry("homework status", HomeworkStatusCommand.MESSAGE_USAGE,
+                            "Marks homework COMPLETED or reopens it as ASSIGNED. Keeps its score and other details.",
+                            "hw status 1 2 status/COMPLETED"),
                     new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_ADD,
                             HomeworkAddCommand.MESSAGE_USAGE,
                             "Adds homework to the student at STUDENT_INDEX. " + TuitionSubject.MESSAGE_CONSTRAINTS
@@ -75,13 +87,15 @@ public final class HelpContent {
                     new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_LIST,
                             HomeworkListCommand.MESSAGE_USAGE,
                             "Lists the homework of the student at STUDENT_INDEX that is due today or later, earliest"
-                                    + " first, with its score. Add all to list overdue homework too. Each homework"
+                                    + " first, with its score and status. Add all to list overdue homework too."
+                                    + " Each homework"
                                     + " keeps its number, the HOMEWORK_INDEX used by the other homework commands.",
                             "hw ls 1"),
                     new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_UPCOMING,
                             HomeworkUpcomingCommand.MESSAGE_USAGE,
                             "Lists the homework of all students that is due from today to DAYS days later, earliest"
-                                    + " first, with its score. Each line starts with the STUDENT_INDEX of the"
+                                    + " first, with its score and status. Includes completed records by due date."
+                                    + " Each line starts with the STUDENT_INDEX of the"
                                     + " student. DAYS is a number of days from 0 to 365, not a date, and is 7 if"
                                     + " not given. The lines are not numbered by HOMEWORK_INDEX; use homework list"
                                     + " STUDENT_INDEX to find it.",
@@ -105,6 +119,10 @@ public final class HelpContent {
                                     + " at STUDENT_INDEX.",
                             "hw del 1 2"))),
             new Section(SECTION_LESSONS, List.of(
+                    new Entry("lesson edit", LessonEditCommand.MESSAGE_USAGE,
+                            "Edits the lesson numbered by lesson list. Supply at least one field; omitted fields"
+                                    + " stay the same. Clashes with other lessons are rejected.",
+                            "lesson edit 1 st/17:00 et/19:00"),
                     new Entry("lesson add", LessonAddCommand.MESSAGE_USAGE,
                             "Adds a weekly lesson to a student. Use a full weekday name and 24-hour HH:mm times.",
                             "lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00"),

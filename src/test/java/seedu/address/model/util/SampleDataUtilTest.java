@@ -127,9 +127,11 @@ public class SampleDataUtilTest {
                 + "Priya Nair; Title: Integration by parts exercise; Subject: MATH; Due: 2026-11-05\n"
                 + "Listed 3 upcoming homework records for Priya Nair.\n"
                 + "Homework for Priya Nair:\n"
-                + "2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-02 - score Not recorded\n"
-                + "1. Integration by parts exercise (MATH) - due 2026-11-05 - score Not recorded\n"
-                + "3. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-09 - score Not recorded";
+                + "2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-02 - score Not recorded"
+                + " - status ASSIGNED\n"
+                + "1. Integration by parts exercise (MATH) - due 2026-11-05 - score Not recorded - status ASSIGNED\n"
+                + "3. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-09 - score Not recorded"
+                + " - status ASSIGNED";
         Model model = getModelWithStudents(List.of(sampleStudents));
 
         assertEquals(expectedMessage, new AddressBookParser(CLOCK).parseCommand("hw e 2 1 due/2026-11-05")
@@ -142,7 +144,8 @@ public class SampleDataUtilTest {
         Model model = getModelWithStudents(List.of(sampleStudents));
 
         assertEquals("Found 1 homework record due from 2026-10-17 to 2026-10-24.\n"
-                + "Student 1: Ethan Lim; Quadratic equations worksheet; MATH; Due: 2026-10-23; Score: Not recorded",
+                + "Student 1: Ethan Lim; Quadratic equations worksheet; MATH; Due: 2026-10-23; Score: Not recorded"
+                + "; Status: ASSIGNED",
                 parser.parseCommand("hw up").execute(model).getFeedbackToUser());
         assertEquals("No homework due from 2026-10-17 to 2026-10-20.",
                 parser.parseCommand("hw up due/3").execute(model).getFeedbackToUser());

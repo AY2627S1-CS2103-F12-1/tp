@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox spacing="7" styleClass="upcoming-panel" xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1">
+  <padding><Insets top="10" right="10" bottom="10" left="10" /></padding>
+  <Label text="At a glance" styleClass="upcoming-title" />
+  <VBox fx:id="lessonSection" spacing="7" VBox.vgrow="ALWAYS">
+    <FlowPane minWidth="0" hgap="6" vgap="4">
+      <Label text="Weekly lessons" styleClass="upcoming-section-title" />
+      <Label fx:id="lessonCount" styleClass="upcoming-count" />
+    </FlowPane>
+    <ListView fx:id="lessonListView" minHeight="48" prefHeight="100" VBox.vgrow="ALWAYS" />
+  </VBox>
+  <VBox fx:id="homeworkSection" spacing="7" VBox.vgrow="ALWAYS">
+    <FlowPane minWidth="0" hgap="6" vgap="4">
+      <Label text="Outstanding homework" styleClass="upcoming-section-title" />
+      <Label fx:id="homeworkCount" styleClass="upcoming-count" />
+    </FlowPane>
+    <ListView fx:id="homeworkListView" minHeight="48" prefHeight="100" VBox.vgrow="ALWAYS" />
+  </VBox>
+</VBox>

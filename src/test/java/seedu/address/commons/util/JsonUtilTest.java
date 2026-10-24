@@ -76,6 +76,14 @@ public class JsonUtilTest {
     }
 
     @Test
+    public void readJsonFile_bomBeforeInvalidJson_stillRejectsInvalidContent() throws IOException {
+        Path file = testFolder.resolve("invalid.json");
+        Files.writeString(file, "\ufeffnot JSON");
+
+        assertThrows(DataLoadingException.class, () -> JsonUtil.readJsonFile(file, SerializableTestClass.class));
+    }
+
+    @Test
     public void readJsonFile_nullRoot_throwsDataLoadingException() throws IOException {
         Path file = testFolder.resolve("serialize.json");
         Files.writeString(file, "null");

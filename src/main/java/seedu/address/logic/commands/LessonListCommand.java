@@ -44,7 +44,7 @@ public class LessonListCommand extends Command {
      * Returns the command result containing the sorted regular lesson schedule.
      */
     private CommandResult listLessons(Model model) {
-        List<LessonSchedule.Entry> lessons = LessonSchedule.from(model.getAddressBook().getStudentList());
+        List<LessonSchedule.Entry> lessons = LessonSchedule.buildSchedule(model.getAddressBook().getStudentList());
 
         if (lessons.isEmpty()) {
             return new CommandResult(MESSAGE_EMPTY);

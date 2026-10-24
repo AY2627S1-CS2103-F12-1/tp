@@ -22,7 +22,7 @@ public final class LessonSchedule {
     /**
      * Returns all regular lessons belonging to {@code students}, ordered by weekday, start time and student name.
      */
-    public static List<Entry> from(List<Student> students) {
+    public static List<Entry> buildSchedule(List<Student> students) {
         requireNonNull(students);
         return students.stream()
                 .flatMap(student -> student.getLessons().stream()
@@ -37,7 +37,7 @@ public final class LessonSchedule {
      */
     public static List<Entry> findClashes(List<Student> students, RegularLesson candidate) {
         requireNonNull(candidate);
-        return from(students).stream().filter(entry -> candidate.clashesWith(entry.lesson())).toList();
+        return buildSchedule(students).stream().filter(entry -> candidate.clashesWith(entry.lesson())).toList();
     }
 
     /**

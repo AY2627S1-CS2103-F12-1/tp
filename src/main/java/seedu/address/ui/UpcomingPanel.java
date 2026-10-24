@@ -89,7 +89,7 @@ public class UpcomingPanel extends UiPart<Region> {
      * Rebuilds both reports and their counts from the full roster, highlighting homework overdue on the given date.
      */
     private void updateEntries(List<Student> students, LocalDate today) {
-        lessonEntries.setAll(LessonSchedule.from(students).stream()
+        lessonEntries.setAll(LessonSchedule.buildSchedule(students).stream()
                 .map(entry -> entry.lesson().getDayOfWeek().name().substring(0, 3)
                         + " " + entry.lesson().getStartTime() + " - " + entry.lesson().getEndTime()
                         + "\n" + formatStudent(entry.student()) + " \u00b7 " + entry.lesson().getSubject())

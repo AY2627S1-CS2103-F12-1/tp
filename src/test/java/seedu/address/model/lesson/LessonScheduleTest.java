@@ -38,13 +38,13 @@ public class LessonScheduleTest {
     }
 
     @Test
-    public void from_students_returnsLessonsInWeeklyOrder() {
+    public void buildSchedule_students_returnsLessonsInWeeklyOrder() {
         Student firstStudent = new StudentBuilder().withName("Zoe Tan")
                 .withSubjects("MATH, PHYSICS").withLessons(TUESDAY_PHYSICS, MONDAY_MATH).build();
         Student secondStudent = new StudentBuilder().withName("Amy Lim")
                 .withSubjects("PHYSICS").withLessons(TUESDAY_PHYSICS).build();
 
-        List<LessonSchedule.Entry> entries = LessonSchedule.from(List.of(firstStudent, secondStudent));
+        List<LessonSchedule.Entry> entries = LessonSchedule.buildSchedule(List.of(firstStudent, secondStudent));
 
         assertEquals(List.of(
                 new LessonSchedule.Entry(firstStudent, MONDAY_MATH),

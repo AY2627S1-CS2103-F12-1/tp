@@ -24,6 +24,7 @@ public class LessonListCommand extends Command {
             "TutorFlow could not display the regular lesson schedule due to an internal error.";
 
     private static final Logger logger = LogsCenter.getLogger(LessonListCommand.class);
+
     /**
      * Returns the result listing every regular lesson in weekly chronological order.
      * An unexpected error is logged and reported without modifying the model.

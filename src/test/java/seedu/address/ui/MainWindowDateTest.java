@@ -1,7 +1,9 @@
 package seedu.address.ui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
+import static seedu.address.testutil.TypicalRegularLessons.MONDAY_MATH;
 
 import java.nio.file.Path;
 import java.time.Clock;
@@ -10,6 +12,7 @@ import java.time.ZoneId;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -87,6 +90,34 @@ public class MainWindowDateTest {
     }
 
     @Test
+    public void refreshDate_dateChanges_preservesWeeklyLessonsAndSelection() throws Exception {
+        runOnFxThread(() -> {
+            MutableClock clock = new MutableClock(Instant.parse("2026-10-15T04:00:00Z"));
+            Stage stage = new Stage();
+            MainWindow window = createWindow(stage, clock);
+            try {
+                assertCounts(stage, false);
+                ListView<?> lessons = (ListView<?>) stage.getScene().getRoot().lookup("#lessonListView");
+                lessons.getSelectionModel().select(0);
+                Object selectedLesson = lessons.getSelectionModel().getSelectedItem();
+                AtomicInteger lessonChanges = new AtomicInteger();
+                lessons.getItems().addListener((ListChangeListener<Object>) change -> lessonChanges.incrementAndGet());
+
+                clock.instant = Instant.parse("2026-10-16T04:00:00Z");
+                window.refreshDate();
+
+                assertCounts(stage, true);
+                assertEquals(0, lessonChanges.get());
+                assertEquals(0, lessons.getSelectionModel().getSelectedIndex());
+                assertSame(selectedLesson, lessons.getSelectionModel().getSelectedItem());
+                assertEquals("1 lesson", ((Label) stage.getScene().getRoot().lookup("#lessonCount")).getText());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    @Test
     public void show_afterDateChangesWhileHidden_refreshesBothDisplays() throws Exception {
         runOnFxThread(() -> {
             MutableClock clock = new MutableClock(Instant.parse("2026-10-15T04:00:00Z"));
@@ -112,7 +143,7 @@ public class MainWindowDateTest {
 
     private MainWindow createWindow(Stage stage, Clock clock) {
         ModelManager model = new ModelManager();
-        model.addStudent(new StudentBuilder().withHomeworks(ALGEBRA).build());
+        model.addStudent(new StudentBuilder().withHomeworks(ALGEBRA).withLessons(MONDAY_MATH).build());
         StorageManager storage = new StorageManager(
                 new JsonAddressBookStorage(temporaryFolder.resolve("tutorflow.json")),
                 new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json")));

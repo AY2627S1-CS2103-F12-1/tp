@@ -78,18 +78,33 @@ public class UpcomingPanel extends UiPart<Region> {
      * Refreshes date-dependent entries using the same local date as the student cards.
      */
     void refreshDate(LocalDate today) {
-        updateEntries(students, today);
+        updateHomeworkEntries(students, today);
     }
 
     /**
      * Rebuilds both reports and their counts from the full roster, highlighting homework overdue on the given date.
      */
     private void updateEntries(List<Student> students, LocalDate today) {
+        updateLessonEntries(students);
+        updateHomeworkEntries(students, today);
+    }
+
+    /**
+     * Rebuilds the weekly lesson report and its count from the full roster.
+     */
+    private void updateLessonEntries(List<Student> students) {
         lessonEntries.setAll(LessonSchedule.buildSchedule(students).stream()
                 .map(entry -> new ReportEntry(entry.lesson().getDayOfWeek().name().substring(0, 3)
                         + " " + entry.lesson().getStartTime() + " - " + entry.lesson().getEndTime()
                         + "\n" + formatStudent(entry.student()) + " \u00b7 " + entry.lesson().getSubject(), false))
                 .toList());
+        lessonCount.setText(formatCount(lessonEntries.size(), "lesson"));
+    }
+
+    /**
+     * Rebuilds outstanding homework and its count, highlighting entries overdue on the given date.
+     */
+    private void updateHomeworkEntries(List<Student> students, LocalDate today) {
         List<HomeworkEntry> outstandingHomework = students.stream()
                 .flatMap(student -> student.getHomeworks().stream()
                         .filter(homework -> homework.getStatus() == HomeworkStatus.ASSIGNED)
@@ -99,7 +114,6 @@ public class UpcomingPanel extends UiPart<Region> {
         homeworkEntries.setAll(outstandingHomework.stream()
                 .map(entry -> createHomeworkReportEntry(entry, today))
                 .toList());
-        lessonCount.setText(formatCount(lessonEntries.size(), "lesson"));
         homeworkCount.setText(formatCount(homeworkEntries.size(), "task"));
     }
 

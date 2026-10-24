@@ -89,6 +89,11 @@ public class LessonDeleteCommand extends Command {
     }
 
     @Override
+    public int hashCode() {
+        return Integer.hashCode(displayedLessonIndex.getZeroBased());
+    }
+
+    @Override
     public String toString() {
         return new ToStringBuilder(this).add("displayedLessonIndex", displayedLessonIndex).toString();
     }

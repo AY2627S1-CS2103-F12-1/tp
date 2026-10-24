@@ -3,10 +3,7 @@ package seedu.address.ui;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.function.Predicate;
 
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
@@ -34,9 +31,8 @@ public class UpcomingPanel extends UiPart<Region> {
             .thenComparing(entry -> entry.homework().getTitle().toString(), String.CASE_INSENSITIVE_ORDER)
             .thenComparing(entry -> entry.student().getPhone().toString());
 
-    private final ObservableList<String> lessonEntries = FXCollections.observableArrayList();
-    private final ObservableList<String> homeworkEntries = FXCollections.observableArrayList();
-    private final Set<String> overdueHomeworkEntries = new HashSet<>();
+    private final ObservableList<ReportEntry> lessonEntries = FXCollections.observableArrayList();
+    private final ObservableList<ReportEntry> homeworkEntries = FXCollections.observableArrayList();
     private final ObservableList<Student> students;
 
     @FXML
@@ -44,13 +40,13 @@ public class UpcomingPanel extends UiPart<Region> {
     @FXML
     private VBox homeworkSection;
     @FXML
-    private ListView<String> homeworkListView;
+    private ListView<ReportEntry> homeworkListView;
     @FXML
     private Label lessonCount;
     @FXML
     private VBox lessonSection;
     @FXML
-    private ListView<String> lessonListView;
+    private ListView<ReportEntry> lessonListView;
 
     /**
      * Creates a panel that updates whenever the given student roster changes.
@@ -67,8 +63,8 @@ public class UpcomingPanel extends UiPart<Region> {
         this.students = students;
         lessonListView.setItems(lessonEntries);
         homeworkListView.setItems(homeworkEntries);
-        lessonListView.setCellFactory(unused -> new WrappedTextListCell(entry -> false));
-        homeworkListView.setCellFactory(unused -> new WrappedTextListCell(overdueHomeworkEntries::contains));
+        lessonListView.setCellFactory(unused -> new WrappedTextListCell());
+        homeworkListView.setCellFactory(unused -> new WrappedTextListCell());
         lessonListView.setPlaceholder(new Label("No regular lessons"));
         homeworkListView.setPlaceholder(new Label("No outstanding homework"));
         ScrollSupport.enableScrolling(lessonSection, lessonListView);
@@ -90,9 +86,9 @@ public class UpcomingPanel extends UiPart<Region> {
      */
     private void updateEntries(List<Student> students, LocalDate today) {
         lessonEntries.setAll(LessonSchedule.buildSchedule(students).stream()
-                .map(entry -> entry.lesson().getDayOfWeek().name().substring(0, 3)
+                .map(entry -> new ReportEntry(entry.lesson().getDayOfWeek().name().substring(0, 3)
                         + " " + entry.lesson().getStartTime() + " - " + entry.lesson().getEndTime()
-                        + "\n" + formatStudent(entry.student()) + " \u00b7 " + entry.lesson().getSubject())
+                        + "\n" + formatStudent(entry.student()) + " \u00b7 " + entry.lesson().getSubject(), false))
                 .toList());
         List<HomeworkEntry> outstandingHomework = students.stream()
                 .flatMap(student -> student.getHomeworks().stream()
@@ -100,21 +96,19 @@ public class UpcomingPanel extends UiPart<Region> {
                         .map(homework -> new HomeworkEntry(student, homework)))
                 .sorted(HOMEWORK_ORDER)
                 .toList();
-        overdueHomeworkEntries.clear();
-        outstandingHomework.stream()
-                .filter(entry -> entry.homework().isOverdue(today))
-                .map(entry -> formatHomework(entry, true))
-                .forEach(overdueHomeworkEntries::add);
         homeworkEntries.setAll(outstandingHomework.stream()
-                .map(entry -> formatHomework(entry, entry.homework().isOverdue(today)))
+                .map(entry -> createHomeworkReportEntry(entry, today))
                 .toList());
         lessonCount.setText(formatCount(lessonEntries.size(), "lesson"));
         homeworkCount.setText(formatCount(homeworkEntries.size(), "task"));
     }
 
-    private String formatHomework(HomeworkEntry entry, boolean isOverdue) {
-        return entry.homework().getTitle() + (isOverdue ? " (overdue)" : "") + "\n" + formatStudent(entry.student())
+    private ReportEntry createHomeworkReportEntry(HomeworkEntry entry, LocalDate today) {
+        boolean isOverdue = entry.homework().isOverdue(today);
+        String text = entry.homework().getTitle() + (isOverdue ? " (overdue)" : "")
+                + "\n" + formatStudent(entry.student())
                 + " \u00b7 " + entry.homework().getSubject() + " \u00b7 Due " + entry.homework().getDueDate();
+        return new ReportEntry(text, isOverdue);
     }
 
     private String formatStudent(Student student) {
@@ -132,14 +126,22 @@ public class UpcomingPanel extends UiPart<Region> {
     }
 
     /**
+     * Keeps an entry's display text and overdue state together.
+     */
+    private record ReportEntry(String text, boolean isOverdue) {
+        @Override
+        public String toString() {
+            return text;
+        }
+    }
+
+    /**
      * Displays wrapped sidebar entries without truncating their second line.
      */
-    private static class WrappedTextListCell extends ListCell<String> {
+    private static class WrappedTextListCell extends ListCell<ReportEntry> {
         private final Label entryLabel = new Label();
-        private final Predicate<String> isHighlighted;
 
-        WrappedTextListCell(Predicate<String> isHighlighted) {
-            this.isHighlighted = isHighlighted;
+        WrappedTextListCell() {
             setPrefWidth(0);
             entryLabel.setWrapText(true);
             entryLabel.setMinHeight(Region.USE_PREF_SIZE);
@@ -149,12 +151,12 @@ public class UpcomingPanel extends UiPart<Region> {
         }
 
         @Override
-        protected void updateItem(String entry, boolean isEmpty) {
+        protected void updateItem(ReportEntry entry, boolean isEmpty) {
             super.updateItem(entry, isEmpty);
             setText(null);
-            entryLabel.setText(isEmpty || entry == null ? null : entry);
+            entryLabel.setText(isEmpty || entry == null ? null : entry.text());
             entryLabel.getStyleClass().remove("overdue-homework");
-            if (!isEmpty && entry != null && isHighlighted.test(entry)) {
+            if (!isEmpty && entry != null && entry.isOverdue()) {
                 entryLabel.getStyleClass().add("overdue-homework");
             }
             setGraphic(isEmpty ? null : entryLabel);

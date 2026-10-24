@@ -164,7 +164,7 @@ The `Model` component,
 * stores all app data in an `AddressBook` object: the student roster (a `StudentRoster` of `Student` objects in insertion order), in which each immutable `Student` holds its own `Homework` records and `RegularLesson` entries.
 * uses `LessonSchedule#from` to provide a view of all regular lessons ordered by weekday, start time, and student name without changing roster order.
 * exposes the displayed students as an unmodifiable `ObservableList<Student>` backed by a `StudentDisplayList` over a `FilteredList`, so the UI updates when roster, predicate or display order changes. `ModelManager` passes roster mutations (`hasStudent`, `addStudent`, `setStudent`, `deleteStudent`) to its `AddressBook`; `getStudentList` returns the display view. The stored roster stays in insertion order.
-* stores a `UserPrefs` object that represents the userâ€™s preferences (currently, just the GUI settings). This is exposed to the outside as a `ReadOnlyUserPrefs` object.
+* stores a `UserPrefs` object that represents the user’s preferences (currently, just the GUI settings). This is exposed to the outside as a `ReadOnlyUserPrefs` object.
 * does not depend on any of the other three components (as the `Model` represents data entities of the domain, they should make sense on their own without depending on other components)
 
 The classes keep AB3's names (`AddressBook`, `ReadOnlyAddressBook`, `JsonAddressBookStorage`) to keep the change from AB3 small, but they now hold TutorFlow's students, homework, and regular lessons.
@@ -247,7 +247,7 @@ For example, with the allowed prefixes `title/`, `t/`, `s/` and `due/` of `hw ad
 
 * **Alternative 1 (current choice):** At the first `"` that is followed by the end of the arguments, or by whitespace and one of the command's allowed prefixes.
   * Pros: A value can contain both quotes and a word such as `km/`, e.g. `Read "Hamlet" km/h`. Input without quotes, and values whose quote is never closed, are read as before.
-  * Cons: A value cannot contain a `"` followed by whitespace and one of the command's own prefixes. For example, in `add n/"Ravi" s/o Kumar â€¦` the quote after `Ravi` closes the name, so `s/` is read as a second subjects prefix.
+  * Cons: A value cannot contain a `"` followed by whitespace and one of the command's own prefixes. For example, in `add n/"Ravi" s/o Kumar …` the quote after `Ravi` closes the name, so `s/` is read as a second subjects prefix.
 
 * **Alternative 2:** At the next `"`.
   * Pros: Simpler to explain and to implement.
@@ -852,6 +852,32 @@ testers are expected to do more *exploratory* testing.
    1. Relaunch from the same terminal folder with `java -jar "addressbook.jar"`.<br>
        Expected: The most recent window size and location are retained.
 
+### Adding and editing students
+
+1. Use a disposable test folder and run `clear` to start with an empty roster.
+
+   1. Run `add n/Zoe Quest l/S2 s/MATH,PHYSICS p/91238888 gn/Ivy Quest gp/97665555`, then `add n/Ben Lim l/S4 s/MATH p/91238889 gn/Jane Lim gp/97665556`.<br>
+      Expected: Zoe and Ben appear as students 1 and 2, with the supplied contact, guardian and academic details.
+   1. Repeat Zoe's add command, then try `add n/Another Student l/S2 s/MATH p/91238887 gn/Ivy Quest` (missing guardian phone).<br>
+      Expected: A duplicate-student error and `Missing required prefix(es): gp/` with usage guidance respectively. The roster remains unchanged.
+   1. Run `hw add 1 t/Algebra s/MATH due/2099-12-01` and `lesson add 1 s/MATH d/MONDAY st/16:00 et/17:00`. Run `search Zoe Quest`, then `edit 1 n/Zoe Tan`.<br>
+      Expected: Zoe is renamed and disappears from the search results because no profile field now matches `Zoe Quest`. Run `list`: Zoe Tan is still student 1 and Ben is student 2. `hw ls 1 all` and `lesson list` retain Zoe's homework and lesson with the updated name.
+   1. Try `edit 1 s/PHYSICS`, `edit 1 n/Ben Lim p/91238889`, `edit 1 n/Zoe Tan` and `edit 1 l/S6`.<br>
+      Expected: Rejected respectively because MATH is used by existing records, the proposed identity duplicates Ben, no values change, or the academic level is invalid. The original profiles, homework and lessons remain unchanged.
+   1. Restart from the same test folder and run `list`, `hw ls 1 all` and `lesson list`.<br>
+      Expected: Both students, Zoe's changed name, homework and regular lesson persist.
+
+### Help and the at-a-glance panel
+
+1. Continue with the preceding two-student test roster.
+
+   1. Run `help`. Use `Page Down` and `Page Up`, then `Esc`; press `F1` to reopen it.<br>
+      Expected: Help lists the implemented command formats and examples, scrolls by a page, closes with `Esc` and returns focus to the command box. Close it before continuing.
+   1. Run `hw status 1 1 status/COMPLETED`, then `hw status 1 1 status/ASSIGNED` and `hw m 1 1 score/17`.<br>
+      Expected: Algebra disappears from outstanding homework when completed, reappears when assigned and remains visible after receiving a score, without restarting. Zoe's upcoming-homework count remains 1 because the due date is in the future; this count is independent of completion and marks.
+   1. Run `search Ben`, then resize the window and drag the split-pane dividers.<br>
+      Expected: The student list shows Ben only, while the sidebar still shows Zoe's lesson and assigned Algebra homework with her name and phone. Entries remain readable; each section can be scrolled whenever its contents exceed its available space. Run `list` to restore the full roster.
+
 ### Listing, searching, and deleting students
 
 1. Listing students
@@ -1108,9 +1134,9 @@ The automated smoke check is `./gradlew test --tests '*LessonEditUiTest' --tests
 
    1. In an empty roster, add `add n/John Tan l/S3 s/MATH p/91234567 gn/Mary Tan gp/98765432`, then `lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00`.
    1. Run `lesson edit 1 st/17:00`, then `lesson list`.<br>
-      Expected: One lesson at 17:00â€“18:00. Overlap with its own original interval is allowed. Restart: the new time remains.
+      Expected: One lesson at 17:00–18:00. Overlap with its own original interval is allowed. Restart: the new time remains.
    1. Run `lesson edit 1 st/18:00`.<br>
-      Expected: Rejected because the end is not after the start; the lesson stays at 17:00â€“18:00.
+      Expected: Rejected because the end is not after the start; the lesson stays at 17:00–18:00.
    1. Add `hw add 1 t/Algebra s/MATH due/2026-10-15`, then run `hw filter 1 s/MATH due/2026-10-15`.<br>
       Expected: One matching assignment, labelled Student 1 / Homework 1, even when its due date is past. Recording a score with `hw m 1 1 score/17` does not exclude it from this filter.
    1. Run `hw filter 1 s/PHYSICS`.<br>

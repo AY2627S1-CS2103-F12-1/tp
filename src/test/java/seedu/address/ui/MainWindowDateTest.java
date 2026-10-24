@@ -2,6 +2,7 @@ package seedu.address.ui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static seedu.address.testutil.FxTestUtil.runOnFxThread;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalRegularLessons.MONDAY_MATH;
 
@@ -10,7 +11,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -18,7 +18,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.event.ActionEvent;
 import javafx.scene.Parent;
@@ -31,6 +30,7 @@ import seedu.address.model.ModelManager;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
 import seedu.address.storage.StorageManager;
+import seedu.address.testutil.FxTestUtil;
 import seedu.address.testutil.StudentBuilder;
 
 public class MainWindowDateTest {
@@ -39,12 +39,7 @@ public class MainWindowDateTest {
 
     @BeforeAll
     public static void startJavaFx() {
-        try {
-            Platform.startup(() -> { });
-        } catch (IllegalStateException exception) {
-            // Another UI test has already started the toolkit.
-        }
-        Platform.setImplicitExit(false);
+        FxTestUtil.startJavaFx();
     }
 
     @Test
@@ -165,12 +160,6 @@ public class MainWindowDateTest {
         Label upcomingCount = (Label) root.lookup("#upcomingHomeworkCount");
         assertEquals("Overdue homework: " + (isOverdue ? 1 : 0), overdueCount.getText());
         assertEquals("Upcoming homework: " + (isOverdue ? 0 : 1), upcomingCount.getText());
-    }
-
-    private static void runOnFxThread(Runnable action) throws Exception {
-        FutureTask<Void> task = new FutureTask<>(action, null);
-        Platform.runLater(task);
-        task.get(10, TimeUnit.SECONDS);
     }
 
     private static class MutableClock extends Clock {

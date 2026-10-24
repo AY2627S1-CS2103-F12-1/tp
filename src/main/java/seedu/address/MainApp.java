@@ -4,7 +4,6 @@ import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.logging.Logger;
 
@@ -15,6 +14,7 @@ import javafx.scene.control.Alert.AlertType;
 import javafx.stage.Stage;
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.exceptions.DataLoadingException;
+import seedu.address.commons.util.AppHomeUtil;
 import seedu.address.commons.util.StringUtil;
 import seedu.address.logic.Logic;
 import seedu.address.logic.LogicManager;
@@ -39,8 +39,9 @@ public class MainApp extends Application {
     public static final String VERSION = "V1.5";
 
     private static final Logger logger = LogsCenter.getLogger(MainApp.class);
-    private static final Path USER_PREFS_FILE_PATH = Paths.get("preferences.json");
-    private static final Path ADDRESS_BOOK_FILE_PATH = Paths.get("data", "tutorflow.json");
+    private static final Path APP_HOME = AppHomeUtil.getHomeDirectory();
+    private static final Path USER_PREFS_FILE_PATH = APP_HOME.resolve("preferences.json");
+    private static final Path ADDRESS_BOOK_FILE_PATH = APP_HOME.resolve("data").resolve("tutorflow.json");
 
     protected Ui ui;
     protected Logic logic;
@@ -51,7 +52,7 @@ public class MainApp extends Application {
     private final Runnable shutdown;
     private boolean hasDataLoadingError;
 
-    /** Creates the application using files in its working directory and the JavaFX shutdown action. */
+    /** Creates the application using files in its home folder and the JavaFX shutdown action. */
     public MainApp() {
         this(USER_PREFS_FILE_PATH, ADDRESS_BOOK_FILE_PATH, Platform::exit);
     }

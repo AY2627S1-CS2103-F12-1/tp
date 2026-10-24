@@ -19,7 +19,7 @@ TutorFlow is a **desktop application for private tutors to manage their students
 
 1. Copy the file to an empty, writable folder you want to use as the _home folder_ for TutorFlow. The app must be able to create its data and preferences here.
 
-1. Open a terminal, `cd` to that home folder, and run `java -jar "addressbook.jar"` (replace the filename if your download has a different name). Launch from this same folder each time to use the same saved records. Double-clicking may not work on some systems.<br>
+1. Open a terminal, `cd` to that home folder, and run `java -jar "addressbook.jar"` (replace the filename if your download has a different name). Keep the JAR in this folder to use the same saved records. Double-clicking may not work on some systems.<br>
    A GUI similar to the one below should appear in a few seconds. Note how the app contains some sample data.<br>
    ![Ui](images/Ui.png)
 
@@ -495,6 +495,8 @@ Format: `exit`
 
 ### Adding a regular lesson: `lesson add`
 
+Each lesson belongs to one student. All overlapping lessons are rejected as tutor clashes, including lessons belonging to different students. Simultaneous group lessons are not supported.
+
 Adds a weekly lesson to the student at the displayed student index.
 
 Format: `lesson add INDEX s/SUBJECT d/DAY st/START_TIME et/END_TIME`
@@ -574,7 +576,9 @@ TutorFlow saves your students, homework and regular lessons automatically after 
 
 ### Editing the data file
 
-TutorFlow data is saved automatically as `data/tutorflow.json` relative to the terminal's current working directory. Following the quick start makes this your TutorFlow home folder. Preferences are stored in `preferences.json` in that same folder. Launching the JAR by its full path from a different folder uses that folder's data and preferences instead; it does not move or delete the original records. The status bar shows the data path for the current launch.
+TutorFlow data is saved automatically as `data/tutorflow.json` inside the folder containing the JAR. Preferences (`preferences.json`) and log files (`addressbook.log.*`) stay in that same home folder. Launching the JAR by its full path from a different terminal folder still uses the files beside the JAR. The status bar shows the full data path.
+
+To move TutorFlow, close it and copy the JAR together with its `data` folder and `preferences.json` to the new folder. If you previously launched v1.4 from a different terminal folder, copy your saved files from that folder into the folder containing the JAR before starting v1.5; back up both locations first. The JSON format remains compatible.
 
 Advanced users may edit this JSON file while TutorFlow is closed. Back it up first.
 

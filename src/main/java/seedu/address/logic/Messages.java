@@ -42,12 +42,17 @@ public class Messages {
                 + "; Due: " + homework.getDueDate();
     }
 
-    /** Returns the owner's name and the regular lesson's subject, weekday and time range. */
+    /** Returns the owner's name and phone, and the regular lesson's subject, weekday and time range. */
     public static String format(Student student, RegularLesson lesson) {
-        return student.getName()
+        return formatLessonOwner(student)
                 + "; " + lesson.getSubject()
                 + "; " + lesson.getDayOfWeek().name().substring(0, 3)
                 + "; " + lesson.getStartTime() + "-" + lesson.getEndTime();
+    }
+
+    /** Returns an unambiguous lesson owner, including the phone that distinguishes same-name students. */
+    public static String formatLessonOwner(Student student) {
+        return student.getName() + " (" + student.getPhone() + ")";
     }
 
     /**
@@ -67,7 +72,7 @@ public class Messages {
      * Returns the deleted lesson in the detailed deletion-result format.
      */
     public static String formatDeletedLesson(Student student, RegularLesson lesson) {
-        return student.getName()
+        return formatLessonOwner(student)
                 + "; Subject: " + lesson.getSubject()
                 + "; Day: " + lesson.getDayOfWeek().name().substring(0, 3)
                 + "; Time: " + lesson.getStartTime() + "-" + lesson.getEndTime();

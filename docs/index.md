@@ -8,9 +8,15 @@ title: TutorFlow
 
 ![TutorFlow main window](images/Ui.png)
 
-**TutorFlow is a keyboard-friendly student-contact manager for independent tutors in Singapore.** It is designed for tutors managing approximately 10 to 20 secondary or junior-college students. TutorFlow aims to keep student and guardian information and regular lesson records organised through typed commands and a graphical interface.
+**TutorFlow helps independent tutors in Singapore manage student contacts, homework and weekly lessons through typed commands.** It is designed for tutors managing approximately 10 to 20 secondary or junior-college students, with a graphical roster and an at-a-glance schedule.
 
-The image above is a mockup of the intended interface. Planned core features include adding, listing, and deleting student profiles and regular lessons, with automatic saving of records between sessions.
+* Add and edit student and guardian details; search, filter and sort the roster.
+* Plan regular lessons, check timetable clashes, and edit or delete lessons.
+* Record homework, marks and completion status; find assignments by student, subject or due date.
+* Review weekly lessons and outstanding homework in the sidebar, with overdue tasks highlighted.
+* Keep records locally with automatic saving between sessions.
+
+The image above shows the running application. [Download TutorFlow](https://github.com/AY2627S1-CS2103-F12-1/tp/releases/latest), then follow the [quick start](UserGuide.html#quick-start) to launch it with Java 25.
 
 TutorFlow focuses on student contacts and related tutoring records. It does not deliver lessons, process payments, contact parents directly, or replace a full accounting, calendar, or learning-management system.
 

@@ -12,14 +12,14 @@ TutorFlow is a **desktop application for private tutors to manage their students
 
 ## Quick start
 
-1. Ensure that Java `25` or later is installed on your computer.<br>
+1. Ensure that Java `25` is installed on your computer. Run `java -version` in your terminal and check that it reports version `25`.<br>
    **Mac users:** Ensure you have the precise JDK version prescribed [here](https://se-education.org/guides/tutorials/javaInstallationMac.html).
 
 1. Download the latest `.jar` file from [here](https://github.com/AY2627S1-CS2103-F12-1/tp/releases).
 
-1. Copy the file to the folder you want to use as the _home folder_ for TutorFlow.
+1. Copy the file to an empty, writable folder you want to use as the _home folder_ for TutorFlow. The app must be able to create its data and preferences here.
 
-1. Open a terminal, `cd` to the folder containing the JAR file, and run `java -jar addressbook.jar`.<br>
+1. Open a terminal, `cd` to that home folder, and run `java -jar "addressbook.jar"` (replace the filename if your download has a different name). Launch from this same folder each time to use the same saved records. Double-clicking may not work on some systems.<br>
    A GUI similar to the one below should appear in a few seconds. Note how the app contains some sample data.<br>
    ![Ui](images/Ui.png)
 
@@ -508,7 +508,7 @@ Example: `lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00`
 * Times must use the 24-hour `HH:mm` format, such as `09:00`. End time must be later than start time on the same day; overnight lessons are not supported.
 * An identical lesson for the same student is rejected. A lesson that overlaps any existing lesson, for any student, is rejected. TutorFlow lists every conflicting lesson, with its student's name and lesson details, in weekly order. Lessons that meet exactly at an endpoint are allowed.
 
-On success, TutorFlow shows `New lesson added: John Tan; MATH; MONDAY; 16:00-18:00` and saves the lesson automatically. The student's position, profile and homework remain unchanged. If saving fails, the addition is undone and TutorFlow reports that no lesson data was changed.
+On success, TutorFlow shows `New lesson added: John Tan (91234567); MATH; MONDAY; 16:00-18:00` (using John's student phone) and saves the lesson automatically. The student's position, profile and homework remain unchanged. If saving fails, the addition is undone and TutorFlow reports that no lesson data was changed.
 
 ### Editing a regular lesson: `lesson edit`
 
@@ -521,7 +521,7 @@ Format: `lesson edit LESSON_INDEX [s/SUBJECT] [d/DAY] [st/START_TIME] [et/END_TI
 * The proposed end must be after the proposed start, using the existing value for any omitted time. The student must take the proposed subject.
 * TutorFlow checks the proposed day and times against every other lesson in the full roster, including the same student's other lessons and lessons hidden by a student search or filter. Only the original lesson is excluded. Changing just the subject is allowed when it is one of the student's tuition subjects.
 * Lessons clash when they share a weekday and their times overlap, even by one minute. Lessons on different weekdays and lessons that meet exactly at an endpoint are allowed. If there are multiple clashes, all are listed in weekly order. Duplicates and edits that change no values are rejected.
-* A rejected edit leaves the original lesson, displayed student list and saved data unchanged. The error identifies each conflicting student's name, subject, weekday and times so you can choose another slot.
+* A rejected edit leaves the original lesson, displayed student list and saved data unchanged. The error identifies each conflicting student's name and phone, subject, weekday and times so you can choose another slot.
 * The lesson remains with the same student, preserving their profile, homework and lesson insertion order. Its weekly schedule number may change after an edit; run `lesson list` again before another edit or deletion.
 * The edit is saved automatically. If saving fails, TutorFlow restores the original data and reports that no lesson data was changed.
 
@@ -530,7 +530,7 @@ Examples:
 * `lesson edit 1 d/TUESDAY` moves the first lesson to Tuesday, retaining its subject and times.
 * `lesson edit 1 st/17:00 et/19:00` changes both times of the first lesson.
 
-For example, suppose John Tan has a Monday lesson at 16:00-18:00 and Mary Lim has one at 18:00-19:00. Editing John's lesson with `lesson edit 1 et/18:30` is rejected with `This lesson clashes with an existing lesson: Mary Lim; MATH; MONDAY; 18:00-19:00` (assuming Mary's subject is MATH). Editing John's lesson with `lesson edit 1 st/17:00` succeeds: 17:00-18:00 overlaps only its own original slot and ends exactly when Mary's lesson starts. The same checks apply after restarting TutorFlow.
+For example, suppose John Tan has a Monday lesson at 16:00-18:00 and Mary Lim (student phone 91234568) has one at 18:00-19:00. Editing John's lesson with `lesson edit 1 et/18:30` is rejected with `This lesson clashes with an existing lesson: Mary Lim (91234568); MATH; MONDAY; 18:00-19:00` (assuming Mary's subject is MATH). Editing John's lesson with `lesson edit 1 st/17:00` succeeds: 17:00-18:00 overlaps only its own original slot and ends exactly when Mary's lesson starts. The same checks apply after restarting TutorFlow.
 
 ### Deleting a regular lesson: `lesson delete`
 
@@ -554,15 +554,15 @@ Format: `lesson list`
 
 * Lessons are ordered from Monday to Sunday, then by start time.
 * Lessons with the same weekday and start time are ordered by student name.
-* Each row shows the student name, subject, abbreviated weekday and time range.
+* Each row shows the student name and phone, subject, abbreviated weekday and time range. The phone distinguishes students who share a name; lesson add, edit, delete and clash feedback use the same owner details.
 * If no lessons have been added, TutorFlow reports `No regular lessons found.`
 
 Example output:
 
 ```text
 Listed 2 regular lessons.
-1. Ethan Lim; MATH; MON; 17:00-18:30
-2. Priya Nair; CHEMISTRY; SAT; 15:00-16:30
+1. Ethan Lim (91234567); MATH; MON; 17:00-18:30
+2. Priya Nair (82345671); CHEMISTRY; SAT; 15:00-16:30
 ```
 
 ### Saving the data
@@ -574,7 +574,9 @@ TutorFlow saves your students, homework and regular lessons automatically after 
 
 ### Editing the data file
 
-TutorFlow data is saved automatically as a JSON file `[JAR file location]/data/tutorflow.json`. Advanced users are welcome to update data directly by editing that data file.
+TutorFlow data is saved automatically as `data/tutorflow.json` relative to the terminal's current working directory. Following the quick start makes this your TutorFlow home folder. Preferences are stored in `preferences.json` in that same folder. Launching the JAR by its full path from a different folder uses that folder's data and preferences instead; it does not move or delete the original records. The status bar shows the data path for the current launch.
+
+Advanced users may edit this JSON file while TutorFlow is closed. Back it up first.
 
 If the data file does not exist when TutorFlow starts, for example the first time you run it, TutorFlow starts with some sample students and saves them to a new data file after the first command that changes the data. To get the sample students back, close TutorFlow, delete the data file and start TutorFlow again.
 
@@ -622,13 +624,9 @@ When editing the file, follow these rules:
 * Keys that TutorFlow does not use are ignored and removed the next time TutorFlow saves.
 
 <div markdown="span" class="alert alert-warning">:exclamation: **Caution:**
-If your changes make the data file invalid, TutorFlow starts with no students at the next run (not with the sample students). The invalid file remains on disk until you run a command that changes the data, which overwrites it. So if TutorFlow starts with no students after you edit the file, close it without changing anything, fix the file and start TutorFlow again. Still, we recommend backing up the file before editing it.<br>
+If the data file cannot be read or contains invalid data, TutorFlow shows an error with the full file path and stops before opening the roster. The original data file remains unchanged. Close the error dialog, restore a valid backup or correct the file, and restart from the same home folder. To start with sample data instead, move the original file to a safe location before restarting; keep it if you need to recover records.<br>
 Furthermore, certain edits can cause TutorFlow to behave in unexpected ways (e.g., if a value entered is outside of the acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
 </div>
-
-### Archiving data files `[coming in v2.0]`
-
-_Details coming soon ..._
 
 --------------------------------------------------------------------------------------------------------------------
 

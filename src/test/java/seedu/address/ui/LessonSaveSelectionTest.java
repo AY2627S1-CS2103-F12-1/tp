@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.testutil.TypicalRegularLessons.MONDAY_MATH;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -14,19 +15,23 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import seedu.address.logic.LogicManager;
+import seedu.address.logic.commands.LessonEditCommand;
 import seedu.address.model.AddressBook;
 import seedu.address.model.ModelManager;
 import seedu.address.model.ReadOnlyAddressBook;
+import seedu.address.model.student.Student;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
 import seedu.address.storage.StorageManager;
 import seedu.address.testutil.FxTestUtil;
+import seedu.address.testutil.StudentBuilder;
 
 public class LessonSaveSelectionTest {
     @TempDir
@@ -35,6 +40,50 @@ public class LessonSaveSelectionTest {
     @BeforeAll
     public static void startJavaFx() {
         FxTestUtil.startJavaFx();
+    }
+
+    @Test
+    public void navigationRecoveryFailure_preservesOriginalSaveErrorAndData() throws Exception {
+        Path dataFile = temporaryFolder.resolve("recovery.json");
+        ModelManager model = new ModelManager();
+        model.addStudent(new StudentBuilder().withLessons(MONDAY_MATH).build());
+        AddressBook before = new AddressBook(model.getAddressBook());
+        LogicManager logic = new LogicManager(model, new StorageManager(new JsonAddressBookStorage(dataFile),
+                new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json"))) {
+            @Override
+            public void saveAddressBook(ReadOnlyAddressBook data) throws IOException {
+                throw new IOException("Simulated save failure");
+            }
+        });
+
+        FxTestUtil.runOnFxThread(() -> {
+            Stage stage = new Stage();
+            try {
+                MainWindow window = new MainWindow(stage, logic, dataFile) {
+                    @Override
+                    StudentListPanel createStudentListPanel(ObservableList<Student> students, Runnable errorHandler) {
+                        return new StudentListPanel(students, errorHandler) {
+                            @Override
+                            public void restoreViewState(ViewState state) {
+                                throw new IllegalStateException("Simulated navigation recovery failure");
+                            }
+                        };
+                    }
+                };
+                window.fillInnerParts();
+                stage.show();
+                TextField input = (TextField) stage.getScene().lookup("#commandTextField");
+                input.setText("lesson edit 1 st/16:00");
+                input.fireEvent(new ActionEvent());
+
+                TextArea result = (TextArea) stage.getScene().lookup("#resultDisplay");
+                assertEquals(LessonEditCommand.MESSAGE_SAVE_FAILURE, result.getText());
+                assertEquals("lesson edit 1 st/16:00", input.getText());
+                assertEquals(before, model.getAddressBook());
+            } finally {
+                stage.hide();
+            }
+        });
     }
 
     @Test

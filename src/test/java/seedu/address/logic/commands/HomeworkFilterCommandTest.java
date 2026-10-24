@@ -37,10 +37,10 @@ public class HomeworkFilterCommandTest {
                 new HomeworkBuilder().withTitle("Other date completed").withDueDate("2026-11-01")
                         .withStatus("COMPLETED").build()).build());
         String assigned = feedback(model, "hw filter status/ASSIGNED");
-        assertTrue(assigned.startsWith("Found 1 matching homework records."));
+        assertTrue(assigned.startsWith("Found 1 matching homework record."));
         assertTrue(assigned.contains("Homework 1: Scored assigned"));
         String completed = feedback(model, "hw filter 1 s/MATH due/2026-10-15 status/COMPLETED");
-        assertTrue(completed.startsWith("Found 1 matching homework records."));
+        assertTrue(completed.startsWith("Found 1 matching homework record."));
         assertTrue(completed.contains("Homework 2: Unscored completed"));
         assertTrue(completed.contains("Score: Not recorded; Status: COMPLETED"));
         assertEquals(HomeworkFilterCommand.MESSAGE_NO_MATCHES,
@@ -79,9 +79,9 @@ public class HomeworkFilterCommandTest {
     public void execute_individualAndCombinedCriteria_matchExactly() throws Exception {
         ModelManager model = model();
         assertTrue(feedback(model, "hw filter s/MATH").startsWith("Found 2 matching homework records."));
-        assertTrue(feedback(model, "hw filter due/2026-10-20").startsWith("Found 1 matching homework records."));
+        assertTrue(feedback(model, "hw filter due/2026-10-20").startsWith("Found 1 matching homework record."));
         String combined = feedback(model, "hw filter 1 s/CHEMISTRY due/2026-10-18");
-        assertTrue(combined.startsWith("Found 1 matching homework records."));
+        assertTrue(combined.startsWith("Found 1 matching homework record."));
         assertTrue(combined.contains("Homework 3:"));
         assertEquals(HomeworkFilterCommand.MESSAGE_NO_MATCHES, feedback(model, "hw filter 2 s/PHYSICS"));
         assertEquals(HomeworkFilterCommand.MESSAGE_NO_MATCHES,

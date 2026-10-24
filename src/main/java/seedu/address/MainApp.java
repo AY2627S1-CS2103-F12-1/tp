@@ -1,5 +1,7 @@
 package seedu.address;
 
+import static java.util.Objects.requireNonNull;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -44,16 +46,31 @@ public class MainApp extends Application {
     protected Logic logic;
     protected Storage storage;
     protected Model model;
+    private final Path userPrefsFilePath;
+    private final Path addressBookFilePath;
+    private final Runnable shutdown;
     private boolean hasDataLoadingError;
+
+    /** Creates the application using files in its working directory and the JavaFX shutdown action. */
+    public MainApp() {
+        this(USER_PREFS_FILE_PATH, ADDRESS_BOOK_FILE_PATH, Platform::exit);
+    }
+
+    /** Creates an application with isolated paths and a shutdown action for lifecycle testing. */
+    MainApp(Path userPrefsFilePath, Path addressBookFilePath, Runnable shutdown) {
+        this.userPrefsFilePath = requireNonNull(userPrefsFilePath);
+        this.addressBookFilePath = requireNonNull(addressBookFilePath);
+        this.shutdown = requireNonNull(shutdown);
+    }
 
     @Override
     public void init() throws Exception {
         logger.info("=============================[ Initializing AddressBook ]===========================");
         super.init();
 
-        JsonUserPrefsStorage userPrefsStorage = new JsonUserPrefsStorage(USER_PREFS_FILE_PATH);
+        JsonUserPrefsStorage userPrefsStorage = new JsonUserPrefsStorage(userPrefsFilePath);
         UserPrefs userPrefs = initPrefs(userPrefsStorage);
-        JsonAddressBookStorage addressBookStorage = new JsonAddressBookStorage(ADDRESS_BOOK_FILE_PATH);
+        JsonAddressBookStorage addressBookStorage = new JsonAddressBookStorage(addressBookFilePath);
         storage = new StorageManager(addressBookStorage, userPrefsStorage);
 
         try {
@@ -137,12 +154,12 @@ public class MainApp extends Application {
             alert.setTitle("TutorFlow could not load saved data");
             alert.setHeaderText("Your data file has not been changed.");
             alert.setContentText("TutorFlow could not read valid data from:\n"
-                    + ADDRESS_BOOK_FILE_PATH.toAbsolutePath().normalize()
+                    + addressBookFilePath.toAbsolutePath().normalize()
                     + "\n\nClose TutorFlow and restore a valid backup or correct the file. "
                     + "To start with sample data instead, move the original file to a safe location before restarting. "
                     + "Do not delete it if you need to recover your records.");
             alert.showAndWait();
-            Platform.exit();
+            shutdown.run();
             return;
         }
         logger.info("Starting AddressBook " + MainApp.VERSION);

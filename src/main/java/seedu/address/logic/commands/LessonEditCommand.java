@@ -89,7 +89,7 @@ public class LessonEditCommand extends Command {
             throw new CommandException(LessonAddCommand.MESSAGE_DUPLICATE);
         }
         List<String> clashes = LessonSchedule.findClashes(students, replacement, original).stream()
-                .map(entry -> entry.student().getName() + "; " + entry.lesson()).toList();
+                .map(entry -> Messages.formatLessonOwner(entry.student()) + "; " + entry.lesson()).toList();
         if (!clashes.isEmpty()) {
             throw new CommandException(clashes.size() == 1 ? LessonAddCommand.MESSAGE_CLASH + clashes.get(0)
                     : MESSAGE_MULTIPLE_CLASHES + String.join("\n", clashes));
@@ -97,7 +97,7 @@ public class LessonEditCommand extends Command {
         List<RegularLesson> updated = new ArrayList<>(owner.getLessons());
         updated.set(updated.indexOf(original.lesson()), replacement);
         model.setStudent(owner, owner.withLessons(updated));
-        return new CommandResult(String.format(MESSAGE_SUCCESS, owner.getName(), replacement));
+        return new CommandResult(String.format(MESSAGE_SUCCESS, Messages.formatLessonOwner(owner), replacement));
     }
 
     @Override

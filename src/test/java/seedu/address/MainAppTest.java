@@ -1,6 +1,7 @@
 package seedu.address;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static seedu.address.testutil.TypicalStudents.getTypicalAddressBook;
 
 import java.nio.file.Files;
@@ -9,6 +10,7 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import seedu.address.commons.exceptions.DataLoadingException;
 import seedu.address.model.AddressBook;
 import seedu.address.model.util.SampleDataUtil;
 import seedu.address.storage.JsonAddressBookStorage;
@@ -21,7 +23,7 @@ public class MainAppTest {
     public Path temporaryFolder;
 
     @Test
-    public void readInitialData_missingDataFile_returnsSampleStudents() {
+    public void readInitialData_missingDataFile_returnsSampleStudents() throws Exception {
         Storage storage = getStorage(temporaryFolder.resolve("tutorflow.json"));
 
         assertEquals(SampleDataUtil.getSampleAddressBook(), new AddressBook(MainApp.readInitialData(storage)));
@@ -46,19 +48,34 @@ public class MainAppTest {
     }
 
     @Test
-    public void readInitialData_invalidDataFile_returnsNoStudents() throws Exception {
+    public void readInitialData_invalidDataFile_rejectsWithoutChangingFile() throws Exception {
         Path dataFilePath = temporaryFolder.resolve("tutorflow.json");
         Files.writeString(dataFilePath, "not json format!");
 
-        assertEquals(new AddressBook(), new AddressBook(MainApp.readInitialData(getStorage(dataFilePath))));
+        assertThrows(DataLoadingException.class, () -> MainApp.readInitialData(getStorage(dataFilePath)));
+        assertEquals("not json format!", Files.readString(dataFilePath));
     }
 
     @Test
-    public void readInitialData_nullDataFile_returnsNoStudents() throws Exception {
+    public void readInitialData_nullDataFile_rejectsWithoutChangingFile() throws Exception {
         Path dataFilePath = temporaryFolder.resolve("tutorflow.json");
         Files.writeString(dataFilePath, "null");
 
-        assertEquals(new AddressBook(), new AddressBook(MainApp.readInitialData(getStorage(dataFilePath))));
+        assertThrows(DataLoadingException.class, () -> MainApp.readInitialData(getStorage(dataFilePath)));
+        assertEquals("null", Files.readString(dataFilePath));
+    }
+
+    @Test
+    public void readInitialData_invalidStudent_rejectsWithoutChangingFile() throws Exception {
+        Path dataFilePath = temporaryFolder.resolve("tutorflow.json");
+        Storage storage = getStorage(dataFilePath);
+        storage.saveAddressBook(getTypicalAddressBook());
+        String invalidData = Files.readString(dataFilePath)
+                .replace("\"guardianPhone\"", "\"unknownGuardianPhone\"");
+        Files.writeString(dataFilePath, invalidData);
+
+        assertThrows(DataLoadingException.class, () -> MainApp.readInitialData(storage));
+        assertEquals(invalidData, Files.readString(dataFilePath));
     }
 
     private Storage getStorage(Path dataFilePath) {

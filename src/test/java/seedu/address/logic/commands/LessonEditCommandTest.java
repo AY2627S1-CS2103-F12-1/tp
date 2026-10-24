@@ -67,7 +67,7 @@ public class LessonEditCommandTest {
         parser.parseCommand("search John").execute(model);
         AddressBook before = new AddressBook(model.getAddressBook());
 
-        assertEquals(LessonAddCommand.MESSAGE_CLASH + "Mary Lim; MATH; MONDAY; 18:00-19:00",
+        assertEquals(LessonAddCommand.MESSAGE_CLASH + "Mary Lim (91234568); MATH; MONDAY; 18:00-19:00",
                 assertThrows(CommandException.class, () -> parser.parseCommand("lesson edit 1 et/18:30")
                         .execute(model)).getMessage());
         assertEquals(before, model.getAddressBook());
@@ -81,7 +81,7 @@ public class LessonEditCommandTest {
         parser.parseCommand("lesson add 2 s/MATH d/MONDAY st/20:00 et/21:00").execute(model);
         AddressBook before = new AddressBook(model.getAddressBook());
         assertEquals(LessonEditCommand.MESSAGE_MULTIPLE_CLASHES
-                + "Mary Lim; MATH; MONDAY; 18:00-19:00\nMary Lim; MATH; MONDAY; 20:00-21:00",
+                + "Mary Lim (91234568); MATH; MONDAY; 18:00-19:00\nMary Lim (91234568); MATH; MONDAY; 20:00-21:00",
                 assertThrows(CommandException.class, () -> parser.parseCommand("lesson edit 1 et/20:30")
                         .execute(model)).getMessage());
         assertEquals(before, model.getAddressBook());

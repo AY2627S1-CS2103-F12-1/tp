@@ -153,17 +153,22 @@ public class StudentListPanel extends UiPart<Region> {
      * Captures the visible state and retains old cards before a sort can notify the list view.
      */
     public ViewState beginSort() {
+        ViewState state = captureViewState();
+        isSorting = true;
+        renderingFailure = null;
+        renderedCards = new HashMap<>();
+        return state;
+    }
+
+    /** Captures navigation and rendered cards before a command can replace the roster. */
+    ViewState captureViewState() {
         Map<Orientation, Double> scrollPositions = new EnumMap<>(Orientation.class);
         for (Node node : studentListView.lookupAll(".scroll-bar")) {
             ScrollBar scrollBar = (ScrollBar) node;
             scrollPositions.put(scrollBar.getOrientation(), scrollBar.getValue());
         }
-        ViewState state = new ViewState(List.copyOf(studentListView.getSelectionModel().getSelectedIndices()),
+        return new ViewState(List.copyOf(studentListView.getSelectionModel().getSelectedIndices()),
                 studentListView.getFocusModel().getFocusedIndex(), scrollPositions, new HashMap<>(renderedCards));
-        isSorting = true;
-        renderingFailure = null;
-        renderedCards = new HashMap<>();
-        return state;
     }
 
     /**

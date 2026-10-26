@@ -42,13 +42,6 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
     private final Clock clock;
 
     /**
-     * Creates a parser that infers the year of short-form due dates from the system clock.
-     */
-    public HomeworkAddCommandParser() {
-        this(Clock.systemDefaultZone());
-    }
-
-    /**
      * Creates a parser that infers the year of short-form due dates from {@code clock}.
      */
     public HomeworkAddCommandParser(Clock clock) {

@@ -44,11 +44,6 @@ public class HomeworkCommandParser implements Parser<Command> {
 
     private final Clock clock;
 
-    /** Creates a parser whose subcommands take today's date from the system clock. */
-    public HomeworkCommandParser() {
-        this(Clock.systemDefaultZone());
-    }
-
     /** Creates a parser whose subcommands take today's date from {@code clock}. */
     public HomeworkCommandParser(Clock clock) {
         this.clock = requireNonNull(clock);

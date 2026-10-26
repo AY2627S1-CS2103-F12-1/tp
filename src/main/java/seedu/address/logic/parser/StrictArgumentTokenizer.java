@@ -146,7 +146,7 @@ public final class StrictArgumentTokenizer {
             if (!allowedPrefixes.contains(prefix)) {
                 throw new ParseException(invalidFormatMessage);
             }
-            if (values.containsKey(prefix) || prefix.equals(previousPrefix)) {
+            if (values.containsKey(prefix)) {
                 throw new ParseException(String.format(repeatedPrefixMessage, prefix));
             }
             previousPrefix = prefix;

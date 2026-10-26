@@ -3,6 +3,7 @@ package seedu.address.logic;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.time.Clock;
+import java.util.List;
 import java.util.logging.Logger;
 
 import javafx.collections.ObservableList;
@@ -62,6 +63,7 @@ public class LogicManager implements Logic {
 
         Command command = addressBookParser.parseCommand(commandText);
         ReadOnlyAddressBook dataBeforeCommand = new AddressBook(model.getAddressBook());
+        List<Student> displayedBeforeCommand = List.copyOf(model.getStudentList());
         CommandResult commandResult = command.execute(model);
 
         // Read-only commands such as homework list never write the data file
@@ -74,6 +76,9 @@ public class LogicManager implements Logic {
         } catch (IOException ioe) {
             logger.warning("Could not save data, so the command's changes are undone: " + ioe);
             model.setAddressBook(dataBeforeCommand);
+            if (model.getStudentList().size() == displayedBeforeCommand.size()) {
+                model.setStudentListOrder(displayedBeforeCommand);
+            }
             String message = ioe instanceof DataFileConflictException ? ioe.getMessage()
                     : command.getSaveFailureMessage(getSaveErrorMessage(ioe));
             throw new CommandException(message, ioe);

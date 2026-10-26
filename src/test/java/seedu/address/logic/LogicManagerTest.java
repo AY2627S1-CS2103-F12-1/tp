@@ -414,6 +414,27 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_deleteStudentSaveFails_preservesSortedDisplayedOrder() throws Exception {
+        AddressBook initial = new AddressBook();
+        initial.addStudent(new StudentBuilder().withName("Secondary Student").withAcademicLevel("S3").build());
+        initial.addStudent(new StudentBuilder().withName("Junior Student").withPhone("92345678")
+                .withAcademicLevel("J1").build());
+        initial.addStudent(new StudentBuilder().withName("Primary Student").withPhone("93456789")
+                .withAcademicLevel("S1").build());
+        setUpLogic(initial, getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+        logic.execute("sort by/level");
+        List<Student> sortedStudents = List.copyOf(logic.getStudentList());
+        assertFalse(sortedStudents.equals(initial.getStudentList()));
+
+        String expectedMessage = DeleteCommand.MESSAGE_SAVE_FAILURE + "\n"
+                + String.format(LogicManager.FILE_OPS_ERROR_FORMAT, DUMMY_IO_EXCEPTION.getMessage());
+        assertCommandException("delete 1", expectedMessage);
+
+        assertEquals(sortedStudents, logic.getStudentList());
+        assertEquals(initial, model.getAddressBook());
+    }
+
+    @Test
     public void execute_editStudent_savesProfileAndPreservesLinkedRecordsAcrossReload() throws Exception {
         AddressBook initial = new AddressBook();
         initial.addStudent(new StudentBuilder().withHomeworks(ALGEBRA).withLessons(MONDAY_MATH).build());

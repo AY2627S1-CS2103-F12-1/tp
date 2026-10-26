@@ -284,6 +284,7 @@ Format: `homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|M
 * `homework` can be shortened to `hw`, and `title/` can be shortened to `t/`.
 * `STUDENT_INDEX` refers to the index number shown in the displayed student list. It **must be a positive whole number without leading zeroes**, such as 1, 2, 3, …​
 * `TITLE` must be 1 to 100 characters long and must not contain line breaks or control characters (such as tabs). Extra spaces are removed, and capitalization is kept.
+* A title needs at least one visible character. Spaces, zero-width and other format characters, and blank fillers such as U+3164 do not count, and are removed from both ends. The tag characters that end emoji flags such as 🏴󠁧󠁢󠁥󠁮󠁧󠁿, variation selectors such as U+FE0F (part of ❤️) and the combining grapheme joiner U+034F do not count either, but are never removed. Signs shown before numbers, such as the Arabic number sign U+0600, count as visible.
 * A lowercase word directly followed by `/` in `TITLE` (such as `km/h` or `and/or`) is read as a prefix, so the command is rejected. Wrap the title in double quotes to keep such words, e.g. `t/"Speed in km/h"` (see the [notes about the command format](#features)).
 * `SUBJECT` must be `MATH`, `PHYSICS` or `CHEMISTRY` (in any case), and the student must take that subject.
 * The due date must be a real calendar date in `YYYY-MM-DD` format. Past dates are accepted, so you can record homework that was assigned earlier.

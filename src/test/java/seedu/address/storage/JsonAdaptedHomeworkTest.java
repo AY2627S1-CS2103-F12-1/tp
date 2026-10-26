@@ -82,6 +82,11 @@ public class JsonAdaptedHomeworkTest {
                 "2026-10-15", null);
         assertEquals(ALGEBRA, homework.toModelType());
 
+        // a zero-width space before the title, saved by an earlier version, is removed
+        JsonAdaptedHomework zeroWidthHomework = new JsonAdaptedHomework("\u200BComplete algebra worksheet", "MATH",
+                "2026-10-15", null);
+        assertEquals(ALGEBRA, zeroWidthHomework.toModelType());
+
         Homework paddedDate = new HomeworkBuilder().withDueDate("2026-02-05").build();
         assertEquals(paddedDate, new JsonAdaptedHomework(VALID_TITLE, VALID_SUBJECT, "2026-2-5", null)
                 .toModelType());
@@ -104,6 +109,11 @@ public class JsonAdaptedHomeworkTest {
         JsonAdaptedHomework homeworkWithLineBreak = new JsonAdaptedHomework("Line\nbreak", VALID_SUBJECT,
                 VALID_DUE_DATE, null);
         assertThrows(IllegalValueException.class, Title.MESSAGE_CONSTRAINTS, homeworkWithLineBreak::toModelType);
+
+        // zero-width space only
+        JsonAdaptedHomework homeworkWithZeroWidthTitle = new JsonAdaptedHomework("\u200B", VALID_SUBJECT,
+                VALID_DUE_DATE, null);
+        assertThrows(IllegalValueException.class, Title.MESSAGE_CONSTRAINTS, homeworkWithZeroWidthTitle::toModelType);
     }
 
     @Test

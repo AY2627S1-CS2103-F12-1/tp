@@ -474,6 +474,19 @@ Homework is managed with eight subcommands of `homework` (alias `hw`): `add`, `l
 
 **Title.** The `Title` constructor converts the input to Unicode NFC (`java.text.Normalizer`), replaces each run of whitespace with one space and strips it, then checks the length in code points. NFC gives canonically equivalent text one encoding, e.g. `é` (U+00E9) and `e` followed by the combining accent U+0301, so `equals`, `hashCode` and `isSameTitleIgnoringCase` treat such titles as one title. The duplicate checks of `homework add`, `homework edit` and `JsonAdaptedStudent` use `Homework#isSameHomework`, which compares titles with `isSameTitleIgnoringCase`, so they reject such duplicates too, and the title is saved in NFC. NFKC is not used, as it changes visible characters, e.g. `²` to `2` and `ﬁ` to `fi`.
 
+A title must also have a visible character, so that no homework looks untitled (Issue #139). Two sets of characters in `Title` decide this:
+
+* Trimmed from both ends, after collapsing whitespace: whitespace, format characters (Unicode category `Cf`, e.g. the zero-width space U+200B or the byte order mark U+FEFF) and blank fillers (the Hangul fillers U+115F, U+1160, U+3164 and U+FFA0, the braille blank U+2800 and the Khmer inherent vowels U+17B4 and U+17B5). So `<U+200B>Algebra drill` and `<U+3164>Algebra drill` are the same title as `Algebra drill`. The trailing part of the pattern starts with a negative lookbehind, so a long run of these characters inside a title is tried only once and trimming stays linear in the title length.
+* Not visible, so a title made only of them is rejected: the trimmed set, plus the tag characters U+E0020 to U+E007F, the combining grapheme joiner U+034F and the variation selectors U+FE00 to U+FE0F and U+E0100 to U+E01EF.
+
+Tag characters and variation selectors are never trimmed, because they end visible emoji: tags end flags such as England's 🏴󠁧󠁢󠁥󠁮󠁧󠁿, and U+FE0F ends emoji such as ❤️ (U+2764 U+FE0F). The prepended concatenation marks (U+0600 to U+0605, U+06DD, U+070F, U+0890, U+0891, U+08E2, U+110BD and U+110CD) are `Cf` but are shown, e.g. the Arabic number sign before digits, so they are excluded from both sets. Characters inside a title are never removed, as some invisible ones are part of visible text, e.g. the zero-width joiners (U+200D) in the family emoji 👨‍👩‍👧; so a format character between two spaces (`a <U+200B> b`) stays.
+
+Alternatives considered:
+
+* NFKC instead of NFC: rejected, as it changes visible characters (see above).
+* Treating only whitespace and format characters as invisible: rejected, as blank fillers such as U+3164 are letters or symbols in Unicode but show as nothing, so a title made of them would still look untitled.
+* Removing every invisible character anywhere in the title: rejected, as it would break emoji sequences and flags.
+
 **Score.** A `Score` is either `MARKS` (e.g. `17`) or `MARKS_OBTAINED/TOTAL_MARKS` (e.g. `5/10`). It is kept as given (`5/10` is not simplified) and stored in the data file as this text, e.g. `"17"` or `"5/10"`. `Score#parse` checks the format first: a number with leading zeroes (e.g. `05/10`) is reported with `Score#MESSAGE_LEADING_ZEROES` before the size and range of the numbers are checked, so `02147483648` and `011/10` get the leading-zero message too, while input wrong in another way as well (e.g. `-05`) gets `Score#MESSAGE_CONSTRAINTS`.
 
 **Saving.** Homework is saved as part of each student (see [Storage component](#storage-component)). `homework list`, `homework upcoming` and `homework filter` do not change the stored data, so `LogicManager` never writes the data file after them (see [Saving after a command](#saving-after-a-command)).
@@ -1007,6 +1020,16 @@ testers are expected to do more *exploratory* testing.
 
    1. Other incorrect commands to try: `hw up 3`, `hw up x/3`, `hw up due/3 due/7`<br>
       Expected: An invalid command format error with the usage `homework|hw upcoming|up [due/DAYS]`, or, for the last one, `Prefix due/ must be specified exactly once.`
+
+1. Adding homework with invisible characters in the title
+
+   1. Prerequisites: Start with the sample students. To type a zero-width space (U+200B), copy it from a character viewer, e.g. Character Viewer on macOS or Character Map on Windows, and paste it into the command box.
+
+   1. Test case: `hw add 3 t/ZWSP s/MATH due/2026-12-01`, where `ZWSP` is one zero-width space, followed by an ordinary space before `s/`<br>
+      Expected: `Homework title must be 1 to 100 characters with at least one visible character and must not contain line breaks or control characters.`, and no homework is added.
+
+   1. Test case: `hw add 3 t/ZWSPAlgebra drill s/MATH due/2026-12-02`, then `hw add 3 t/Algebra drill s/MATH due/2026-12-02`<br>
+      Expected: The first adds the homework with the title `Algebra drill`, without the zero-width space. The second gives `This homework already exists for the selected student.`
 
 1. Editing homework
 

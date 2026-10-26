@@ -47,12 +47,12 @@ public class HelpContentTest {
     }
 
     @Test
-    public void getSections_listedCommands_useUsageConstants() {
+    public void getSections_listedCommands_showCommandFormats() {
         Map<String, String> expectedFormats = Map.ofEntries(
                 Map.entry(AddCommand.COMMAND_WORD, AddCommand.MESSAGE_USAGE),
-                Map.entry(DeleteCommand.COMMAND_WORD, DeleteCommand.MESSAGE_USAGE),
+                Map.entry(DeleteCommand.COMMAND_WORD, "delete INDEX"),
                 Map.entry(EditCommand.COMMAND_WORD, EditCommand.MESSAGE_USAGE),
-                Map.entry(ListCommand.COMMAND_WORD, ListCommand.MESSAGE_USAGE),
+                Map.entry(ListCommand.COMMAND_WORD, ListCommand.COMMAND_WORD),
                 Map.entry(SearchCommand.COMMAND_WORD, SearchCommand.MESSAGE_USAGE),
                 Map.entry(SortCommand.COMMAND_WORD, SortCommand.MESSAGE_USAGE),
                 Map.entry(FilterCommand.COMMAND_WORD, FilterCommand.MESSAGE_USAGE),

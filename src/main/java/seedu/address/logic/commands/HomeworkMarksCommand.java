@@ -98,8 +98,7 @@ public class HomeworkMarksCommand extends Command {
             throw new CommandException(score == null ? MESSAGE_NO_MARKS_TO_CLEAR : MESSAGE_NO_CHANGES);
         }
 
-        Homework scoredHomework = new Homework(homework.getTitle(), homework.getSubject(), homework.getDueDate(),
-                score, homework.getStatus());
+        Homework scoredHomework = homework.withScore(score);
         List<Homework> updatedHomeworks = new ArrayList<>(student.getHomeworks());
         updatedHomeworks.set(homeworkIndex.getZeroBased(), scoredHomework);
         String message = String.format(score == null ? MESSAGE_CLEAR_SUCCESS : MESSAGE_SUCCESS,

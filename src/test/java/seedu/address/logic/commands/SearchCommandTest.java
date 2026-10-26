@@ -47,6 +47,17 @@ public class SearchCommandTest {
     }
 
     @Test
+    public void execute_dottedCapitalI_matchesLowercaseName() throws Exception {
+        Student student = new StudentBuilder().withName("İpek Tan").build();
+        ModelManager model = new ModelManager();
+        model.addStudent(student);
+
+        new SearchCommand("ipek").execute(model);
+
+        assertEquals(List.of(student), model.getStudentList());
+    }
+
+    @Test
     public void execute_guardianName_multipleMatchesKeepRosterOrder() throws Exception {
         ModelManager model = model();
 

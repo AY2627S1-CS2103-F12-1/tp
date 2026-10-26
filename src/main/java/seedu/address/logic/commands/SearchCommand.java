@@ -2,7 +2,6 @@ package seedu.address.logic.commands;
 
 import static java.util.Objects.requireNonNull;
 
-import java.util.Locale;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -50,11 +49,10 @@ public class SearchCommand extends Command {
 
     /** Updates only the displayed student view; the stored roster is unchanged. */
     private CommandResult searchStudents(Model model) {
-        String normalizedKeyword = keyword.toLowerCase(Locale.ROOT);
-        Predicate<Student> matchesKeyword = student -> matches(student.getName().toString(), normalizedKeyword)
-                || matches(student.getPhone().toString(), normalizedKeyword)
-                || matches(student.getGuardianName().toString(), normalizedKeyword)
-                || matches(student.getGuardianPhone().toString(), normalizedKeyword);
+        Predicate<Student> matchesKeyword = student -> matches(student.getName().toString(), keyword)
+                || matches(student.getPhone().toString(), keyword)
+                || matches(student.getGuardianName().toString(), keyword)
+                || matches(student.getGuardianPhone().toString(), keyword);
         model.updateFilteredStudentList(matchesKeyword);
 
         int count = model.getStudentList().size();
@@ -69,8 +67,13 @@ public class SearchCommand extends Command {
         return new CommandResult(feedback + "\n" + MESSAGE_SHOW_ALL, false, false, true);
     }
 
-    private static boolean matches(String value, String normalizedKeyword) {
-        return value.toLowerCase(Locale.ROOT).contains(normalizedKeyword);
+    private static boolean matches(String value, String keyword) {
+        for (int start = 0; start <= value.length() - keyword.length(); start++) {
+            if (value.regionMatches(true, start, keyword, 0, keyword.length())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

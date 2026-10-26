@@ -18,6 +18,7 @@ public final class DueDate {
     public static final String MESSAGE_FULL_DATE_CONSTRAINTS = "Due date must be a valid calendar date in "
             + "YYYY-MM-DD format, where the month and day may have 1 or 2 digits.";
 
+    private static final int MIN_YEAR = 1;
     private static final int MAX_YEAR = 9999;
     private static final Pattern FULL_FORM = Pattern.compile("([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})");
     private static final Pattern SHORT_FORM = Pattern.compile("([0-9]{1,2})-([0-9]{1,2})");
@@ -92,7 +93,7 @@ public final class DueDate {
      * Returns the date with the given year, month and day, rejecting year 0000 and non-existent dates.
      */
     private static LocalDate parseFullForm(int year, int month, int day) {
-        if (year < 1) {
+        if (year < MIN_YEAR) {
             throw new IllegalArgumentException(MESSAGE_CONSTRAINTS);
         }
         try {

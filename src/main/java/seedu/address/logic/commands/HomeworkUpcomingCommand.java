@@ -43,9 +43,14 @@ public class HomeworkUpcomingCommand extends Command {
      *
      * @param today First due date to list.
      * @param days Number of days after {@code today} up to which homework is listed; not negative.
+     * @throws IllegalArgumentException If {@code days} is negative.
      */
     public HomeworkUpcomingCommand(LocalDate today, int days) {
-        this.today = requireNonNull(today);
+        requireNonNull(today);
+        if (days < 0) {
+            throw new IllegalArgumentException("days must not be negative: " + days);
+        }
+        this.today = today;
         this.days = days;
     }
 

@@ -56,6 +56,16 @@ public class HomeworkUpcomingCommandTest {
     }
 
     @Test
+    public void constructor_negativeDays_throwsIllegalArgumentException() {
+        assertThrows(IllegalArgumentException.class, () -> new HomeworkUpcomingCommand(TODAY, -1));
+    }
+
+    @Test
+    public void constructor_nullTodayAndNegativeDays_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> new HomeworkUpcomingCommand(null, -1));
+    }
+
+    @Test
     public void execute_threeDays_listsHomeworkFromTodayToLastDayInOrder() {
         // overdue (2026-10-16) and day after the window (2026-10-21) are left out; ties keep roster order, then
         // insertion order

@@ -49,6 +49,7 @@ public class HomeworkEditCommandTest {
         assertThrows(NullPointerException.class, () -> new HomeworkEditCommand(null, FIRST, NEW_TITLE, false, TODAY));
         assertThrows(NullPointerException.class, () -> new HomeworkEditCommand(FIRST, null, NEW_TITLE, false, TODAY));
         assertThrows(NullPointerException.class, () -> new HomeworkEditCommand(FIRST, FIRST, null, false, TODAY));
+        assertThrows(NullPointerException.class, () -> new HomeworkEditCommand(FIRST, FIRST, NEW_TITLE, false, null));
     }
 
     @Test

@@ -85,6 +85,23 @@ public class HelpWindowTest {
         });
     }
 
+    @Test
+    public void show_otherKey_neitherScrollsNorHides() throws Exception {
+        runOnFxThread(() -> {
+            HelpWindow helpWindow = new HelpWindow();
+            ScrollPane scrollPane = (ScrollPane) helpWindow.getRoot().getScene().lookup("#helpScrollPane");
+
+            helpWindow.show();
+            try {
+                pressKey(scrollPane, KeyCode.A);
+                assertTrue(helpWindow.isShowing());
+                assertEquals(0, scrollPane.getVvalue());
+            } finally {
+                helpWindow.hide();
+            }
+        });
+    }
+
     private static void pressKey(Node target, KeyCode code) {
         Event.fireEvent(target, new KeyEvent(KeyEvent.KEY_PRESSED, "", "", code, false, false, false, false));
     }

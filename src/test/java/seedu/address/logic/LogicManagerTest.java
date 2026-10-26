@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX;
 import static seedu.address.logic.Messages.MESSAGE_UNKNOWN_COMMAND;
+import static seedu.address.model.util.SampleDataUtil.getSampleAddressBook;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalHomeworks.MECHANICS;
@@ -493,6 +494,44 @@ public class LogicManagerTest {
 
         assertCommandFailure(ClearCommand.COMMAND_WORD, CommandException.class, expectedMessage,
                 new ModelManager(getTypicalAddressBook(), new UserPrefs()));
+    }
+
+    @Test
+    public void execute_deleteSaveFailsAfterSort_keepsDisplayedOrder() throws Exception {
+        setUpLogic(getSampleAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+        logic.execute("sort by/level o/desc");
+        List<Student> displayedBefore = List.copyOf(logic.getStudentList());
+        String expectedMessage = String.format(LogicManager.FILE_OPS_ERROR_FORMAT, DUMMY_IO_EXCEPTION.getMessage());
+
+        assertCommandException("delete 1", expectedMessage);
+
+        assertEquals(displayedBefore, logic.getStudentList());
+    }
+
+    @Test
+    public void execute_clearSaveFailsAfterSort_keepsDisplayedOrder() throws Exception {
+        setUpLogic(getSampleAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+        logic.execute("sort by/level o/desc");
+        List<Student> displayedBefore = List.copyOf(logic.getStudentList());
+        String expectedMessage = String.format(LogicManager.FILE_OPS_ERROR_FORMAT, DUMMY_IO_EXCEPTION.getMessage());
+
+        assertCommandException(ClearCommand.COMMAND_WORD, expectedMessage);
+
+        assertEquals(displayedBefore, logic.getStudentList());
+    }
+
+    @Test
+    public void execute_addSaveFailsAfterFilter_keepsDisplayedStudents() throws Exception {
+        setUpLogic(getSampleAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+        logic.execute("filter s/MATH");
+        logic.execute("sort by/level o/desc");
+        List<Student> displayedBefore = List.copyOf(logic.getStudentList());
+        String expectedMessage = String.format(LogicManager.FILE_OPS_ERROR_FORMAT, DUMMY_IO_EXCEPTION.getMessage());
+
+        // Adding a student shows all students, so a failed save must bring back the filter
+        assertCommandException(ADD_STUDENT_COMMAND, expectedMessage);
+
+        assertEquals(displayedBefore, logic.getStudentList());
     }
 
     @Test

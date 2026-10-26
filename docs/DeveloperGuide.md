@@ -276,7 +276,8 @@ For example, with the allowed prefixes `title/`, `t/`, `s/` and `due/` of `hw ad
 `AddressBookParser` dispatches `add` to `AddCommandParser`, which delegates the six profile fields to
 `StudentAddParser`. Parsing validates the fields and constructs an immutable `Student` without modifying the
 roster. `AddCommand` rejects a duplicate identity (the same normalized name and student phone), adds a unique
-student, and restores the full displayed roster in stored order. This also discards an earlier filter or sort.
+student, and restores the full displayed roster in stored order. This also discards an earlier filter or sort,
+unless saving fails: the rollback then restores them.
 
 The sequence below shows the current integrated design for a successful addition. Parsing and list-observer
 callbacks are summarized so the diagram focuses on roster changes and saving. Persistence and save-failure
@@ -330,7 +331,7 @@ The sequence diagram below shows how `search Jane` reaches the filtered view wit
 
 **Model update.** The command passes the selected `Student` to `Model#deleteStudent`. `ModelManager` delegates to `AddressBook`, which removes that student from `StudentRoster`. The remaining students keep their relative order; the observable list updates the displayed cards and their one-based indexes. Homework and regular lessons are held by the deleted `Student`, so they are removed with that student rather than deleted separately.
 
-**Persistence and failure.** Unlike list and search, deletion changes the `AddressBook`, so `LogicManager` saves the updated roster. It keeps a copy of the previous roster before execution; if saving throws an `IOException`, it restores that copy, including the deleted student's homework and lessons. The screen and data file therefore remain consistent (see [Saving after a command](#saving-after-a-command)).
+**Persistence and failure.** Unlike list and search, deletion changes the `AddressBook`, so `LogicManager` saves the updated roster. It keeps a copy of the previous roster before execution; if saving throws an `IOException`, it restores that copy, including the deleted student's homework and lessons, and then the displayed students in their previous order. The screen and data file therefore remain consistent, and after a `sort` or `search` the same index still refers to the same student, so the user can retry the command (see [Saving after a command](#saving-after-a-command)).
 
 The sequence diagram below shows a successful `delete 1`, including the storage update:
 
@@ -552,13 +553,13 @@ Tests cover completion with and without scores, reopening, status preservation t
 
 ### Saving after a command
 
-`LogicManager#execute` saves the data after each command that changes it, and restores the pre-command model if the data cannot be saved.
+`LogicManager#execute` saves the data after each command that changes it, and restores the pre-command data and displayed student list if the data cannot be saved.
 
 `JsonAddressBookStorage` records the bytes of each successfully loaded or saved file, including whether it was missing. Before saving, it acquires a short-lived OS lock on a companion `.lock` file and compares the data file with that recorded version. The lock serializes the version check and atomic replacement across cooperating processes. A stale writer is rejected without replacing newer data; `LogicManager` restores the pre-command model and reports that the user must restart to load the latest file. A busy writer reports that the command can be retried. Reading data does not create or acquire a write lock, so read-only commands and loading from a read-only folder remain possible. The empty lock file stays beside the data file so every writer continues to lock the same file.
 
-1. Before executing the command, `LogicManager` copies the current data: `new AddressBook(model.getAddressBook())`. The copy is cheap because `Student` and `Homework` are immutable, so only the list is copied.
+1. Before executing the command, `LogicManager` copies the current data: `new AddressBook(model.getAddressBook())`. The copy is cheap because `Student` and `Homework` are immutable, so only the list is copied. It also records the displayed students in their current order (`Model#getStudentList()`) and the search or filter predicate that selects them (`Model#getFilteredStudentListPredicate()`).
 1. After the command succeeds, `LogicManager` compares the data with the copy. If they are equal, the command changed nothing (e.g. `homework list`, `homework upcoming`, `help`, `exit`, or `clear` with no students), and nothing is saved.
-1. Otherwise, `LogicManager` calls `Storage#saveAddressBook`. If this throws an `IOException`, `LogicManager` restores the copy with `Model#setAddressBook` and throws a `CommandException` whose message comes from `Command#getSaveFailureMessage(defaultMessage)`.
+1. Otherwise, `LogicManager` calls `Storage#saveAddressBook`. If this throws an `IOException`, `LogicManager` restores the copy with `Model#setAddressBook`, then the recorded predicate with `Model#updateFilteredStudentList` and the recorded order with `Model#setStudentListOrder`, and throws a `CommandException` whose message comes from `Command#getSaveFailureMessage(defaultMessage)`. Restoring the data alone is not enough: `StudentDisplayList` keeps displayed positions, not students, across a replacement of the whole roster, so a failed `delete` after a `sort` would shift the students after the deleted one, a failed `clear` would lose the sort, and a failed `add` would keep showing every student instead of the earlier search or filter.
 1. By default, `getSaveFailureMessage` returns the AB3 message (`LogicManager#FILE_OPS_ERROR_FORMAT`, or `FILE_OPS_PERMISSION_ERROR_FORMAT` when access is denied). The homework commands that change data (`HomeworkAddCommand`, `HomeworkEditCommand`, `HomeworkMarksCommand`, `HomeworkDeleteCommand`), `LessonAddCommand`, `LessonEditCommand` and `LessonDeleteCommand` override it to return their own messages (the homework messages are from the specification). A new command that needs its own message only overrides this method.
 
 #### Design considerations:
@@ -1187,3 +1188,6 @@ The automated smoke check is `./gradlew test --tests '*LessonEditUiTest' --tests
 
    1. Make `data/tutorflow.json` read-only, then run `homework add 1 t/Test s/MATH due/2026-12-01` (the 1st student must take MATH).<br>
       Expected: An error message says that the homework could not be added and that no homework data was changed. `homework list 1` does not show the homework.
+
+   1. In a fresh folder, launch the app with the sample students and run `add n/Temp Student l/S1 s/MATH p/90000000 gn/Temp Parent gp/90000001`, then `delete 7`, to create the data file. Make `data/tutorflow.json` read-only, then run `sort by/level o/desc` and `delete 1`.<br>
+      Expected: `Could not save data to file ... due to insufficient permissions to write to the file or the folder.` Daniel Wong is still student 1, and the order (Daniel Wong, Priya Nair, Nurul Aisyah, Ethan Lim, Chloe Chua, Marcus Tan) is the same as after the sort. Run `filter s/MATH`, `sort by/level o/desc` and `add n/John Tan l/S3 s/MATH p/91234567 gn/Mary Tan gp/98765432`: the addition fails and the same 5 MATH students stay displayed in the sorted order. Restore the file's write permission afterwards.

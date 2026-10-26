@@ -3,6 +3,8 @@ package seedu.address.logic;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.time.Clock;
+import java.util.List;
+import java.util.function.Predicate;
 import java.util.logging.Logger;
 
 import javafx.collections.ObservableList;
@@ -54,7 +56,8 @@ public class LogicManager implements Logic {
     /**
      * {@inheritDoc}
      * The data file is written only if the command changed the data. If writing fails, the change is undone, so the
-     * model again matches the data file, and the command's save failure message is reported.
+     * model again matches the data file and the displayed students and their order are unchanged; the command's save
+     * failure message is reported.
      */
     @Override
     public CommandResult execute(String commandText) throws CommandException, ParseException {
@@ -62,6 +65,8 @@ public class LogicManager implements Logic {
 
         Command command = addressBookParser.parseCommand(commandText);
         ReadOnlyAddressBook dataBeforeCommand = new AddressBook(model.getAddressBook());
+        Predicate<Student> predicateBeforeCommand = model.getFilteredStudentListPredicate();
+        List<Student> displayedBeforeCommand = List.copyOf(model.getStudentList());
         CommandResult commandResult = command.execute(model);
 
         // Read-only commands such as homework list never write the data file
@@ -74,6 +79,9 @@ public class LogicManager implements Logic {
         } catch (IOException ioe) {
             logger.warning("Could not save data, so the command's changes are undone: " + ioe);
             model.setAddressBook(dataBeforeCommand);
+            // Restoring the data alone can change which students are displayed and their order
+            model.updateFilteredStudentList(predicateBeforeCommand);
+            model.setStudentListOrder(displayedBeforeCommand);
             String message = ioe instanceof DataFileConflictException ? ioe.getMessage()
                     : command.getSaveFailureMessage(getSaveErrorMessage(ioe));
             throw new CommandException(message, ioe);

@@ -11,6 +11,7 @@ import static seedu.address.testutil.TypicalStudents.getTypicalAddressBook;
 import static seedu.address.testutil.TypicalStudents.getTypicalStudents;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 import org.junit.jupiter.api.Test;
 
@@ -82,6 +83,21 @@ public class ModelManagerTest {
         modelManager.addStudent(new StudentBuilder().build());
         modelManager.setAddressBook(getTypicalAddressBook());
         assertEquals(getTypicalStudents(), modelManager.getStudentList());
+    }
+
+    @Test
+    public void getFilteredStudentListPredicate_noFilter_selectsEveryStudent() {
+        assertTrue(modelManager.getFilteredStudentListPredicate().test(ALICE));
+    }
+
+    @Test
+    public void getFilteredStudentListPredicate_afterUpdate_selectsSameStudents() {
+        modelManager.updateFilteredStudentList(student -> student.equals(ALICE));
+
+        Predicate<Student> predicate = modelManager.getFilteredStudentListPredicate();
+
+        assertTrue(predicate.test(ALICE));
+        assertFalse(predicate.test(BENSON));
     }
 
     @Test

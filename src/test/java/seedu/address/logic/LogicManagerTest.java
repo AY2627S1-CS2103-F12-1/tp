@@ -11,6 +11,7 @@ import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalHomeworks.MECHANICS;
 import static seedu.address.testutil.TypicalRegularLessons.MONDAY_MATH;
 import static seedu.address.testutil.TypicalRegularLessons.TUESDAY_PHYSICS;
+import static seedu.address.testutil.TypicalStudents.getModelWithTypicalStudents;
 import static seedu.address.testutil.TypicalStudents.getTypicalAddressBook;
 
 import java.io.IOException;
@@ -58,6 +59,8 @@ import seedu.address.testutil.StudentBuilder;
 
 public class LogicManagerTest {
     private static final IOException DUMMY_IO_EXCEPTION = new IOException("dummy IO exception");
+    private static final String DUMMY_IO_ERROR_MESSAGE = String.format(LogicManager.FILE_OPS_ERROR_FORMAT,
+            DUMMY_IO_EXCEPTION.getMessage());
     private static final IOException DUMMY_AD_EXCEPTION = new AccessDeniedException("dummy access denied exception");
     private static final String ADD_STUDENT_COMMAND = "add n/John Tan l/S3 s/MATH p/91234567 gn/Mary Tan gp/98765432";
 
@@ -381,8 +384,7 @@ public class LogicManagerTest {
         logic.execute("hw up due/365");
         logic.execute("help");
 
-        assertEquals(new ModelManager(getTypicalAddressBook(), new UserPrefs()), model);
-        assertFalse(Files.exists(dataFilePath));
+        assertEquals(getModelWithTypicalStudents(), model);
     }
 
     @Test
@@ -500,10 +502,9 @@ public class LogicManagerTest {
     @Test
     public void execute_clearSaveFails_restoresStudents() {
         setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
-        String expectedMessage = String.format(LogicManager.FILE_OPS_ERROR_FORMAT, DUMMY_IO_EXCEPTION.getMessage());
 
-        assertCommandFailure(ClearCommand.COMMAND_WORD, CommandException.class, expectedMessage,
-                new ModelManager(getTypicalAddressBook(), new UserPrefs()));
+        assertCommandFailure(ClearCommand.COMMAND_WORD, CommandException.class, DUMMY_IO_ERROR_MESSAGE,
+                getModelWithTypicalStudents());
     }
 
     @Test
@@ -511,9 +512,8 @@ public class LogicManagerTest {
         setUpLogic(getSampleAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
         logic.execute("sort by/level o/desc");
         List<Student> displayedBefore = List.copyOf(logic.getStudentList());
-        String expectedMessage = String.format(LogicManager.FILE_OPS_ERROR_FORMAT, DUMMY_IO_EXCEPTION.getMessage());
 
-        assertCommandException("delete 1", expectedMessage);
+        assertCommandException("delete 1", DUMMY_IO_ERROR_MESSAGE);
 
         assertEquals(displayedBefore, logic.getStudentList());
     }
@@ -523,9 +523,8 @@ public class LogicManagerTest {
         setUpLogic(getSampleAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
         logic.execute("sort by/level o/desc");
         List<Student> displayedBefore = List.copyOf(logic.getStudentList());
-        String expectedMessage = String.format(LogicManager.FILE_OPS_ERROR_FORMAT, DUMMY_IO_EXCEPTION.getMessage());
 
-        assertCommandException(ClearCommand.COMMAND_WORD, expectedMessage);
+        assertCommandException(ClearCommand.COMMAND_WORD, DUMMY_IO_ERROR_MESSAGE);
 
         assertEquals(displayedBefore, logic.getStudentList());
     }
@@ -536,10 +535,9 @@ public class LogicManagerTest {
         logic.execute("filter s/MATH");
         logic.execute("sort by/level o/desc");
         List<Student> displayedBefore = List.copyOf(logic.getStudentList());
-        String expectedMessage = String.format(LogicManager.FILE_OPS_ERROR_FORMAT, DUMMY_IO_EXCEPTION.getMessage());
 
         // Adding a student shows all students, so a failed save must bring back the filter
-        assertCommandException(ADD_STUDENT_COMMAND, expectedMessage);
+        assertCommandException(ADD_STUDENT_COMMAND, DUMMY_IO_ERROR_MESSAGE);
 
         assertEquals(displayedBefore, logic.getStudentList());
     }
@@ -549,7 +547,7 @@ public class LogicManagerTest {
         setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
 
         assertCommandFailure("hw add 2 t/Trigonometry practice s/MATH due/2026-11-01", CommandException.class,
-                HomeworkAddCommand.MESSAGE_SAVE_FAILURE, new ModelManager(getTypicalAddressBook(), new UserPrefs()));
+                HomeworkAddCommand.MESSAGE_SAVE_FAILURE, getModelWithTypicalStudents());
     }
 
     @Test
@@ -557,7 +555,7 @@ public class LogicManagerTest {
         setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_AD_EXCEPTION));
 
         assertCommandFailure("hw del 1 2", CommandException.class, HomeworkDeleteCommand.MESSAGE_SAVE_FAILURE,
-                new ModelManager(getTypicalAddressBook(), new UserPrefs()));
+                getModelWithTypicalStudents());
     }
 
     @Test
@@ -565,8 +563,7 @@ public class LogicManagerTest {
         setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
 
         assertCommandFailure("hw edit 1 2 t/Revise mechanics s/PHYSICS due/2026-11-10", CommandException.class,
-                HomeworkEditCommand.MESSAGE_SAVE_FAILURE, new ModelManager(getTypicalAddressBook(), new UserPrefs()));
-        assertFalse(Files.exists(dataFilePath));
+                HomeworkEditCommand.MESSAGE_SAVE_FAILURE, getModelWithTypicalStudents());
     }
 
     @Test
@@ -574,8 +571,7 @@ public class LogicManagerTest {
         setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_AD_EXCEPTION));
 
         assertCommandFailure("hw marks 1 3 score/0/10", CommandException.class,
-                HomeworkMarksCommand.MESSAGE_SAVE_FAILURE, new ModelManager(getTypicalAddressBook(), new UserPrefs()));
-        assertFalse(Files.exists(dataFilePath));
+                HomeworkMarksCommand.MESSAGE_SAVE_FAILURE, getModelWithTypicalStudents());
     }
 
     @Test
@@ -583,8 +579,7 @@ public class LogicManagerTest {
         setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_AD_EXCEPTION));
 
         assertCommandFailure("hw m 1 3 score/", CommandException.class,
-                HomeworkMarksCommand.MESSAGE_SAVE_FAILURE, new ModelManager(getTypicalAddressBook(), new UserPrefs()));
-        assertFalse(Files.exists(dataFilePath));
+                HomeworkMarksCommand.MESSAGE_SAVE_FAILURE, getModelWithTypicalStudents());
     }
 
     @Test

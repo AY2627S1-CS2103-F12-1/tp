@@ -158,7 +158,10 @@ public class HomeworkDeleteCommandTest {
         assertTrue(deleteCommand.equals(deleteCommand));
 
         // same values -> returns true
-        assertTrue(deleteCommand.equals(new HomeworkDeleteCommand(Index.fromOneBased(1), Index.fromOneBased(2))));
+        HomeworkDeleteCommand deleteCommandCopy = new HomeworkDeleteCommand(Index.fromOneBased(1),
+                Index.fromOneBased(2));
+        assertTrue(deleteCommand.equals(deleteCommandCopy));
+        assertEquals(deleteCommand.hashCode(), deleteCommandCopy.hashCode());
 
         // null -> returns false
         assertFalse(deleteCommand.equals(null));

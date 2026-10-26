@@ -206,7 +206,9 @@ public class HomeworkUpcomingCommandTest {
         assertTrue(upcomingCommand.equals(upcomingCommand));
 
         // same values -> returns true
-        assertTrue(upcomingCommand.equals(new HomeworkUpcomingCommand(LocalDate.of(2026, 10, 17), 7)));
+        HomeworkUpcomingCommand upcomingCommandCopy = new HomeworkUpcomingCommand(LocalDate.of(2026, 10, 17), 7);
+        assertTrue(upcomingCommand.equals(upcomingCommandCopy));
+        assertEquals(upcomingCommand.hashCode(), upcomingCommandCopy.hashCode());
 
         // null -> returns false
         assertFalse(upcomingCommand.equals(null));

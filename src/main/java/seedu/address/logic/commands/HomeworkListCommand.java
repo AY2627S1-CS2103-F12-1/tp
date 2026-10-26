@@ -6,6 +6,7 @@ import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
@@ -130,6 +131,11 @@ public class HomeworkListCommand extends Command {
         return studentIndex.equals(otherCommand.studentIndex)
                 && today.equals(otherCommand.today)
                 && isAllShown == otherCommand.isAllShown;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(studentIndex.getZeroBased(), today, isAllShown);
     }
 
     @Override

@@ -5,6 +5,7 @@ import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -110,6 +111,11 @@ public class HomeworkAddCommand extends Command {
         return studentIndex.equals(otherCommand.studentIndex)
                 && homework.equals(otherCommand.homework)
                 && isYearInferred == otherCommand.isYearInferred;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(studentIndex.getZeroBased(), homework, isYearInferred);
     }
 
     @Override

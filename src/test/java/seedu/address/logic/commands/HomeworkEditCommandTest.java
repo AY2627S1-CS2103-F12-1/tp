@@ -290,8 +290,10 @@ public class HomeworkEditCommandTest {
         assertTrue(editCommand.equals(editCommand));
 
         // same values -> returns true
-        assertTrue(editCommand.equals(new HomeworkEditCommand(Index.fromOneBased(1), Index.fromOneBased(2),
-                new EditHomeworkDescriptor(new Title("Complete algebra questions 1-10"), null, null), false, TODAY)));
+        HomeworkEditCommand editCommandCopy = new HomeworkEditCommand(Index.fromOneBased(1), Index.fromOneBased(2),
+                new EditHomeworkDescriptor(new Title("Complete algebra questions 1-10"), null, null), false, TODAY);
+        assertTrue(editCommand.equals(editCommandCopy));
+        assertEquals(editCommand.hashCode(), editCommandCopy.hashCode());
 
         // null -> returns false
         assertFalse(editCommand.equals(null));

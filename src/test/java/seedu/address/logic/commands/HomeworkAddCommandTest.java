@@ -191,7 +191,9 @@ public class HomeworkAddCommandTest {
         assertTrue(addAlgebraCommand.equals(addAlgebraCommand));
 
         // same values -> returns true
-        assertTrue(addAlgebraCommand.equals(new HomeworkAddCommand(Index.fromOneBased(1), ALGEBRA, false)));
+        HomeworkAddCommand addAlgebraCommandCopy = new HomeworkAddCommand(Index.fromOneBased(1), ALGEBRA, false);
+        assertTrue(addAlgebraCommand.equals(addAlgebraCommandCopy));
+        assertEquals(addAlgebraCommand.hashCode(), addAlgebraCommandCopy.hashCode());
 
         // null -> returns false
         assertFalse(addAlgebraCommand.equals(null));

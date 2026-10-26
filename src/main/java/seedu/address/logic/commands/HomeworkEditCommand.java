@@ -160,6 +160,12 @@ public class HomeworkEditCommand extends Command {
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hash(studentIndex.getZeroBased(), homeworkIndex.getZeroBased(), descriptor,
+                isYearInferred, today);
+    }
+
+    @Override
     public String toString() {
         return new ToStringBuilder(this)
                 .add("studentIndex", studentIndex)

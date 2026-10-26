@@ -219,8 +219,10 @@ public class HomeworkMarksCommandTest {
         assertTrue(marksCommand.equals(marksCommand));
 
         // same values -> returns true
-        assertTrue(marksCommand.equals(new HomeworkMarksCommand(Index.fromOneBased(1), Index.fromOneBased(2),
-                new Score(5, 10))));
+        HomeworkMarksCommand marksCommandCopy = new HomeworkMarksCommand(Index.fromOneBased(1),
+                Index.fromOneBased(2), new Score(5, 10));
+        assertTrue(marksCommand.equals(marksCommandCopy));
+        assertEquals(marksCommand.hashCode(), marksCommandCopy.hashCode());
 
         // null -> returns false
         assertFalse(marksCommand.equals(null));
@@ -246,7 +248,9 @@ public class HomeworkMarksCommandTest {
         assertFalse(clearCommand.equals(marksCommand));
 
         // both clearing the same homework -> returns true
-        assertTrue(clearCommand.equals(new HomeworkMarksCommand(FIRST, SECOND)));
+        HomeworkMarksCommand clearCommandCopy = new HomeworkMarksCommand(Index.fromOneBased(1), Index.fromOneBased(2));
+        assertTrue(clearCommand.equals(clearCommandCopy));
+        assertEquals(clearCommand.hashCode(), clearCommandCopy.hashCode());
     }
 
     @Test

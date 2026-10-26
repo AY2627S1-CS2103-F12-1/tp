@@ -190,8 +190,10 @@ public class HomeworkListCommandTest {
         assertTrue(listFirstCommand.equals(listFirstCommand));
 
         // same values -> returns true
-        assertTrue(listFirstCommand.equals(new HomeworkListCommand(Index.fromOneBased(1), LocalDate.of(2026, 10, 5),
-                false)));
+        HomeworkListCommand listFirstCommandCopy = new HomeworkListCommand(Index.fromOneBased(1),
+                LocalDate.of(2026, 10, 5), false);
+        assertTrue(listFirstCommand.equals(listFirstCommandCopy));
+        assertEquals(listFirstCommand.hashCode(), listFirstCommandCopy.hashCode());
 
         // null -> returns false
         assertFalse(listFirstCommand.equals(null));

@@ -27,6 +27,12 @@ public class HomeworkDeleteCommandParserTest {
     }
 
     @Test
+    public void parse_largestIndices_success() {
+        Index largestIndex = Index.fromOneBased(Integer.MAX_VALUE);
+        assertParseSuccess(parser, "2147483647 2147483647", new HomeworkDeleteCommand(largestIndex, largestIndex));
+    }
+
+    @Test
     public void parse_noIndex_failure() {
         assertParseFailure(parser, "", MESSAGE_INVALID_FORMAT);
     }

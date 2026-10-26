@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -192,5 +193,27 @@ public class StudentRosterTest {
     public void setStudents_null_throwsNullPointerException() {
         StudentRoster roster = new StudentRoster();
         assertThrows(NullPointerException.class, () -> roster.setStudents(null));
+    }
+
+    @Test
+    public void setStudents_nullStudent_throwsNullPointerException() {
+        StudentRoster roster = new StudentRoster();
+        Student student = new StudentBuilder().build();
+        roster.addStudent(student);
+        List<Student> replacement = new ArrayList<>();
+        replacement.add(null);
+
+        assertThrows(NullPointerException.class, () -> roster.setStudents(replacement));
+        assertEquals(List.of(student), roster.getStudents());
+    }
+
+    @Test
+    public void setStudent_nullArgument_throwsNullPointerException() {
+        StudentRoster roster = new StudentRoster();
+        Student student = new StudentBuilder().build();
+        roster.addStudent(student);
+
+        assertThrows(NullPointerException.class, () -> roster.setStudent(null, student));
+        assertThrows(NullPointerException.class, () -> roster.setStudent(student, null));
     }
 }

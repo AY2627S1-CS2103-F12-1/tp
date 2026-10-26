@@ -105,7 +105,9 @@ public class AddressBookTest {
         assertTrue(aliceAddressBook.equals(aliceAddressBook));
 
         // same students -> returns true
-        assertTrue(aliceAddressBook.equals(new AddressBookBuilder().withStudent(ALICE).build()));
+        AddressBook aliceAddressBookCopy = new AddressBookBuilder().withStudent(ALICE).build();
+        assertTrue(aliceAddressBook.equals(aliceAddressBookCopy));
+        assertEquals(aliceAddressBook.hashCode(), aliceAddressBookCopy.hashCode());
 
         // null -> returns false
         assertFalse(aliceAddressBook.equals(null));

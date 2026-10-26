@@ -164,7 +164,8 @@ ignores letter case. Matches stay in roster order and are numbered from 1 in the
 
 Format: `search KEYWORD`
 
-* `KEYWORD` must not be blank; it can contain spaces. For example, `search Mary Tan` searches for that full phrase.
+* `KEYWORD` must not be blank; it can contain spaces. Repeated and Unicode whitespace is treated as one space.
+  For example, `search Mary Tan` searches for that full phrase.
 * `search 9123` can find a student by part of their phone number. `search Tan` may match a student or a guardian.
 * The feedback repeats the keyword used, e.g. `Found 2 students for "Tan".` If nothing matches, TutorFlow shows
   `No students found for "Nobody".` and displays no student cards. In both cases, the feedback reminds you to type

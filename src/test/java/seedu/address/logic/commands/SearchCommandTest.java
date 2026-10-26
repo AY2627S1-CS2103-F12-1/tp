@@ -58,6 +58,17 @@ public class SearchCommandTest {
     }
 
     @Test
+    public void execute_repeatedWhitespace_matchesNormalizedName() throws Exception {
+        ModelManager model = model();
+
+        CommandResult result = new SearchCommand("John\u00a0\u00a0Tan").execute(model);
+
+        assertEquals(List.of(first), model.getStudentList());
+        assertEquals("Found 1 student for \"John Tan\".\nType list to show all students.",
+                result.getFeedbackToUser());
+    }
+
+    @Test
     public void execute_guardianName_multipleMatchesKeepRosterOrder() throws Exception {
         ModelManager model = model();
 
@@ -160,6 +171,7 @@ public class SearchCommandTest {
     @Test
     public void constructor_blankKeyword_throwsIllegalArgumentException() {
         assertThrows(IllegalArgumentException.class, () -> new SearchCommand("  "));
+        assertThrows(IllegalArgumentException.class, () -> new SearchCommand("\u00a0"));
     }
 
     @Test

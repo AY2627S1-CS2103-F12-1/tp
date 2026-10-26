@@ -5,6 +5,7 @@ import static java.util.Objects.requireNonNull;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.util.ToStringBuilder;
@@ -25,12 +26,13 @@ public class SearchCommand extends Command {
             "TutorFlow could not search students due to an internal error.";
 
     private static final Logger logger = LogsCenter.getLogger(SearchCommand.class);
+    private static final Pattern WHITESPACE = Pattern.compile("\\s+", Pattern.UNICODE_CHARACTER_CLASS);
 
     private final String keyword;
 
     /** Creates a search for the given non-blank keyword. */
     public SearchCommand(String keyword) {
-        this.keyword = requireNonNull(keyword).strip();
+        this.keyword = WHITESPACE.matcher(requireNonNull(keyword)).replaceAll(" ").strip();
         if (this.keyword.isEmpty()) {
             throw new IllegalArgumentException("Search keyword must not be blank.");
         }

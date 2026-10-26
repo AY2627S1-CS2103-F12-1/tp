@@ -10,9 +10,10 @@ public class SearchCommandParser implements Parser<SearchCommand> {
     @Override
     public SearchCommand parse(String args) throws ParseException {
         requireNonNull(args);
-        if (args.isBlank()) {
-            throw new ParseException(SearchCommand.MESSAGE_INVALID_FORMAT);
+        try {
+            return new SearchCommand(args);
+        } catch (IllegalArgumentException exception) {
+            throw new ParseException(SearchCommand.MESSAGE_INVALID_FORMAT, exception);
         }
-        return new SearchCommand(args);
     }
 }

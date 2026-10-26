@@ -1,11 +1,14 @@
 package seedu.address.logic.commands;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.testutil.Assert.assertThrows;
+import static seedu.address.testutil.TestUtil.ARABIC_EGYPT;
+import static seedu.address.testutil.TestUtil.runWithFormatLocale;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalHomeworks.ATOMIC_STRUCTURE;
 import static seedu.address.testutil.TypicalHomeworks.MECHANICS;
@@ -84,6 +87,16 @@ public class HomeworkAddCommandTest {
         Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON.withHomeworks(List.of(ALGEBRA)), CARL));
 
         assertCommandSuccess(command, model, expectedMessage, expectedModel);
+    }
+
+    @Test
+    public void execute_yearInferredArabicDigitsLocale_showsAsciiYear() {
+        HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(2), ALGEBRA, true);
+
+        runWithFormatLocale(ARABIC_EGYPT, () -> {
+            String feedback = assertDoesNotThrow(() -> command.execute(model)).getFeedbackToUser();
+            assertTrue(feedback.endsWith("Due: 2026-10-15\nInferred year: 2026"), feedback);
+        });
     }
 
     @Test

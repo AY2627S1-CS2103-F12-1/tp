@@ -1,10 +1,13 @@
 package seedu.address.logic.commands;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.testutil.Assert.assertThrows;
+import static seedu.address.testutil.TestUtil.ARABIC_EGYPT;
+import static seedu.address.testutil.TestUtil.runWithFormatLocale;
 import static seedu.address.testutil.TypicalHomeworks.COMPLETED_MECHANICS;
 import static seedu.address.testutil.TypicalStudents.CARL;
 import static seedu.address.testutil.TypicalStudents.getModelWithStudents;
@@ -98,6 +101,20 @@ public class HomeworkUpcomingCommandTest {
                 + "Student 3: Adam Ng; Today quiz; CHEMISTRY; Due: 2026-10-17; Score: 0/20; Status: ASSIGNED";
 
         assertCommandSuccess(new HomeworkUpcomingCommand(TODAY, 2), model, expectedMessage, expectedModel);
+    }
+
+    @Test
+    public void execute_arabicDigitsLocale_listsAsciiStudentIndices() {
+        // Issue #151: under ar-EG, String.format prints Arabic-Indic digits, which the index parser rejects
+        String expectedLines = "\nStudent 1: Zoe Lee; Today worksheet; MATH; Due: 2026-10-17; Score: 5/10;"
+                + " Status: ASSIGNED\n"
+                + "Student 3: Adam Ng; Today quiz; CHEMISTRY; Due: 2026-10-17; Score: 0/20; Status: ASSIGNED";
+        HomeworkUpcomingCommand command = new HomeworkUpcomingCommand(TODAY, 0);
+
+        runWithFormatLocale(ARABIC_EGYPT, () -> {
+            String feedback = assertDoesNotThrow(() -> command.execute(model)).getFeedbackToUser();
+            assertTrue(feedback.endsWith(expectedLines), feedback);
+        });
     }
 
     @Test

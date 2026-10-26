@@ -5,6 +5,7 @@ import static java.util.Objects.requireNonNull;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -97,7 +98,8 @@ public class HomeworkUpcomingCommand extends Command {
         for (DueHomework dueHomework : dueHomeworks) {
             int position = dueHomework.rosterPosition();
             Homework homework = dueHomework.homework();
-            message.append(String.format(MESSAGE_HOMEWORK_LINE, position + 1,
+            // Locale.ROOT prints the index in ASCII digits, which the index parsers accept, in every locale
+            message.append(String.format(Locale.ROOT, MESSAGE_HOMEWORK_LINE, position + 1,
                     students.get(position).getName(), homework.getTitle(), homework.getSubject(),
                     homework.getDueDate(), Messages.formatScore(homework), homework.getStatus()));
         }

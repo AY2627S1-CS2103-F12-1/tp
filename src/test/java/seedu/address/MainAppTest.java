@@ -1,10 +1,12 @@
 package seedu.address;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static seedu.address.testutil.TypicalStudents.getTypicalAddressBook;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -135,6 +137,31 @@ public class MainAppTest {
         assertEquals(new UserPrefs(), new ModelManager(new AddressBook(), prefs).getUserPrefs());
         assertEquals(new UserPrefs(), new JsonUserPrefsStorage(prefsFilePath).readUserPrefs().orElseThrow());
         assertFalse(Files.exists(dataFilePath));
+    }
+
+    @Test
+    public void readInitialData_invalidUtf8_rejectsWithoutChangingFile() throws Exception {
+        Path dataFilePath = temporaryFolder.resolve("tutorflow.json");
+        Storage storage = getStorage(dataFilePath);
+        storage.saveAddressBook(getTypicalAddressBook());
+        // Issue #156: a title saved by an editor in Windows-1252, so é is the single byte E9
+        byte[] invalidData = Files.readString(dataFilePath).replace("Complete algebra", "Compl\u00e9te algebra")
+                .getBytes(StandardCharsets.ISO_8859_1);
+        Files.write(dataFilePath, invalidData);
+
+        assertThrows(DataLoadingException.class, () -> MainApp.readInitialData(storage));
+        assertArrayEquals(invalidData, Files.readAllBytes(dataFilePath));
+    }
+
+    @Test
+    public void initPrefs_invalidUtf8_usesDefaultPrefs() throws Exception {
+        Path prefsFilePath = temporaryFolder.resolve("preferences.json");
+        // valid GUI settings, but the file also holds the Windows-1252 byte E9, which is not UTF-8
+        String prefs = "{\"guiSettings\":{\"windowWidth\":1000.0,\"windowHeight\":500.0},\"note\":\"\u00e9\"}";
+        Files.write(prefsFilePath, prefs.getBytes(StandardCharsets.ISO_8859_1));
+        MainApp app = new MainApp(prefsFilePath, temporaryFolder.resolve("tutorflow.json"), () -> { });
+
+        assertEquals(new UserPrefs(), app.initPrefs(new JsonUserPrefsStorage(prefsFilePath)));
     }
 
     private Storage getStorage(Path dataFilePath) {

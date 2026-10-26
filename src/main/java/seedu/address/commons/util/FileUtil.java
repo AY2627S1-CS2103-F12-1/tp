@@ -1,6 +1,11 @@
 package seedu.address.commons.util;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileSystemException;
@@ -16,6 +21,9 @@ import java.util.Set;
  * Writes and reads files
  */
 public class FileUtil {
+
+    public static final String MESSAGE_INVALID_UTF8 =
+            "The file is not valid UTF-8 text: invalid bytes at offset %d (counting from 0).";
 
     private static final String CHARSET = "UTF-8";
     private static final String TEMP_FILE_SUFFIX = ".tmp";
@@ -34,10 +42,21 @@ public class FileUtil {
     }
 
     /**
-     * Assumes file exists
+     * Returns the content of {@code file}, decoded as UTF-8. Assumes file exists.
+     *
+     * @throws IOException If the file cannot be read, or is not valid UTF-8, with {@link #MESSAGE_INVALID_UTF8}.
      */
     public static String readFromFile(Path file) throws IOException {
-        return new String(Files.readAllBytes(file), CHARSET);
+        ByteBuffer bytes = ByteBuffer.wrap(Files.readAllBytes(file));
+        // Report invalid bytes instead of replacing them with U+FFFD, which the next save would make permanent
+        CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
+                .onMalformedInput(CodingErrorAction.REPORT);
+        try {
+            return decoder.decode(bytes).toString();
+        } catch (CharacterCodingException e) {
+            // After a decoding error, the buffer is positioned at the first invalid byte
+            throw new IOException(String.format(MESSAGE_INVALID_UTF8, bytes.position()), e);
+        }
     }
 
     /**

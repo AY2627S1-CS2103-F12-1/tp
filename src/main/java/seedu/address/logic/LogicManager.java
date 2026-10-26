@@ -1,5 +1,7 @@
 package seedu.address.logic;
 
+import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
+
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.time.Clock;
@@ -48,6 +50,7 @@ public class LogicManager implements Logic {
      * Constructs a {@code LogicManager} whose {@code homework} commands take today's date from {@code clock}.
      */
     public LogicManager(Model model, Storage storage, Clock clock) {
+        requireAllNonNull(model, storage, clock);
         this.model = model;
         this.storage = storage;
         addressBookParser = new AddressBookParser(clock);
@@ -100,6 +103,8 @@ public class LogicManager implements Logic {
         model.setAddressBook(data);
         model.updateFilteredStudentList(predicate);
         model.setStudentListOrder(displayedStudents);
+        assert model.getAddressBook().equals(data) : "Rollback must restore the data";
+        assert model.getStudentList().equals(displayedStudents) : "Rollback must restore the displayed students";
     }
 
     /**

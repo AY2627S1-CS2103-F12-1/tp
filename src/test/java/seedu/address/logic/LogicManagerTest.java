@@ -79,6 +79,16 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void constructor_nullArgument_throwsNullPointerException() {
+        StorageManager storage = new StorageManager(addressBookStorage,
+                new JsonUserPrefsStorage(temporaryFolder.resolve("userPrefs.json")));
+        Clock clock = Clock.systemDefaultZone();
+        assertThrows(NullPointerException.class, () -> new LogicManager(null, storage, clock));
+        assertThrows(NullPointerException.class, () -> new LogicManager(model, null, clock));
+        assertThrows(NullPointerException.class, () -> new LogicManager(model, storage, null));
+    }
+
+    @Test
     public void execute_studentEditAfterHomeworkCompletion_preservesStatusAndLessonsAcrossReload() throws Exception {
         logic.execute(ADD_STUDENT_COMMAND);
         logic.execute("hw add 1 t/Algebra s/MATH due/2026-10-15");

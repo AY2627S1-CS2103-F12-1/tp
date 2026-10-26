@@ -10,12 +10,13 @@
 <VBox id="cardPane" prefWidth="0" spacing="5" styleClass="student-card" xmlns="http://javafx.com/javafx/17"
       xmlns:fx="http://javafx.com/fxml/1">
   <padding><Insets top="10" right="12" bottom="10" left="12" /></padding>
-  <HBox alignment="CENTER_LEFT" spacing="8">
+  <HBox alignment="TOP_LEFT" spacing="8">
     <Label fx:id="index" styleClass="student-card-name">
       <minWidth><Region fx:constant="USE_PREF_SIZE" /></minWidth>
     </Label>
-    <Label fx:id="name" styleClass="student-card-name" wrapText="true" />
-    <Region HBox.hgrow="ALWAYS" />
+    <Label fx:id="name" styleClass="student-card-name" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+  </HBox>
+  <HBox spacing="8">
     <Label fx:id="academicLevel" styleClass="student-card-badge">
       <minWidth><Region fx:constant="USE_PREF_SIZE" /></minWidth>
     </Label>

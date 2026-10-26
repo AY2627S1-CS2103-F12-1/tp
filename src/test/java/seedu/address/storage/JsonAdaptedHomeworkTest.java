@@ -82,10 +82,10 @@ public class JsonAdaptedHomeworkTest {
                 "2026-10-15", null);
         assertEquals(ALGEBRA, homework.toModelType());
 
-        // a zero-width space before the title, saved by an earlier version, is removed
-        JsonAdaptedHomework zeroWidthHomework = new JsonAdaptedHomework("\u200BComplete algebra worksheet", "MATH",
+        // a line break, which only an edited data file can contain, becomes a space, as in student names
+        JsonAdaptedHomework lineBreakHomework = new JsonAdaptedHomework("Complete\nalgebra worksheet", "MATH",
                 "2026-10-15", null);
-        assertEquals(ALGEBRA, zeroWidthHomework.toModelType());
+        assertEquals(ALGEBRA, lineBreakHomework.toModelType());
 
         Homework paddedDate = new HomeworkBuilder().withDueDate("2026-02-05").build();
         assertEquals(paddedDate, new JsonAdaptedHomework(VALID_TITLE, VALID_SUBJECT, "2026-2-5", null)
@@ -105,10 +105,10 @@ public class JsonAdaptedHomeworkTest {
         JsonAdaptedHomework homework = new JsonAdaptedHomework("   ", VALID_SUBJECT, VALID_DUE_DATE, null);
         assertThrows(IllegalValueException.class, Title.MESSAGE_CONSTRAINTS, homework::toModelType);
 
-        // line break in title
-        JsonAdaptedHomework homeworkWithLineBreak = new JsonAdaptedHomework("Line\nbreak", VALID_SUBJECT,
+        // zero-width space inside the title, which an earlier version accepted
+        JsonAdaptedHomework homeworkWithZeroWidthSpace = new JsonAdaptedHomework("Alge\u200Bbra drill", VALID_SUBJECT,
                 VALID_DUE_DATE, null);
-        assertThrows(IllegalValueException.class, Title.MESSAGE_CONSTRAINTS, homeworkWithLineBreak::toModelType);
+        assertThrows(IllegalValueException.class, Title.MESSAGE_CONSTRAINTS, homeworkWithZeroWidthSpace::toModelType);
 
         // zero-width space only
         JsonAdaptedHomework homeworkWithZeroWidthTitle = new JsonAdaptedHomework("\u200B", VALID_SUBJECT,

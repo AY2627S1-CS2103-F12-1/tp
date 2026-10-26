@@ -182,19 +182,6 @@ public class HomeworkAddCommandTest {
     }
 
     @Test
-    public void execute_duplicateHomeworkWithoutZeroWidthSpace_failure() {
-        // the existing title was typed with a leading zero-width space, which is removed
-        Homework zeroWidthDrill = new HomeworkBuilder().withTitle("\u200BAlgebra drill").withDueDate("2026-12-02")
-                .build();
-        Homework drill = new HomeworkBuilder().withTitle("Algebra drill").withDueDate("2026-12-02").build();
-        Model modelWithDrill = getModelWithStudents(List.of(ALICE, BENSON.withHomeworks(List.of(zeroWidthDrill)),
-                CARL));
-        HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(2), drill, false);
-
-        assertCommandFailure(command, modelWithDrill, HomeworkAddCommand.MESSAGE_DUPLICATE_HOMEWORK);
-    }
-
-    @Test
     public void execute_duplicateScoredHomework_failure() {
         // the score does not affect identity
         Homework unscoredAtomicStructure = new HomeworkBuilder().withTitle("Revise atomic structure")

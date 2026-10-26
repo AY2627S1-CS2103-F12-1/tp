@@ -72,12 +72,7 @@ public class HomeworkAddCommand extends Command {
      * an exception thrown before it leaves the model unchanged.
      */
     private CommandResult addHomework(Model model) throws CommandException {
-        List<Student> students = model.getStudentList();
-        if (studentIndex.getZeroBased() >= students.size()) {
-            throw new CommandException(Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
-        }
-
-        Student student = students.get(studentIndex.getZeroBased());
+        Student student = HomeworkCommandUtil.getDisplayedStudent(model, studentIndex);
         if (!student.getSubjects().getSubjects().contains(homework.getSubject())) {
             throw new CommandException(MESSAGE_SUBJECT_NOT_TAKEN);
         }

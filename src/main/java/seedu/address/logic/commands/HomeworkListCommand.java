@@ -75,12 +75,8 @@ public class HomeworkListCommand extends Command {
      * Returns the result listing the homework of the selected student.
      */
     private CommandResult listHomework(Model model) throws CommandException {
-        List<Student> students = model.getStudentList();
-        if (studentIndex.getZeroBased() >= students.size()) {
-            throw new CommandException(Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
-        }
-
-        return new CommandResult(formatHomeworkList(students.get(studentIndex.getZeroBased()), today, isAllShown));
+        Student student = HomeworkCommandUtil.getDisplayedStudent(model, studentIndex);
+        return new CommandResult(formatHomeworkList(student, today, isAllShown));
     }
 
     /**

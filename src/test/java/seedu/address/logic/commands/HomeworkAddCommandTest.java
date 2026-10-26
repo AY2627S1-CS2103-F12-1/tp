@@ -171,6 +171,17 @@ public class HomeworkAddCommandTest {
     }
 
     @Test
+    public void execute_duplicateHomeworkDifferentUnicodeForm_failure() {
+        // the existing title has a composed e with acute accent, the new one e followed by a combining accent
+        Homework composedCafe = new HomeworkBuilder().withTitle("Caf\u00E9").withDueDate("2026-11-20").build();
+        Homework decomposedCafe = new HomeworkBuilder().withTitle("Cafe\u0301").withDueDate("2026-11-20").build();
+        Model modelWithCafe = getModelWithStudents(List.of(ALICE, BENSON.withHomeworks(List.of(composedCafe)), CARL));
+        HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(2), decomposedCafe, false);
+
+        assertCommandFailure(command, modelWithCafe, HomeworkAddCommand.MESSAGE_DUPLICATE_HOMEWORK);
+    }
+
+    @Test
     public void execute_duplicateScoredHomework_failure() {
         // the score does not affect identity
         Homework unscoredAtomicStructure = new HomeworkBuilder().withTitle("Revise atomic structure")

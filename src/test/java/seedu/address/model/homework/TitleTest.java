@@ -34,6 +34,24 @@ public class TitleTest {
     }
 
     @Test
+    public void constructor_lengthCountedAfterUnicodeNormalization() {
+        // each e followed by a combining acute accent becomes one character
+        assertEquals("\u00E9".repeat(100), new Title("e\u0301".repeat(100)).toString()); // 100 characters
+        assertInvalidTitle("e\u0301".repeat(101)); // 101 characters
+    }
+
+    @Test
+    public void constructor_decomposedAccent_normalizedToComposedForm() {
+        assertEquals("Caf\u00E9", new Title("Cafe\u0301").toString());
+    }
+
+    @Test
+    public void constructor_compatibilityCharacters_kept() {
+        // NFC keeps characters that only NFKC would change, such as superscripts and ligatures
+        assertEquals("x\u00B2 \uFB01nal", new Title("x\u00B2 \uFB01nal").toString());
+    }
+
+    @Test
     public void constructor_extraSpaces_normalizedAndCasePreserved() {
         assertEquals("Complete Algebra worksheet", new Title("  Complete   Algebra  worksheet ").toString());
     }
@@ -68,6 +86,12 @@ public class TitleTest {
     }
 
     @Test
+    public void isSameTitleIgnoringCase_differentUnicodeForms_returnsTrue() {
+        // composed small e with acute accent, and capital E followed by a combining acute accent
+        assertTrue(new Title("Caf\u00E9").isSameTitleIgnoringCase(new Title("CAFE\u0301")));
+    }
+
+    @Test
     public void equals() {
         Title title = new Title("Complete algebra worksheet");
 
@@ -83,6 +107,10 @@ public class TitleTest {
 
         // different type -> returns false
         assertFalse(title.equals("Complete algebra worksheet"));
+
+        // same text in a different Unicode form -> returns true
+        assertTrue(new Title("Caf\u00E9").equals(new Title("Cafe\u0301")));
+        assertEquals(new Title("Caf\u00E9").hashCode(), new Title("Cafe\u0301").hashCode());
 
         // different case -> returns false
         assertFalse(title.equals(new Title("complete algebra worksheet")));

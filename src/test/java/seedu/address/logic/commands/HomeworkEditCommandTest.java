@@ -285,6 +285,18 @@ public class HomeworkEditCommandTest {
     }
 
     @Test
+    public void execute_duplicateInDifferentUnicodeForm_failure() {
+        // ALGEBRA would get the title of the first homework, with the accent written as a combining character
+        Homework composedCafe = new HomeworkBuilder().withTitle("Caf\u00E9").withDueDate("2026-10-15").build();
+        Model modelWithCafe = getModelWithStudents(List.of(ALICE.withHomeworks(List.of(composedCafe, ALGEBRA)),
+                BENSON, CARL));
+        EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(new Title("Cafe\u0301"), null, null);
+
+        assertCommandFailure(new HomeworkEditCommand(FIRST, SECOND, descriptor, false, TODAY), modelWithCafe,
+                HomeworkEditCommand.MESSAGE_DUPLICATE_HOMEWORK);
+    }
+
+    @Test
     public void execute_duplicateWithDifferentScore_failure() {
         // the score is not part of identity: ALGEBRA would become ATOMIC_STRUCTURE, which has a score
         EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(new Title("Revise atomic structure"),

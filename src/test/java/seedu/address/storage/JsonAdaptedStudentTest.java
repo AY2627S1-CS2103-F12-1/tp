@@ -197,6 +197,18 @@ public class JsonAdaptedStudentTest {
     }
 
     @Test
+    public void toModelType_duplicateHomeworkDifferentUnicodeForm_throwsIllegalValueException() {
+        // composed e with acute accent, and e followed by a combining acute accent
+        List<JsonAdaptedHomework> homeworks = List.of(
+                new JsonAdaptedHomework("Caf\u00E9", "MATH", "2026-11-20", null),
+                new JsonAdaptedHomework("Cafe\u0301", "MATH", "2026-11-20", null));
+        JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
+                VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, homeworks);
+        assertThrows(IllegalValueException.class, JsonAdaptedStudent.MESSAGE_DUPLICATE_HOMEWORK,
+                student::toModelType);
+    }
+
+    @Test
     public void toModelType_sameTitleDifferentDueDate_returnsStudentWithBothHomework() throws Exception {
         JsonAdaptedHomework laterAlgebra = new JsonAdaptedHomework(ALGEBRA.getTitle().toString(), "MATH",
                 "2026-10-22", null);

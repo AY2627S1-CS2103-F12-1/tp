@@ -213,7 +213,6 @@ public class JsonAdaptedHomeworkTest {
     public void toModelType_invalidScoreInJson_throwsIllegalValueException() throws Exception {
         assertInvalidScore("\"85.5\""); // decimal written as text
         assertInvalidScore("\"-3\""); // negative written as text
-        assertInvalidScore("\"017\""); // leading zero
         assertInvalidScore("\"\""); // empty text
         assertInvalidScore("\"5.5/10\""); // decimal marks
         assertInvalidScore("\"11/10\""); // marks above the total
@@ -222,6 +221,8 @@ public class JsonAdaptedHomeworkTest {
         assertInvalidScore("\"abc\""); // non-numeric text
         assertInvalidScore("true"); // boolean
         assertInvalidScore("[\"5/10\"]"); // list
+        assertThrows(IllegalValueException.class, Score.MESSAGE_LEADING_ZEROES, fromJsonWithScore(
+                "\"017\"")::toModelType); // leading zero
         assertThrows(IllegalValueException.class, Score.MESSAGE_TOO_LARGE, fromJsonWithScore(
                 "\"2147483648/2147483648\"")::toModelType); // larger than Integer.MAX_VALUE
         assertThrows(IllegalValueException.class, Score.MESSAGE_TOO_LARGE, fromJsonWithScore(

@@ -390,7 +390,7 @@ Format: `homework|hw marks|m STUDENT_INDEX HOMEWORK_INDEX score/[SCORE]`
 * `homework` can be shortened to `hw`, and `marks` can be shortened to `m`.
 * `STUDENT_INDEX` and `HOMEWORK_INDEX` follow the same rules as in `homework edit`.
 * `SCORE` is either the marks on their own, e.g. `17`, or `MARKS_OBTAINED/TOTAL_MARKS`, e.g. `5/10`, when the homework has a total.
-* Every number in `SCORE` is a whole number without a sign, decimals, spaces or leading zeroes, and no greater than 2147483647. So `0`, `17` and `150` are accepted, but `-1`, `+17`, `017` and `17.5` are not.
+* Every number in `SCORE` is a whole number without a sign, decimals, spaces or leading zeroes, and no greater than 2147483647. So `0`, `17` and `150` are accepted, but `-1`, `+17`, `017` and `17.5` are not. A score with a leading zero in any number, such as `05/10` or `017`, is rejected with `Marks must not have leading zeroes. Enter whole numbers such as 5/10, not 05/10.`
 * With a total, `TOTAL_MARKS` must be at least 1, and `MARKS_OBTAINED` must be from 0 to `TOTAL_MARKS`. So `0/10` and `10/10` are accepted, but `11/10`, `5/0`, `5.5/10` and `5 / 10` are not.
 * The score is kept and shown as you give it: `5/10` is not simplified to `1/2`, and `17` and `17/20` are different scores.
 * Recording the score that the homework already has is rejected with `No changes made; the homework already has this score.`

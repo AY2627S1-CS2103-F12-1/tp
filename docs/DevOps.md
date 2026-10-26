@@ -73,7 +73,8 @@ Any warnings or errors will be printed out to the console.
 
 Here are the steps to create a new release.
 
-1. Update the version number in [`MainApp.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/MainApp.java).
-1. Generate a fat JAR file using Gradle (i.e., `./gradlew shadowJar`).
-1. Tag the repo with the version number. e.g. `v0.1`
-1. [Create a new release using GitHub](https://help.github.com/articles/creating-releases/). Upload the JAR file you created.
+1. Update the version number in [`MainApp.java`](https://github.com/AY2627S1-CS2103-F12-1/tp/blob/master/src/main/java/seedu/address/MainApp.java), the guides and `docs/releases/VERSION.md` on a task branch. Obtain teammate review and merge the release preparation PR.
+1. Check out the final team `master` commit and verify that its CI passes on Windows, Linux and macOS. With Java 25, run `./gradlew clean check coverage shadowJar` (`gradlew.bat` in Windows PowerShell). Run `.github/run-checks.sh` using a POSIX shell.
+1. Copy `build/libs/addressbook.jar` into an empty writable folder. Run `java -version`, confirm Java 25, and launch with `java -jar "addressbook.jar"`. Smoke-test commands and restart to verify saved records. Record the commit and JAR SHA-256 hash.
+1. Tag that tested commit with the version number, e.g. `v1.5`, and create the GitHub release with `addressbook.jar` attached and the matching release notes. Keep the JAR below the course's 100 MB limit.
+1. Download the published asset, compare its hash and smoke-test it. Verify that the product website, User Guide, Developer Guide and current screenshot are published from the release's code. Reschedule unfinished tasks as appropriate and close the iteration milestone only when its work is accounted for.

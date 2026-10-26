@@ -71,7 +71,7 @@ public class LessonEditUiTest {
                 commandBox.setText("lesson edit 1 et/18:30");
                 commandBox.getOnAction().handle(new ActionEvent());
 
-                assertEquals(LessonAddCommand.MESSAGE_CLASH + "Mary Lim; MATH; MONDAY; 18:00-19:00",
+                assertEquals(LessonAddCommand.MESSAGE_CLASH + "Mary Lim (91234568); MATH; MONDAY; 18:00-19:00",
                         result.getText());
                 assertEquals("lesson edit 1 et/18:30", commandBox.getText());
                 assertTrue(commandBox.getStyleClass().contains(CommandBox.ERROR_STYLE_CLASS));
@@ -83,7 +83,7 @@ public class LessonEditUiTest {
                 commandBox.setText("lesson edit 1 st/17:00");
                 commandBox.getOnAction().handle(new ActionEvent());
 
-                assertEquals("Edited regular lesson: John Tan; MATH; MONDAY; 17:00-18:00", result.getText());
+                assertEquals("Edited regular lesson: John Tan (91234567); MATH; MONDAY; 17:00-18:00", result.getText());
                 assertEquals("", commandBox.getText());
                 assertFalse(commandBox.getStyleClass().contains(CommandBox.ERROR_STYLE_CLASS));
             } finally {

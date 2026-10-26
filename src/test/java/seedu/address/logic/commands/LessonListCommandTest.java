@@ -27,6 +27,15 @@ import seedu.address.testutil.StudentBuilder;
 
 public class LessonListCommandTest {
     @Test
+    public void execute_oneLesson_usesSingularFeedback() {
+        Student student = new StudentBuilder().withLessons(MONDAY_MATH).build();
+        Model model = getModelWithStudents(List.of(student));
+        assertCommandSuccess(new LessonListCommand(), model,
+                "Listed 1 regular lesson.\n1. John Tan (91234567); MATH; MON; 17:00-18:30",
+                getModelWithStudents(List.of(student)));
+    }
+
+    @Test
     public void execute_lessons_listsInWeeklyOrder() {
         RegularLesson mondayEarlier = new RegularLesson(TuitionSubject.PHYSICS, DayOfWeek.MONDAY,
                 LocalTime.of(9, 0), LocalTime.of(10, 0));
@@ -38,10 +47,10 @@ public class LessonListCommandTest {
         Model expectedModel = getModelWithStudents(List.of(amy, zoe));
 
         String expectedMessage = "Listed 4 regular lessons.\n"
-                + "1. Zoe Tan; PHYSICS; MON; 09:00-10:00\n"
-                + "2. Zoe Tan; MATH; MON; 17:00-18:30\n"
-                + "3. Amy Lim; PHYSICS; TUE; 19:00-20:30\n"
-                + "4. Amy Lim; CHEMISTRY; SAT; 15:00-16:30";
+                + "1. Zoe Tan (91234567); PHYSICS; MON; 09:00-10:00\n"
+                + "2. Zoe Tan (91234567); MATH; MON; 17:00-18:30\n"
+                + "3. Amy Lim (91234567); PHYSICS; TUE; 19:00-20:30\n"
+                + "4. Amy Lim (91234567); CHEMISTRY; SAT; 15:00-16:30";
 
         assertCommandSuccess(new LessonListCommand(), model, expectedMessage, expectedModel);
     }
@@ -55,8 +64,8 @@ public class LessonListCommandTest {
         Model model = getModelWithStudents(List.of(zoe, amy));
 
         String expectedMessage = "Listed 2 regular lessons.\n"
-                + "1. amy Lim; MATH; MON; 17:00-18:00\n"
-                + "2. Zoe Tan; MATH; MON; 17:00-18:30";
+                + "1. amy Lim (91234567); MATH; MON; 17:00-18:00\n"
+                + "2. Zoe Tan (91234567); MATH; MON; 17:00-18:30";
 
         assertCommandSuccess(new LessonListCommand(), model, expectedMessage,
                 getModelWithStudents(List.of(zoe, amy)));

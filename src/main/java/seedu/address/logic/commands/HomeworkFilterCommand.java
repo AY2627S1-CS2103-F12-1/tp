@@ -26,7 +26,7 @@ public class HomeworkFilterCommand extends Command {
     public static final String MESSAGE_USAGE = "homework|hw filter [STUDENT_INDEX] [s/SUBJECT] [due/DATE]"
             + " [status/STATUS]";
     public static final String MESSAGE_NO_MATCHES = "No homework matches the supplied filters.";
-    public static final String MESSAGE_SUCCESS = "Found %d matching homework records.";
+    public static final String MESSAGE_SUCCESS = "Found %d matching homework %s.";
     public static final String MESSAGE_LINE = "\nStudent %d: %s; Homework %d: %s; %s; Due: %s; Score: %s; Status: %s";
     public static final String MESSAGE_INTERNAL = "TutorFlow could not filter homework due to an internal error.";
     private static final Logger logger = LogsCenter.getLogger(HomeworkFilterCommand.class);
@@ -93,7 +93,7 @@ public class HomeworkFilterCommand extends Command {
             }
         }
         return new CommandResult(matches == 0 ? MESSAGE_NO_MATCHES
-                : String.format(MESSAGE_SUCCESS, matches) + lines);
+                : String.format(MESSAGE_SUCCESS, matches, matches == 1 ? "record" : "records") + lines);
     }
 
     @Override

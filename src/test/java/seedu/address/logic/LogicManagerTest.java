@@ -268,7 +268,7 @@ public class LogicManagerTest {
         logic.execute("search Alex");
 
         assertCommandException("lesson add 1 s/MATH d/MONDAY st/15:00 et/17:00",
-                LessonAddCommand.MESSAGE_CLASH + "John Tan; MATH; MONDAY; 14:00-16:00");
+                LessonAddCommand.MESSAGE_CLASH + "John Tan (91234567); MATH; MONDAY; 14:00-16:00");
 
         assertEquals(1, logic.getStudentList().size());
         assertEquals(rosterBefore, model.getAddressBook());

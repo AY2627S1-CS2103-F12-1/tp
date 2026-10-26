@@ -209,9 +209,15 @@ Each adapted class checks its values in `toModelType()` with the same value clas
 * a due date that is not a full `YYYY-MM-DD` date. `JsonAdaptedHomework` uses `DueDate#parseFullDate`, so the year of a saved date is never inferred from today's date. Dates are saved padded (`2026-02-05`).
 * a text score that `Score#parse` rejects (e.g. `"5.5/10"`, `"11/10"`, `"5/0"`, `"017"`), with `Score#MESSAGE_CONSTRAINTS`, or `Score#MESSAGE_TOO_LARGE` for a number beyond the `int` range, and a score that is neither text nor a number (e.g. `true`), with `Score#MESSAGE_CONSTRAINTS`.
 
-A missing `homeworks` list, `lessons` list, or `score` means no homework, no lessons, or no score. This allows older student data without a `lessons` field to load. `JsonAdaptedHomework` keeps `score` as a Jackson `JsonNode`, so it can tell a JSON number from text. A JSON number such as `85` is the format saved before scores were text; `JsonAdaptedHomework` passes its digits (`JsonNode#asText`) to `Score#parse`, so `85` and `"85"` both load as the bare score `85`, which is saved back as `"85"`. A JSON number that `Score#parse` rejects (e.g. `85.5`, `-3`, `3000000000`) makes the homework load with no score, and a warning is logged (`Ignored invalid homework score 85.5 for 'Quadratic equations worksheet'`). Rejecting it would make the whole file invalid and start the app with no students, losing all other data at the next save. Subjects, levels, and weekdays are accepted in any case and saved in upper case.
+A missing `homeworks` list, `lessons` list, or `score` means no homework, no lessons, or no score. This allows older student data without a `lessons` field to load. `JsonAdaptedHomework` keeps `score` as a Jackson `JsonNode`, so it can tell a JSON number from text. A JSON number such as `85` is the format saved before scores were text; `JsonAdaptedHomework` passes its digits (`JsonNode#asText`) to `Score#parse`, so `85` and `"85"` both load as the bare score `85`, which is saved back as `"85"`. A JSON number that `Score#parse` rejects (e.g. `85.5`, `-3`, `3000000000`) makes the homework load with no score, and a warning is logged (`Ignored invalid homework score 85.5 for 'Quadratic equations worksheet'`). This preserves compatibility with legacy numeric scores without discarding the other records. Subjects, levels, and weekdays are accepted in any case and saved in upper case.
 
-`MainApp#readInitialData` decides what the app starts with: the saved data if the data file is valid, the sample students from `SampleDataUtil#getSampleAddressBook()` if the data file does not exist (the file is not created at startup; the sample students are first saved by the first command that changes the data), and no students if the data file cannot be read or is invalid (a warning is logged). In the last case the invalid file stays on disk until the next command that changes the data overwrites it.
+`MainApp#readInitialData` returns saved data if the data file is valid, or sample students from `SampleDataUtil#getSampleAddressBook()` if it does not exist. The missing file is first created by a command that changes the data. Loading failures propagate as `DataLoadingException`: `MainApp#init` records the failure and skips model, logic and main-window initialization. `start` shows an error with the absolute data path and recovery instructions, then exits after the dialog closes. No replacement roster is created and the original data file is not changed. `stop` skips saving preferences when no model was initialized.
+
+`AppHomeUtil` resolves the packaged JAR's containing folder from its code-source URI. Data, preferences and logs use absolute paths within that folder, regardless of the terminal's working directory. Unpacked Gradle/IDE launches use the project working directory. URI conversion preserves spaces and percent signs; the logging pattern escapes literal percent signs for `FileHandler`. This meets the course data-sandbox constraint without changing process or OS settings. An unwritable log location falls back to console logging. Existing v1.4 files stored in a different working directory must be copied beside the JAR explicitly; the app does not search outside its home folder.
+
+The team planning document specified an empty roster when no data file exists. v1.5 retains the released application's sample roster to preserve the documented quick start and provide examples for first-time tutors. Samples are not written until a modifying command succeeds; `clear` creates an empty saved roster. Invalid files never trigger this fallback. The plan's literal startup-banner wording is also not used: the roster, student count and data-path status bar show the startup state.
+
+`MainAppLifecycleTest` uses isolated data/preferences paths and an injected shutdown action to exercise the rendered recovery dialog without stopping the test JVM's JavaFX toolkit. It checks recovery text, dialog dismissal, shutdown requests, unchanged invalid data, normal saved-roster startup and preference saving. The public no-argument constructor uses the resolved home folder and JavaFX shutdown. `AppHomeUtilTest` checks packaged and unpacked paths; packaged-JAR smoke tests must also launch from a separate directory and verify that all application files remain beside the JAR.
 
 `FileUtil#writeToFile` saves a file atomically: it writes the content to a new temporary file with a unique name next to it (such as `tutorflow.json123456789.tmp`, created by `Files#createTempFile`) and then moves that file over the data file (an atomic move where the file system supports it). If writing fails, only that temporary file is deleted and the data file keeps its previous content, so it is never left partially written. Other files in the folder, even one named `tutorflow.json.tmp`, are never changed. Before the data is written to it, the temporary file gets the data file's POSIX file permissions or, on Windows, its access control list, so saving never changes who can read the data file. A read-only data file is reported as an `AccessDeniedException` before anything is written, because a move could otherwise replace it.
 
@@ -488,6 +494,8 @@ Homework is managed with eight subcommands of `homework` (alias `hw`): `add`, `l
 `lesson add INDEX s/SUBJECT d/DAY st/START_TIME et/END_TIME` is routed by `LessonCommandParser` to `LessonAddCommandParser`. The parser reuses `StrictArgumentTokenizer` and strict student-index parsing. `RegularLesson` stores a subject, `DayOfWeek`, and two minute-precision `LocalTime` values, with end strictly after start.
 
 `LessonAddCommand` checks the selected student's subjects and duplicate lessons before checking overlaps across the entire roster. Overlap uses `start < other.end && end > other.start` on the same weekday, allowing adjacent lessons. The command replaces the selected immutable `Student` using `withLessons`, preserving homework and roster order. Homework updates using `withHomeworks` likewise preserve lessons.
+
+Lesson listing, add/edit/delete feedback and clash messages include the owner's name and student phone through `Messages#formatLessonOwner`, distinguishing students with identical names. The global weekly lesson index remains independent of the current student view. `LessonOwnerIntegrationTest` covers same-name owners, hidden-owner clash reports, mutation feedback, correct deletion and persistence.
 
 `JsonAdaptedLesson` stores the four lesson fields inside each student's `lessons` array. A missing array is read as empty so existing data files remain compatible. Loading rejects invalid lesson fields, subject mismatches, duplicates and overlapping schedules. The existing `LogicManager` change detection and save rollback apply to lessons because `Student.equals` includes its lessons. The command supplies the lesson-specific save-failure message.
 
@@ -836,19 +844,43 @@ testers are expected to do more *exploratory* testing.
 
 1. Initial launch
 
-   1. Download the JAR file and copy it into an empty folder.
+   1. Download the JAR file and copy it into an empty writable test folder. Keep all tests separate from real tutoring records. Open a terminal and `cd` to this folder.
 
-   1. Double-click the JAR file.<br>
+   1. Run `java -version` and confirm Java 25, then run `java -jar "addressbook.jar"` (adapt the filename to the download).<br>
       Expected: The GUI opens with a set of sample students with sample homework. The window size may not be optimal.
 
 1. Saving window preferences
 
    1. Resize the window to an optimal size. Move the window to a different location. Close the window.
 
-   1. Relaunch the app by double-clicking the JAR file.<br>
+   1. Relaunch from the same terminal folder with `java -jar "addressbook.jar"`.<br>
        Expected: The most recent window size and location are retained.
 
-1. _{ more test cases …​ }_
+### Adding and editing students
+
+1. Use a disposable test folder and run `clear` to start with an empty roster.
+
+   1. Run `add n/Zoe Quest l/S2 s/MATH,PHYSICS p/91238888 gn/Ivy Quest gp/97665555`, then `add n/Ben Lim l/S4 s/MATH p/91238889 gn/Jane Lim gp/97665556`.<br>
+      Expected: Zoe and Ben appear as students 1 and 2, with the supplied contact, guardian and academic details.
+   1. Repeat Zoe's add command, then try `add n/Another Student l/S2 s/MATH p/91238887 gn/Ivy Quest` (missing guardian phone).<br>
+      Expected: A duplicate-student error and `Missing required prefix(es): gp/` with usage guidance respectively. The roster remains unchanged.
+   1. Run `hw add 1 t/Algebra s/MATH due/2099-12-01` and `lesson add 1 s/MATH d/MONDAY st/16:00 et/17:00`. Run `search Zoe Quest`, then `edit 1 n/Zoe Tan`.<br>
+      Expected: Zoe is renamed and disappears from the search results because no profile field now matches `Zoe Quest`. Run `list`: Zoe Tan is still student 1 and Ben is student 2. `hw ls 1 all` and `lesson list` retain Zoe's homework and lesson with the updated name.
+   1. Try `edit 1 s/PHYSICS`, `edit 1 n/Ben Lim p/91238889`, `edit 1 n/Zoe Tan` and `edit 1 l/S6`.<br>
+      Expected: Rejected respectively because MATH is used by existing records, the proposed identity duplicates Ben, no values change, or the academic level is invalid. The original profiles, homework and lessons remain unchanged.
+   1. Restart from the same test folder and run `list`, `hw ls 1 all` and `lesson list`.<br>
+      Expected: Both students, Zoe's changed name, homework and regular lesson persist.
+
+### Help and the at-a-glance panel
+
+1. Continue with the preceding two-student test roster.
+
+   1. Run `help`. Use `Page Down` and `Page Up`, then `Esc`; press `F1` to reopen it.<br>
+      Expected: Help lists the implemented command formats and examples, scrolls by a page, closes with `Esc` and returns focus to the command box. Close it before continuing.
+   1. Run `hw status 1 1 status/COMPLETED`, then `hw status 1 1 status/ASSIGNED` and `hw m 1 1 score/17`.<br>
+      Expected: Algebra disappears from outstanding homework when completed, reappears when assigned and remains visible after receiving a score, without restarting. Zoe's upcoming-homework count remains 1 because the due date is in the future; this count is independent of completion and marks.
+   1. Run `search Ben`, then resize the window and drag the split-pane dividers.<br>
+      Expected: The student list shows Ben only, while the sidebar still shows Zoe's lesson and assigned Algebra homework with her name and phone. Entries remain readable; each section can be scrolled whenever its contents exceed its available space. Run `list` to restore the full roster.
 
 ### Listing, searching, and deleting students
 
@@ -902,7 +934,7 @@ testers are expected to do more *exploratory* testing.
    roster order. A successful `add` and `homework upcoming` also discard the transient sort.
 1. Use a test roster of two students, one meeting only on Monday and another meeting on Tuesday.
    Run `list`, then `sort by/day`.
-   Delete the Monday student's only meeting with `lesson delete 1 1`.<br>
+   Run `lesson list`, then delete the Monday student's only meeting with `lesson delete 1`.<br>
    Expected: that student remains first with no meetings. Run `sort by/day` again: the Tuesday student moves first,
    and the student without meetings moves last. The stored roster order stays unchanged.
 
@@ -937,29 +969,29 @@ testers are expected to do more *exploratory* testing.
       Expected: `No upcoming homework found for Daniel Wong.` Daniel Wong's card shows `Upcoming homework: 0`.
 
    1. Test case: `hw ls 5 all`<br>
-      Expected: `Listed 1 homework record for Daniel Wong.` followed by `1. Old worksheet (MATH) - due 2026-10-01 - score Not recorded`.
+      Expected: `Listed 1 homework record for Daniel Wong.` followed by `1. Old worksheet (MATH) - due 2026-10-01 - score Not recorded - status ASSIGNED`.
 
    1. Test case: `hw ls 5 ALL`<br>
       Expected: An invalid command format error, as `all` must be in lowercase.
 
 1. Listing upcoming homework of all students
 
-   1. Prerequisites: Start with the sample students. Run `hw add 3 t/Today drill s/MATH due/TODAY`, then `hw add 1 t/Today forces s/PHYSICS due/TODAY` and `hw add 5 t/Old worksheet s/MATH due/2026-10-01`, replacing `TODAY` with today's date in `YYYY-MM-DD` form.
+   1. Prerequisites: In a disposable test folder, run `clear`, then `add n/Ethan Lim l/S3 s/MATH,PHYSICS p/91234567 gn/Grace Lim gp/98765432` and `add n/Marcus Tan l/S1 s/MATH p/87654329 gn/Tan Mei Ling gp/91827364`. This gives two students without sample homework. Run `hw add 2 t/Today drill s/MATH due/TODAY`, then `hw add 1 t/Today forces s/PHYSICS due/TODAY` and `hw add 1 t/Old worksheet s/MATH due/PAST`, replacing `TODAY` with today's full date and `PAST` with yesterday's full date in `YYYY-MM-DD` form.
 
    1. Test case: `hw up due/0`<br>
-      Expected: `Found 2 homework records due from TODAY to TODAY.`, then `Student 1: Ethan Lim; Today forces; PHYSICS; Due: TODAY; Score: Not recorded` before `Student 3: Marcus Tan; Today drill; MATH; Due: TODAY; Score: Not recorded` (roster order, not the order they were added). `Old worksheet` is not shown, as it is overdue.
+      Expected: `Found 2 homework records due from TODAY to TODAY.`, then `Student 1: Ethan Lim; Today forces; PHYSICS; Due: TODAY; Score: Not recorded; Status: ASSIGNED` before `Student 2: Marcus Tan; Today drill; MATH; Due: TODAY; Score: Not recorded; Status: ASSIGNED` (roster order, not the order they were added). `Old worksheet` is not shown, as it is overdue.
 
    1. Test case: `hw up`<br>
       Expected: The summary ends with the date 7 days after today, and the lines are sorted by due date. The data file is not modified.
 
-   1. Test case: `hw up due/365`, then `hw ls 1`<br>
-      Expected: Every homework due today or later is shown. The order in `hw up` is not the numbering in `hw ls 1`.
+   1. Test case: `hw up due/365`, then `hw ls 1 all`<br>
+      Expected: Homework due from today through 365 days later is shown, including completed records; overdue and later records are excluded. The order in `hw up` is not the numbering in `hw ls 1 all`.
 
-   1. Test case: `add n/Ethan Lim l/S1 s/MATH p/81234567 gn/Lim Mei gp/81234568` (a second Ethan Lim, with another phone number, who becomes student 7), then `hw add 7 t/Today algebra s/MATH due/TODAY` and `hw up due/0`<br>
-      Expected: The new line starts with `Student 7: Ethan Lim`, while the first Ethan Lim's line starts with `Student 1: Ethan Lim`.
+   1. Test case: `add n/Ethan Lim l/S1 s/MATH p/81234567 gn/Lim Mei gp/81234568` (a second Ethan Lim, with another phone number, who becomes student 3), then `hw add 3 t/Today algebra s/MATH due/TODAY` and `hw up due/0`<br>
+      Expected: The new line starts with `Student 3: Ethan Lim`, while the first Ethan Lim's line starts with `Student 1: Ethan Lim`.
 
-   1. Test case: `search Marcus`, then `hw up due/0`, then `hw ls 3`<br>
-      Expected: After `hw up due/0`, all students are shown again and Marcus Tan's line starts with `Student 3`. `hw ls 3` lists Marcus Tan's homework.
+   1. Test case: `search Marcus`, then `hw up due/0`, then `hw ls 2`<br>
+      Expected: After `hw up due/0`, all three students are shown again and Marcus Tan's line starts with `Student 2`. `hw ls 2` lists Marcus Tan's homework.
 
    1. Incorrect commands to try: `hw up due/366`, `hw up due/007`, `hw up due/-1`, `hw up due/1.5`, `hw up due/2026-10-20`, `hw up due/`<br>
       Expected: `Days must be a whole number from 0 to 365 without leading zeroes.`
@@ -972,7 +1004,7 @@ testers are expected to do more *exploratory* testing.
    1. Prerequisites: Start with the sample students.
 
    1. Test case: `hw e 2 1 due/2026-11-05`<br>
-      Expected: The result shows the edited homework, then Priya Nair's upcoming homework in the order 2, 1, 3, as homework 1 is now due after homework 2.
+      Expected: The result shows the edited homework. Run `hw ls 2 all`: Priya Nair's homework is listed in the order 2, 1, 3, as homework 1 is now due after homework 2, even after the sample due dates have passed.
 
    1. Test case: `hw e 1 1 t/Quadratic equations worksheet`<br>
       Expected: `No changes made; the supplied values are identical to the existing homework details.`
@@ -981,23 +1013,23 @@ testers are expected to do more *exploratory* testing.
       Expected: `This edit would make the homework a duplicate of an existing homework record.`
 
    1. Other incorrect edit commands to try: `hw e 1 2` (no field), `hw e 1 1 t/A title/B`, `hw e 6 1 s/PHYSICS` (subject not taken), `hw e 1 1 score/5/10`<br>
-      Expected: An error message each time; `hw ls 1` and `hw ls 2` are unchanged.
+      Expected: An error message each time; `hw ls 1 all` and `hw ls 2` are unchanged.
 
 1. Recording homework marks
 
    1. Prerequisites: Start with the sample students.
 
-   1. Test case: `hw m 1 2 score/5/10`, then `hw ls 1`<br>
-      Expected: The result shows `Score: 5/10`, and the list shows `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score 5/10`. Restart the app: `hw ls 1` still shows the score.
+   1. Test case: `hw m 1 2 score/5/10`, then `hw ls 1 all`<br>
+      Expected: The result shows `Score: 5/10`, and the list shows `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score 5/10 - status ASSIGNED`. Restart the app: `hw ls 1 all` still shows the score.
 
    1. Test case: `hw m 1 2 score/5/10` again<br>
       Expected: `No changes made; the homework already has this score.`
 
-   1. Test case: `hw m 1 2 score/17`, then `hw ls 1`<br>
-      Expected: `Recorded homework marks:` followed by `Ethan Lim; Title: Kinematics practice set; Subject: PHYSICS; Due: 2026-10-28; Score: 17`, and the list shows `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score 17`. Running `hw m 1 2 score/17` again gives `No changes made; the homework already has this score.`, while `hw m 1 2 score/17/20` records `Score: 17/20`.
+   1. Test case: `hw m 1 2 score/17`, then `hw ls 1 all`<br>
+      Expected: `Recorded homework marks:` followed by `Ethan Lim; Title: Kinematics practice set; Subject: PHYSICS; Due: 2026-10-28; Score: 17`, and the list shows `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score 17 - status ASSIGNED`. Running `hw m 1 2 score/17` again gives `No changes made; the homework already has this score.`, while `hw m 1 2 score/17/20` records `Score: 17/20`.
 
-   1. Test case: `hw m 1 2 score/`, then `hw ls 1`<br>
-      Expected: `Cleared homework marks:` followed by `Ethan Lim; Title: Kinematics practice set; Subject: PHYSICS; Due: 2026-10-28; Score: Not recorded`, and the list shows `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score Not recorded`. Restart the app: `hw ls 1` still shows `score Not recorded`.
+   1. Test case: `hw m 1 2 score/`, then `hw ls 1 all`<br>
+      Expected: `Cleared homework marks:` followed by `Ethan Lim; Title: Kinematics practice set; Subject: PHYSICS; Due: 2026-10-28; Score: Not recorded`, and the list shows `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score Not recorded - status ASSIGNED`. Restart the app: `hw ls 1 all` still shows `score Not recorded`.
 
    1. Test case: `hw m 1 2 score/` again, and `hw m 1 1 score/   ` (only spaces)<br>
       Expected: `No changes made; the homework has no recorded marks.` each time.
@@ -1008,7 +1040,7 @@ testers are expected to do more *exploratory* testing.
 1. Saving fails
 
    1. Make `data/tutorflow.json` read-only, then run `hw e 1 1 t/Changed title` and `hw m 1 1 score/9/10`.<br>
-      Expected: Each shows that the homework could not be edited, or that its marks could not be recorded, and that no homework data was changed. `hw ls 1` is unchanged.
+      Expected: Each shows that the homework could not be edited, or that its marks could not be recorded, and that no homework data was changed. `hw ls 1 all` is unchanged.
 
 ### Quoting values
 
@@ -1041,7 +1073,7 @@ testers are expected to do more *exploratory* testing.
       Expected: `New student added: Ravi s/o Kumar; Level: S3; Subjects: MATH; Phone: 91230000; Guardian: Maya l/ Raj; Guardian phone: 98760000`. Without the quotes around the guardian name, the command is rejected with `Prefix l/ must be specified exactly once.`
 
    1. Test case: `lesson add 7 s/"MATH" d/"TUESDAY" st/"16:00" et/"18:00"` (7 is the student added above)<br>
-      Expected: `New lesson added: Ravi s/o Kumar; MATH; TUESDAY; 16:00-18:00`.
+      Expected: `New lesson added: Ravi s/o Kumar (91230000); MATH; TUESDAY; 16:00-18:00`.
 
 ### Deleting homework
 
@@ -1057,8 +1089,6 @@ testers are expected to do more *exploratory* testing.
 
    1. Other incorrect delete commands to try: `homework delete`, `homework delete 1`, `homework delete 1 x` (where x is larger than the number of homework of the student)<br>
       Expected: Similar to previous.
-
-1. _{ more test cases …​ }_
 
 ### Deleting regular lessons
 
@@ -1125,7 +1155,7 @@ The automated smoke check is `./gradlew test --tests '*LessonEditUiTest' --tests
 1. Saving students, homework and lessons
 
    1. Add a student with `add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777`. With the sample students, Aaron Koh is student 7, so run `homework add 7 t/Algebra worksheet s/MATH due/2026-12-01` and `lesson add 7 s/MATH d/SUNDAY st/20:00 et/21:00` (use Aaron Koh's index if it is not 7). Close the app and launch it again.<br>
-      Expected: The student, the homework and the lesson are still shown: `homework list 7` shows `Listed 1 upcoming homework record for Aaron Koh.` and `1. Algebra worksheet (MATH) - due 2026-12-01 - score Not recorded`, and `lesson list` shows the lesson as `Aaron Koh; MATH; SUN; 20:00-21:00`.
+      Expected: The student, the homework and the lesson are still shown: `homework list 7 all` shows `Listed 1 homework record for Aaron Koh.` and `1. Algebra worksheet (MATH) - due 2026-12-01 - score Not recorded - status ASSIGNED`, and `lesson list` shows the lesson as `Aaron Koh (91112222); MATH; SUN; 20:00-21:00`.
 
 1. Dealing with a missing data file
 
@@ -1135,7 +1165,7 @@ The automated smoke check is `./gradlew test --tests '*LessonEditUiTest' --tests
 1. Dealing with a corrupted data file
 
    1. Close the app. In `data/tutorflow.json`, change the `dueDate` of a homework to `10-15` (no year), or delete the closing `}`. Launch the app.<br>
-      Expected: The app shows no students, and a warning is logged. The data file is unchanged until a command changes the data.
+      Expected: An error dialog shows the absolute data path and recovery instructions; the roster does not open. Dismiss the dialog and verify that the file bytes are unchanged. Restore the valid backup and relaunch: the original records appear.
 
 1. Dealing with a score saved by an older version
 
@@ -1149,11 +1179,9 @@ The automated smoke check is `./gradlew test --tests '*LessonEditUiTest' --tests
       Expected: All students are shown, and the homework shows `score Not recorded`. A warning such as `Ignored invalid homework score 85.5 for 'Quadratic equations worksheet'` is logged.
 
    1. Change the `score` to `"85.5"` (text, with quotes) instead. Launch the app.<br>
-      Expected: Similar to a corrupted data file: the app shows no students.
+      Expected: The loading error dialog appears, the roster does not open, and the data file is unchanged, as for corrupted data above.
 
 1. Dealing with a data file that cannot be written
 
    1. Make `data/tutorflow.json` read-only, then run `homework add 1 t/Test s/MATH due/2026-12-01` (the 1st student must take MATH).<br>
       Expected: An error message says that the homework could not be added and that no homework data was changed. `homework list 1` does not show the homework.
-
-1. _{ more test cases …​ }_

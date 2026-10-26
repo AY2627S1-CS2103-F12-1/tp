@@ -1,19 +1,23 @@
 package seedu.address;
 
+import static java.util.Objects.requireNonNull;
+
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.logging.Logger;
 
 import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.stage.Stage;
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.exceptions.DataLoadingException;
+import seedu.address.commons.util.AppHomeUtil;
 import seedu.address.commons.util.StringUtil;
 import seedu.address.logic.Logic;
 import seedu.address.logic.LogicManager;
-import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.ReadOnlyAddressBook;
@@ -32,28 +36,52 @@ import seedu.address.ui.UiManager;
  */
 public class MainApp extends Application {
 
-    public static final String VERSION = "V1.4";
+    public static final String VERSION = "V1.5";
 
     private static final Logger logger = LogsCenter.getLogger(MainApp.class);
-    private static final Path USER_PREFS_FILE_PATH = Paths.get("preferences.json");
-    private static final Path ADDRESS_BOOK_FILE_PATH = Paths.get("data", "tutorflow.json");
+    private static final Path APP_HOME = AppHomeUtil.getHomeDirectory();
+    private static final Path USER_PREFS_FILE_PATH = APP_HOME.resolve("preferences.json");
+    private static final Path ADDRESS_BOOK_FILE_PATH = APP_HOME.resolve("data").resolve("tutorflow.json");
 
     protected Ui ui;
     protected Logic logic;
     protected Storage storage;
     protected Model model;
+    private final Path userPrefsFilePath;
+    private final Path addressBookFilePath;
+    private final Runnable shutdown;
+    private boolean hasDataLoadingError;
+
+    /** Creates the application using files in its home folder and the JavaFX shutdown action. */
+    public MainApp() {
+        this(USER_PREFS_FILE_PATH, ADDRESS_BOOK_FILE_PATH, Platform::exit);
+    }
+
+    /** Creates an application with isolated paths and a shutdown action for lifecycle testing. */
+    MainApp(Path userPrefsFilePath, Path addressBookFilePath, Runnable shutdown) {
+        this.userPrefsFilePath = requireNonNull(userPrefsFilePath);
+        this.addressBookFilePath = requireNonNull(addressBookFilePath);
+        this.shutdown = requireNonNull(shutdown);
+    }
 
     @Override
     public void init() throws Exception {
         logger.info("=============================[ Initializing AddressBook ]===========================");
         super.init();
 
-        JsonUserPrefsStorage userPrefsStorage = new JsonUserPrefsStorage(USER_PREFS_FILE_PATH);
+        JsonUserPrefsStorage userPrefsStorage = new JsonUserPrefsStorage(userPrefsFilePath);
         UserPrefs userPrefs = initPrefs(userPrefsStorage);
-        JsonAddressBookStorage addressBookStorage = new JsonAddressBookStorage(ADDRESS_BOOK_FILE_PATH);
+        JsonAddressBookStorage addressBookStorage = new JsonAddressBookStorage(addressBookFilePath);
         storage = new StorageManager(addressBookStorage, userPrefsStorage);
 
-        model = initModelManager(storage, userPrefs);
+        try {
+            model = initModelManager(storage, userPrefs);
+        } catch (DataLoadingException exception) {
+            logger.warning("Cannot load saved data. Startup stopped to preserve the original file: "
+                    + StringUtil.getDetails(exception));
+            hasDataLoadingError = true;
+            return;
+        }
 
         logic = new LogicManager(model, storage);
 
@@ -65,32 +93,26 @@ public class MainApp extends Application {
      *
      * @see #readInitialData(Storage)
      */
-    private Model initModelManager(Storage storage, ReadOnlyUserPrefs userPrefs) {
+    private Model initModelManager(Storage storage, ReadOnlyUserPrefs userPrefs) throws DataLoadingException {
         return new ModelManager(readInitialData(storage), userPrefs);
     }
 
     /**
      * Returns the data in {@code storage}'s data file. <br>
-     * The sample students will be used instead if the data file is not found,
-     * or an empty address book will be used instead if errors occur when reading the data file.
+     * The sample students will be used instead if the data file is not found.
+     * Loading errors propagate so an empty replacement cannot overwrite an existing invalid file.
      */
-    static ReadOnlyAddressBook readInitialData(Storage storage) {
+    static ReadOnlyAddressBook readInitialData(Storage storage) throws DataLoadingException {
         logger.info("Using data file : " + storage.getAddressBookFilePath());
 
         Optional<ReadOnlyAddressBook> addressBookOptional;
         ReadOnlyAddressBook initialData;
-        try {
-            addressBookOptional = storage.readAddressBook();
-            if (addressBookOptional.isEmpty()) {
-                logger.info("Data file " + storage.getAddressBookFilePath() + " not found. Starting with the"
-                        + " sample students; the file will be created at the first change to the data.");
-            }
-            initialData = addressBookOptional.orElseGet(SampleDataUtil::getSampleAddressBook);
-        } catch (DataLoadingException e) {
-            logger.warning("Data file at " + storage.getAddressBookFilePath() + " could not be loaded."
-                    + " Will be starting with no students.");
-            initialData = new AddressBook();
+        addressBookOptional = storage.readAddressBook();
+        if (addressBookOptional.isEmpty()) {
+            logger.info("Data file " + storage.getAddressBookFilePath() + " not found. Starting with the"
+                    + " sample students; the file will be created at the first change to the data.");
         }
+        initialData = addressBookOptional.orElseGet(SampleDataUtil::getSampleAddressBook);
         return initialData;
     }
 
@@ -128,6 +150,19 @@ public class MainApp extends Application {
 
     @Override
     public void start(Stage primaryStage) {
+        if (hasDataLoadingError) {
+            Alert alert = new Alert(AlertType.ERROR);
+            alert.setTitle("TutorFlow could not load saved data");
+            alert.setHeaderText("Your data file has not been changed.");
+            alert.setContentText("TutorFlow could not read valid data from:\n"
+                    + addressBookFilePath.toAbsolutePath().normalize()
+                    + "\n\nClose TutorFlow and restore a valid backup or correct the file. "
+                    + "To start with sample data instead, move the original file to a safe location before restarting. "
+                    + "Do not delete it if you need to recover your records.");
+            alert.showAndWait();
+            shutdown.run();
+            return;
+        }
         logger.info("Starting AddressBook " + MainApp.VERSION);
         ui.start(primaryStage);
     }
@@ -135,6 +170,9 @@ public class MainApp extends Application {
     @Override
     public void stop() {
         logger.info("============================ [ Stopping AddressBook ] =============================");
+        if (model == null) {
+            return;
+        }
         try {
             storage.saveUserPrefs(model.getUserPrefs());
         } catch (IOException e) {

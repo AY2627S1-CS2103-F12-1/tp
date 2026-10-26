@@ -72,7 +72,7 @@ public class LessonAddCommand extends Command {
         // A search can hide students, but their lessons still occupy the shared weekly schedule.
         List<String> clashingLessons = LessonSchedule.findClashes(model.getAddressBook().getStudentList(), lesson)
                 .stream()
-                .map(entry -> entry.student().getName() + "; " + entry.lesson())
+                .map(entry -> Messages.formatLessonOwner(entry.student()) + "; " + entry.lesson())
                 .toList();
         if (!clashingLessons.isEmpty()) {
             String message = clashingLessons.size() == 1
@@ -83,7 +83,8 @@ public class LessonAddCommand extends Command {
         List<RegularLesson> updated = new ArrayList<>(student.getLessons());
         updated.add(lesson);
         Student updatedStudent = student.withLessons(updated);
-        CommandResult result = new CommandResult("New lesson added: " + student.getName() + "; " + lesson);
+        CommandResult result = new CommandResult("New lesson added: " + Messages.formatLessonOwner(student)
+                + "; " + lesson);
         model.setStudent(student, updatedStudent);
         return result;
     }

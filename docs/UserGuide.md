@@ -320,7 +320,7 @@ Examples:
 
 ### Listing upcoming homework of all students: `homework upcoming`
 
-Shows the homework of all students that is due in the next few days, earliest due date first, with the score of each.
+Shows the homework of all students that is due in the next few days, earliest due date first, with the score and completion status of each.
 
 Format: `homework|hw upcoming|up [due/DAYS]`
 

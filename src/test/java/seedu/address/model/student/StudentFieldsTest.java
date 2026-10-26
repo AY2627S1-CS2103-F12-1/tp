@@ -88,6 +88,16 @@ public class StudentFieldsTest {
     }
 
     @Test
+    public void phoneIdentity_onlyNormalizesEightDigitSingaporeNumbers() {
+        StudentPhone local = new StudentPhone("91234567");
+
+        assertFalse(local.isSameNumber(null));
+        assertFalse(local.isSameNumber(new StudentPhone("+12123456789")));
+        assertFalse(local.isSameNumber(new StudentPhone("+65912345678")));
+        assertTrue(new StudentPhone("+6512345678").isSameNumber(new StudentPhone("+6512345678")));
+    }
+
+    @Test
     public void studentAndGuardianMaySharePhone() {
         Student student = student("John Tan", "91234567", "91234567");
 

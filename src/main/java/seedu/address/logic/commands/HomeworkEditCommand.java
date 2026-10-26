@@ -104,15 +104,23 @@ public class HomeworkEditCommand extends Command {
         List<Homework> updatedHomeworks = new ArrayList<>(student.getHomeworks());
         updatedHomeworks.set(homeworkIndex.getZeroBased(), editedHomework);
         Student editedStudent = student.withHomeworks(updatedHomeworks);
-        String message = String.format(MESSAGE_SUCCESS, Messages.format(student, editedHomework));
+        String message = buildSuccessMessage(editedStudent, editedHomework);
+
+        model.setStudent(student, editedStudent);
+        return new CommandResult(message);
+    }
+
+    /**
+     * Returns the success message for {@code editedHomework}, with the inferred year if any, followed by the
+     * upcoming homework of {@code editedStudent}.
+     */
+    private String buildSuccessMessage(Student editedStudent, Homework editedHomework) {
+        String message = String.format(MESSAGE_SUCCESS, Messages.format(editedStudent, editedHomework));
         if (isYearInferred) {
             message += String.format(HomeworkAddCommand.MESSAGE_INFERRED_YEAR,
                     editedHomework.getDueDate().getDate().getYear());
         }
-        message += "\n" + HomeworkListCommand.formatHomeworkList(editedStudent, today, false);
-
-        model.setStudent(student, editedStudent);
-        return new CommandResult(message);
+        return message + "\n" + HomeworkListCommand.formatHomeworkList(editedStudent, today, false);
     }
 
     /**

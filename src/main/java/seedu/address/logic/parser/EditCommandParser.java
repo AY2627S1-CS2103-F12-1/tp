@@ -19,9 +19,10 @@ import seedu.address.model.student.TuitionSubjects;
  * Parses a displayed student index and one or more replacement profile fields.
  */
 public class EditCommandParser implements Parser<EditCommand> {
-    private static final List<String> PREFIXES = List.of("n/", "l/", "s/", "p/", "gn/", "gp/");
     public static final String MESSAGE_INVALID_INDEX_SYNTAX =
             "INDEX must be a positive whole number without leading zeroes.";
+
+    private static final List<String> PREFIXES = List.of("n/", "l/", "s/", "p/", "gn/", "gp/");
 
     @Override
     public EditCommand parse(String args) throws ParseException {

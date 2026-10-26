@@ -31,6 +31,19 @@ public final class StudentPhone {
         value = trimmedPhone;
     }
 
+    /** Returns whether both values refer to the same number, including Singapore's +65 prefix. */
+    public boolean isSameNumber(StudentPhone other) {
+        return other != null && normalizedNumber().equals(other.normalizedNumber());
+    }
+
+    private String normalizedNumber() {
+        if (value.startsWith("+65") && value.length() == 11
+                && VALID_PHONE.matcher(value.substring(3)).matches()) {
+            return value.substring(3);
+        }
+        return value;
+    }
+
     @Override
     public String toString() {
         return value;

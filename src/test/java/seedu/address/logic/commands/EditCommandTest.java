@@ -75,7 +75,10 @@ public class EditCommandTest {
         Student second = new StudentBuilder().withName("Jane Tan").withPhone("92345678").build();
         ModelManager model = modelWith(first, second);
 
-        assertFailure("2 n/JOHN TAN p/91234567", model, EditCommand.MESSAGE_DUPLICATE);
+        assertFailure("2 n/JOHN TAN p/91234567", model,
+                String.format(EditCommand.MESSAGE_DUPLICATE, first.getName(), first.getPhone()));
+        assertFailure("2 n/JOHN TAN p/+6591234567", model,
+                String.format(EditCommand.MESSAGE_DUPLICATE, first.getName(), first.getPhone()));
         assertEquals(List.of(first, second), model.getStudentList());
     }
 

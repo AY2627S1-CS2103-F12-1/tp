@@ -76,10 +76,12 @@ public class StudentFieldsTest {
     }
 
     @Test
-    public void identity_requiresBothNormalizedNameAndExactStudentPhone() {
+    public void identity_requiresNormalizedNameAndEquivalentStudentPhone() {
         Student original = student(" John   Tan ", "91234567", "98765432");
 
         assertTrue(original.isSameStudent(student("john tan", "91234567", "98765432")));
+        assertTrue(original.isSameStudent(student("john tan", "+6591234567", "98765432")));
+        assertTrue(student("john tan", "+6591234567", "98765432").isSameStudent(original));
         assertFalse(original.isSameStudent(student("John Tan", "81234567", "98765432")));
         assertFalse(original.isSameStudent(student("John Lim", "91234567", "98765432")));
         assertFalse(original.isSameStudent(null));

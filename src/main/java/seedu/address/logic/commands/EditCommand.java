@@ -29,7 +29,7 @@ public class EditCommand extends Command {
     public static final String MESSAGE_NO_FIELDS = "Specify at least one field to edit.\nUsage: " + MESSAGE_USAGE;
     public static final String MESSAGE_SUCCESS = "Edited student: %s";
     public static final String MESSAGE_NO_CHANGES = "No changes made; the student details are unchanged.";
-    public static final String MESSAGE_DUPLICATE = "This student already exists.";
+    public static final String MESSAGE_DUPLICATE = "A student with this name and phone already exists: %s (%s).";
     public static final String MESSAGE_SUBJECT_IN_USE =
             "Cannot remove a subject used by this student's homework or lessons.";
     public static final String MESSAGE_INTERNAL_ERROR =
@@ -72,8 +72,11 @@ public class EditCommand extends Command {
         if (editedStudent.equals(student)) {
             throw new CommandException(MESSAGE_NO_CHANGES);
         }
-        if (!student.isSameStudent(editedStudent) && model.hasStudent(editedStudent)) {
-            throw new CommandException(MESSAGE_DUPLICATE);
+        Student duplicate = model.getAddressBook().getStudentList().stream()
+                .filter(existing -> existing != student && existing.isSameStudent(editedStudent))
+                .findFirst().orElse(null);
+        if (duplicate != null) {
+            throw new CommandException(String.format(MESSAGE_DUPLICATE, duplicate.getName(), duplicate.getPhone()));
         }
         if (editedStudent.getHomeworks().stream()
                 .anyMatch(homework -> !editedStudent.getSubjects().getSubjects().contains(homework.getSubject()))

@@ -78,16 +78,28 @@ public class LogicManager implements Logic {
             storage.saveAddressBook(model.getAddressBook());
         } catch (IOException ioe) {
             logger.warning("Could not save data, so the command's changes are undone: " + ioe);
-            model.setAddressBook(dataBeforeCommand);
-            // Restoring the data alone can change which students are displayed and their order
-            model.updateFilteredStudentList(predicateBeforeCommand);
-            model.setStudentListOrder(displayedBeforeCommand);
+            restoreModel(dataBeforeCommand, predicateBeforeCommand, displayedBeforeCommand);
             String message = ioe instanceof DataFileConflictException ? ioe.getMessage()
                     : command.getSaveFailureMessage(getSaveErrorMessage(ioe));
             throw new CommandException(message, ioe);
         }
 
         return commandResult;
+    }
+
+    /**
+     * Restores the data, the displayed students and their order to what they were before a command.
+     * Restoring the data alone can change which students are displayed and their order.
+     *
+     * @param data Data before the command.
+     * @param predicate Predicate that selected the displayed students before the command.
+     * @param displayedStudents Displayed students before the command, in their displayed order.
+     */
+    private void restoreModel(ReadOnlyAddressBook data, Predicate<Student> predicate,
+            List<Student> displayedStudents) {
+        model.setAddressBook(data);
+        model.updateFilteredStudentList(predicate);
+        model.setStudentListOrder(displayedStudents);
     }
 
     /**

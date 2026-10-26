@@ -56,15 +56,16 @@ public class HomeworkUpcomingCommand extends Command {
 
     /**
      * {@inheritDoc}
-     * The full roster is displayed first, so that each {@code STUDENT_INDEX} in the result matches the student list.
-     * An unexpected error is logged and reported as an internal error.
+     * The full roster is then displayed, so that each {@code STUDENT_INDEX} in the result matches the student list.
+     * An unexpected error is logged and reported as an internal error, leaving the displayed students unchanged.
      */
     @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
-        model.updateFilteredStudentList(Model.PREDICATE_SHOW_ALL_STUDENTS);
         try {
-            return new CommandResult(listUpcomingHomework(model));
+            String message = listUpcomingHomework(model);
+            model.updateFilteredStudentList(Model.PREDICATE_SHOW_ALL_STUDENTS);
+            return new CommandResult(message);
         } catch (RuntimeException exception) {
             logger.log(Level.SEVERE, "Unexpected error while listing upcoming homework", exception);
             throw new CommandException(MESSAGE_INTERNAL_ERROR, exception);

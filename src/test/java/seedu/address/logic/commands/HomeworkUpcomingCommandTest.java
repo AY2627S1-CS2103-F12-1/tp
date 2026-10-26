@@ -209,6 +209,22 @@ public class HomeworkUpcomingCommandTest {
     }
 
     @Test
+    public void execute_unexpectedError_keepsDisplayedStudents() {
+        Model failingModel = new ModelManager() {
+            @Override
+            public ReadOnlyAddressBook getAddressBook() {
+                throw new IllegalStateException("dummy internal error");
+            }
+        };
+        List.of(ZOE, NO_HOMEWORK, ADAM).forEach(failingModel::addStudent);
+        failingModel.updateFilteredStudentList(student -> student.equals(ADAM));
+
+        assertThrows(CommandException.class, HomeworkUpcomingCommand.MESSAGE_INTERNAL_ERROR, ()
+                -> new HomeworkUpcomingCommand(TODAY, 7).execute(failingModel));
+        assertEquals(List.of(ADAM), failingModel.getStudentList());
+    }
+
+    @Test
     public void equals() {
         HomeworkUpcomingCommand upcomingCommand = new HomeworkUpcomingCommand(TODAY, 7);
 

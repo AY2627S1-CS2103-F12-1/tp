@@ -476,7 +476,7 @@ Homework is managed with eight subcommands of `homework` (alias `hw`): `add`, `l
 
 **Saving.** Homework is saved as part of each student (see [Storage component](#storage-component)). `homework list`, `homework upcoming` and `homework filter` do not change the stored data, so `LogicManager` never writes the data file after them (see [Saving after a command](#saving-after-a-command)).
 
-**Upcoming homework.** `homework upcoming` searches the whole roster, not the displayed list, and starts each line with `Student N:`, where `N` is the student's `STUDENT_INDEX`. Two students may have the same name, and the index tells them apart in a form the tutor can type into `homework list`. It first resets the displayed list to the full roster, as `list` does, so `N` matches the student list even after a `search`.
+**Upcoming homework.** `homework upcoming` searches the whole roster, not the displayed list, and starts each line with `Student N:`, where `N` is the student's `STUDENT_INDEX`. Two students may have the same name, and the index tells them apart in a form the tutor can type into `homework list`. After building the result, it resets the displayed list to the full roster, as `list` does, so `N` matches the student list even after a `search`. If an internal error stops the command, the displayed list stays as it was.
 
 #### Design considerations:
 

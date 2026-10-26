@@ -435,6 +435,22 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_addStudentSaveFailsWithFilteredView_restoresStoredRoster() throws Exception {
+        AddressBook initial = new AddressBook();
+        initial.addStudent(new StudentBuilder().build());
+        initial.addStudent(new StudentBuilder().withName("Jane Tan").withPhone("92345678").build());
+        setUpLogic(initial, getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+        logic.execute("search John");
+        assertEquals(1, logic.getStudentList().size());
+
+        String expectedMessage = String.format(LogicManager.FILE_OPS_ERROR_FORMAT, DUMMY_IO_EXCEPTION.getMessage());
+        assertCommandException("add n/Olivia Tan l/S2 s/MATH p/93456789 gn/May Tan gp/98765432",
+                expectedMessage);
+
+        assertEquals(initial, model.getAddressBook());
+    }
+
+    @Test
     public void execute_editStudent_savesProfileAndPreservesLinkedRecordsAcrossReload() throws Exception {
         AddressBook initial = new AddressBook();
         initial.addStudent(new StudentBuilder().withHomeworks(ALGEBRA).withLessons(MONDAY_MATH).build());

@@ -177,6 +177,7 @@ public class EditCommandTest {
         EditCommand editFirst = parser.parse("1 n/Jane");
         assertTrue(editFirst.equals(editFirst));
         assertTrue(editFirst.equals(parser.parse("1 n/Jane")));
+        assertEquals(editFirst.hashCode(), parser.parse("1 n/Jane").hashCode());
         assertFalse(editFirst.equals(parser.parse("2 n/Jane")));
         assertFalse(editFirst.equals(parser.parse("1 n/Mary")));
         assertFalse(editFirst.equals(null));

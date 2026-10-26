@@ -97,6 +97,7 @@ public class DeleteCommandTest {
 
         assertTrue(deleteFirstCommand.equals(deleteFirstCommand));
         assertTrue(deleteFirstCommand.equals(new DeleteCommand(INDEX_FIRST_STUDENT)));
+        assertEquals(deleteFirstCommand.hashCode(), new DeleteCommand(INDEX_FIRST_STUDENT).hashCode());
         assertFalse(deleteFirstCommand.equals(1));
         assertFalse(deleteFirstCommand.equals(null));
         assertFalse(deleteFirstCommand.equals(deleteSecondCommand));

@@ -13,7 +13,9 @@ import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.Model;
 import seedu.address.model.student.Student;
 
-/** Shows students whose name or phone, or whose guardian's name or phone, contains a keyword. */
+/**
+ * Shows students whose name or phone, or whose guardian's name or phone, contains a keyword.
+ */
 public class SearchCommand extends Command {
     public static final String COMMAND_WORD = "search";
     public static final String MESSAGE_USAGE = "search KEYWORD";
@@ -30,7 +32,9 @@ public class SearchCommand extends Command {
 
     private final String keyword;
 
-    /** Creates a search for the given non-blank keyword. */
+    /**
+     * Creates a search for the given non-blank keyword.
+     */
     public SearchCommand(String keyword) {
         this.keyword = WHITESPACE.matcher(requireNonNull(keyword)).replaceAll(" ").strip();
         if (this.keyword.isEmpty()) {
@@ -49,7 +53,9 @@ public class SearchCommand extends Command {
         }
     }
 
-    /** Updates only the displayed student view; the stored roster is unchanged. */
+    /**
+     * Updates only the displayed student view; the stored roster is unchanged.
+     */
     private CommandResult searchStudents(Model model) {
         Predicate<Student> matchesKeyword = student -> matches(student.getName().toString(), keyword)
                 || matches(student.getPhone().toString(), keyword)

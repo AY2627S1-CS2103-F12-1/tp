@@ -5,7 +5,9 @@ import static java.util.Objects.requireNonNull;
 import seedu.address.logic.commands.SearchCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 
-/** Parses a non-blank search keyword. */
+/**
+ * Parses a non-blank search keyword.
+ */
 public class SearchCommandParser implements Parser<SearchCommand> {
     @Override
     public SearchCommand parse(String args) throws ParseException {

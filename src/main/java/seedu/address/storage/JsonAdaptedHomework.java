@@ -124,18 +124,30 @@ class JsonAdaptedHomework {
     }
 
     /**
-     * Returns the model value parsed from the required field {@code value}.
+     * Returns the model value parsed from the required homework field {@code value}.
      *
+     * @throws IllegalValueException If the field is missing or its value is invalid.
+     */
+    private static <T> T toModelValue(String fieldName, String value, Function<String, T> parser,
+            String messageConstraints) throws IllegalValueException {
+        return toModelValue(MISSING_FIELD_MESSAGE_FORMAT, fieldName, value, parser, messageConstraints);
+    }
+
+    /**
+     * Returns the model value parsed from the required field {@code value}. Used by the homework and student
+     * adapters, each with its own message for a missing field.
+     *
+     * @param missingFieldMessageFormat Message used when the field is missing, with {@code %s} for its name.
      * @param fieldName JSON name of the field, used in the message when the field is missing.
      * @param value Value of the field, or null if the field is missing.
      * @param parser Parser that throws an {@code IllegalArgumentException} if {@code value} is invalid.
      * @param messageConstraints Message used when {@code value} is invalid.
      * @throws IllegalValueException If the field is missing or its value is invalid.
      */
-    private static <T> T toModelValue(String fieldName, String value, Function<String, T> parser,
-            String messageConstraints) throws IllegalValueException {
+    static <T> T toModelValue(String missingFieldMessageFormat, String fieldName, String value,
+            Function<String, T> parser, String messageConstraints) throws IllegalValueException {
         if (value == null) {
-            throw new IllegalValueException(String.format(MISSING_FIELD_MESSAGE_FORMAT, fieldName));
+            throw new IllegalValueException(String.format(missingFieldMessageFormat, fieldName));
         }
         try {
             return parser.apply(value);

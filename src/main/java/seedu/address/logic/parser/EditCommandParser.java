@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 
 import seedu.address.commons.core.index.Index;
-import seedu.address.logic.Messages;
 import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.EditCommand.EditStudentDescriptor;
 import seedu.address.logic.parser.StrictArgumentTokenizer.TokenizedArguments;
@@ -19,13 +18,19 @@ import seedu.address.model.student.TuitionSubjects;
 /** Parses a displayed student index and one or more replacement profile fields. */
 public class EditCommandParser implements Parser<EditCommand> {
     private static final List<String> PREFIXES = List.of("n/", "l/", "s/", "p/", "gn/", "gp/");
+    public static final String MESSAGE_INVALID_INDEX_SYNTAX =
+            "INDEX must be a positive whole number without leading zeroes.";
 
     @Override
     public EditCommand parse(String args) throws ParseException {
         requireNonNull(args);
         TokenizedArguments tokens = StrictArgumentTokenizer.tokenizeWithPreamble(args, PREFIXES,
                 EditCommand.MESSAGE_INVALID_FORMAT, StudentAddParser::isPartOfName);
-        Index index = ParserUtil.parseStrictIndex(tokens.preamble(), Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
+        String[] indexWords = tokens.preamble().split("\\s+");
+        if (indexWords.length != 1 || indexWords[0].isEmpty()) {
+            throw new ParseException(EditCommand.MESSAGE_INVALID_FORMAT);
+        }
+        Index index = ParserUtil.parseStrictIndex(indexWords[0], MESSAGE_INVALID_INDEX_SYNTAX);
         Map<String, String> fields = tokens.values();
         if (fields.isEmpty()) {
             throw new ParseException(EditCommand.MESSAGE_NO_FIELDS);

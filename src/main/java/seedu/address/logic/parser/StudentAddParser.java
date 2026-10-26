@@ -69,10 +69,7 @@ public final class StudentAddParser {
         if (!"n/".equals(previousPrefix) && !"gn/".equals(previousPrefix)) {
             return false;
         }
-        if (!REQUIRED_PREFIXES.contains(prefix)) {
-            return true;
-        }
-        if (!"s/".equals(prefix) || prefixEnd >= arguments.length()
+        if (!("s/".equals(prefix) || "d/".equals(prefix)) || prefixEnd >= arguments.length()
                 || Character.toLowerCase(arguments.charAt(prefixEnd)) != 'o') {
             return false;
         }

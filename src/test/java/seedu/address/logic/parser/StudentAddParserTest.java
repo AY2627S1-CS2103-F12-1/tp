@@ -102,6 +102,8 @@ public class StudentAddParserTest {
     @Test
     public void parse_unknownPrefixOrUnprefixedText_reportsFormat() {
         assertParseFailure(VALID_ARGUMENTS + " x/value", StudentAddParser.MESSAGE_INVALID_FORMAT);
+        assertParseFailure(VALID_ARGUMENTS.replace("n/John Tan", "n/John Tan ph/91234567"),
+                StudentAddParser.MESSAGE_INVALID_FORMAT);
         assertParseFailure(" unexpected" + VALID_ARGUMENTS, StudentAddParser.MESSAGE_INVALID_FORMAT);
         assertParseFailure("unexpected text", StudentAddParser.MESSAGE_INVALID_FORMAT);
     }

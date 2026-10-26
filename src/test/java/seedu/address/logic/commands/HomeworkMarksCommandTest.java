@@ -8,6 +8,7 @@ import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalHomeworks.ATOMIC_STRUCTURE;
+import static seedu.address.testutil.TypicalHomeworks.COMPLETED_MECHANICS;
 import static seedu.address.testutil.TypicalHomeworks.MECHANICS;
 import static seedu.address.testutil.TypicalStudents.ALICE;
 import static seedu.address.testutil.TypicalStudents.BENSON;
@@ -167,6 +168,19 @@ public class HomeworkMarksCommandTest {
 
         assertCommandFailure(new HomeworkMarksCommand(SECOND, FIRST, FIVE_OUT_OF_TEN), model,
                 Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
+    }
+
+    @Test
+    public void execute_completedHomework_keepsStatus() {
+        Model completedModel = getModelWithStudents(List.of(ALICE, BENSON,
+                CARL.withHomeworks(List.of(COMPLETED_MECHANICS))));
+        String expectedMessage = "Recorded homework marks:\n"
+                + "Carl Ng; Title: Attempt mechanics questions 1-5; Subject: PHYSICS; Due: 2026-10-20; Score: 5/10";
+        Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON,
+                CARL.withHomeworks(List.of(new HomeworkBuilder(COMPLETED_MECHANICS).withScore("5/10").build()))));
+
+        assertCommandSuccess(new HomeworkMarksCommand(THIRD, FIRST, FIVE_OUT_OF_TEN), completedModel,
+                expectedMessage, expectedModel);
     }
 
     @Test

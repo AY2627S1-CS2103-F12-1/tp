@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.testutil.Assert.assertThrows;
+import static seedu.address.testutil.TypicalHomeworks.COMPLETED_MECHANICS;
+import static seedu.address.testutil.TypicalStudents.CARL;
 import static seedu.address.testutil.TypicalStudents.getModelWithStudents;
 import static seedu.address.testutil.TypicalStudents.getModelWithTypicalStudents;
 
@@ -184,6 +186,17 @@ public class HomeworkUpcomingCommandTest {
         assertCommandSuccess(new HomeworkUpcomingCommand(LocalDate.of(2026, 10, 21), 7),
                 getModelWithTypicalStudents(), "No homework due from 2026-10-21 to 2026-10-28.",
                 getModelWithTypicalStudents());
+    }
+
+    @Test
+    public void execute_completedHomework_showsCompletedStatus() {
+        Model completedModel = getModelWithStudents(List.of(CARL.withHomeworks(List.of(COMPLETED_MECHANICS))));
+        String expectedMessage = "Found 1 homework record due from 2026-10-17 to 2026-10-20.\n"
+                + "Student 1: Carl Ng; Attempt mechanics questions 1-5; PHYSICS; Due: 2026-10-20; Score: Not recorded;"
+                + " Status: COMPLETED";
+
+        assertCommandSuccess(new HomeworkUpcomingCommand(TODAY, 3), completedModel, expectedMessage,
+                getModelWithStudents(List.of(CARL.withHomeworks(List.of(COMPLETED_MECHANICS)))));
     }
 
     @Test

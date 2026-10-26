@@ -6,6 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.testutil.Assert.assertThrows;
+import static seedu.address.testutil.TypicalHomeworks.COMPLETED_MECHANICS;
+import static seedu.address.testutil.TypicalStudents.ALICE;
+import static seedu.address.testutil.TypicalStudents.BENSON;
 import static seedu.address.testutil.TypicalStudents.CARL;
 import static seedu.address.testutil.TypicalStudents.getModelWithStudents;
 import static seedu.address.testutil.TypicalStudents.getModelWithTypicalStudents;
@@ -180,6 +183,21 @@ public class HomeworkListCommandTest {
 
         assertCommandFailure(new HomeworkListCommand(Index.fromOneBased(2), BEFORE_ALL_DUE_DATES, false), model,
                 Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
+    }
+
+    @Test
+    public void execute_completedHomework_showsCompletedStatus() {
+        Model completedModel = getModelWithStudents(List.of(ALICE, BENSON,
+                CARL.withHomeworks(List.of(COMPLETED_MECHANICS))));
+        Model expectedCompletedModel = getModelWithStudents(List.of(ALICE, BENSON,
+                CARL.withHomeworks(List.of(COMPLETED_MECHANICS))));
+        String expectedMessage = "Listed 1 upcoming homework record for Carl Ng.\n"
+                + "Homework for Carl Ng:\n"
+                + "1. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded"
+                + " - status COMPLETED";
+
+        assertCommandSuccess(new HomeworkListCommand(Index.fromOneBased(3), BEFORE_ALL_DUE_DATES, false),
+                completedModel, expectedMessage, expectedCompletedModel);
     }
 
     @Test

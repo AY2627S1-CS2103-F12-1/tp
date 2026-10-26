@@ -8,6 +8,7 @@ import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalHomeworks.ATOMIC_STRUCTURE;
+import static seedu.address.testutil.TypicalHomeworks.COMPLETED_MECHANICS;
 import static seedu.address.testutil.TypicalHomeworks.MECHANICS;
 import static seedu.address.testutil.TypicalStudents.ALICE;
 import static seedu.address.testutil.TypicalStudents.BENSON;
@@ -211,6 +212,24 @@ public class HomeworkEditCommandTest {
 
         assertCommandFailure(new HomeworkEditCommand(SECOND, FIRST, NEW_TITLE, false, TODAY), model,
                 Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
+    }
+
+    @Test
+    public void execute_completedHomework_keepsStatus() {
+        Model completedModel = getModelWithStudents(List.of(ALICE, BENSON,
+                CARL.withHomeworks(List.of(COMPLETED_MECHANICS))));
+        EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(new Title("Revise mechanics"), null, null);
+        Homework editedMechanics = new HomeworkBuilder(COMPLETED_MECHANICS).withTitle("Revise mechanics").build();
+        String expectedMessage = "Edited homework:\n"
+                + "Carl Ng; Title: Revise mechanics; Subject: PHYSICS; Due: 2026-10-20\n"
+                + "Listed 1 upcoming homework record for Carl Ng.\n"
+                + "Homework for Carl Ng:\n"
+                + "1. Revise mechanics (PHYSICS) - due 2026-10-20 - score Not recorded - status COMPLETED";
+        Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON,
+                CARL.withHomeworks(List.of(editedMechanics))));
+
+        assertCommandSuccess(new HomeworkEditCommand(THIRD, FIRST, descriptor, false, TODAY), completedModel,
+                expectedMessage, expectedModel);
     }
 
     @Test

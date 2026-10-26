@@ -586,6 +586,8 @@ To move TutorFlow, close it and copy the JAR together with its `data` folder and
 
 Advanced users may edit this JSON file while TutorFlow is closed. Back it up first.
 
+`preferences.json` holds only the window size and position. If it cannot be read, for example because it is not valid JSON, or it holds `"guiSettings" : null`, TutorFlow opens with the default window size and position and saves the default preferences over that file. TutorFlow does not check the window width and height themselves: if either is `null` or `"NaN"`, the window opens at its minimum size (600 x 450). Your student data is not affected.
+
 If the data file does not exist when TutorFlow starts, for example the first time you run it, TutorFlow starts with some sample students and saves them to a new data file after the first command that changes the data. To get the sample students back, close TutorFlow, delete the data file and start TutorFlow again.
 
 The data file holds a list of `students`. Each student can hold `homeworks` and `lessons`. For example:

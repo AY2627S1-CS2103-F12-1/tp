@@ -197,7 +197,7 @@ The app data is saved in `data/tutorflow.json`. `JsonSerializableAddressBook` ho
 * Homework fields: `title`, `subject`, `dueDate`, `score`, and `status`.
 * Lesson fields: `subject`, `dayOfWeek`, `startTime`, and `endTime`.
 
-`JsonUtil#readJsonFile` reads both `data/tutorflow.json` and `preferences.json`. It skips a leading UTF-8 byte order mark, then `JsonUtil#fromJsonString` reads exactly one JSON value. Anything but whitespace after that value, such as a second root object, makes it throw an `IOException`, so the file is invalid. `ObjectMapper#readValue` alone stops after the first value, so the rest of the file would be ignored and then lost at the next save. The project's Jackson 2.7 has no `DeserializationFeature.FAIL_ON_TRAILING_TOKENS` (added in Jackson 2.9), so `fromJsonString` checks itself that the parser has no next token. An invalid `preferences.json` is replaced with the default preferences (see `MainApp#initPrefs`).
+`JsonUtil#readJsonFile` reads both `data/tutorflow.json` and `preferences.json`. It skips a leading UTF-8 byte order mark, then `JsonUtil#fromJsonString` reads exactly one JSON value. Anything but whitespace after that value, such as a second root object, makes it throw an `IOException`, so the file is invalid. `ObjectMapper#readValue` alone stops after the first value, so the rest of the file would be ignored and then lost at the next save. The project's Jackson 2.7 has no `DeserializationFeature.FAIL_ON_TRAILING_TOKENS` (added in Jackson 2.9), so `fromJsonString` checks itself that the parser has no next token. `JsonUserPrefsStorage#readUserPrefs` also rejects a preferences file whose `guiSettings` is `null`: Jackson sets fields directly, so the `null` would skip the check in `UserPrefs#setGuiSettings`, and `ModelManager` would then throw a `NullPointerException` at startup. A missing `guiSettings` keeps its default, and a `null` `windowCoordinates` means no saved position, as in the default preferences. An invalid `preferences.json` is replaced with the default preferences (see `MainApp#initPrefs`); the data file is not affected.
 
 `JsonUtil` also turns on Jackson's `JsonParser.Feature.STRICT_DUPLICATE_DETECTION`, so a key repeated in one JSON object, at any level, makes the file invalid. Without it, Jackson keeps the last value: a second `"students"` key would replace the whole roster, and the next save would delete the replaced students from the file.
 
@@ -883,6 +883,11 @@ testers are expected to do more *exploratory* testing.
 
    1. Relaunch from the same terminal folder with `java -jar "addressbook.jar"`.<br>
        Expected: The most recent window size and location are retained.
+
+1. Dealing with invalid preferences
+
+   1. Close the app and replace the content of `preferences.json` with `{"guiSettings":null}`. Launch the app.<br>
+      Expected: The app opens with the default window size and the same students as before. `preferences.json` now holds the default preferences, and the data file is unchanged.
 
 ### Adding and editing students
 

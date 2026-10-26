@@ -15,6 +15,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import seedu.address.commons.core.GuiSettings;
 import seedu.address.commons.exceptions.DataLoadingException;
+import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.model.UserPrefs;
 
 public class JsonUserPrefsStorageTest {
@@ -59,6 +60,35 @@ public class JsonUserPrefsStorageTest {
                 + "{\"guiSettings\" : {}}");
 
         assertThrows(DataLoadingException.class, () -> new JsonUserPrefsStorage(prefsFilePath).readUserPrefs());
+    }
+
+    @Test
+    public void readUserPrefs_nullGuiSettings_exceptionThrown() throws IOException {
+        // Issue #152: an explicit null bypasses the non-null check of UserPrefs#setGuiSettings
+        Path prefsFilePath = testFolder.resolve("NullGuiSettingsPrefs.json");
+        Files.writeString(prefsFilePath, "{\"guiSettings\":null}");
+
+        JsonUserPrefsStorage storage = new JsonUserPrefsStorage(prefsFilePath);
+        String expectedMessage = new IllegalValueException(JsonUserPrefsStorage.MESSAGE_NULL_GUI_SETTINGS).toString();
+        assertThrows(DataLoadingException.class, expectedMessage, () -> storage.readUserPrefs());
+    }
+
+    @Test
+    public void readUserPrefs_nullWindowCoordinates_noCoordinatesUsed() throws Exception {
+        // null is how the default preferences save "no window position", so it stays valid
+        Path prefsFilePath = testFolder.resolve("NullCoordinatesPrefs.json");
+        Files.writeString(prefsFilePath, "{\"guiSettings\":{\"windowWidth\":740.0,\"windowHeight\":600.0,"
+                + "\"windowCoordinates\":null}}");
+
+        assertEquals(new UserPrefs(), new JsonUserPrefsStorage(prefsFilePath).readUserPrefs().orElseThrow());
+    }
+
+    @Test
+    public void readUserPrefs_nullUnknownField_ignored() throws Exception {
+        Path prefsFilePath = testFolder.resolve("NullUnknownFieldPrefs.json");
+        Files.writeString(prefsFilePath, "{\"addressBookFilePath\":null}");
+
+        assertEquals(new UserPrefs(), new JsonUserPrefsStorage(prefsFilePath).readUserPrefs().orElseThrow());
     }
 
     private Path addToTestDataPathIfNotNull(String userPrefsFileInTestDataFolder) {

@@ -5,14 +5,12 @@ import static java.util.Objects.requireNonNull;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
 import seedu.address.commons.core.LogsCenter;
-import seedu.address.commons.core.index.Index;
 import seedu.address.commons.util.ToStringBuilder;
 import seedu.address.logic.Messages;
 import seedu.address.logic.commands.exceptions.CommandException;
@@ -82,28 +80,24 @@ public class HomeworkUpcomingCommand extends Command {
         LocalDate lastDay = today.plusDays(days);
         List<Student> students = model.getAddressBook().getStudentList();
 
-        // Each entry maps the zero-based roster position of a student to one homework of that student
         // Stream#sorted is stable, so homework due on the same date stays in roster order, then insertion order
-        List<Map.Entry<Integer, Homework>> dueHomeworks = IntStream.range(0, students.size()).boxed()
+        List<DueHomework> dueHomeworks = IntStream.range(0, students.size()).boxed()
                 .flatMap(position -> students.get(position).getHomeworks().stream()
-                        .map(homework -> Map.entry(position, homework)))
-                .filter(entry -> entry.getValue().isUpcoming(today)
-                        && !entry.getValue().getDueDate().getDate().isAfter(lastDay))
-                .sorted(Comparator.comparing(entry -> entry.getValue().getDueDate().getDate()))
+                        .map(homework -> new DueHomework(position, homework)))
+                .filter(dueHomework -> dueHomework.homework().isUpcoming(today)
+                        && !dueHomework.homework().getDueDate().getDate().isAfter(lastDay))
+                .sorted(Comparator.comparing(dueHomework -> dueHomework.homework().getDueDate().getDate()))
                 .toList();
         if (dueHomeworks.isEmpty()) {
             return String.format(MESSAGE_NO_HOMEWORK, today, lastDay);
         }
 
-        String recordWord = dueHomeworks.size() == 1
-                ? HomeworkListCommand.MESSAGE_RECORD_SINGULAR
-                : HomeworkListCommand.MESSAGE_RECORD_PLURAL;
-        StringBuilder message = new StringBuilder(String.format(MESSAGE_SUCCESS, dueHomeworks.size(), recordWord,
-                today, lastDay));
-        for (Map.Entry<Integer, Homework> entry : dueHomeworks) {
-            int position = entry.getKey();
-            Homework homework = entry.getValue();
-            message.append(String.format(MESSAGE_HOMEWORK_LINE, Index.fromZeroBased(position).getOneBased(),
+        StringBuilder message = new StringBuilder(String.format(MESSAGE_SUCCESS, dueHomeworks.size(),
+                HomeworkListCommand.getRecordWord(dueHomeworks.size()), today, lastDay));
+        for (DueHomework dueHomework : dueHomeworks) {
+            int position = dueHomework.rosterPosition();
+            Homework homework = dueHomework.homework();
+            message.append(String.format(MESSAGE_HOMEWORK_LINE, position + 1,
                     students.get(position).getName(), homework.getTitle(), homework.getSubject(),
                     homework.getDueDate(), Messages.formatScore(homework), homework.getStatus()));
         }
@@ -136,5 +130,11 @@ public class HomeworkUpcomingCommand extends Command {
                 .add("today", today)
                 .add("days", days)
                 .toString();
+    }
+
+    /**
+     * Holds one homework due in the window and the zero-based roster position of its student.
+     */
+    private record DueHomework(int rosterPosition, Homework homework) {
     }
 }

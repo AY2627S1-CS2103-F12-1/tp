@@ -105,9 +105,8 @@ public class HomeworkListCommand extends Command {
             return String.format(MESSAGE_NO_UPCOMING_HOMEWORK, student.getName());
         }
 
-        String recordWord = listedIndices.size() == 1 ? MESSAGE_RECORD_SINGULAR : MESSAGE_RECORD_PLURAL;
         StringBuilder message = new StringBuilder(String.format(isAllShown ? MESSAGE_SUCCESS_ALL : MESSAGE_SUCCESS,
-                listedIndices.size(), recordWord, student.getName(), student.getName()));
+                listedIndices.size(), getRecordWord(listedIndices.size()), student.getName(), student.getName()));
         for (int zeroBasedIndex : listedIndices) {
             Homework homework = homeworks.get(zeroBasedIndex);
             message.append(String.format(MESSAGE_HOMEWORK_LINE, zeroBasedIndex + 1, homework.getTitle(),
@@ -115,6 +114,13 @@ public class HomeworkListCommand extends Command {
                     homework.getStatus()));
         }
         return message.toString();
+    }
+
+    /**
+     * Returns the word for homework records that follows {@code count} in a summary line.
+     */
+    static String getRecordWord(int count) {
+        return count == 1 ? MESSAGE_RECORD_SINGULAR : MESSAGE_RECORD_PLURAL;
     }
 
     @Override

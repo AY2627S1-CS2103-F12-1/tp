@@ -92,7 +92,7 @@ public class EditCommand extends Command {
 
     @Override
     public String getSaveFailureMessage(String defaultMessage) {
-        return MESSAGE_SAVE_FAILURE;
+        return MESSAGE_SAVE_FAILURE + "\n" + defaultMessage;
     }
 
     @Override

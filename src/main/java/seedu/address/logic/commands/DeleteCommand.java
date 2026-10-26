@@ -24,6 +24,7 @@ public class DeleteCommand extends Command {
             + "Example: " + COMMAND_WORD + " 1";
 
     public static final String MESSAGE_DELETE_STUDENT_SUCCESS = "Deleted student: %1$s";
+    public static final String MESSAGE_SAVE_FAILURE = "The student could not be deleted. No student data was changed.";
 
     private final Index targetIndex;
 
@@ -43,6 +44,11 @@ public class DeleteCommand extends Command {
         Student studentToDelete = lastShownList.get(targetIndex.getZeroBased());
         model.deleteStudent(studentToDelete);
         return new CommandResult(String.format(MESSAGE_DELETE_STUDENT_SUCCESS, Messages.format(studentToDelete)));
+    }
+
+    @Override
+    public String getSaveFailureMessage(String defaultMessage) {
+        return MESSAGE_SAVE_FAILURE + "\n" + defaultMessage;
     }
 
     @Override

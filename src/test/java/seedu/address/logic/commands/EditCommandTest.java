@@ -168,7 +168,7 @@ public class EditCommandTest {
 
     @Test
     public void getSaveFailureMessage_returnsEditSpecificMessage() throws ParseException {
-        assertEquals(EditCommand.MESSAGE_SAVE_FAILURE,
+        assertEquals(EditCommand.MESSAGE_SAVE_FAILURE + "\ndefault",
                 parser.parse("1 n/Jane").getSaveFailureMessage("default"));
     }
 

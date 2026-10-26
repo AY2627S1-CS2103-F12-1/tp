@@ -31,6 +31,7 @@ import org.junit.jupiter.api.io.TempDir;
 import javafx.collections.ObservableList;
 import seedu.address.logic.commands.ClearCommand;
 import seedu.address.logic.commands.CommandResult;
+import seedu.address.logic.commands.DeleteCommand;
 import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
@@ -405,7 +406,8 @@ public class LogicManagerTest {
         initial.setStudent(initial.getStudentList().get(0),
                 initial.getStudentList().get(0).withLessons(List.of(MONDAY_MATH)));
         setUpLogic(initial, getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
-        String expectedMessage = String.format(LogicManager.FILE_OPS_ERROR_FORMAT, DUMMY_IO_EXCEPTION.getMessage());
+        String expectedMessage = DeleteCommand.MESSAGE_SAVE_FAILURE + "\n"
+                + String.format(LogicManager.FILE_OPS_ERROR_FORMAT, DUMMY_IO_EXCEPTION.getMessage());
 
         assertCommandFailure("delete 1", CommandException.class, expectedMessage,
                 new ModelManager(initial, new UserPrefs()));
@@ -467,7 +469,8 @@ public class LogicManagerTest {
         AddressBook before = new AddressBook(model.getAddressBook());
         setUpLogic(before, getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
 
-        assertCommandException("edit 1 n/Jane Tan", EditCommand.MESSAGE_SAVE_FAILURE);
+        assertCommandException("edit 1 n/Jane Tan", EditCommand.MESSAGE_SAVE_FAILURE + "\n"
+                + String.format(LogicManager.FILE_OPS_ERROR_FORMAT, DUMMY_IO_EXCEPTION.getMessage()));
 
         assertEquals(before, model.getAddressBook());
         assertEquals(beforeFile, Files.readString(dataFilePath));

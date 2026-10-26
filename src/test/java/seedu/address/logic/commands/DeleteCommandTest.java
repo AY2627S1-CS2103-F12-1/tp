@@ -103,6 +103,12 @@ public class DeleteCommandTest {
     }
 
     @Test
+    public void getSaveFailureMessage_includesRollbackAndCause() {
+        assertEquals(DeleteCommand.MESSAGE_SAVE_FAILURE + "\nCould not save data",
+                new DeleteCommand(INDEX_FIRST_STUDENT).getSaveFailureMessage("Could not save data"));
+    }
+
+    @Test
     public void toStringMethod() {
         Index targetIndex = Index.fromOneBased(1);
         DeleteCommand deleteCommand = new DeleteCommand(targetIndex);

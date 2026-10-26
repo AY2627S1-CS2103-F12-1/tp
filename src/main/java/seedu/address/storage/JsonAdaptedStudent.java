@@ -106,20 +106,7 @@ class JsonAdaptedStudent {
         final StudentPhone modelGuardianPhone = toModelValue("guardianPhone", guardianPhone, StudentPhone::new,
                 StudentPhone.MESSAGE_CONSTRAINTS);
 
-        final List<Homework> modelHomeworks = new ArrayList<>();
-        for (JsonAdaptedHomework jsonAdaptedHomework : homeworks) {
-            if (jsonAdaptedHomework == null) {
-                throw new IllegalValueException(MESSAGE_EMPTY_HOMEWORK_ENTRY);
-            }
-            Homework homework = jsonAdaptedHomework.toModelType();
-            if (!modelSubjects.getSubjects().contains(homework.getSubject())) {
-                throw new IllegalValueException(MESSAGE_SUBJECT_NOT_TAKEN);
-            }
-            if (modelHomeworks.stream().anyMatch(homework::isSameHomework)) {
-                throw new IllegalValueException(MESSAGE_DUPLICATE_HOMEWORK);
-            }
-            modelHomeworks.add(homework);
-        }
+        final List<Homework> modelHomeworks = toModelHomeworks(modelSubjects);
 
         List<RegularLesson> modelLessons = new ArrayList<>();
         for (JsonAdaptedLesson adapted : lessons) {
@@ -137,6 +124,30 @@ class JsonAdaptedStudent {
         }
         return new Student(modelName, modelAcademicLevel, modelSubjects, modelPhone, modelGuardianName,
                 modelGuardianPhone, modelHomeworks, modelLessons);
+    }
+
+    /**
+     * Returns the homework in the {@code homeworks} list, in order. Each homework must be for one of
+     * {@code modelSubjects}, and no two homework records may be the same by {@link Homework#isSameHomework(Homework)}.
+     *
+     * @throws IllegalValueException If an entry is empty or invalid, is for another subject, or is a duplicate.
+     */
+    private List<Homework> toModelHomeworks(TuitionSubjects modelSubjects) throws IllegalValueException {
+        List<Homework> modelHomeworks = new ArrayList<>();
+        for (JsonAdaptedHomework jsonAdaptedHomework : homeworks) {
+            if (jsonAdaptedHomework == null) {
+                throw new IllegalValueException(MESSAGE_EMPTY_HOMEWORK_ENTRY);
+            }
+            Homework homework = jsonAdaptedHomework.toModelType();
+            if (!modelSubjects.getSubjects().contains(homework.getSubject())) {
+                throw new IllegalValueException(MESSAGE_SUBJECT_NOT_TAKEN);
+            }
+            if (modelHomeworks.stream().anyMatch(homework::isSameHomework)) {
+                throw new IllegalValueException(MESSAGE_DUPLICATE_HOMEWORK);
+            }
+            modelHomeworks.add(homework);
+        }
+        return modelHomeworks;
     }
 
     /**

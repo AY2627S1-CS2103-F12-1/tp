@@ -44,7 +44,7 @@ public class StudentFieldsTest {
 
         assertEquals(Set.of(TuitionSubject.PHYSICS, TuitionSubject.MATH), subjects.getSubjects());
         assertEquals("PHYSICS, MATH", subjects.toString());
-        assertEquals(subjects, new TuitionSubjects("math,physics"));
+        assertEquals(subjects, new TuitionSubjects("physics,math"));
         assertThrows(UnsupportedOperationException.class, () -> subjects.getSubjects().add(TuitionSubject.CHEMISTRY));
     }
 
@@ -102,8 +102,9 @@ public class StudentFieldsTest {
         assertEquals(new StudentName("John Tan").hashCode(), name.hashCode());
         assertEquals(new StudentPhone("91234567"), phone);
         assertEquals(new StudentPhone("91234567").hashCode(), phone.hashCode());
-        assertEquals(new TuitionSubjects("PHYSICS, MATH"), subjects);
-        assertEquals(new TuitionSubjects("PHYSICS, MATH").hashCode(), subjects.hashCode());
+        assertEquals(new TuitionSubjects("MATH, PHYSICS"), subjects);
+        assertEquals(new TuitionSubjects("MATH, PHYSICS").hashCode(), subjects.hashCode());
+        assertFalse(subjects.equals(new TuitionSubjects("PHYSICS, MATH")));
         assertFalse(name.equals(new StudentName("Jane Tan")));
         assertFalse(phone.equals(new StudentPhone("81234567")));
         assertFalse(subjects.equals(new TuitionSubjects("CHEMISTRY")));

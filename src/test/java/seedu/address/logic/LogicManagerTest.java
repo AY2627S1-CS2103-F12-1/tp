@@ -427,6 +427,18 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_editStudentSubjectOrder_persistsNewOrder() throws Exception {
+        AddressBook initial = new AddressBook();
+        initial.addStudent(new StudentBuilder().withSubjects("MATH, PHYSICS").build());
+        setUpLogic(initial, addressBookStorage);
+
+        logic.execute("edit 1 s/PHYSICS, MATH");
+
+        Student saved = addressBookStorage.readAddressBook().orElseThrow().getStudentList().getFirst();
+        assertEquals("PHYSICS, MATH", saved.getSubjects().toString());
+    }
+
+    @Test
     public void execute_editStudentAfterSearch_updatesSelectedStudentAndFilteredView() throws Exception {
         Student first = new StudentBuilder().build();
         Student second = new StudentBuilder().withName("Jane Tan").withPhone("92345678").build();

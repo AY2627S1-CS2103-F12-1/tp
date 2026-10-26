@@ -129,6 +129,18 @@ public class EditCommandTest {
     }
 
     @Test
+    public void execute_reorderingSubjects_updatesDisplayedOrder() throws Exception {
+        Student original = new StudentBuilder().withSubjects("MATH, PHYSICS").withHomeworks(ALGEBRA).build();
+        ModelManager model = modelWith(original);
+
+        execute("1 s/PHYSICS, MATH", model);
+
+        Student edited = model.getStudentList().get(0);
+        assertEquals("PHYSICS, MATH", edited.getSubjects().toString());
+        assertEquals(original.getHomeworks(), edited.getHomeworks());
+    }
+
+    @Test
     public void execute_removingUnusedSubject_succeeds() throws Exception {
         Student original = new StudentBuilder().withSubjects("MATH, PHYSICS")
                 .withHomeworks(ALGEBRA).withLessons(MONDAY_MATH).build();

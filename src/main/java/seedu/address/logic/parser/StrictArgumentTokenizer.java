@@ -188,11 +188,14 @@ public final class StrictArgumentTokenizer {
             return -1;
         }
 
+        // Only whitespace follows this index. Comparing with it, rather than checking the rest of the arguments at
+        // every quote, keeps the scan linear when there are many quotes.
+        int contentEnd = arguments.stripTrailing().length();
         Matcher prefixMatcher = WHITESPACE_THEN_PREFIX_PATTERN.matcher(arguments);
         int closingQuote = arguments.indexOf(QUOTE, openingQuote + 1);
         while (closingQuote != -1) {
             int afterQuote = closingQuote + 1;
-            if (arguments.substring(afterQuote).isBlank()) {
+            if (afterQuote >= contentEnd) {
                 return afterQuote;
             }
             prefixMatcher.region(afterQuote, arguments.length());

@@ -17,6 +17,7 @@ import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
 import seedu.address.model.ReadOnlyAddressBook;
 import seedu.address.model.student.Student;
+import seedu.address.storage.DataFileConflictException;
 import seedu.address.storage.Storage;
 
 /**
@@ -73,7 +74,9 @@ public class LogicManager implements Logic {
         } catch (IOException ioe) {
             logger.warning("Could not save data, so the command's changes are undone: " + ioe);
             model.setAddressBook(dataBeforeCommand);
-            throw new CommandException(command.getSaveFailureMessage(getSaveErrorMessage(ioe)), ioe);
+            String message = ioe instanceof DataFileConflictException ? ioe.getMessage()
+                    : command.getSaveFailureMessage(getSaveErrorMessage(ioe));
+            throw new CommandException(message, ioe);
         }
 
         return commandResult;

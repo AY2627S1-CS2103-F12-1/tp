@@ -3,13 +3,23 @@ package seedu.address.storage;
 import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Logger;
 
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.exceptions.DataLoadingException;
 import seedu.address.commons.exceptions.IllegalValueException;
+import seedu.address.commons.util.FileUtil;
 import seedu.address.commons.util.JsonUtil;
 import seedu.address.model.ReadOnlyAddressBook;
 
@@ -21,6 +31,7 @@ public class JsonAddressBookStorage {
     private static final Logger logger = LogsCenter.getLogger(JsonAddressBookStorage.class);
 
     private Path filePath;
+    private final Map<Path, byte[]> knownVersions = new HashMap<>();
 
     public JsonAddressBookStorage(Path filePath) {
         this.filePath = filePath;
@@ -49,17 +60,20 @@ public class JsonAddressBookStorage {
     public Optional<ReadOnlyAddressBook> readAddressBook(Path filePath) throws DataLoadingException {
         requireNonNull(filePath);
 
-        Optional<JsonSerializableAddressBook> jsonAddressBook = JsonUtil.readJsonFile(
-                filePath, JsonSerializableAddressBook.class);
-        if (!jsonAddressBook.isPresent()) {
-            return Optional.empty();
-        }
-
         try {
-            return Optional.of(jsonAddressBook.get().toModelType());
-        } catch (IllegalValueException ive) {
-            logger.info("Illegal values found in " + filePath + ": " + ive.getMessage());
-            throw new DataLoadingException(ive);
+            byte[] before = readVersion(filePath);
+            Optional<JsonSerializableAddressBook> jsonAddressBook = JsonUtil.readJsonFile(
+                    filePath, JsonSerializableAddressBook.class);
+            Optional<ReadOnlyAddressBook> result = jsonAddressBook.isPresent()
+                    ? Optional.of(jsonAddressBook.get().toModelType()) : Optional.empty();
+            if (!Arrays.equals(before, readVersion(filePath))) {
+                throw new IOException("The data file changed while loading. Try opening TutorFlow again.");
+            }
+            knownVersions.put(filePath.toAbsolutePath().normalize(), before);
+            return result;
+        } catch (IOException | IllegalValueException exception) {
+            logger.info("Could not load " + filePath + ": " + exception.getMessage());
+            throw new DataLoadingException(exception);
         }
     }
 
@@ -82,7 +96,37 @@ public class JsonAddressBookStorage {
         requireNonNull(addressBook);
         requireNonNull(filePath);
 
-        JsonUtil.saveJsonFile(new JsonSerializableAddressBook(addressBook), filePath);
+        Path normalized = filePath.toAbsolutePath().normalize();
+        Files.createDirectories(normalized.getParent());
+        Path lockFile = normalized.resolveSibling(normalized.getFileName() + ".lock");
+        try (FileChannel channel = FileChannel.open(lockFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+                FileLock lock = acquireWriteLock(channel)) {
+            if (knownVersions.containsKey(normalized)
+                    && !Arrays.equals(knownVersions.get(normalized), readVersion(normalized))) {
+                throw new DataFileConflictException(DataFileConflictException.MESSAGE_CHANGED);
+            }
+            String json = JsonUtil.toJsonString(new JsonSerializableAddressBook(addressBook));
+            FileUtil.writeToFile(normalized, json);
+            knownVersions.put(normalized, json.getBytes(StandardCharsets.UTF_8));
+        }
+    }
+
+    /** Returns saved bytes, with null distinguishing a missing file from an empty file. */
+    private static byte[] readVersion(Path file) throws IOException {
+        return Files.notExists(file) ? null : Files.readAllBytes(file);
+    }
+
+    /** Serializes cooperating writers across processes before comparing and replacing the file. */
+    private static FileLock acquireWriteLock(FileChannel channel) throws IOException {
+        try {
+            FileLock lock = channel.tryLock();
+            if (lock != null) {
+                return lock;
+            }
+        } catch (OverlappingFileLockException exception) {
+            throw new DataFileConflictException(DataFileConflictException.MESSAGE_BUSY);
+        }
+        throw new DataFileConflictException(DataFileConflictException.MESSAGE_BUSY);
     }
 
 }

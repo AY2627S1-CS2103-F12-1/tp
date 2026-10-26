@@ -37,7 +37,12 @@ public class JsonUtil {
 
     static <T> T deserializeObjectFromJsonFile(Path jsonFile, Class<T> classOfObjectToDeserialize)
             throws IOException {
-        return fromJsonString(FileUtil.readFromFile(jsonFile), classOfObjectToDeserialize);
+        String json = FileUtil.readFromFile(jsonFile);
+        // Editors may add a UTF-8 signature. It is an encoding marker, not JSON content.
+        if (json.startsWith("\ufeff")) {
+            json = json.substring(1);
+        }
+        return fromJsonString(json, classOfObjectToDeserialize);
     }
 
     /**

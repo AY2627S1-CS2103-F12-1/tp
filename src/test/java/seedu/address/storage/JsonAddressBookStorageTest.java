@@ -1,10 +1,12 @@
 package seedu.address.storage;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
+import static seedu.address.testutil.TypicalRegularLessons.MONDAY_MATH;
 import static seedu.address.testutil.TypicalStudents.ALICE;
 import static seedu.address.testutil.TypicalStudents.BENSON;
 import static seedu.address.testutil.TypicalStudents.getTypicalAddressBook;
@@ -29,6 +31,20 @@ public class JsonAddressBookStorageTest {
 
     @TempDir
     public Path testFolder;
+
+    @Test
+    public void readAddressBook_utf8Bom_preservesRecordsAndOriginalBytes() throws Exception {
+        Path file = testFolder.resolve("bom.json");
+        AddressBook original = getTypicalAddressBook();
+        original.setStudent(ALICE, ALICE.withLessons(List.of(MONDAY_MATH)));
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(file);
+        storage.saveAddressBook(original);
+        Files.writeString(file, "\ufeff" + Files.readString(file));
+        byte[] saved = Files.readAllBytes(file);
+
+        assertEquals(original, new AddressBook(storage.readAddressBook().orElseThrow()));
+        assertArrayEquals(saved, Files.readAllBytes(file));
+    }
 
     @Test
     public void readAddressBook_nullFilePath_throwsNullPointerException() {

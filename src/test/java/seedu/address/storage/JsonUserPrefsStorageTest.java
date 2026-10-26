@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static seedu.address.testutil.Assert.assertThrows;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
@@ -41,6 +42,23 @@ public class JsonUserPrefsStorageTest {
     @Test
     public void readUserPrefs_notJsonFormat_exceptionThrown() {
         assertThrows(DataLoadingException.class, () -> readUserPrefs("NotJsonFormatUserPrefs.json"));
+    }
+
+    @Test
+    public void readUserPrefs_duplicateKey_exceptionThrown() throws IOException {
+        Path prefsFilePath = testFolder.resolve("DuplicateKeyPrefs.json");
+        Files.writeString(prefsFilePath, "{\"guiSettings\" : {\"windowWidth\" : 1000.0, \"windowWidth\" : 800.0}}");
+
+        assertThrows(DataLoadingException.class, () -> new JsonUserPrefsStorage(prefsFilePath).readUserPrefs());
+    }
+
+    @Test
+    public void readUserPrefs_trailingContent_exceptionThrown() throws IOException {
+        Path prefsFilePath = testFolder.resolve("TrailingContentPrefs.json");
+        Files.writeString(prefsFilePath, Files.readString(TEST_DATA_FOLDER.resolve("TypicalUserPref.json"))
+                + "{\"guiSettings\" : {}}");
+
+        assertThrows(DataLoadingException.class, () -> new JsonUserPrefsStorage(prefsFilePath).readUserPrefs());
     }
 
     private Path addToTestDataPathIfNotNull(String userPrefsFileInTestDataFolder) {

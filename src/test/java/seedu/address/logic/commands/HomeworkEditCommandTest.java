@@ -12,9 +12,9 @@ import static seedu.address.testutil.TypicalHomeworks.MECHANICS;
 import static seedu.address.testutil.TypicalStudents.ALICE;
 import static seedu.address.testutil.TypicalStudents.BENSON;
 import static seedu.address.testutil.TypicalStudents.CARL;
+import static seedu.address.testutil.TypicalStudents.getModelFailingOnSetStudent;
 import static seedu.address.testutil.TypicalStudents.getModelWithStudents;
 import static seedu.address.testutil.TypicalStudents.getModelWithTypicalStudents;
-import static seedu.address.testutil.TypicalStudents.getTypicalStudents;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -25,11 +25,9 @@ import seedu.address.commons.core.index.Index;
 import seedu.address.logic.Messages;
 import seedu.address.logic.commands.HomeworkEditCommand.EditHomeworkDescriptor;
 import seedu.address.model.Model;
-import seedu.address.model.ModelManager;
 import seedu.address.model.homework.DueDate;
 import seedu.address.model.homework.Homework;
 import seedu.address.model.homework.Title;
-import seedu.address.model.student.Student;
 import seedu.address.model.student.TuitionSubject;
 import seedu.address.testutil.HomeworkBuilder;
 
@@ -253,13 +251,7 @@ public class HomeworkEditCommandTest {
 
     @Test
     public void execute_unexpectedError_reportsInternalErrorWithoutChangingModel() {
-        Model failingModel = new ModelManager() {
-            @Override
-            public void setStudent(Student target, Student editedStudent) {
-                throw new IllegalStateException("dummy internal error");
-            }
-        };
-        getTypicalStudents().forEach(failingModel::addStudent);
+        Model failingModel = getModelFailingOnSetStudent();
 
         assertCommandFailure(new HomeworkEditCommand(FIRST, FIRST, NEW_TITLE, false, TODAY), failingModel,
                 HomeworkEditCommand.MESSAGE_INTERNAL_ERROR);

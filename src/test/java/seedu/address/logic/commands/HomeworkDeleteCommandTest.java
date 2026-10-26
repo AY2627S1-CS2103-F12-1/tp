@@ -12,9 +12,9 @@ import static seedu.address.testutil.TypicalHomeworks.MECHANICS;
 import static seedu.address.testutil.TypicalStudents.ALICE;
 import static seedu.address.testutil.TypicalStudents.BENSON;
 import static seedu.address.testutil.TypicalStudents.CARL;
+import static seedu.address.testutil.TypicalStudents.getModelFailingOnSetStudent;
 import static seedu.address.testutil.TypicalStudents.getModelWithStudents;
 import static seedu.address.testutil.TypicalStudents.getModelWithTypicalStudents;
-import static seedu.address.testutil.TypicalStudents.getTypicalStudents;
 
 import java.util.List;
 
@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import seedu.address.commons.core.index.Index;
 import seedu.address.logic.Messages;
 import seedu.address.model.Model;
-import seedu.address.model.ModelManager;
 import seedu.address.model.homework.Homework;
 import seedu.address.model.student.Student;
 import seedu.address.testutil.HomeworkBuilder;
@@ -128,13 +127,7 @@ public class HomeworkDeleteCommandTest {
 
     @Test
     public void execute_unexpectedError_reportsInternalErrorWithoutChangingModel() {
-        Model failingModel = new ModelManager() {
-            @Override
-            public void setStudent(Student target, Student editedStudent) {
-                throw new IllegalStateException("dummy internal error");
-            }
-        };
-        getTypicalStudents().forEach(failingModel::addStudent);
+        Model failingModel = getModelFailingOnSetStudent();
 
         assertCommandFailure(new HomeworkDeleteCommand(Index.fromOneBased(1), Index.fromOneBased(1)),
                 failingModel, HomeworkDeleteCommand.MESSAGE_INTERNAL_ERROR);

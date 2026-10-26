@@ -194,13 +194,7 @@ public class HomeworkUpcomingCommandTest {
 
     @Test
     public void execute_unexpectedError_reportsInternalErrorWithoutChangingModel() {
-        Model failingModel = new ModelManager() {
-            @Override
-            public ReadOnlyAddressBook getAddressBook() {
-                throw new IllegalStateException("dummy internal error");
-            }
-        };
-        List.of(ZOE, NO_HOMEWORK, ADAM).forEach(failingModel::addStudent);
+        Model failingModel = getModelFailingOnGetAddressBook();
 
         assertThrows(CommandException.class, HomeworkUpcomingCommand.MESSAGE_INTERNAL_ERROR, ()
                 -> new HomeworkUpcomingCommand(TODAY, 7).execute(failingModel));
@@ -210,13 +204,7 @@ public class HomeworkUpcomingCommandTest {
 
     @Test
     public void execute_unexpectedError_keepsDisplayedStudents() {
-        Model failingModel = new ModelManager() {
-            @Override
-            public ReadOnlyAddressBook getAddressBook() {
-                throw new IllegalStateException("dummy internal error");
-            }
-        };
-        List.of(ZOE, NO_HOMEWORK, ADAM).forEach(failingModel::addStudent);
+        Model failingModel = getModelFailingOnGetAddressBook();
         failingModel.updateFilteredStudentList(student -> student.equals(ADAM));
 
         assertThrows(CommandException.class, HomeworkUpcomingCommand.MESSAGE_INTERNAL_ERROR, ()
@@ -253,5 +241,20 @@ public class HomeworkUpcomingCommandTest {
     public void toStringMethod() {
         String expected = HomeworkUpcomingCommand.class.getCanonicalName() + "{today=2026-10-17, days=7}";
         assertEquals(expected, new HomeworkUpcomingCommand(TODAY, 7).toString());
+    }
+
+    /**
+     * Returns a new model holding Zoe, Benson and Adam whose {@code getAddressBook} throws an unexpected
+     * {@code IllegalStateException}.
+     */
+    private static Model getModelFailingOnGetAddressBook() {
+        Model failingModel = new ModelManager() {
+            @Override
+            public ReadOnlyAddressBook getAddressBook() {
+                throw new IllegalStateException("dummy internal error");
+            }
+        };
+        List.of(ZOE, NO_HOMEWORK, ADAM).forEach(failingModel::addStudent);
+        return failingModel;
     }
 }

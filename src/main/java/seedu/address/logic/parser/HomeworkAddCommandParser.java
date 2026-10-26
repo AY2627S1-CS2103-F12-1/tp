@@ -27,17 +27,17 @@ import seedu.address.model.student.TuitionSubject;
  * repeated prefix anywhere in the input is reported first (e.g. {@code t/A title/B x/C} reports {@code x/}).
  */
 public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
-    public static final String MESSAGE_MISSING_PREFIXES = "Missing required prefix(es): %s\nUsage: "
-            + HomeworkAddCommand.MESSAGE_USAGE;
     public static final String PREFIX_TITLE = "title/";
     public static final String PREFIX_TITLE_ALIAS = "t/";
     public static final String PREFIX_SUBJECT = "s/";
     public static final String PREFIX_DUE_DATE = "due/";
 
+    /** Prefixes accepted by both {@code homework add} and {@code homework edit}. */
+    static final List<String> ALLOWED_PREFIXES = List.of(PREFIX_TITLE, PREFIX_TITLE_ALIAS, PREFIX_SUBJECT,
+            PREFIX_DUE_DATE);
+
     private static final String MESSAGE_INVALID_FORMAT = String.format(Messages.MESSAGE_INVALID_FORMAT_WITH_USAGE,
             HomeworkAddCommand.MESSAGE_USAGE);
-    private static final List<String> ALLOWED_PREFIXES = List.of(PREFIX_TITLE, PREFIX_TITLE_ALIAS, PREFIX_SUBJECT,
-            PREFIX_DUE_DATE);
 
     private final Clock clock;
 
@@ -118,7 +118,8 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
             missingPrefixes.add(PREFIX_DUE_DATE);
         }
         if (!missingPrefixes.isEmpty()) {
-            throw new ParseException(String.format(MESSAGE_MISSING_PREFIXES, String.join(", ", missingPrefixes)));
+            throw new ParseException(String.format(Messages.MESSAGE_MISSING_PREFIXES_WITH_USAGE,
+                    String.join(", ", missingPrefixes), HomeworkAddCommand.MESSAGE_USAGE));
         }
     }
 }

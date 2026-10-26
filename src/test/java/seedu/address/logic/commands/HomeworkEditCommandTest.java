@@ -188,6 +188,32 @@ public class HomeworkEditCommandTest {
     }
 
     @Test
+    public void execute_filteredList_editsDisplayedStudentHomework() {
+        // CARL is third in the roster but first in the displayed list
+        model.updateFilteredStudentList(CARL::equals);
+        EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(new Title("Revise mechanics"), null, null);
+        Homework editedMechanics = new HomeworkBuilder(MECHANICS).withTitle("Revise mechanics").build();
+        String expectedMessage = "Edited homework:\n"
+                + "Carl Ng; Title: Revise mechanics; Subject: PHYSICS; Due: 2026-10-20\n"
+                + "Listed 1 upcoming homework record for Carl Ng.\n"
+                + "Homework for Carl Ng:\n"
+                + "1. Revise mechanics (PHYSICS) - due 2026-10-20 - score Not recorded - status ASSIGNED";
+        Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON,
+                CARL.withHomeworks(List.of(editedMechanics))));
+
+        assertCommandSuccess(new HomeworkEditCommand(FIRST, FIRST, descriptor, false, TODAY), model, expectedMessage,
+                expectedModel);
+    }
+
+    @Test
+    public void execute_indexBeyondFilteredList_failure() {
+        model.updateFilteredStudentList(CARL::equals);
+
+        assertCommandFailure(new HomeworkEditCommand(SECOND, FIRST, NEW_TITLE, false, TODAY), model,
+                Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
+    }
+
+    @Test
     public void execute_emptyRoster_failure() {
         assertCommandFailure(new HomeworkEditCommand(FIRST, FIRST, NEW_TITLE, false, TODAY),
                 getModelWithStudents(List.of()), Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);

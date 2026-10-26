@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.testutil.Assert.assertThrows;
+import static seedu.address.testutil.TypicalStudents.CARL;
 import static seedu.address.testutil.TypicalStudents.getModelWithStudents;
 import static seedu.address.testutil.TypicalStudents.getModelWithTypicalStudents;
 import static seedu.address.testutil.TypicalStudents.getTypicalStudents;
@@ -157,6 +158,27 @@ public class HomeworkListCommandTest {
     @Test
     public void execute_studentIndexAboveListSize_failure() {
         assertCommandFailure(new HomeworkListCommand(Index.fromOneBased(4), BEFORE_ALL_DUE_DATES, false), model,
+                Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
+    }
+
+    @Test
+    public void execute_filteredList_listsDisplayedStudent() {
+        // CARL is third in the roster but first in the displayed list
+        model.updateFilteredStudentList(CARL::equals);
+        String expectedMessage = "Listed 1 upcoming homework record for Carl Ng.\n"
+                + "Homework for Carl Ng:\n"
+                + "1. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded"
+                + " - status ASSIGNED";
+
+        assertCommandSuccess(new HomeworkListCommand(FIRST, BEFORE_ALL_DUE_DATES, false), model, expectedMessage,
+                expectedModel);
+    }
+
+    @Test
+    public void execute_indexBeyondFilteredList_failure() {
+        model.updateFilteredStudentList(CARL::equals);
+
+        assertCommandFailure(new HomeworkListCommand(Index.fromOneBased(2), BEFORE_ALL_DUE_DATES, false), model,
                 Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
     }
 

@@ -105,6 +105,26 @@ public class HomeworkDeleteCommandTest {
     }
 
     @Test
+    public void execute_filteredList_deletesFromDisplayedStudent() {
+        // CARL is third in the roster but first in the displayed list
+        model.updateFilteredStudentList(CARL::equals);
+        String expectedMessage = "Deleted homework:\n"
+                + "Carl Ng; Title: Attempt mechanics questions 1-5; Subject: PHYSICS; Due: 2026-10-20";
+        Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON, CARL.withHomeworks(List.of())));
+
+        assertCommandSuccess(new HomeworkDeleteCommand(Index.fromOneBased(1), Index.fromOneBased(1)), model,
+                expectedMessage, expectedModel);
+    }
+
+    @Test
+    public void execute_indexBeyondFilteredList_failure() {
+        model.updateFilteredStudentList(CARL::equals);
+
+        assertCommandFailure(new HomeworkDeleteCommand(Index.fromOneBased(2), Index.fromOneBased(1)), model,
+                Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
+    }
+
+    @Test
     public void execute_bothIndicesOutOfRange_reportsStudentIndex() {
         HomeworkDeleteCommand command = new HomeworkDeleteCommand(Index.fromOneBased(4), Index.fromOneBased(9));
 

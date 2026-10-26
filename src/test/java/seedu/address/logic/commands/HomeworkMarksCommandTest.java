@@ -149,6 +149,27 @@ public class HomeworkMarksCommandTest {
     }
 
     @Test
+    public void execute_filteredList_recordsForDisplayedStudent() {
+        // CARL is third in the roster but first in the displayed list
+        model.updateFilteredStudentList(CARL::equals);
+        String expectedMessage = "Recorded homework marks:\n"
+                + "Carl Ng; Title: Attempt mechanics questions 1-5; Subject: PHYSICS; Due: 2026-10-20; Score: 5/10";
+        Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON,
+                CARL.withHomeworks(List.of(new HomeworkBuilder(MECHANICS).withScore("5/10").build()))));
+
+        assertCommandSuccess(new HomeworkMarksCommand(FIRST, FIRST, FIVE_OUT_OF_TEN), model, expectedMessage,
+                expectedModel);
+    }
+
+    @Test
+    public void execute_indexBeyondFilteredList_failure() {
+        model.updateFilteredStudentList(CARL::equals);
+
+        assertCommandFailure(new HomeworkMarksCommand(SECOND, FIRST, FIVE_OUT_OF_TEN), model,
+                Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
+    }
+
+    @Test
     public void execute_emptyRoster_failure() {
         assertCommandFailure(new HomeworkMarksCommand(FIRST, FIRST, FIVE_OUT_OF_TEN),
                 getModelWithStudents(List.of()), Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);

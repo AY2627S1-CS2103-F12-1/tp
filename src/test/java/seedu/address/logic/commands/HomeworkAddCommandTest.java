@@ -118,6 +118,28 @@ public class HomeworkAddCommandTest {
     }
 
     @Test
+    public void execute_filteredList_addsToDisplayedStudent() {
+        // CARL is third in the roster but first in the displayed list
+        model.updateFilteredStudentList(CARL::equals);
+        Homework optics = new HomeworkBuilder().withTitle("Optics worksheet").withSubject("PHYSICS").build();
+        String expectedMessage = "New homework added:\n"
+                + "Carl Ng; Title: Optics worksheet; Subject: PHYSICS; Due: 2026-10-15";
+        Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON,
+                CARL.withHomeworks(List.of(MECHANICS, optics))));
+
+        assertCommandSuccess(new HomeworkAddCommand(Index.fromOneBased(1), optics, false), model, expectedMessage,
+                expectedModel);
+    }
+
+    @Test
+    public void execute_indexBeyondFilteredList_failure() {
+        model.updateFilteredStudentList(CARL::equals);
+
+        assertCommandFailure(new HomeworkAddCommand(Index.fromOneBased(2), ALGEBRA, false), model,
+                Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
+    }
+
+    @Test
     public void execute_emptyRoster_failure() {
         HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(1), ALGEBRA, false);
 

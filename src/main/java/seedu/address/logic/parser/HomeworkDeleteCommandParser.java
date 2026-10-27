@@ -2,6 +2,8 @@ package seedu.address.logic.parser;
 
 import static java.util.Objects.requireNonNull;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
 
 import seedu.address.commons.core.index.Index;
@@ -17,6 +19,16 @@ import seedu.address.logic.parser.exceptions.ParseException;
 public class HomeworkDeleteCommandParser implements Parser<HomeworkDeleteCommand> {
     private static final String MESSAGE_INVALID_FORMAT = String.format(Messages.MESSAGE_INVALID_FORMAT_WITH_USAGE,
             HomeworkDeleteCommand.MESSAGE_USAGE);
+
+    private final Clock clock;
+
+    /**
+     * Creates a parser that takes today's date from {@code clock}, to decide which homework the command lists as
+     * upcoming.
+     */
+    public HomeworkDeleteCommandParser(Clock clock) {
+        this.clock = requireNonNull(clock);
+    }
 
     /**
      * Returns a command that deletes the homework whose student index and homework index are given in {@code args}.
@@ -35,6 +47,6 @@ public class HomeworkDeleteCommandParser implements Parser<HomeworkDeleteCommand
 
         Index studentIndex = ParserUtil.parseStrictIndex(indices[0], Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
         Index homeworkIndex = ParserUtil.parseStrictIndex(indices[1], Messages.MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX);
-        return new HomeworkDeleteCommand(studentIndex, homeworkIndex);
+        return new HomeworkDeleteCommand(studentIndex, homeworkIndex, LocalDate.now(clock));
     }
 }

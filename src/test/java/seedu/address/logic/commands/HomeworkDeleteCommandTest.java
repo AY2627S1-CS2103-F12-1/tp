@@ -9,7 +9,6 @@ import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.logic.commands.CommandTestUtil.formatHomeworkLine;
 import static seedu.address.logic.commands.CommandTestUtil.getSaveFailureMessage;
-import static seedu.address.logic.commands.CommandTestUtil.newHomeworkDeleteCommand;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalHomeworks.ATOMIC_STRUCTURE;
@@ -46,12 +45,20 @@ public class HomeworkDeleteCommandTest {
 
     @Test
     public void constructor_nullStudentIndex_throwsNullPointerException() {
-        assertThrows(NullPointerException.class, () -> new HomeworkDeleteCommand(null, Index.fromOneBased(1)));
+        assertThrows(NullPointerException.class, () -> new HomeworkDeleteCommand(null, Index.fromOneBased(1),
+                TODAY));
+    }
+
+    @Test
+    public void constructor_nullToday_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> new HomeworkDeleteCommand(Index.fromOneBased(1),
+                Index.fromOneBased(1), null));
     }
 
     @Test
     public void constructor_nullHomeworkIndex_throwsNullPointerException() {
-        assertThrows(NullPointerException.class, () -> new HomeworkDeleteCommand(Index.fromOneBased(1), null));
+        assertThrows(NullPointerException.class, () -> new HomeworkDeleteCommand(Index.fromOneBased(1), null,
+                TODAY));
     }
 
     @Test
@@ -158,7 +165,7 @@ public class HomeworkDeleteCommandTest {
 
     @Test
     public void execute_studentIndexAboveListSize_failure() {
-        HomeworkDeleteCommand command = new HomeworkDeleteCommand(Index.fromOneBased(4), Index.fromOneBased(1));
+        HomeworkDeleteCommand command = deleteCommand(4, 1, TODAY);
 
         assertCommandFailure(command, model, Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
     }
@@ -179,27 +186,27 @@ public class HomeworkDeleteCommandTest {
     public void execute_indexBeyondFilteredList_failure() {
         model.updateFilteredStudentList(CARL::equals);
 
-        assertCommandFailure(new HomeworkDeleteCommand(Index.fromOneBased(2), Index.fromOneBased(1)), model,
+        assertCommandFailure(deleteCommand(2, 1, TODAY), model,
                 Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
     }
 
     @Test
     public void execute_bothIndicesOutOfRange_reportsStudentIndex() {
-        HomeworkDeleteCommand command = new HomeworkDeleteCommand(Index.fromOneBased(4), Index.fromOneBased(9));
+        HomeworkDeleteCommand command = deleteCommand(4, 9, TODAY);
 
         assertCommandFailure(command, model, Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
     }
 
     @Test
     public void execute_studentWithoutHomework_failure() {
-        HomeworkDeleteCommand command = new HomeworkDeleteCommand(Index.fromOneBased(2), Index.fromOneBased(1));
+        HomeworkDeleteCommand command = deleteCommand(2, 1, TODAY);
 
         assertCommandFailure(command, model, HomeworkDeleteCommand.MESSAGE_NO_HOMEWORK);
     }
 
     @Test
     public void execute_homeworkIndexAboveListSize_failure() {
-        HomeworkDeleteCommand command = new HomeworkDeleteCommand(Index.fromOneBased(1), Index.fromOneBased(4));
+        HomeworkDeleteCommand command = deleteCommand(1, 4, TODAY);
 
         assertCommandFailure(command, model, Messages.MESSAGE_INVALID_HOMEWORK_DISPLAYED_INDEX);
     }
@@ -208,7 +215,7 @@ public class HomeworkDeleteCommandTest {
     public void execute_unexpectedError_reportsInternalErrorWithoutChangingModel() {
         Model failingModel = getModelFailingOnSetStudent();
 
-        assertCommandFailure(new HomeworkDeleteCommand(Index.fromOneBased(1), Index.fromOneBased(1)),
+        assertCommandFailure(deleteCommand(1, 1, TODAY),
                 failingModel, HomeworkDeleteCommand.MESSAGE_INTERNAL_ERROR);
     }
 
@@ -216,7 +223,7 @@ public class HomeworkDeleteCommandTest {
     public void getSaveFailureMessage_cause_namesFileAndCause() {
         String expectedMessage = "The homework could not be deleted because TutorFlow could not save "
                 + SHOWN_DATA_FILE_NAME + ": the data folder is read-only. No homework data was changed.";
-        HomeworkDeleteCommand command = new HomeworkDeleteCommand(Index.fromOneBased(1), Index.fromOneBased(1));
+        HomeworkDeleteCommand command = deleteCommand(1, 1, TODAY);
         assertEquals(expectedMessage, getSaveFailureMessage(command, SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER));
     }
 
@@ -224,14 +231,13 @@ public class HomeworkDeleteCommandTest {
     public void equals() {
         Index firstIndex = Index.fromOneBased(1);
         Index secondIndex = Index.fromOneBased(2);
-        HomeworkDeleteCommand deleteCommand = new HomeworkDeleteCommand(firstIndex, secondIndex);
+        HomeworkDeleteCommand deleteCommand = new HomeworkDeleteCommand(firstIndex, secondIndex, TODAY);
 
         // same object -> returns true
         assertTrue(deleteCommand.equals(deleteCommand));
 
         // same values -> returns true
-        HomeworkDeleteCommand deleteCommandCopy = new HomeworkDeleteCommand(Index.fromOneBased(1),
-                Index.fromOneBased(2));
+        HomeworkDeleteCommand deleteCommandCopy = deleteCommand(1, 2, TODAY);
         assertTrue(deleteCommand.equals(deleteCommandCopy));
         assertEquals(deleteCommand.hashCode(), deleteCommandCopy.hashCode());
 
@@ -242,10 +248,10 @@ public class HomeworkDeleteCommandTest {
         assertFalse(deleteCommand.equals(1));
 
         // different student index -> returns false
-        assertFalse(deleteCommand.equals(new HomeworkDeleteCommand(secondIndex, secondIndex)));
+        assertFalse(deleteCommand.equals(new HomeworkDeleteCommand(secondIndex, secondIndex, TODAY)));
 
         // different homework index -> returns false
-        assertFalse(deleteCommand.equals(new HomeworkDeleteCommand(firstIndex, firstIndex)));
+        assertFalse(deleteCommand.equals(new HomeworkDeleteCommand(firstIndex, firstIndex, TODAY)));
 
         // different today -> returns false
         assertFalse(deleteCommand(1, 2, TODAY).equals(deleteCommand(1, 2, TODAY.plusDays(1))));
@@ -255,7 +261,7 @@ public class HomeworkDeleteCommandTest {
     public void toStringMethod() {
         Index studentIndex = Index.fromOneBased(1);
         Index homeworkIndex = Index.fromOneBased(2);
-        String result = newHomeworkDeleteCommand(studentIndex, homeworkIndex, TODAY).toString();
+        String result = new HomeworkDeleteCommand(studentIndex, homeworkIndex, TODAY).toString();
 
         assertTrue(result.startsWith(HomeworkDeleteCommand.class.getCanonicalName() + "{studentIndex="
                 + studentIndex + ", homeworkIndex=" + homeworkIndex), result);
@@ -267,6 +273,6 @@ public class HomeworkDeleteCommandTest {
      * the student's homework upcoming on {@code today}.
      */
     private static HomeworkDeleteCommand deleteCommand(int studentIndex, int homeworkIndex, LocalDate today) {
-        return newHomeworkDeleteCommand(Index.fromOneBased(studentIndex), Index.fromOneBased(homeworkIndex), today);
+        return new HomeworkDeleteCommand(Index.fromOneBased(studentIndex), Index.fromOneBased(homeworkIndex), today);
     }
 }

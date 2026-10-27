@@ -447,11 +447,22 @@ Format: `homework|hw delete|del STUDENT_INDEX HOMEWORK_INDEX`
 * `STUDENT_INDEX` follows the same rules as in `homework add`.
 * `HOMEWORK_INDEX` refers to the number shown by `homework list STUDENT_INDEX` (or by `homework list STUDENT_INDEX all` for overdue homework). It **must be a positive whole number without leading zeroes**.
 * The remaining homework keeps its order and is renumbered.
+* The result shows the deleted record as `homework list` shows it, with the number it had, its score and its status. Below it is the student's upcoming homework with the new numbers, in the format of `homework list STUDENT_INDEX`. Use these numbers for the next command, as the numbers shown before the deletion may now point to different homework.
 * Deletion cannot be undone.
 
 Examples:
 * `homework list 1` followed by `homework delete 1 2` deletes the 2nd homework of the 1st student.
 * `hw del 3 1`
+* For example, with the sample students on 2026-10-27, after `hw add 2 t/Vectors revision s/MATH due/2026-11-20`, `hw del 2 2` shows the following. On other dates, the upcoming homework listed differs.
+
+  ```text
+  Deleted homework:
+  2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-02 - score Not recorded - status ASSIGNED
+  Listed 2 upcoming homework records for Priya Nair.
+  Homework for Priya Nair:
+  2. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-09 - score Not recorded - status ASSIGNED
+  3. Vectors revision (MATH) - due 2026-11-20 - score Not recorded - status ASSIGNED
+  ```
 
 ### Updating homework completion: `homework status`
 

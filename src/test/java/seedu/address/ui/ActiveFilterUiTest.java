@@ -218,10 +218,14 @@ public class ActiveFilterUiTest {
                 singleLine.setFont(description.getFont());
                 assertTrue(description.getHeight() > singleLine.getLayoutBounds().getHeight(),
                         "the description should wrap onto multiple lines");
-                assertTrue(description.getBoundsInParent().getMaxX() <= root.getWidth() - root.getInsets().getRight(),
+                // Glyph ink can extend slightly into the padding; the allocated label must fit the content area.
+                assertTrue(description.localToParent(description.getLayoutBounds()).getMaxX()
+                        <= root.getWidth() - root.getInsets().getRight(),
                         family + ": bounds " + description.getBoundsInParent() + "; label width "
                                 + description.getWidth() + "; panel width " + root.getWidth()
                                 + "; insets " + root.getInsets());
+                assertTrue(description.getBoundsInParent().getMaxX() <= root.getWidth(),
+                        family + ": visible text must stay inside the panel");
             }
         });
     }

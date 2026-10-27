@@ -35,7 +35,8 @@ import seedu.address.model.student.TuitionSubjects;
 /**
  * Lists the commands shown in the help window, grouped into sections.
  * Each command format is taken from the usage constant of its command, so the help window shows the same format
- * as the error messages of the parsers.
+ * as the error messages of the parsers. The {@code list} row adds its {@code ls} alias, which its usage text leaves
+ * out.
  */
 public final class HelpContent {
     public static final String SECTION_STUDENTS = "Students";
@@ -54,31 +55,23 @@ public final class HelpContent {
                     new Entry(EditCommand.COMMAND_WORD, EditCommand.MESSAGE_USAGE,
                             "Edits one or more student details without losing homework or lessons.",
                             "edit 1 l/S4 p/91234568"),
-                    new Entry(DeleteCommand.COMMAND_WORD, DeleteCommand.MESSAGE_USAGE,
-                            "Deletes the student at INDEX and all of their homework and lessons.", "delete 1"),
-                    new Entry(ListCommand.COMMAND_WORD, ListCommand.MESSAGE_USAGE,
+                    new Entry(ListCommand.COMMAND_WORD,
+                            ListCommand.COMMAND_WORD + "|" + ListCommand.SHORT_COMMAND_WORD,
                             "Shows all students in roster order, starting from the top.", ListCommand.COMMAND_WORD),
                     new Entry(SearchCommand.COMMAND_WORD, SearchCommand.MESSAGE_USAGE,
                             "Finds students by student or guardian name or phone number.", "search Tan"),
+                    new Entry(FilterCommand.COMMAND_WORD, FilterCommand.MESSAGE_USAGE,
+                            "Shows students matching every supplied filter. Supply at least one filter. "
+                                    + AcademicLevel.MESSAGE_CONSTRAINTS + " " + TuitionSubject.MESSAGE_CONSTRAINTS
+                                    + " Type list to show all students again.", "filter l/S4 s/Math"),
                     new Entry(SortCommand.COMMAND_WORD, SortCommand.MESSAGE_USAGE,
                             "Sorts the displayed students by level, subject or day. Order is asc (default) or desc."
                                     + " Missing meetings stay last; ties retain their previous displayed order."
                                     + " Saved roster order is unchanged. Use list to restore it.",
                             "sort by/level o/desc"),
-                    new Entry(FilterCommand.COMMAND_WORD, FilterCommand.MESSAGE_USAGE,
-                            "Shows students matching every supplied filter. Supply at least one filter. "
-                                    + AcademicLevel.MESSAGE_CONSTRAINTS + " " + TuitionSubject.MESSAGE_CONSTRAINTS
-                                    + " Type list to show all students again.", "filter l/S4 s/Math"))),
+                    new Entry(DeleteCommand.COMMAND_WORD, DeleteCommand.MESSAGE_USAGE,
+                            "Deletes the student at INDEX and all of their homework and lessons.", "delete 1"))),
             new Section(SECTION_HOMEWORK, List.of(
-                    new Entry("homework filter", HomeworkFilterCommand.MESSAGE_USAGE,
-                            "Lists homework matching every supplied criterion among displayed students, including"
-                                    + " overdue and scored homework. due/ is an exact date. Keeps student and homework"
-                                    + " indices; use list first to include all students. Supply at least one filter. "
-                                    + "status/ accepts ASSIGNED or COMPLETED, independently of scores.",
-                            "hw filter 1 s/MATH due/2026-10-15"),
-                    new Entry("homework status", HomeworkStatusCommand.MESSAGE_USAGE,
-                            "Marks homework COMPLETED or reopens it as ASSIGNED. Keeps its score and other details.",
-                            "hw status 1 2 status/COMPLETED"),
                     new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_ADD,
                             HomeworkAddCommand.MESSAGE_USAGE,
                             "Adds homework to the student at STUDENT_INDEX. " + TuitionSubject.MESSAGE_CONSTRAINTS
@@ -120,12 +113,17 @@ public final class HelpContent {
                             HomeworkDeleteCommand.MESSAGE_USAGE,
                             "Deletes homework number HOMEWORK_INDEX, as numbered by homework list, from the student"
                                     + " at STUDENT_INDEX.",
-                            "hw del 1 2"))),
+                            "hw del 1 2"),
+                    new Entry("homework filter", HomeworkFilterCommand.MESSAGE_USAGE,
+                            "Lists homework matching every supplied criterion among displayed students, including"
+                                    + " overdue and scored homework. due/ is an exact date. Keeps student and homework"
+                                    + " indices; use list first to include all students. Supply at least one filter. "
+                                    + "status/ accepts ASSIGNED or COMPLETED, independently of scores.",
+                            "hw filter 1 s/MATH due/2026-10-15"),
+                    new Entry("homework status", HomeworkStatusCommand.MESSAGE_USAGE,
+                            "Marks homework COMPLETED or reopens it as ASSIGNED. Keeps its score and other details.",
+                            "hw status 1 2 status/COMPLETED"))),
             new Section(SECTION_LESSONS, List.of(
-                    new Entry("lesson edit", LessonEditCommand.MESSAGE_USAGE,
-                            "Edits the lesson numbered by lesson list. Supply at least one field; omitted fields"
-                                    + " stay the same. Clashes with other lessons are rejected.",
-                            "lesson edit 1 st/17:00 et/19:00"),
                     new Entry("lesson add", LessonAddCommand.MESSAGE_USAGE,
                             "Adds a weekly lesson to a student. Use a full weekday name and 24-hour HH:mm times.",
                             "lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00"),
@@ -136,7 +134,11 @@ public final class HelpContent {
                     new Entry(LessonCommandParser.COMMAND_WORD + " " + LessonCommandParser.SUBCOMMAND_DELETE,
                             LessonDeleteCommand.MESSAGE_USAGE,
                             "Deletes the lesson numbered by lesson list.",
-                            "lesson delete 1"))),
+                            "lesson delete 1"),
+                    new Entry("lesson edit", LessonEditCommand.MESSAGE_USAGE,
+                            "Edits the lesson numbered by lesson list. Supply at least one field; omitted fields"
+                                    + " stay the same. Clashes with other lessons are rejected.",
+                            "lesson edit 1 st/17:00 et/19:00"))),
             new Section(SECTION_GENERAL, List.of(
                     new Entry(HelpCommand.COMMAND_WORD, HelpCommand.COMMAND_WORD,
                             "Opens this help window. F1 also opens it, and Esc closes it.", HelpCommand.COMMAND_WORD),

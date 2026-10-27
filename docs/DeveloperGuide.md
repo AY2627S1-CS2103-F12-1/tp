@@ -237,7 +237,7 @@ This section describes some noteworthy details on how certain features are imple
 
 ### Splitting arguments at prefixes
 
-`StrictArgumentTokenizer` splits the arguments of `add`, `filter`, `lesson add`, `lesson delete` and every homework subcommand into a preamble (the text before the first prefix, such as the indices in `hw e 1 2 t/Algebra`) and the value of each prefix. Any lowercase word followed by `/` at the start of the arguments or after whitespace is a prefix, so a `/` inside a word such as `3/4` does not start one. Each prefix is checked in the order it appears: an unknown prefix gives the error described below, and a repeated prefix gives `Prefix X must be specified exactly once.` A caller may also pass a `ValueTokenFilter`, which keeps some prefix-shaped words in the previous value; `StudentAddParser` uses one so that names can contain words such as `s/o` and `d/o`.
+`StrictArgumentTokenizer` splits the arguments of `add`, `edit`, `filter`, `sort`, `lesson add`, `lesson edit`, `lesson delete` and every homework subcommand (`add`, `list`, `upcoming`, `edit`, `marks`, `delete`, `filter` and `status`) into a preamble (the text before the first prefix, such as the indices in `hw e 1 2 t/Algebra`) and the value of each prefix. Any lowercase word followed by `/` at the start of the arguments or after whitespace is a prefix, so a `/` inside a word such as `3/4` does not start one. Each prefix is checked in the order it appears: an unknown prefix gives the error described below, and a repeated prefix gives `Prefix X must be specified exactly once.` A caller may also pass a `ValueTokenFilter`, which keeps some prefix-shaped words in the previous value; `StudentAddParser` and `EditCommandParser` use `StudentAddParser#isPartOfName` so that names can contain words such as `s/o` and `d/o`.
 
 **Quoted values.** A value wrapped in double quotes may contain prefix-shaped words. After reading a prefix, `StrictArgumentTokenizer#findQuotedValueEnd` decides whether its value is quoted:
 
@@ -485,6 +485,12 @@ Homework is managed with eight subcommands of `homework` (alias `hw`): `add`, `l
 
 **Model.** `Student` is immutable and holds its `Homework` records in insertion order. To add, edit, score or delete homework, a command copies the student's homework list, changes the copy, and calls `Model#setStudent(target, target.withHomeworks(updatedList))`, which replaces the student at the same position in the roster and refreshes the student card.
 
+The class diagram below shows how homework is stored. Each `Student` owns its `Homework` records in a list, and each record has a title, a subject, a due date, a completion status and at most one score:
+
+<img src="images/HomeworkClassDiagram.png" width="700" alt="A student owns an ordered list of homework records" />
+
+For how a homework command runs through the `Logic` component, see the `hw del 1 2` sequence diagram in [Logic component](#logic-component).
+
 **Homework index.** The homework index is the one-based position in the student's homework list (insertion order). It is not stored and changes only when earlier homework is deleted. `homework list` sorts the homework by due date but prints each record with its insertion-order number, so every number shown is a valid `HOMEWORK_INDEX` for the other homework commands. The line formats of `homework list` and `homework upcoming` (and the inferred year of `add` and `edit`) use `String.format(Locale.ROOT, ...)`, so the numbers are in ASCII digits in every locale: with the default locale, under e.g. `ar-EG`, `String.format` writes `1` as the Arabic-Indic digit `١`, which `ParserUtil#parseStrictIndex` rejects. The parsers deliberately accept ASCII digits only. The record counts in the summary lines still use the default locale. `add`, `list`, `edit`, `marks` and `delete` look up the student (and, for `edit`, `marks` and `delete`, the homework) through `HomeworkCommandUtil`, so they check the indices in the same order and report the same errors.
 
 **Deleting.** `homework delete` renumbers the homework after the deleted record, so a second delete typed from a list shown before the first one would remove the wrong record. Its result therefore shows the deleted record in the `homework list` line layout (`HomeworkListCommand#formatHomeworkLine`), with the number it had, its score and its status, followed by `HomeworkListCommand#formatHomeworkList` of the updated student, the same upcoming list that `homework edit` shows. `HomeworkDeleteCommand` takes `today` from its parser's `Clock` for that list. `homework add`, `homework edit` and `homework marks` keep their own record layouts.
@@ -646,11 +652,11 @@ The activity diagram below shows these steps for a command that does not throw a
 
 * is an independent part-time tutor in Singapore
 * teaches approximately 10 to 20 secondary or junior-college students through individual lessons
-* needs to manage student details, guardian contact details, academic information, and regular lesson schedules
+* needs to manage student details, guardian contact details, academic information, homework, and regular lesson schedules
 * prefers a desktop application that can be operated efficiently using the keyboard
 * is reasonably comfortable using command-line interfaces
 
-**Value proposition**: TutorFlow helps independent tutors manage student information and regular lesson schedules faster and more reliably than scattered notes, while reducing the risk of timetable clashes.
+**Value proposition**: TutorFlow helps independent tutors manage student information, their homework and regular lesson schedules faster and more reliably than scattered notes, while reducing the risk of timetable clashes.
 
 ### User stories
 
@@ -682,12 +688,14 @@ Priorities: High (must-have) - `* * *`, Medium (should-have) - `* *`, Low (nice-
 | US22 | `*` | independent tutor | sort students by academic level | group students at similar stages of study |
 | US23 | `*` | independent tutor | search for a student by phone number | identify a student from an unfamiliar contact number |
 | US24 | `*` | independent tutor | view available periods in my regular lesson schedule | propose lesson times without checking each lesson manually |
-| US25 | `*` | independent tutor | add homework to a student | record the work assigned to that student |
-| US26 | `*` | independent tutor | view and filter homework by student, due date, subject, or completion status | find homework that requires my attention |
-| US27 | `*` | independent tutor | edit recorded homework | correct or update an assignment's details |
-| US28 | `*` | independent tutor | delete recorded homework | remove assignments entered incorrectly or no longer required |
-| US29 | `*` | independent tutor | record a student's homework score | keep track of the student's performance |
-| US30 | `*` | independent tutor | mark homework completed or reopen it independently of its score | track unfinished work accurately |
+| US25 | `* * *` | independent tutor | add homework to a student | record the work assigned to that student |
+| US26 | `* * *` | independent tutor | view and filter homework by student, due date, subject, or completion status | find homework that requires my attention |
+| US27 | `* *` | independent tutor | edit recorded homework | correct or update an assignment's details |
+| US28 | `* * *` | independent tutor | delete recorded homework | remove assignments entered incorrectly or no longer required |
+| US29 | `* * *` | independent tutor | record a student's homework score | keep track of the student's performance |
+| US30 | `* *` | independent tutor | mark homework completed or reopen it independently of its score | track unfinished work accurately |
+| US31 | `* *` | independent tutor | see the homework of all my students that is due in the next few days | prepare for the coming lessons and remind students in time |
+| US32 | `* *` | independent tutor | look up a command's format inside the app | use a command correctly without opening the User Guide |
 
 ### Use cases
 
@@ -828,7 +836,7 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
 **MSS**
 
 1. Tutor requests to list the homework of all students that is due within a number of days from today.
-2. TutorFlow displays that homework, earliest due date first, with each record's student index and name, title, subject, due date and score.
+2. TutorFlow displays that homework, earliest due date first, with each record's student index and name, title, subject, due date, score and status, and shows all students in the student list again.
 3. Use case ends.
 
 **Extensions**
@@ -852,11 +860,11 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
 2. TutorFlow should be distributed as a single JAR file no larger than 100 MB and should not require an installer or any additional software beyond Java 25.
 3. TutorFlow should support one user, with its data file used only by that user during regular operation.
 4. TutorFlow should store all application data locally in a human-editable UTF-8 text file and should not require a database management system.
-5. TutorFlow's core student and lesson-management features should work without an Internet connection or a team-maintained remote server.
+5. TutorFlow's core student, homework and lesson-management features should work without an Internet connection or a team-maintained remote server.
 6. TutorFlow's GUI should work without inconvenience at resolutions of 1920x1080 or higher with 100% or 125% display scaling, and remain usable at resolutions of 1280x720 or higher with 150% display scaling.
-7. TutorFlow should respond to commands within one second when managing up to 100 student profiles with up to 10 regular lessons per student on a computer with a 2.0 GHz dual-core processor, 4 GB of RAM, and solid-state storage.
-8. After reading the User Guide for no more than 15 minutes, a target user should be able to add, list, and delete students and regular lessons without assistance.
-9. Adding, listing, and deleting students and regular lessons should be possible using only the keyboard.
+7. TutorFlow should respond to commands within one second when managing up to 100 student profiles with up to 10 regular lessons and 50 homework records per student on a computer with a 2.0 GHz dual-core processor, 4 GB of RAM, and solid-state storage.
+8. After reading the User Guide for no more than 15 minutes, a target user should be able to add, list, and delete students, homework and regular lessons without assistance.
+9. Adding, listing, and deleting students, homework and regular lessons should be possible using only the keyboard.
 10. If a save operation fails, TutorFlow should preserve the previously stored data without leaving a partially written data file.
 
 ### Glossary
@@ -1020,7 +1028,13 @@ testers are expected to do more *exploratory* testing.
       Expected: `No upcoming homework found for Daniel Wong.` Daniel Wong's card shows `Upcoming homework: 0`.
 
    1. Test case: `hw ls 5 all`<br>
-      Expected: `Listed 1 homework record for Daniel Wong.` followed by `1. Old worksheet (MATH) - due 2026-10-01 - score Not recorded - status ASSIGNED`.
+      Expected:
+
+      ```
+      Listed 1 homework record for Daniel Wong.
+      Homework for Daniel Wong:
+      1. Old worksheet (MATH) - due 2026-10-01 - score Not recorded - status ASSIGNED
+      ```
 
    1. Test case: `hw ls 5 ALL`<br>
       Expected: An invalid command format error, as `all` must be in lowercase.
@@ -1038,8 +1052,17 @@ testers are expected to do more *exploratory* testing.
    1. Test case: `hw up`<br>
       Expected: The summary ends with the date 7 days after today, and the lines are sorted by due date. The data file is not modified.
 
-   1. Test case: `hw up due/365`, then `hw ls 1 all`<br>
-      Expected: Homework due from today through 365 days later is shown, including completed records; overdue and later records are excluded. The order in `hw up` is not the numbering in `hw ls 1 all`.
+   1. Test case: `hw status 1 1 status/COMPLETED`, `hw add 1 t/Vectors drill s/MATH due/SOON` and `hw add 1 t/Exam revision s/MATH due/LATER`, replacing `SOON` with the date 3 days after today and `LATER` with the date 400 days after today. Then run `hw up due/365` and `hw ls 1 all`.<br>
+      Expected: `hw up due/365` shows the homework due from today through 365 days later, including the completed record, but not `Old worksheet` (overdue) or `Exam revision` (after the window), where `END` is the date 365 days after today:
+
+      ```
+      Found 3 homework records due from TODAY to END.
+      Student 1: Ethan Lim; Today forces; PHYSICS; Due: TODAY; Score: Not recorded; Status: COMPLETED
+      Student 2: Marcus Tan; Today drill; MATH; Due: TODAY; Score: Not recorded; Status: ASSIGNED
+      Student 1: Ethan Lim; Vectors drill; MATH; Due: SOON; Score: Not recorded; Status: ASSIGNED
+      ```
+
+      `hw ls 1 all` lists Ethan Lim's homework as 2 (`Old worksheet`), 1 (`Today forces`), 3 (`Vectors drill`) and 4 (`Exam revision`), so the order in `hw up` is not the numbering in `hw ls 1 all`.
 
    1. Test case: `add n/Ethan Lim l/S1 s/MATH p/81234567 gn/Lim Mei gp/81234568` (a second Ethan Lim, with another phone number, who becomes student 3), then `hw add 3 t/Today algebra s/MATH due/TODAY` and `hw up due/0`<br>
       Expected: The new line starts with `Student 3: Ethan Lim`, while the first Ethan Lim's line starts with `Student 1: Ethan Lim`.
@@ -1052,6 +1075,25 @@ testers are expected to do more *exploratory* testing.
 
    1. Other incorrect commands to try: `hw up 3`, `hw up x/3`, `hw up due/3 due/7`<br>
       Expected: An invalid command format error with the usage `homework|hw upcoming|up [due/DAYS]` for `hw up 3`, `x/ is not a prefix of this command.` followed by that usage for `hw up x/3`, and `Prefix due/ must be specified exactly once.` for the last one.
+
+1. Adding homework
+
+   1. Prerequisites: Start with the sample students.
+
+   1. Test case: `hw add 1 t/Algebra drill s/MATH due/12-01`<br>
+      Expected: `New homework added:`, then `Ethan Lim; Title: Algebra drill; Subject: MATH; Due: YEAR-12-01` and `Inferred year: YEAR`, where `YEAR` is this year, or next year from 2 December on. For example, on 2026-10-27 it is `2026`.
+
+   1. Test case: `hw add 1 t/ALGEBRA DRILL s/MATH due/12-01`<br>
+      Expected: `This homework already exists for the selected student.`, as titles are compared ignoring case.
+
+   1. Test case: `hw add 1 t/Algebra drill s/CHEMISTRY due/12-01`<br>
+      Expected: `The selected student does not take this subject.`
+
+   1. Test case: `hw add 1 t/Algebra drill s/MATH due/2026-02-30`<br>
+      Expected: `2026-02-30 is not a real calendar date.`
+
+   1. Test case: `hw add 1 t/A s/MATH`<br>
+      Expected: `Missing required prefix(es): due/`, then the usage `Usage: homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD`. No homework is added by these four commands; `hw ls 1 all` shows only `Algebra drill` in addition to the sample homework.
 
 1. Adding homework with special characters in the title
 
@@ -1152,10 +1194,16 @@ testers are expected to do more *exploratory* testing.
 
 1. Deleting homework of a student who has homework
 
-   1. Prerequisites: The 1st student has at least 2 homework records. Check with `homework list 1`.
+   1. Prerequisites: The 1st student has at least 2 homework records. Check with `homework list 1 all`, which also lists overdue homework.
 
    1. Test case: `homework delete 1 2`<br>
-      Expected: The 2nd homework of the 1st student is deleted. The result display shows `Deleted homework:` and the deleted homework in the `homework list` layout, e.g. `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score Not recorded - status ASSIGNED`, followed by the student's upcoming homework with its new numbers (or `No upcoming homework found for Ethan Lim.`). The student card shows the new number of upcoming homework.
+      Expected: The 2nd homework of the 1st student is deleted. The result display shows `Deleted homework:` and the deleted homework in the `homework list` layout, e.g. `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score Not recorded - status ASSIGNED`, followed by the student's upcoming homework with its new numbers (or `No upcoming homework found for Ethan Lim.`). The student card shows the new number of upcoming homework. For example, with the sample students on 2026-10-27, the result is:
+
+      ```
+      Deleted homework:
+      2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score Not recorded - status ASSIGNED
+      No upcoming homework found for Ethan Lim.
+      ```
 
    1. Test case: `homework delete 1 0`<br>
       Expected: No homework is deleted. The result display shows an error message.
@@ -1209,7 +1257,7 @@ The automated smoke check is `./gradlew test --tests '*LessonEditUiTest' --tests
 
 1. Editing a lesson and filtering homework
 
-   1. In an empty roster, add `add n/John Tan l/S3 s/MATH p/91234567 gn/Mary Tan gp/98765432`, then `lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00`.
+   1. Run `clear` to start with an empty roster, then `add n/John Tan l/S3 s/MATH p/91234567 gn/Mary Tan gp/98765432` and `lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00`.
    1. Run `lesson edit 1 st/17:00`, then `lesson list`.<br>
       Expected: One lesson at 17:00–18:00. Overlap with its own original interval is allowed. Restart: the new time remains.
    1. Run `lesson edit 1 st/18:00`.<br>
@@ -1248,8 +1296,8 @@ The automated smoke check is `./gradlew test --tests '*LessonEditUiTest' --tests
 
 1. Dealing with a score saved by an older version
 
-   1. Close the app. In `data/tutorflow.json`, change the `score` of a homework to `85` (a number, without quotes). Launch the app.<br>
-      Expected: All students are shown, and `homework list` for that student shows the homework with `score 85`. The `85` stays in the data file until a command changes the data, which saves the homework with `"score" : "85"`.
+   1. Start with the sample students and run a command that changes the data, e.g. `hw m 1 1 score/5/10`, so that the data file is created. Close the app. In `data/tutorflow.json`, change the `score` of Ethan Lim's first homework (`Quadratic equations worksheet`) to `85` (a number, without quotes). Launch the app.<br>
+      Expected: All students are shown, and `homework list 1 all` shows `1. Quadratic equations worksheet (MATH) - due 2026-10-23 - score 85 - status ASSIGNED`. The `85` stays in the data file until a command changes the data, which saves the homework with `"score" : "85"`.
 
    1. Change the `score` to `"85"` (text, with quotes) instead. Launch the app.<br>
       Expected: Same as above.

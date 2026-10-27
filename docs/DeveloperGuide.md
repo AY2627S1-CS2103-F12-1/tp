@@ -436,8 +436,10 @@ selection/scroll recovery, exact feedback and diagnostic ownership. See the [log
 
 `AddressBookParser` routes `filter [l/LEVEL] [s/SUBJECT]` to `FilterCommandParser`. The parser allows one or both
 prefixes, rejects unknown and repeated prefixes, and normalizes values through `AcademicLevel#parse` and
-`TuitionSubject#parse`. Its error messages follow issue #77, including the same field error for empty and unsupported
-values. The tokenizer overload accepts the filter-specific repeated-prefix message while keeping existing callers'
+`TuitionSubject#parse`. Empty values receive field-specific non-empty errors; unsupported values retain the domain
+constraint message and its exception cause. Comma-separated subjects receive a single-subject restriction error.
+Format errors use the shared `Messages.MESSAGE_INVALID_FORMAT_WITH_USAGE` header and command usage.
+The tokenizer overload accepts the filter-specific repeated-prefix message while keeping existing callers'
 messages unchanged. Structural validation completes before value validation; values are checked in prefix order.
 No parser failure changes the displayed list or requests a UI refresh.
 
@@ -447,7 +449,8 @@ replaces the predicate of the existing `FilteredList`, whose source is the full 
 deduplicates results. Existing roster uniqueness checks remain in place; a synthetic duplicate-containing source
 verifies that filtering itself preserves every matching entry independently.
 
-The result is `Found N student(s)` or `No students match the selected filters`. A successful command requests the
+The result is `Found 1 student.`, `Found N students.` for multiple matches, or
+`No students match the selected filters`. A successful command requests the
 existing `showFromTop` action. Displayed student indices therefore identify filtered students, while lesson scheduling
 and clash checks continue to use `Model#getAddressBook().getStudentList()`. `list`, `ls`, a successful student addition
 and `homework upcoming` restore the full roster. Search and filter commands replace each other's criteria.
@@ -1001,19 +1004,24 @@ testers are expected to do more *exploratory* testing.
 
 1. Use a test roster containing Alice (S4, MATH and PHYSICS), Ben (S4, CHEMISTRY) and Cara (J1, MATH), in that order.
    1. Run `filter l/S4`.<br>
-      Expected: Alice and Ben are displayed as students 1 and 2; feedback is `Found 2 student(s)`.
+      Expected: Alice and Ben are displayed as students 1 and 2; feedback is `Found 2 students.`
    1. Run `filter s/Math`.<br>
       Expected: Alice and Cara are displayed as students 1 and 2, even though Cara was hidden by the previous filter.
    1. Run `filter l/S4 s/Math`, then `filter s/Math l/S4`.<br>
-      Expected: Both commands display only Alice, with `Found 1 student(s)`.
+      Expected: Both commands display only Alice, with `Found 1 student.`
    1. Run `filter l/S5`.<br>
       Expected: The roster is empty and feedback is `No students match the selected filters`.
    1. Run `list`.<br>
       Expected: All three students reappear in their original order.
 
 1. With enough matching students to scroll, select a student and scroll partway down the results.
-   1. Run `filter`, `filter x/value`, `filter l/S4 l/S4`, `filter l/`, and `filter s/BIOLOGY` separately.<br>
-      Expected: The specified validation error is shown each time. The displayed students, selected student and
+   1. Run `filter`, `filter x/value`, `filter l/S4 l/S4`, `filter l/`, `filter s/`, `filter l/S6`,
+      `filter l/Sec 4`, `filter s/BIOLOGY`, and `filter s/Math, Physics` separately.<br>
+      Expected: Missing filters produce `Invalid command format.` followed by usage and the missing-filter
+      explanation. Unknown prefixes are named in the error, followed by usage. Repeated prefixes receive
+      `Each filter may only be specified once`. Empty values receive the field's non-empty error; unsupported
+      values list the supported levels or subjects. Comma-separated subjects receive
+      `Filter accepts only one subject. Use s/SUBJECT.`. The displayed students, selected student and
       visible scroll position remain unchanged. The data file is unchanged.
    1. Run a valid filter with a read-only data file.<br>
       Expected: Filtering still succeeds because it never attempts a save.

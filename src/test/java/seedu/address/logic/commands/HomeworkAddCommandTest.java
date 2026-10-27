@@ -12,9 +12,9 @@ import static seedu.address.testutil.TypicalHomeworks.MECHANICS;
 import static seedu.address.testutil.TypicalStudents.ALICE;
 import static seedu.address.testutil.TypicalStudents.BENSON;
 import static seedu.address.testutil.TypicalStudents.CARL;
+import static seedu.address.testutil.TypicalStudents.getModelFailingOnSetStudent;
 import static seedu.address.testutil.TypicalStudents.getModelWithStudents;
 import static seedu.address.testutil.TypicalStudents.getModelWithTypicalStudents;
-import static seedu.address.testutil.TypicalStudents.getTypicalStudents;
 
 import java.util.List;
 
@@ -23,9 +23,7 @@ import org.junit.jupiter.api.Test;
 import seedu.address.commons.core.index.Index;
 import seedu.address.logic.Messages;
 import seedu.address.model.Model;
-import seedu.address.model.ModelManager;
 import seedu.address.model.homework.Homework;
-import seedu.address.model.student.Student;
 import seedu.address.testutil.HomeworkBuilder;
 
 public class HomeworkAddCommandTest {
@@ -120,6 +118,28 @@ public class HomeworkAddCommandTest {
     }
 
     @Test
+    public void execute_filteredList_addsToDisplayedStudent() {
+        // CARL is third in the roster but first in the displayed list
+        model.updateFilteredStudentList(CARL::equals);
+        Homework optics = new HomeworkBuilder().withTitle("Optics worksheet").withSubject("PHYSICS").build();
+        String expectedMessage = "New homework added:\n"
+                + "Carl Ng; Title: Optics worksheet; Subject: PHYSICS; Due: 2026-10-15";
+        Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON,
+                CARL.withHomeworks(List.of(MECHANICS, optics))));
+
+        assertCommandSuccess(new HomeworkAddCommand(Index.fromOneBased(1), optics, false), model, expectedMessage,
+                expectedModel);
+    }
+
+    @Test
+    public void execute_indexBeyondFilteredList_failure() {
+        model.updateFilteredStudentList(CARL::equals);
+
+        assertCommandFailure(new HomeworkAddCommand(Index.fromOneBased(2), ALGEBRA, false), model,
+                Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
+    }
+
+    @Test
     public void execute_emptyRoster_failure() {
         HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(1), ALGEBRA, false);
 
@@ -162,13 +182,7 @@ public class HomeworkAddCommandTest {
 
     @Test
     public void execute_unexpectedError_reportsInternalErrorWithoutChangingModel() {
-        Model failingModel = new ModelManager() {
-            @Override
-            public void setStudent(Student target, Student editedStudent) {
-                throw new IllegalStateException("dummy internal error");
-            }
-        };
-        getTypicalStudents().forEach(failingModel::addStudent);
+        Model failingModel = getModelFailingOnSetStudent();
 
         assertCommandFailure(new HomeworkAddCommand(Index.fromOneBased(2), ALGEBRA, false), failingModel,
                 HomeworkAddCommand.MESSAGE_INTERNAL_ERROR);
@@ -191,7 +205,9 @@ public class HomeworkAddCommandTest {
         assertTrue(addAlgebraCommand.equals(addAlgebraCommand));
 
         // same values -> returns true
-        assertTrue(addAlgebraCommand.equals(new HomeworkAddCommand(Index.fromOneBased(1), ALGEBRA, false)));
+        HomeworkAddCommand addAlgebraCommandCopy = new HomeworkAddCommand(Index.fromOneBased(1), ALGEBRA, false);
+        assertTrue(addAlgebraCommand.equals(addAlgebraCommandCopy));
+        assertEquals(addAlgebraCommand.hashCode(), addAlgebraCommandCopy.hashCode());
 
         // null -> returns false
         assertFalse(addAlgebraCommand.equals(null));

@@ -9,10 +9,10 @@ import java.util.regex.Pattern;
  * Guarantees: immutable; whitespace is normalized; length and characters satisfy the Add Homework specification.
  */
 public final class Title {
-    public static final String MESSAGE_CONSTRAINTS = "Homework title must be 1 to 100 characters and must not "
-            + "contain line breaks or control characters.";
+    public static final int MAX_LENGTH = 100;
+    public static final String MESSAGE_CONSTRAINTS = "Homework title must be 1 to " + MAX_LENGTH + " characters and"
+            + " must not contain line breaks or control characters.";
 
-    private static final int MAX_LENGTH = 100;
     private static final Pattern WHITESPACE = Pattern.compile("\\s+", Pattern.UNICODE_CHARACTER_CLASS);
     private static final Pattern LINE_BREAK_OR_CONTROL = Pattern.compile("[\\p{Cc}\\u2028\\u2029]");
 
@@ -23,7 +23,7 @@ public final class Title {
      * Line breaks and control characters are rejected before normalization. Capitalization is preserved for display.
      *
      * @throws IllegalArgumentException If the input contains a line break or control character, or the normalized
-     *         title is empty or longer than 100 characters.
+     *         title is empty or longer than {@link #MAX_LENGTH} characters.
      */
     public Title(String rawTitle) {
         requireNonNull(rawTitle);

@@ -12,9 +12,9 @@ import static seedu.address.testutil.TypicalHomeworks.MECHANICS;
 import static seedu.address.testutil.TypicalStudents.ALICE;
 import static seedu.address.testutil.TypicalStudents.BENSON;
 import static seedu.address.testutil.TypicalStudents.CARL;
+import static seedu.address.testutil.TypicalStudents.getModelFailingOnSetStudent;
 import static seedu.address.testutil.TypicalStudents.getModelWithStudents;
 import static seedu.address.testutil.TypicalStudents.getModelWithTypicalStudents;
-import static seedu.address.testutil.TypicalStudents.getTypicalStudents;
 
 import java.util.List;
 
@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import seedu.address.commons.core.index.Index;
 import seedu.address.logic.Messages;
 import seedu.address.model.Model;
-import seedu.address.model.ModelManager;
 import seedu.address.model.homework.Homework;
 import seedu.address.model.student.Student;
 import seedu.address.testutil.HomeworkBuilder;
@@ -106,6 +105,26 @@ public class HomeworkDeleteCommandTest {
     }
 
     @Test
+    public void execute_filteredList_deletesFromDisplayedStudent() {
+        // CARL is third in the roster but first in the displayed list
+        model.updateFilteredStudentList(CARL::equals);
+        String expectedMessage = "Deleted homework:\n"
+                + "Carl Ng; Title: Attempt mechanics questions 1-5; Subject: PHYSICS; Due: 2026-10-20";
+        Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON, CARL.withHomeworks(List.of())));
+
+        assertCommandSuccess(new HomeworkDeleteCommand(Index.fromOneBased(1), Index.fromOneBased(1)), model,
+                expectedMessage, expectedModel);
+    }
+
+    @Test
+    public void execute_indexBeyondFilteredList_failure() {
+        model.updateFilteredStudentList(CARL::equals);
+
+        assertCommandFailure(new HomeworkDeleteCommand(Index.fromOneBased(2), Index.fromOneBased(1)), model,
+                Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
+    }
+
+    @Test
     public void execute_bothIndicesOutOfRange_reportsStudentIndex() {
         HomeworkDeleteCommand command = new HomeworkDeleteCommand(Index.fromOneBased(4), Index.fromOneBased(9));
 
@@ -128,13 +147,7 @@ public class HomeworkDeleteCommandTest {
 
     @Test
     public void execute_unexpectedError_reportsInternalErrorWithoutChangingModel() {
-        Model failingModel = new ModelManager() {
-            @Override
-            public void setStudent(Student target, Student editedStudent) {
-                throw new IllegalStateException("dummy internal error");
-            }
-        };
-        getTypicalStudents().forEach(failingModel::addStudent);
+        Model failingModel = getModelFailingOnSetStudent();
 
         assertCommandFailure(new HomeworkDeleteCommand(Index.fromOneBased(1), Index.fromOneBased(1)),
                 failingModel, HomeworkDeleteCommand.MESSAGE_INTERNAL_ERROR);
@@ -158,7 +171,10 @@ public class HomeworkDeleteCommandTest {
         assertTrue(deleteCommand.equals(deleteCommand));
 
         // same values -> returns true
-        assertTrue(deleteCommand.equals(new HomeworkDeleteCommand(Index.fromOneBased(1), Index.fromOneBased(2))));
+        HomeworkDeleteCommand deleteCommandCopy = new HomeworkDeleteCommand(Index.fromOneBased(1),
+                Index.fromOneBased(2));
+        assertTrue(deleteCommand.equals(deleteCommandCopy));
+        assertEquals(deleteCommand.hashCode(), deleteCommandCopy.hashCode());
 
         // null -> returns false
         assertFalse(deleteCommand.equals(null));

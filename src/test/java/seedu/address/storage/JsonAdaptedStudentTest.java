@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.node.TextNode;
 
 import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.model.homework.DueDate;
+import seedu.address.model.homework.Homework;
 import seedu.address.model.student.AcademicLevel;
 import seedu.address.model.student.Student;
 import seedu.address.model.student.StudentName;
@@ -202,7 +203,8 @@ public class JsonAdaptedStudentTest {
         List<JsonAdaptedHomework> homeworks = List.of(new JsonAdaptedHomework(ALGEBRA), laterAlgebra);
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
                 VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, homeworks);
-        assertEquals(2, student.toModelType().getHomeworks().size());
+        Homework expectedLaterAlgebra = new HomeworkBuilder(ALGEBRA).withDueDate("2026-10-22").build();
+        assertEquals(List.of(ALGEBRA, expectedLaterAlgebra), student.toModelType().getHomeworks());
     }
 
     private static void assertMissingField(JsonAdaptedStudent student, String fieldName) {

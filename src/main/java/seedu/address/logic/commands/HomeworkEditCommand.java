@@ -88,21 +88,8 @@ public class HomeworkEditCommand extends Command {
      * an exception thrown before it leaves the model unchanged.
      */
     private CommandResult editHomework(Model model) throws CommandException {
-        List<Student> students = model.getStudentList();
-        if (studentIndex.getZeroBased() >= students.size()) {
-            throw new CommandException(Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
-        }
-
-        Student student = students.get(studentIndex.getZeroBased());
-        List<Homework> homeworks = student.getHomeworks();
-        if (homeworks.isEmpty()) {
-            throw new CommandException(MESSAGE_NO_HOMEWORK);
-        }
-        if (homeworkIndex.getZeroBased() >= homeworks.size()) {
-            throw new CommandException(Messages.MESSAGE_INVALID_HOMEWORK_DISPLAYED_INDEX);
-        }
-
-        Homework homeworkToEdit = homeworks.get(homeworkIndex.getZeroBased());
+        Student student = HomeworkCommandUtil.getDisplayedStudent(model, studentIndex);
+        Homework homeworkToEdit = HomeworkCommandUtil.getHomework(student, homeworkIndex, MESSAGE_NO_HOMEWORK);
         Homework editedHomework = descriptor.applyTo(homeworkToEdit);
         if (!student.getSubjects().getSubjects().contains(editedHomework.getSubject())) {
             throw new CommandException(HomeworkAddCommand.MESSAGE_SUBJECT_NOT_TAKEN);
@@ -110,22 +97,30 @@ public class HomeworkEditCommand extends Command {
         if (editedHomework.equals(homeworkToEdit)) {
             throw new CommandException(MESSAGE_NO_CHANGES);
         }
-        if (isDuplicateOfOtherHomework(homeworks, editedHomework)) {
+        if (isDuplicateOfOtherHomework(student.getHomeworks(), editedHomework)) {
             throw new CommandException(MESSAGE_DUPLICATE_HOMEWORK);
         }
 
-        List<Homework> updatedHomeworks = new ArrayList<>(homeworks);
+        List<Homework> updatedHomeworks = new ArrayList<>(student.getHomeworks());
         updatedHomeworks.set(homeworkIndex.getZeroBased(), editedHomework);
         Student editedStudent = student.withHomeworks(updatedHomeworks);
-        String message = String.format(MESSAGE_SUCCESS, Messages.format(student, editedHomework));
+        String message = buildSuccessMessage(editedStudent, editedHomework);
+
+        model.setStudent(student, editedStudent);
+        return new CommandResult(message);
+    }
+
+    /**
+     * Returns the success message for {@code editedHomework}, with the inferred year if any, followed by the
+     * upcoming homework of {@code editedStudent}.
+     */
+    private String buildSuccessMessage(Student editedStudent, Homework editedHomework) {
+        String message = String.format(MESSAGE_SUCCESS, Messages.format(editedStudent, editedHomework));
         if (isYearInferred) {
             message += String.format(HomeworkAddCommand.MESSAGE_INFERRED_YEAR,
                     editedHomework.getDueDate().getDate().getYear());
         }
-        message += "\n" + HomeworkListCommand.formatHomeworkList(editedStudent, today, false);
-
-        model.setStudent(student, editedStudent);
-        return new CommandResult(message);
+        return message + "\n" + HomeworkListCommand.formatHomeworkList(editedStudent, today, false);
     }
 
     /**
@@ -162,6 +157,12 @@ public class HomeworkEditCommand extends Command {
                 && descriptor.equals(otherCommand.descriptor)
                 && isYearInferred == otherCommand.isYearInferred
                 && today.equals(otherCommand.today);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(studentIndex.getZeroBased(), homeworkIndex.getZeroBased(), descriptor,
+                isYearInferred, today);
     }
 
     @Override

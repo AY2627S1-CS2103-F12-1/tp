@@ -1,6 +1,7 @@
 package seedu.address.logic.parser;
 
 import static java.util.Objects.requireNonNull;
+import static seedu.address.logic.parser.HomeworkAddCommandParser.ALLOWED_PREFIXES;
 import static seedu.address.logic.parser.HomeworkAddCommandParser.PREFIX_DUE_DATE;
 import static seedu.address.logic.parser.HomeworkAddCommandParser.PREFIX_SUBJECT;
 import static seedu.address.logic.parser.HomeworkAddCommandParser.PREFIX_TITLE;
@@ -8,7 +9,6 @@ import static seedu.address.logic.parser.HomeworkAddCommandParser.PREFIX_TITLE_A
 
 import java.time.Clock;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Map;
 
 import seedu.address.commons.core.index.Index;
@@ -30,8 +30,6 @@ import seedu.address.model.student.TuitionSubject;
 public class HomeworkEditCommandParser implements Parser<HomeworkEditCommand> {
     private static final String MESSAGE_INVALID_FORMAT = String.format(Messages.MESSAGE_INVALID_FORMAT_WITH_USAGE,
             HomeworkEditCommand.MESSAGE_USAGE);
-    private static final List<String> ALLOWED_PREFIXES = List.of(PREFIX_TITLE, PREFIX_TITLE_ALIAS, PREFIX_SUBJECT,
-            PREFIX_DUE_DATE);
 
     private final Clock clock;
 

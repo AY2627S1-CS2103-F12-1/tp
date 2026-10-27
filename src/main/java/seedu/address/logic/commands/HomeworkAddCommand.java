@@ -5,6 +5,7 @@ import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -72,12 +73,7 @@ public class HomeworkAddCommand extends Command {
      * an exception thrown before it leaves the model unchanged.
      */
     private CommandResult addHomework(Model model) throws CommandException {
-        List<Student> students = model.getStudentList();
-        if (studentIndex.getZeroBased() >= students.size()) {
-            throw new CommandException(Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
-        }
-
-        Student student = students.get(studentIndex.getZeroBased());
+        Student student = HomeworkCommandUtil.getDisplayedStudent(model, studentIndex);
         if (!student.getSubjects().getSubjects().contains(homework.getSubject())) {
             throw new CommandException(MESSAGE_SUBJECT_NOT_TAKEN);
         }
@@ -115,6 +111,11 @@ public class HomeworkAddCommand extends Command {
         return studentIndex.equals(otherCommand.studentIndex)
                 && homework.equals(otherCommand.homework)
                 && isYearInferred == otherCommand.isYearInferred;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(studentIndex.getZeroBased(), homework, isYearInferred);
     }
 
     @Override

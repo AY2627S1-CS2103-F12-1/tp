@@ -18,7 +18,7 @@ public final class Score {
     public static final String MESSAGE_CONSTRAINTS = "Score must be a whole number, or MARKS_OBTAINED/TOTAL_MARKS "
             + "with whole numbers, a positive total, and marks obtained between zero and the total.";
     public static final String MESSAGE_TOO_LARGE =
-            "Marks are too large. Enter whole numbers no greater than 2147483647.";
+            "Marks are too large. Enter whole numbers no greater than " + Integer.MAX_VALUE + ".";
 
     /**
      * A whole number without a sign, decimals or leading zeroes (except {@code 0}), optionally followed by a single

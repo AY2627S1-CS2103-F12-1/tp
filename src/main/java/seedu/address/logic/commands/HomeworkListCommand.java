@@ -6,6 +6,7 @@ import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
@@ -75,12 +76,8 @@ public class HomeworkListCommand extends Command {
      * Returns the result listing the homework of the selected student.
      */
     private CommandResult listHomework(Model model) throws CommandException {
-        List<Student> students = model.getStudentList();
-        if (studentIndex.getZeroBased() >= students.size()) {
-            throw new CommandException(Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
-        }
-
-        return new CommandResult(formatHomeworkList(students.get(studentIndex.getZeroBased()), today, isAllShown));
+        Student student = HomeworkCommandUtil.getDisplayedStudent(model, studentIndex);
+        return new CommandResult(formatHomeworkList(student, today, isAllShown));
     }
 
     /**
@@ -108,9 +105,8 @@ public class HomeworkListCommand extends Command {
             return String.format(MESSAGE_NO_UPCOMING_HOMEWORK, student.getName());
         }
 
-        String recordWord = listedIndices.size() == 1 ? MESSAGE_RECORD_SINGULAR : MESSAGE_RECORD_PLURAL;
         StringBuilder message = new StringBuilder(String.format(isAllShown ? MESSAGE_SUCCESS_ALL : MESSAGE_SUCCESS,
-                listedIndices.size(), recordWord, student.getName(), student.getName()));
+                listedIndices.size(), getRecordWord(listedIndices.size()), student.getName(), student.getName()));
         for (int zeroBasedIndex : listedIndices) {
             Homework homework = homeworks.get(zeroBasedIndex);
             message.append(String.format(MESSAGE_HOMEWORK_LINE, zeroBasedIndex + 1, homework.getTitle(),
@@ -118,6 +114,13 @@ public class HomeworkListCommand extends Command {
                     homework.getStatus()));
         }
         return message.toString();
+    }
+
+    /**
+     * Returns the word for homework records that follows {@code count} in a summary line.
+     */
+    static String getRecordWord(int count) {
+        return count == 1 ? MESSAGE_RECORD_SINGULAR : MESSAGE_RECORD_PLURAL;
     }
 
     @Override
@@ -134,6 +137,11 @@ public class HomeworkListCommand extends Command {
         return studentIndex.equals(otherCommand.studentIndex)
                 && today.equals(otherCommand.today)
                 && isAllShown == otherCommand.isAllShown;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(studentIndex.getZeroBased(), today, isAllShown);
     }
 
     @Override

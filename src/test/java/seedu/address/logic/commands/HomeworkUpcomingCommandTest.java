@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.testutil.Assert.assertThrows;
+import static seedu.address.testutil.TypicalHomeworks.COMPLETED_MECHANICS;
+import static seedu.address.testutil.TypicalStudents.CARL;
 import static seedu.address.testutil.TypicalStudents.getModelWithStudents;
 import static seedu.address.testutil.TypicalStudents.getModelWithTypicalStudents;
 
@@ -53,6 +55,16 @@ public class HomeworkUpcomingCommandTest {
     @Test
     public void constructor_nullDate_throwsNullPointerException() {
         assertThrows(NullPointerException.class, () -> new HomeworkUpcomingCommand(null, 7));
+    }
+
+    @Test
+    public void constructor_negativeDays_throwsIllegalArgumentException() {
+        assertThrows(IllegalArgumentException.class, () -> new HomeworkUpcomingCommand(TODAY, -1));
+    }
+
+    @Test
+    public void constructor_nullTodayAndNegativeDays_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> new HomeworkUpcomingCommand(null, -1));
     }
 
     @Test
@@ -177,6 +189,17 @@ public class HomeworkUpcomingCommandTest {
     }
 
     @Test
+    public void execute_completedHomework_showsCompletedStatus() {
+        Model completedModel = getModelWithStudents(List.of(CARL.withHomeworks(List.of(COMPLETED_MECHANICS))));
+        String expectedMessage = "Found 1 homework record due from 2026-10-17 to 2026-10-20.\n"
+                + "Student 1: Carl Ng; Attempt mechanics questions 1-5; PHYSICS; Due: 2026-10-20; Score: Not recorded;"
+                + " Status: COMPLETED";
+
+        assertCommandSuccess(new HomeworkUpcomingCommand(TODAY, 3), completedModel, expectedMessage,
+                getModelWithStudents(List.of(CARL.withHomeworks(List.of(COMPLETED_MECHANICS)))));
+    }
+
+    @Test
     public void execute_emptyRoster_showsNoHomeworkDue() {
         assertCommandSuccess(new HomeworkUpcomingCommand(TODAY, 365), getModelWithStudents(List.of()),
                 "No homework due from 2026-10-17 to 2027-10-17.", getModelWithStudents(List.of()));
@@ -184,18 +207,22 @@ public class HomeworkUpcomingCommandTest {
 
     @Test
     public void execute_unexpectedError_reportsInternalErrorWithoutChangingModel() {
-        Model failingModel = new ModelManager() {
-            @Override
-            public ReadOnlyAddressBook getAddressBook() {
-                throw new IllegalStateException("dummy internal error");
-            }
-        };
-        List.of(ZOE, NO_HOMEWORK, ADAM).forEach(failingModel::addStudent);
+        Model failingModel = getModelFailingOnGetAddressBook();
 
         assertThrows(CommandException.class, HomeworkUpcomingCommand.MESSAGE_INTERNAL_ERROR, ()
                 -> new HomeworkUpcomingCommand(TODAY, 7).execute(failingModel));
         // ModelManager#equals compares the stored rosters directly, not through getAddressBook()
         assertEquals(expectedModel, failingModel);
+    }
+
+    @Test
+    public void execute_unexpectedError_keepsDisplayedStudents() {
+        Model failingModel = getModelFailingOnGetAddressBook();
+        failingModel.updateFilteredStudentList(student -> student.equals(ADAM));
+
+        assertThrows(CommandException.class, HomeworkUpcomingCommand.MESSAGE_INTERNAL_ERROR, ()
+                -> new HomeworkUpcomingCommand(TODAY, 7).execute(failingModel));
+        assertEquals(List.of(ADAM), failingModel.getStudentList());
     }
 
     @Test
@@ -206,7 +233,9 @@ public class HomeworkUpcomingCommandTest {
         assertTrue(upcomingCommand.equals(upcomingCommand));
 
         // same values -> returns true
-        assertTrue(upcomingCommand.equals(new HomeworkUpcomingCommand(LocalDate.of(2026, 10, 17), 7)));
+        HomeworkUpcomingCommand upcomingCommandCopy = new HomeworkUpcomingCommand(LocalDate.of(2026, 10, 17), 7);
+        assertTrue(upcomingCommand.equals(upcomingCommandCopy));
+        assertEquals(upcomingCommand.hashCode(), upcomingCommandCopy.hashCode());
 
         // null -> returns false
         assertFalse(upcomingCommand.equals(null));
@@ -225,5 +254,20 @@ public class HomeworkUpcomingCommandTest {
     public void toStringMethod() {
         String expected = HomeworkUpcomingCommand.class.getCanonicalName() + "{today=2026-10-17, days=7}";
         assertEquals(expected, new HomeworkUpcomingCommand(TODAY, 7).toString());
+    }
+
+    /**
+     * Returns a new model holding Zoe, Benson and Adam whose {@code getAddressBook} throws an unexpected
+     * {@code IllegalStateException}.
+     */
+    private static Model getModelFailingOnGetAddressBook() {
+        Model failingModel = new ModelManager() {
+            @Override
+            public ReadOnlyAddressBook getAddressBook() {
+                throw new IllegalStateException("dummy internal error");
+            }
+        };
+        List.of(ZOE, NO_HOMEWORK, ADAM).forEach(failingModel::addStudent);
+        return failingModel;
     }
 }

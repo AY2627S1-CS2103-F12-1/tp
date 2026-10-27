@@ -106,20 +106,7 @@ class JsonAdaptedStudent {
         final StudentPhone modelGuardianPhone = toModelValue("guardianPhone", guardianPhone, StudentPhone::new,
                 StudentPhone.MESSAGE_CONSTRAINTS);
 
-        final List<Homework> modelHomeworks = new ArrayList<>();
-        for (JsonAdaptedHomework jsonAdaptedHomework : homeworks) {
-            if (jsonAdaptedHomework == null) {
-                throw new IllegalValueException(MESSAGE_EMPTY_HOMEWORK_ENTRY);
-            }
-            Homework homework = jsonAdaptedHomework.toModelType();
-            if (!modelSubjects.getSubjects().contains(homework.getSubject())) {
-                throw new IllegalValueException(MESSAGE_SUBJECT_NOT_TAKEN);
-            }
-            if (modelHomeworks.stream().anyMatch(homework::isSameHomework)) {
-                throw new IllegalValueException(MESSAGE_DUPLICATE_HOMEWORK);
-            }
-            modelHomeworks.add(homework);
-        }
+        final List<Homework> modelHomeworks = toModelHomeworks(modelSubjects);
 
         List<RegularLesson> modelLessons = new ArrayList<>();
         for (JsonAdaptedLesson adapted : lessons) {
@@ -137,6 +124,30 @@ class JsonAdaptedStudent {
         }
         return new Student(modelName, modelAcademicLevel, modelSubjects, modelPhone, modelGuardianName,
                 modelGuardianPhone, modelHomeworks, modelLessons);
+    }
+
+    /**
+     * Returns the homework in the {@code homeworks} list, in order. Each homework must be for one of
+     * {@code modelSubjects}, and no two homework records may be the same by {@link Homework#isSameHomework(Homework)}.
+     *
+     * @throws IllegalValueException If an entry is empty or invalid, is for another subject, or is a duplicate.
+     */
+    private List<Homework> toModelHomeworks(TuitionSubjects modelSubjects) throws IllegalValueException {
+        List<Homework> modelHomeworks = new ArrayList<>();
+        for (JsonAdaptedHomework jsonAdaptedHomework : homeworks) {
+            if (jsonAdaptedHomework == null) {
+                throw new IllegalValueException(MESSAGE_EMPTY_HOMEWORK_ENTRY);
+            }
+            Homework homework = jsonAdaptedHomework.toModelType();
+            if (!modelSubjects.getSubjects().contains(homework.getSubject())) {
+                throw new IllegalValueException(MESSAGE_SUBJECT_NOT_TAKEN);
+            }
+            if (modelHomeworks.stream().anyMatch(homework::isSameHomework)) {
+                throw new IllegalValueException(MESSAGE_DUPLICATE_HOMEWORK);
+            }
+            modelHomeworks.add(homework);
+        }
+        return modelHomeworks;
     }
 
     /**
@@ -158,24 +169,14 @@ class JsonAdaptedStudent {
     }
 
     /**
-     * Returns the model value parsed from the required field {@code value}.
+     * Returns the model value parsed from the required student field {@code value}.
      *
-     * @param fieldName JSON name of the field, used in the message when the field is missing.
-     * @param value Value of the field, or null if the field is missing.
-     * @param parser Parser that throws an {@code IllegalArgumentException} if {@code value} is invalid.
-     * @param messageConstraints Message used when {@code value} is invalid.
      * @throws IllegalValueException If the field is missing or its value is invalid.
      */
     private static <T> T toModelValue(String fieldName, String value, Function<String, T> parser,
             String messageConstraints) throws IllegalValueException {
-        if (value == null) {
-            throw new IllegalValueException(String.format(MISSING_FIELD_MESSAGE_FORMAT, fieldName));
-        }
-        try {
-            return parser.apply(value);
-        } catch (IllegalArgumentException exception) {
-            throw new IllegalValueException(messageConstraints);
-        }
+        return JsonAdaptedHomework.toModelValue(MISSING_FIELD_MESSAGE_FORMAT, fieldName, value, parser,
+                messageConstraints);
     }
 
 }

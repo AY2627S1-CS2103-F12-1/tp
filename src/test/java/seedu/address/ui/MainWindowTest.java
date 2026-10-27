@@ -1,6 +1,7 @@
 package seedu.address.ui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
@@ -28,10 +29,13 @@ import javafx.scene.control.SplitPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.skin.VirtualFlow;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.PickResult;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.Region;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import seedu.address.logic.Logic;
 import seedu.address.logic.LogicManager;
 import seedu.address.model.AddressBook;
@@ -297,6 +301,49 @@ public class MainWindowTest {
                 }
                 assertSame(commandBox, stage.getScene().getFocusOwner());
             } finally {
+                stage.close();
+            }
+        });
+    }
+
+    @Test
+    public void closeHelpWindow_focusElsewhere_focusesCommandBox() throws Exception {
+        StorageManager storage = new StorageManager(
+                new JsonAddressBookStorage(temporaryFolder.resolve("addressBook.json")),
+                new JsonUserPrefsStorage(temporaryFolder.resolve("userPrefs.json")));
+        Logic logic = new LogicManager(new ModelManager(), storage);
+
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+            MainWindow mainWindow = new MainWindow(stage, logic, Path.of("data", "tutorflow.json"));
+            mainWindow.fillInnerParts();
+            Stage helpStage = null;
+            try {
+                stage.show();
+                Region root = (Region) stage.getScene().getRoot();
+                root.applyCss();
+                TextField commandBox = (TextField) root.lookup("#commandTextField");
+                TextArea resultDisplay = (TextArea) root.lookup("#resultDisplay");
+
+                mainWindow.handleHelp();
+                helpStage = Window.getWindows().stream()
+                        .filter(window -> window instanceof Stage && window != stage && window.isShowing())
+                        .map(window -> (Stage) window)
+                        .findFirst()
+                        .orElseThrow();
+                // Without the focus handler, the main window would keep this focus owner after help closes
+                resultDisplay.requestFocus();
+                assertSame(resultDisplay, stage.getScene().getFocusOwner());
+
+                Event.fireEvent(helpStage, new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.ESCAPE,
+                        false, false, false, false));
+
+                assertFalse(helpStage.isShowing());
+                assertSame(commandBox, stage.getScene().getFocusOwner());
+            } finally {
+                if (helpStage != null) {
+                    helpStage.hide();
+                }
                 stage.close();
             }
         });

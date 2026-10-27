@@ -187,9 +187,8 @@ public class JsonAdaptedHomeworkTest {
     @Test
     public void toModelType_nullOrMissingScoreInJson_returnsHomeworkWithoutScore() throws Exception {
         assertEquals(new HomeworkBuilder().build(), fromJsonWithScore("null").toModelType());
-        assertEquals(new HomeworkBuilder().build(), JsonUtil.fromJsonString("{\"title\": \"" + VALID_TITLE
-                + "\", \"subject\": \"MATH\", \"dueDate\": \"2026-10-15\"}",
-                JsonAdaptedHomework.class).toModelType());
+        assertEquals(new HomeworkBuilder().build(),
+                JsonUtil.fromJsonString(toJson(""), JsonAdaptedHomework.class).toModelType());
     }
 
     @Test
@@ -230,9 +229,15 @@ public class JsonAdaptedHomeworkTest {
     }
 
     private static JsonAdaptedHomework fromJsonWithScore(String score) throws Exception {
-        return JsonUtil.fromJsonString("{\"title\": \"" + VALID_TITLE + "\", \"subject\": \"MATH\", "
-                + "\"dueDate\": \"2026-10-15\", \"score\": " + score + "}",
-                JsonAdaptedHomework.class);
+        return JsonUtil.fromJsonString(toJson(", \"score\": " + score), JsonAdaptedHomework.class);
+    }
+
+    /**
+     * Returns the JSON of a homework with the valid title, subject and due date, followed by {@code extraFields}.
+     */
+    private static String toJson(String extraFields) {
+        return "{\"title\": \"" + VALID_TITLE + "\", \"subject\": \"" + VALID_SUBJECT + "\", \"dueDate\": \""
+                + VALID_DUE_DATE + "\"" + extraFields + "}";
     }
 
     /**

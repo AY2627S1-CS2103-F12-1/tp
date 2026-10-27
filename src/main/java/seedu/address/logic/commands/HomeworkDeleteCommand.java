@@ -5,6 +5,7 @@ import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -67,23 +68,12 @@ public class HomeworkDeleteCommand extends Command {
      * so an exception thrown before it leaves the model unchanged.
      */
     private CommandResult deleteHomework(Model model) throws CommandException {
-        List<Student> students = model.getStudentList();
-        if (studentIndex.getZeroBased() >= students.size()) {
-            throw new CommandException(Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
-        }
+        Student student = HomeworkCommandUtil.getDisplayedStudent(model, studentIndex);
+        Homework homeworkToDelete = HomeworkCommandUtil.getHomework(student, homeworkIndex, MESSAGE_NO_HOMEWORK);
 
-        Student student = students.get(studentIndex.getZeroBased());
-        List<Homework> homeworks = student.getHomeworks();
-        if (homeworks.isEmpty()) {
-            throw new CommandException(MESSAGE_NO_HOMEWORK);
-        }
-        if (homeworkIndex.getZeroBased() >= homeworks.size()) {
-            throw new CommandException(Messages.MESSAGE_INVALID_HOMEWORK_DISPLAYED_INDEX);
-        }
-
-        List<Homework> remainingHomeworks = new ArrayList<>(homeworks);
-        Homework deletedHomework = remainingHomeworks.remove(homeworkIndex.getZeroBased());
-        String message = String.format(MESSAGE_SUCCESS, Messages.format(student, deletedHomework));
+        List<Homework> remainingHomeworks = new ArrayList<>(student.getHomeworks());
+        remainingHomeworks.remove(homeworkIndex.getZeroBased());
+        String message = String.format(MESSAGE_SUCCESS, Messages.format(student, homeworkToDelete));
 
         model.setStudent(student, student.withHomeworks(remainingHomeworks));
         return new CommandResult(message);
@@ -107,6 +97,11 @@ public class HomeworkDeleteCommand extends Command {
 
         return studentIndex.equals(otherCommand.studentIndex)
                 && homeworkIndex.equals(otherCommand.homeworkIndex);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(studentIndex.getZeroBased(), homeworkIndex.getZeroBased());
     }
 
     @Override

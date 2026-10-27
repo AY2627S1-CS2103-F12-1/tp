@@ -1,0 +1,24 @@
+@startuml
+!include style.puml
+skinparam activityBackgroundColor LOGIC_COLOR
+skinparam activityFontColor #FFFFFF
+skinparam activityDiamondBackgroundColor #FFFFFF
+skinparam activityDiamondFontColor #000000
+skinparam ArrowFontStyle plain
+
+start
+:Copy the data, the displayed students\nand the student filter;
+:Execute the command;
+if () then ([data unchanged])
+else ([data changed])
+  :Save the data;
+  if () then ([save failed])
+    :Restore the data, the filter\nand the display order;
+    :Report the save failure;
+    stop
+  else ([saved])
+  endif
+endif
+:Show the command result;
+stop
+@enduml

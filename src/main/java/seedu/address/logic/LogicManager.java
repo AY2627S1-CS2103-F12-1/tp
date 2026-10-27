@@ -1,5 +1,7 @@
 package seedu.address.logic;
 
+import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
+
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.time.Clock;
@@ -48,6 +50,7 @@ public class LogicManager implements Logic {
      * Constructs a {@code LogicManager} whose {@code homework} commands take today's date from {@code clock}.
      */
     public LogicManager(Model model, Storage storage, Clock clock) {
+        requireAllNonNull(model, storage, clock);
         this.model = model;
         this.storage = storage;
         addressBookParser = new AddressBookParser(clock);
@@ -78,16 +81,30 @@ public class LogicManager implements Logic {
             storage.saveAddressBook(model.getAddressBook());
         } catch (IOException ioe) {
             logger.warning("Could not save data, so the command's changes are undone: " + ioe);
-            model.setAddressBook(dataBeforeCommand);
-            // Restoring the data alone can change which students are displayed and their order
-            model.updateFilteredStudentList(predicateBeforeCommand);
-            model.setStudentListOrder(displayedBeforeCommand);
+            restoreModel(dataBeforeCommand, predicateBeforeCommand, displayedBeforeCommand);
             String message = ioe instanceof DataFileConflictException ? ioe.getMessage()
                     : command.getSaveFailureMessage(getSaveErrorMessage(ioe));
             throw new CommandException(message, ioe);
         }
 
         return commandResult;
+    }
+
+    /**
+     * Restores the data, the displayed students and their order to what they were before a command.
+     * Restoring the data alone can change which students are displayed and their order.
+     *
+     * @param data Data before the command.
+     * @param predicate Predicate that selected the displayed students before the command.
+     * @param displayedStudents Displayed students before the command, in their displayed order.
+     */
+    private void restoreModel(ReadOnlyAddressBook data, Predicate<Student> predicate,
+            List<Student> displayedStudents) {
+        model.setAddressBook(data);
+        model.updateFilteredStudentList(predicate);
+        model.setStudentListOrder(displayedStudents);
+        assert model.getAddressBook().equals(data) : "Rollback must restore the data";
+        assert model.getStudentList().equals(displayedStudents) : "Rollback must restore the displayed students";
     }
 
     /**

@@ -19,6 +19,8 @@ public class FileUtil {
 
     private static final String CHARSET = "UTF-8";
     private static final String TEMP_FILE_SUFFIX = ".tmp";
+    private static final String ATTRIBUTE_VIEW_POSIX = "posix";
+    private static final String ATTRIBUTE_VIEW_ACL = "acl";
 
     /**
      * Creates parent directories of file if it has a parent directory
@@ -83,10 +85,10 @@ public class FileUtil {
             return;
         }
         Set<String> attributeViews = source.getFileSystem().supportedFileAttributeViews();
-        if (attributeViews.contains("posix")) {
+        if (attributeViews.contains(ATTRIBUTE_VIEW_POSIX)) {
             Files.setPosixFilePermissions(target, Files.getPosixFilePermissions(source));
         }
-        if (attributeViews.contains("acl")) {
+        if (attributeViews.contains(ATTRIBUTE_VIEW_ACL)) {
             List<AclEntry> acl = Files.getFileAttributeView(source, AclFileAttributeView.class).getAcl();
             Files.getFileAttributeView(target, AclFileAttributeView.class).setAcl(acl);
         }

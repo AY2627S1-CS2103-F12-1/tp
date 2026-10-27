@@ -146,7 +146,7 @@ public final class StrictArgumentTokenizer {
             if (!allowedPrefixes.contains(prefix)) {
                 throw new ParseException(invalidFormatMessage);
             }
-            if (values.containsKey(prefix) || prefix.equals(previousPrefix)) {
+            if (values.containsKey(prefix)) {
                 throw new ParseException(String.format(repeatedPrefixMessage, prefix));
             }
             previousPrefix = prefix;
@@ -168,6 +168,8 @@ public final class StrictArgumentTokenizer {
      */
     private static String extractValue(String arguments, int start, int end, boolean isQuoted) {
         String value = arguments.substring(start, end).strip();
+        assert !isQuoted || (value.length() >= 2 && value.charAt(0) == QUOTE
+                && value.charAt(value.length() - 1) == QUOTE) : "A quoted value must start and end with a quote";
         return isQuoted ? value.substring(1, value.length() - 1).strip() : value;
     }
 

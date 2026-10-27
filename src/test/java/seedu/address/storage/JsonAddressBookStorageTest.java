@@ -55,6 +55,20 @@ public class JsonAddressBookStorageTest {
         return new JsonAddressBookStorage(Paths.get(filePath)).readAddressBook(addToTestDataPathIfNotNull(filePath));
     }
 
+    /**
+     * Returns the reason the user is shown when a data file holding {@code content} cannot be loaded: the message
+     * of the {@code DataLoadingException}'s cause.
+     */
+    private String getLoadingReason(String content) throws IOException {
+        Path file = Files.writeString(testFolder.resolve("data.json"), content);
+        try {
+            new JsonAddressBookStorage(file).readAddressBook();
+        } catch (DataLoadingException e) {
+            return e.getCause().getMessage();
+        }
+        throw new AssertionError("The data file was loaded: " + content);
+    }
+
     private Path addToTestDataPathIfNotNull(String prefsFileInTestDataFolder) {
         return prefsFileInTestDataFolder != null
                 ? TEST_DATA_FOLDER.resolve(prefsFileInTestDataFolder)
@@ -69,6 +83,16 @@ public class JsonAddressBookStorageTest {
     @Test
     public void read_notJsonFormat_exceptionThrown() {
         assertThrows(DataLoadingException.class, () -> readAddressBook("notJsonFormatAddressBook.json"));
+    }
+
+    @Test
+    public void readAddressBook_emptyFile_reasonSaysEmpty() throws Exception {
+        assertEquals("The file is empty.", getLoadingReason(""));
+    }
+
+    @Test
+    public void readAddressBook_whitespaceOnlyFile_reasonSaysEmpty() throws Exception {
+        assertEquals("The file is empty.", getLoadingReason(" \n\t\r\n"));
     }
 
     @Test

@@ -24,6 +24,7 @@ import seedu.address.commons.exceptions.DataLoadingException;
  * Converts a Java object instance to JSON and vice versa
  */
 public class JsonUtil {
+    public static final String MESSAGE_EMPTY_FILE = "The file is empty.";
     public static final String MESSAGE_INVALID_JSON = "The file is not valid JSON near line %d, column %d.";
 
     private static final Logger logger = LogsCenter.getLogger(JsonUtil.class);
@@ -46,6 +47,10 @@ public class JsonUtil {
         // Editors may add a UTF-8 signature. It is an encoding marker, not JSON content.
         if (json.startsWith("\ufeff")) {
             json = json.substring(1);
+        }
+        // Jackson's message for this names no position and shows the file's content
+        if (json.isBlank()) {
+            throw new IOException(MESSAGE_EMPTY_FILE);
         }
         try {
             return fromJsonString(json, classOfObjectToDeserialize);

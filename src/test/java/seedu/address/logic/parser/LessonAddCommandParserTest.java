@@ -27,7 +27,7 @@ public class LessonAddCommandParserTest {
     @Test
     public void parse_invalidStructure_rejects() {
         for (String args : new String[]{"add", "add s/MATH d/MONDAY st/16:00 et/18:00",
-            "add 1 extra s/MATH d/MONDAY st/16:00 et/18:00", "add 1 s/MATH d/MONDAY st/16:00",
+            "add 1 extra s/MATH d/MONDAY st/16:00 et/18:00",
             "add 1 s/MATH d/MONDAY st/16:00 et/18:00 extra"}) {
             assertEquals(LessonAddCommandParser.MESSAGE_FORMAT,
                     assertThrows(ParseException.class, () ->
@@ -36,6 +36,23 @@ public class LessonAddCommandParserTest {
         assertEquals(
                 "Prefix s/ must be specified exactly once.", assertThrows(ParseException.class, () ->
                         parser.parseCommand("lesson add 1 s/MATH s/PHYSICS d/MONDAY st/16:00 et/18:00")).getMessage());
+    }
+
+    @Test
+    public void parse_missingPrefixes_namesEveryMissingField() {
+        assertEquals(String.format(LessonAddCommandParser.MESSAGE_MISSING_PREFIXES, "d/, et/"),
+                assertThrows(ParseException.class, () ->
+                        parser.parseCommand("lesson add 1 s/MATH st/16:00")).getMessage());
+    }
+
+    @Test
+    public void parse_largePositiveIndex_reportsSupportedRange() throws Exception {
+        parser.parseCommand("lesson add 2147483647 s/MATH d/MONDAY st/16:00 et/18:00");
+        for (String index : new String[]{"2147483648", "999999999999999999999"}) {
+            assertEquals(LessonAddCommandParser.MESSAGE_INDEX_TOO_LARGE,
+                    assertThrows(ParseException.class, () -> parser.parseCommand(
+                            "lesson add " + index + " s/MATH d/MONDAY st/16:00 et/18:00")).getMessage());
+        }
     }
 
     @Test

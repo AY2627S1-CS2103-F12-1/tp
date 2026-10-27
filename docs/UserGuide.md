@@ -548,9 +548,9 @@ Each lesson belongs to one student. All overlapping lessons are rejected as tuto
 
 Adds a weekly lesson to the student at the displayed student index.
 
-Format: `lesson add INDEX s/SUBJECT d/DAY st/START_TIME et/END_TIME`
+Format: `lesson add STUDENT_INDEX s/SUBJECT d/DAY st/START_TIME et/END_TIME`
 
-Example: `lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00`
+Example: `lesson add 1 s/MATH d/TUESDAY st/16:00 et/18:00`
 
 * Use a positive student index without leading zeroes. Use `list` to see the current indices.
 * Supply each prefix exactly once, in any order. Unknown prefixes are rejected.
@@ -559,7 +559,9 @@ Example: `lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00`
 * Times must use the 24-hour `HH:mm` format, such as `09:00`. End time must be later than start time on the same day; overnight lessons are not supported.
 * An identical lesson for the same student is rejected. A lesson that overlaps any existing lesson, for any student, is rejected. TutorFlow lists every conflicting lesson, with its student's name and lesson details, in weekly order. Lessons that meet exactly at an endpoint are allowed.
 
-On success, TutorFlow shows `New lesson added: John Tan (91234567); MATH; MONDAY; 16:00-18:00` (using John's student phone) and saves the lesson automatically. The student's position, profile and homework remain unchanged. If saving fails, the addition is undone and TutorFlow reports that no lesson data was changed.
+With the sample roster, this shows `New lesson added: Ethan Lim (91234567); MATH; TUESDAY; 16:00-18:00` and saves the lesson automatically. Tuesday avoids Ethan's existing Monday lesson. The student's position, profile and homework remain unchanged. If saving fails, the addition is undone and TutorFlow reports that no lesson data was changed.
+
+`STUDENT_INDEX` refers to the displayed student list and must be from 1 to 2147483647, without signs or leading zeroes. Larger numbers report the supported upper bound. A missing field names every missing prefix, for example `Missing required prefix(es): d/, et/`, followed by usage guidance. Full weekday names and same-day times keep recurring schedules unambiguous; abbreviated days, `24:00` and overnight intervals are not supported.
 
 ### Editing a regular lesson: `lesson edit`
 
@@ -597,11 +599,13 @@ Format: `lesson delete LESSON_INDEX`
 
 Example: `lesson delete 2`
 
-### Listing all regular lessons: `lesson list`
+### Listing regular lessons: `lesson list`
 
-Lists every student's regular lessons in one weekly schedule.
+Lists every student's regular lessons in one weekly schedule, or shows just one displayed student's lessons.
 
-Format: `lesson list`
+Format: `lesson list [STUDENT_INDEX]`
+
+Use `lesson list 1` to see the first displayed student's regular lessons. After a search or sort, use the student's current displayed index. The output names the student and phone and keeps the full schedule's lesson numbers, so `lesson edit` and `lesson delete` still target the same lessons. For example, one student's lessons may be numbered 1 and 3 because another student owns lesson 2. The displayed roster and saved data remain unchanged. A student without lessons receives `No regular lessons found for NAME (PHONE).`; an index outside the displayed list is rejected.
 
 * Lessons are ordered from Monday to Sunday, then by start time.
 * Lessons with the same weekday and start time are ordered by student name.
@@ -727,8 +731,8 @@ Action | Format, Examples
 **Homework upcoming** | <code>homework&#124;hw upcoming&#124;up [due/DAYS]</code><br> e.g., `hw up`, `hw up due/3`
 **Homework filter** | <code>homework&#124;hw filter [STUDENT_INDEX] [s/SUBJECT] [due/DATE] [status/STATUS]</code><br> e.g., `hw filter 1 s/MATH due/2026-10-15 status/ASSIGNED`
 **Homework status** | <code>homework&#124;hw status STUDENT_INDEX HOMEWORK_INDEX status/STATUS</code><br> e.g., `hw status 1 2 status/COMPLETED`, `hw status 1 2 status/ASSIGNED`
-**Lesson add** | `lesson add INDEX s/SUBJECT d/DAY st/START_TIME et/END_TIME`<br> e.g., `lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00`
-**Lesson list** | `lesson list`
+**Lesson add** | `lesson add STUDENT_INDEX s/SUBJECT d/DAY st/START_TIME et/END_TIME`<br> e.g., `lesson add 1 s/MATH d/TUESDAY st/16:00 et/18:00`
+**Lesson list** | `lesson list [STUDENT_INDEX]`<br> e.g., `lesson list 1`
 **Lesson delete** | `lesson delete LESSON_INDEX`<br> e.g., `lesson delete 2`
 **Lesson edit** | `lesson edit LESSON_INDEX [s/SUBJECT] [d/DAY] [st/START_TIME] [et/END_TIME]`<br> e.g., `lesson edit 1 d/TUESDAY`
 **Help** | `help`

@@ -126,11 +126,12 @@ public final class HelpContent {
             new Section(SECTION_LESSONS, List.of(
                     new Entry("lesson add", LessonAddCommand.MESSAGE_USAGE,
                             "Adds a weekly lesson to a student. Use a full weekday name and 24-hour HH:mm times.",
-                            "lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00"),
+                            "lesson add 1 s/MATH d/TUESDAY st/16:00 et/18:00"),
                     new Entry(LessonCommandParser.COMMAND_WORD + " " + LessonCommandParser.SUBCOMMAND_LIST,
                             LessonListCommand.MESSAGE_USAGE,
-                            "Lists every regular lesson in weekly chronological order.",
-                            LessonListCommand.MESSAGE_USAGE),
+                            "Lists all lessons, or one displayed student's lessons."
+                                    + " Numbers remain global for edit/delete.",
+                            "lesson list 1"),
                     new Entry(LessonCommandParser.COMMAND_WORD + " " + LessonCommandParser.SUBCOMMAND_DELETE,
                             LessonDeleteCommand.MESSAGE_USAGE,
                             "Deletes the lesson numbered by lesson list.",

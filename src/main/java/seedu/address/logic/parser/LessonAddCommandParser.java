@@ -17,6 +17,9 @@ import seedu.address.model.student.TuitionSubject;
 /** Parses the required student index, subject, weekday and times for lesson add. */
 public class LessonAddCommandParser implements Parser<LessonAddCommand> {
     public static final String MESSAGE_FORMAT = "Invalid command format.\nUsage: " + LessonAddCommand.MESSAGE_USAGE;
+    public static final String MESSAGE_MISSING_PREFIXES = "Missing required prefix(es): %s\nUsage: "
+            + LessonAddCommand.MESSAGE_USAGE;
+    public static final String MESSAGE_INDEX_TOO_LARGE = "STUDENT_INDEX must be no greater than 2147483647.";
     private static final List<String> PREFIXES = List.of("s/", "d/", "st/", "et/");
 
     @Override
@@ -25,11 +28,19 @@ public class LessonAddCommandParser implements Parser<LessonAddCommand> {
         var tokenized = StrictArgumentTokenizer.tokenizeWithPreamble(args, PREFIXES, MESSAGE_FORMAT);
         Map<String, String> values = tokenized.values();
         if (tokenized.preamble().isEmpty() || tokenized.preamble().split("\\s+").length != 1
-                || !values.keySet().containsAll(PREFIXES)
                 || values.values().stream().anyMatch(value -> value.strip().split("\\s+").length > 1)) {
             throw new ParseException(MESSAGE_FORMAT);
         }
-        Index index = ParserUtil.parseStrictIndex(tokenized.preamble(), Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
+        List<String> missing = PREFIXES.stream().filter(prefix -> !values.containsKey(prefix)).toList();
+        if (!missing.isEmpty()) {
+            throw new ParseException(String.format(MESSAGE_MISSING_PREFIXES, String.join(", ", missing)));
+        }
+        String studentIndex = tokenized.preamble();
+        if (studentIndex.matches("[1-9][0-9]*") && (studentIndex.length() > 10
+                || studentIndex.length() == 10 && studentIndex.compareTo("2147483647") > 0)) {
+            throw new ParseException(MESSAGE_INDEX_TOO_LARGE);
+        }
+        Index index = ParserUtil.parseStrictIndex(studentIndex, Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
         try {
             TuitionSubject subject = TuitionSubject.parse(values.get("s/"));
             DayOfWeek day = RegularLesson.parseDay(values.get("d/"));

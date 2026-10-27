@@ -22,7 +22,7 @@ import seedu.address.model.student.Student;
  * Adds a regular weekly lesson to the student at a displayed index.
  */
 public class LessonAddCommand extends Command {
-    public static final String MESSAGE_USAGE = "lesson add INDEX s/SUBJECT d/DAY st/START_TIME et/END_TIME";
+    public static final String MESSAGE_USAGE = "lesson add STUDENT_INDEX s/SUBJECT d/DAY st/START_TIME et/END_TIME";
     public static final String MESSAGE_SUBJECT = "The selected student is not registered for this subject.";
     public static final String MESSAGE_DUPLICATE = "This lesson already exists.";
     public static final String MESSAGE_CLASH = "This lesson clashes with an existing lesson: ";

@@ -84,7 +84,8 @@ public class HelpContentTest {
                 Map.entry(AddCommand.COMMAND_WORD, AddCommand.MESSAGE_USAGE),
                 Map.entry(DeleteCommand.COMMAND_WORD, DeleteCommand.MESSAGE_USAGE),
                 Map.entry(EditCommand.COMMAND_WORD, EditCommand.MESSAGE_USAGE),
-                Map.entry(ListCommand.COMMAND_WORD, ListCommand.MESSAGE_USAGE),
+                // the help entry adds the ls alias, which the list command's usage text does not show
+                Map.entry(ListCommand.COMMAND_WORD, ListCommand.COMMAND_WORD + "|" + ListCommand.SHORT_COMMAND_WORD),
                 Map.entry(SearchCommand.COMMAND_WORD, SearchCommand.MESSAGE_USAGE),
                 Map.entry(SortCommand.COMMAND_WORD, SortCommand.MESSAGE_USAGE),
                 Map.entry(FilterCommand.COMMAND_WORD, FilterCommand.MESSAGE_USAGE),

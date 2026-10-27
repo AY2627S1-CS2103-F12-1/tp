@@ -201,6 +201,16 @@ Format: `filter [l/LEVEL] [s/SUBJECT]`
   run `list` or `ls`. Adding a student or running `homework upcoming` also restores the full roster.
 * Filtering changes only the displayed students. It does not change records or write to the data file.
 
+The student panel keeps the active criteria below its heading: `Filtered: level S4`, `Filtered: subject PHYSICS`,
+or `Filtered: level S4; subject PHYSICS`. This description remains visible after other commands replace the
+feedback, including when no students match or every student matches. The count beside the heading is the number
+of displayed students. Long descriptions wrap to fit the panel.
+
+A new filter replaces the description. `list`, `ls`, a successful student addition, or `homework upcoming`
+removes it by restoring the full roster. A new search also removes the level/subject description because it
+replaces that filter. Editing or deleting students retains the criteria; `clear` retains them on an empty roster.
+Invalid commands leave the description unchanged. If saving fails, the previous filter and description are restored.
+
 Examples:
 
 * `filter l/S4` shows every S4 student.

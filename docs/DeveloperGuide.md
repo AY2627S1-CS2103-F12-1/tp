@@ -215,6 +215,10 @@ A missing `homeworks` list, `lessons` list, or `score` means no homework, no les
 
 `MainApp#readInitialData` returns saved data if the data file is valid, or sample students from `SampleDataUtil#getSampleAddressBook()` if it does not exist. The missing file is first created by a command that changes the data. Loading failures propagate as `DataLoadingException`: `MainApp#init` records the failure and skips model, logic and main-window initialization. `start` shows an error with the absolute data path, the reason and recovery instructions, then exits after the dialog closes. The reason is the message of the exception's cause, e.g. `10-15 is not in YYYY-MM-DD format, e.g. 2026-10-30.` from `DueDate`. For a file that is not valid JSON, `JsonUtil#readJsonFile` replaces Jackson's technical message with a plain one that gives the position, e.g. `The file is not valid JSON near line L, column C.` No replacement roster is created and the original data file is not changed.
 
+The activity diagram below shows how the data file is loaded at startup:
+
+<img src="images/LoadDataActivityDiagram.png" width="630" alt="Loading the data file at startup" />
+
 `AppHomeUtil` resolves the packaged JAR's containing folder from its code-source URI. Data, preferences and logs use absolute paths within that folder, regardless of the terminal's working directory. Unpacked Gradle/IDE launches use the project working directory. URI conversion preserves spaces and percent signs; the logging pattern escapes literal percent signs for `FileHandler`. This meets the course data-sandbox constraint without changing process or OS settings. An unwritable log location falls back to console logging. Existing v1.4 files stored in a different working directory must be copied beside the JAR explicitly; the app does not search outside its home folder.
 
 The team planning document specified an empty roster when no data file exists. v1.5 retains the released application's sample roster to preserve the documented quick start and provide examples for first-time tutors. Samples are not written until a modifying command succeeds; `clear` creates an empty saved roster. Invalid files never trigger this fallback. The plan's literal startup-banner wording is also not used: the roster, student count and data-path status bar show the startup state.
@@ -487,7 +491,15 @@ The class diagram below shows how homework is stored. Each `Student` owns its `H
 
 For how a homework command runs through the `Logic` component, see the `hw del 1 2` sequence diagram in [Logic component](#logic-component).
 
+**Adding.** The activity diagram below shows the checks that `homework add` makes, in order, and which class makes each. A failed check reports its error and leaves the data unchanged.
+
+<img src="images/HomeworkAddActivityDiagram.png" width="900" alt="Checks and steps of homework add, by class" />
+
 **Homework index.** The homework index is the one-based position in the student's homework list (insertion order). It is not stored and changes only when earlier homework is deleted. `homework list` sorts the homework by due date but prints each record with its insertion-order number, so every number shown is a valid `HOMEWORK_INDEX` for the other homework commands. `add`, `list`, `edit`, `marks` and `delete` look up the student (and, for `edit`, `marks` and `delete`, the homework) through `HomeworkCommandUtil`, so they check the indices in the same order and report the same errors.
+
+The object diagram below shows this for `hw del 2 1` with the sample students. Deleting Priya Nair's first homework makes her other two records homework 1 and 2. As `Student` is immutable, a new `Student` object replaces the old one, while the remaining `Homework` objects are the same objects.
+
+<img src="images/HomeworkIndexObjectDiagram.png" width="750" alt="Homework indices before and after deleting a student's first homework" />
 
 **Deleting.** `homework delete` renumbers the homework after the deleted record, so a second delete typed from a list shown before the first one would remove the wrong record. Its result therefore shows the deleted record in the `homework list` line layout (`HomeworkListCommand#formatHomeworkLine`), with the number it had, its score and its status, followed by `HomeworkListCommand#formatHomeworkList` of the updated student, the same upcoming list that `homework edit` shows. `HomeworkDeleteCommand` takes `today` from its parser's `Clock` for that list. `homework add`, `homework edit` and `homework marks` keep their own record layouts.
 
@@ -502,6 +514,10 @@ Alternatives considered:
 * Printable ASCII only: rejected, as accented titles such as `Café` would be rejected, titles would be stricter than student names, and data files with such titles would no longer load.
 
 **Score.** A `Score` is either `MARKS` (e.g. `17`) or `MARKS_OBTAINED/TOTAL_MARKS` (e.g. `5/10`). It is kept as given (`5/10` is not simplified) and stored in the data file as this text, e.g. `"17"` or `"5/10"`. `Score#parse` checks the format first: a number with leading zeroes (e.g. `05/10`) is reported with `Score#MESSAGE_LEADING_ZEROES` before the size and range of the numbers are checked, so `02147483648` and `011/10` get the leading-zero message too, while input wrong in another way as well (e.g. `-05`) gets `Score#MESSAGE_CONSTRAINTS`.
+
+**Recording marks.** The sequence diagram below shows `hw m 2 1 score/8/10`, which records the score `8/10` for the first homework of student 2. Parsing works as for `hw del 1 2` and is shown as a reference frame.
+
+<img src="images/HomeworkMarksSequenceDiagram.png" width="900" alt="Recording homework marks" />
 
 **Due date.** `DueDate#parse` accepts `YYYY-MM-DD` or `MM-DD`. For `MM-DD`, the year is this year, or next year if the date has already passed this year; `02-29` is rejected, with a hint to enter the full date, when no 29 February falls within the next 12 months. Its error message says what is wrong: an empty date, input in neither format, a year outside 2000 to 2099, or a date that does not exist (e.g. `2026-02-30 is not a real calendar date.`). `homework add`, `homework edit` and `homework filter` pass these messages on unchanged. `DueDate#parseFullDate`, used for the data file, accepts only `YYYY-MM-DD`, so a saved year is never inferred.
 

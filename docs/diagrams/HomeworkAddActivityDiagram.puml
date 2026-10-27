@@ -1,0 +1,53 @@
+@startuml
+!include style.puml
+skinparam activityBackgroundColor LOGIC_COLOR
+skinparam activityFontColor #FFFFFF
+skinparam activityDiamondBackgroundColor #FFFFFF
+skinparam activityDiamondFontColor #000000
+skinparam ArrowFontStyle plain
+
+|HomeworkAddCommandParser|
+start
+:Split the arguments
+at the prefixes;
+:Parse the student index,
+title, subject and due date;
+note right
+  MM-DD: this year, or
+  next year if it has passed
+end note
+if () then ([valid])
+else ([invalid])
+  :Report the error;
+  stop
+endif
+:Create a
+HomeworkAddCommand;
+
+|HomeworkAddCommand|
+:Find the student at
+STUDENT_INDEX in the
+displayed list;
+:Check that the student
+takes the subject and
+has no such homework;
+if () then ([valid])
+else ([invalid])
+  :Report the error;
+  stop
+endif
+:Add the homework to
+the end of a copy of the
+student's homework list;
+
+|Model|
+:Replace the student
+with a copy that has
+the new list;
+
+|LogicManager|
+:Save the data, or
+restore it if
+saving fails;
+stop
+@enduml

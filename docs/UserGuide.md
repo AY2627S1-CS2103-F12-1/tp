@@ -210,7 +210,7 @@ feedback, including when no students match or every student matches. The count b
 of displayed students. Long descriptions wrap to fit the panel.
 
 A new filter replaces the description. `list`, `ls`, a successful student addition, or `homework upcoming`
-removes it by restoring the full roster. A new search also removes the level/subject description because it
+removes it by restoring the full roster. A new search also removes the filter description because it
 replaces that filter. Editing or deleting students retains the criteria; `clear` retains them on an empty roster.
 Invalid commands leave the description unchanged. If saving fails, the previous filter and description are restored.
 

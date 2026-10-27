@@ -460,7 +460,7 @@ and `homework upcoming` restore the full roster. Search and filter commands repl
 
 **Active filter indication.** The model exposes its active predicate as a read-only observable property through
 `Logic`. This property also drives the filtered list, so the panel can observe criteria changes even when the
-matching students are unchanged. `StudentListPanel` describes the level and subject from `StudentFilterPredicate`
+matching students are unchanged. `StudentListPanel` describes the selected criteria from `StudentFilterPredicate`
 below its heading; presentation wording stays in the UI. Other predicates hide this description. Empty results,
 sorting, edits and deletions retain the active criteria. The description wraps and reserves its preferred height
 at narrow widths. Save-failure recovery restores the exact predicate, preserving its typed criteria along with

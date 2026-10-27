@@ -30,7 +30,7 @@ import seedu.address.model.student.Student;
 import seedu.address.model.student.StudentFilterPredicate;
 
 /**
- * Displays the current student roster, its count, and any active level or subject criteria.
+ * Displays the current student roster, its count, and any active filter criteria.
  */
 public class StudentListPanel extends UiPart<Region> {
     private static final String FXML = "StudentListPanel.fxml";

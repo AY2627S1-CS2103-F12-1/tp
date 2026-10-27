@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.model.homework.DueDateTest.MESSAGE_YEAR_OUT_OF_RANGE;
-import static seedu.address.model.homework.DueDateTest.assertFullDateFormatError;
+import static seedu.address.model.homework.DueDateTest.fullDateFormatMessage;
 import static seedu.address.model.homework.DueDateTest.notRealDateMessage;
 import static seedu.address.storage.JsonAdaptedHomework.INVALID_NUMBER_SCORE_WARNING_FORMAT;
 import static seedu.address.storage.JsonAdaptedHomework.MISSING_FIELD_MESSAGE_FORMAT;
@@ -162,9 +162,10 @@ public class JsonAdaptedHomeworkTest {
         assertThrows(IllegalValueException.class, notRealDateMessage("2026-02-30"),
                 withDueDate("2026-02-30")::toModelType);
         // short form, whose year is never inferred when loading
-        assertFullDateFormatError("10-15", IllegalValueException.class, withDueDate("10-15")::toModelType);
+        assertThrows(IllegalValueException.class, fullDateFormatMessage("10-15"), withDueDate("10-15")::toModelType);
         // wrong separator
-        assertFullDateFormatError("15/10/2026", IllegalValueException.class, withDueDate("15/10/2026")::toModelType);
+        assertThrows(IllegalValueException.class, fullDateFormatMessage("15/10/2026"),
+                withDueDate("15/10/2026")::toModelType);
     }
 
     @Test

@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.model.homework.DueDateTest.MESSAGE_YEAR_OUT_OF_RANGE;
-import static seedu.address.model.homework.DueDateTest.assertFullDateFormatMessage;
+import static seedu.address.model.homework.DueDateTest.fullDateFormatMessage;
 import static seedu.address.testutil.TypicalStudents.getTypicalAddressBook;
 
 import java.nio.file.Files;
@@ -61,7 +61,7 @@ public class MainAppLifecycleTest {
     @Test
     public void invalidData_shortFormDueDate_dialogShowsReason() throws Exception {
         String content = getRecoveryDialogContent(getTypicalDataReplacing("\"2026-10-15\"", "\"10-15\""));
-        assertFullDateFormatMessage("10-15", getReason(content));
+        assertTrue(getReason(content).startsWith(fullDateFormatMessage("10-15")), content);
     }
 
     @Test

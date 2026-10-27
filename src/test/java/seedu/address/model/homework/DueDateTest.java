@@ -7,9 +7,7 @@ import static seedu.address.testutil.Assert.assertThrows;
 
 import java.time.LocalDate;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.function.Executable;
 
 public class DueDateTest {
     /** Error for an empty due date. */
@@ -201,14 +199,13 @@ public class DueDateTest {
 
     @Test
     public void parseFullDate_wrongFormatOrShortForm_throwsFullDateFormatMessage() {
-        // the wording is not agreed in detail: it names the input and only the full YYYY-MM-DD format
-        assertFullDateFormatError("10-15", IllegalArgumentException.class, () ->
+        assertThrows(IllegalArgumentException.class, fullDateFormatMessage("10-15"), () ->
                 DueDate.parseFullDate("10-15")); // short form, whose year would be inferred
-        assertFullDateFormatError("1-5", IllegalArgumentException.class, () ->
+        assertThrows(IllegalArgumentException.class, fullDateFormatMessage("1-5"), () ->
                 DueDate.parseFullDate("1-5")); // single-digit short form
-        assertFullDateFormatError("2026-010-05", IllegalArgumentException.class, () ->
+        assertThrows(IllegalArgumentException.class, fullDateFormatMessage("2026-010-05"), () ->
                 DueDate.parseFullDate("2026-010-05")); // three-digit month
-        assertFullDateFormatError("15/10/2026", IllegalArgumentException.class, () ->
+        assertThrows(IllegalArgumentException.class, fullDateFormatMessage("15/10/2026"), () ->
                 DueDate.parseFullDate("15/10/2026")); // wrong separator
         assertThrows(IllegalArgumentException.class, () -> DueDate.parseFullDate("")); // empty
     }
@@ -298,24 +295,9 @@ public class DueDateTest {
                 + "-02-29.";
     }
 
-    /**
-     * Asserts that {@code executable} throws {@code expectedType} for {@code rawDate}, a date in the data file that
-     * is not in the full {@code YYYY-MM-DD} format. The exact wording is not agreed; the message must start with the
-     * date and name only the full format.
-     */
-    public static void assertFullDateFormatError(String rawDate, Class<? extends Throwable> expectedType,
-            Executable executable) {
-        assertFullDateFormatMessage(rawDate, Assertions.assertThrows(expectedType, executable).getMessage());
-    }
-
-    /**
-     * Asserts that {@code message} is the error for {@code rawDate}, a date in the data file that is not in the full
-     * {@code YYYY-MM-DD} format, as described in {@link #assertFullDateFormatError}.
-     */
-    public static void assertFullDateFormatMessage(String rawDate, String message) {
-        assertTrue(message.startsWith(rawDate + " "), message);
-        assertTrue(message.contains("YYYY-MM-DD"), message);
-        assertFalse(message.contains("or MM-DD"), message);
+    /** Returns the error for {@code date} in the data file, which is not in the full date format. */
+    public static String fullDateFormatMessage(String date) {
+        return date + " is not in YYYY-MM-DD format, e.g. 2026-10-30.";
     }
 
     private static void assertParsed(String rawDate, LocalDate today, LocalDate expectedDate) {

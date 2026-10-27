@@ -4,6 +4,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.Optional;
 import java.util.logging.Logger;
 
@@ -47,6 +48,7 @@ public class MainApp extends Application {
     protected Logic logic;
     protected Storage storage;
     protected Model model;
+    private final Path homeFolder;
     private final Path userPrefsFilePath;
     private final Path addressBookFilePath;
     private final Runnable shutdown;
@@ -56,11 +58,15 @@ public class MainApp extends Application {
 
     /** Creates the application using files in its home folder and the JavaFX shutdown action. */
     public MainApp() {
-        this(USER_PREFS_FILE_PATH, ADDRESS_BOOK_FILE_PATH, Platform::exit);
+        this(APP_HOME, USER_PREFS_FILE_PATH, ADDRESS_BOOK_FILE_PATH, Platform::exit);
     }
 
-    /** Creates an application with isolated paths and a shutdown action for lifecycle testing. */
-    MainApp(Path userPrefsFilePath, Path addressBookFilePath, Runnable shutdown) {
+    /**
+     * Creates an application with isolated paths and a shutdown action for lifecycle testing. Messages name the data
+     * file relative to {@code homeFolder}.
+     */
+    MainApp(Path homeFolder, Path userPrefsFilePath, Path addressBookFilePath, Runnable shutdown) {
+        this.homeFolder = requireNonNull(homeFolder);
         this.userPrefsFilePath = requireNonNull(userPrefsFilePath);
         this.addressBookFilePath = requireNonNull(addressBookFilePath);
         this.shutdown = requireNonNull(shutdown);
@@ -86,7 +92,7 @@ public class MainApp extends Application {
             return;
         }
 
-        logic = new LogicManager(model, storage);
+        logic = new LogicManager(model, storage, Clock.systemDefaultZone(), homeFolder);
 
         ui = new UiManager(logic, storage.getAddressBookFilePath());
     }

@@ -45,8 +45,7 @@ public class LogicManager implements Logic {
 
     /**
      * Constructs a {@code LogicManager} whose {@code homework} commands take today's date from {@code clock}.
-     * Save-failure messages name the data file relative to the current working folder, which is the app's home
-     * folder.
+     * Save-failure messages name the data file relative to the current working folder.
      */
     public LogicManager(Model model, Storage storage, Clock clock) {
         this(model, storage, clock, Path.of(""));

@@ -145,7 +145,7 @@ public class MainAppTest {
         Path prefsFilePath = temporaryFolder.resolve("preferences.json");
         Path dataFilePath = temporaryFolder.resolve("tutorflow.json");
         Files.writeString(prefsFilePath, "{\"guiSettings\":null}");
-        MainApp app = new MainApp(prefsFilePath, dataFilePath, () -> { });
+        MainApp app = new MainApp(temporaryFolder, prefsFilePath, dataFilePath, () -> { });
 
         UserPrefs prefs = app.initPrefs(new JsonUserPrefsStorage(prefsFilePath));
 
@@ -175,7 +175,7 @@ public class MainAppTest {
         // valid GUI settings, but the file also holds the Windows-1252 byte E9, which is not UTF-8
         String prefs = "{\"guiSettings\":{\"windowWidth\":1000.0,\"windowHeight\":500.0},\"note\":\"\u00e9\"}";
         Files.write(prefsFilePath, prefs.getBytes(StandardCharsets.ISO_8859_1));
-        MainApp app = new MainApp(prefsFilePath, temporaryFolder.resolve("tutorflow.json"), () -> { });
+        MainApp app = new MainApp(temporaryFolder, prefsFilePath, temporaryFolder.resolve("tutorflow.json"), () -> { });
 
         assertEquals(new UserPrefs(), app.initPrefs(new JsonUserPrefsStorage(prefsFilePath)));
     }

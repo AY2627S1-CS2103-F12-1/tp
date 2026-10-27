@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.model.homework.DueDateTest.MESSAGE_YEAR_OUT_OF_RANGE;
 import static seedu.address.model.homework.DueDateTest.fullDateFormatMessage;
+import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalStudents.getTypicalAddressBook;
 
 import java.nio.file.Files;
@@ -27,6 +28,8 @@ import javafx.scene.control.DialogPane;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import seedu.address.commons.core.GuiSettings;
+import seedu.address.logic.Messages;
+import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.AddressBook;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
@@ -90,7 +93,7 @@ public class MainAppLifecycleTest {
         byte[] originalData = Files.readAllBytes(data);
         AtomicReference<String> content = new AtomicReference<>();
         AtomicBoolean shutdownRequested = new AtomicBoolean();
-        MainApp app = new MainApp(preferences, data, () -> shutdownRequested.set(true));
+        MainApp app = new MainApp(temporaryFolder, preferences, data, () -> shutdownRequested.set(true));
 
         app.init();
 
@@ -158,6 +161,20 @@ public class MainAppLifecycleTest {
     }
 
     @Test
+    public void init_homeFolderNotWorkingFolder_saveFailureNamesFileFromHomeFolder() throws Exception {
+        // the JAR is started from another folder, so its home folder is not the working folder
+        Path home = Files.createDirectories(temporaryFolder.resolve("app"));
+        Path data = home.resolve("data").resolve("tutorflow.json");
+        MainApp app = new MainApp(home, home.resolve("preferences.json"), data, () -> { });
+        app.init();
+        Files.createDirectories(data);
+
+        String expectedMessage = String.format(Messages.MESSAGE_SAVE_FAILURE, Path.of("data", "tutorflow.json"),
+                Messages.MESSAGE_SAVE_CAUSE_FOLDER);
+        assertThrows(CommandException.class, expectedMessage, () -> app.logic.execute("delete 1"));
+    }
+
+    @Test
     public void validData_startOpensSavedRosterAndStopSavesPreferences() throws Exception {
         Path data = temporaryFolder.resolve("tutorflow.json");
         Path preferences = temporaryFolder.resolve("preferences.json");
@@ -165,7 +182,7 @@ public class MainAppLifecycleTest {
         dataStorage.saveAddressBook(getTypicalAddressBook());
         byte[] originalData = Files.readAllBytes(data);
         AtomicBoolean shutdownRequested = new AtomicBoolean();
-        MainApp app = new MainApp(preferences, data, () -> shutdownRequested.set(true));
+        MainApp app = new MainApp(temporaryFolder, preferences, data, () -> shutdownRequested.set(true));
 
         app.init();
 

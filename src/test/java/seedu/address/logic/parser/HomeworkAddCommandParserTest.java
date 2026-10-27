@@ -298,6 +298,9 @@ public class HomeworkAddCommandParserTest {
     public void parse_dueDateMissing_failure() {
         assertParseFailure(parser, "1 title/Complete algebra worksheet s/MATH",
                 String.format(MESSAGE_MISSING_PREFIXES, "due/"));
+
+        // title alias, as in the developer guide's manual test
+        assertParseFailure(parser, "1 t/A s/MATH", String.format(MESSAGE_MISSING_PREFIXES, "due/"));
     }
 
     @Test

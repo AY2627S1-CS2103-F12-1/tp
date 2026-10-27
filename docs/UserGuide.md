@@ -72,7 +72,16 @@ TutorFlow is a **desktop application for private tutors to manage their students
   For example, if the command specifies `n/NAME p/PHONE_NUMBER`, `p/PHONE_NUMBER n/NAME` is also acceptable.
 
 * A lowercase word directly followed by `/` after a space (such as `km/h` or `and/or`) is read as a prefix. To use such a word in a value, wrap the whole value in double quotes (`"`). The outer quotes are removed before the value is checked. This works for every value that follows a prefix.<br>
-  For example, `hw add 1 t/"Speed in km/h" s/PHYSICS due/2026-11-01` adds homework titled `Speed in km/h`, while `hw add 1 t/Speed in km/h s/PHYSICS due/2026-11-01` is rejected because `km/` is not a prefix of `hw add`.
+  For example, `hw add 1 t/"Speed in km/h" s/PHYSICS due/2026-11-01` adds homework titled `Speed in km/h`, while `hw add 1 t/Speed in km/h s/PHYSICS due/2026-11-01` is rejected because `km/` is not a prefix of `hw add`:
+
+  ```text
+  km/ is not a prefix of this command. To use it inside a value, wrap the whole value in straight double quotes, e.g. t/"Speed in km/h".
+  Usage: homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD
+  ```
+
+* The error for such a word names it and shows the command's usage on the next line. The example is built from the value the word is in, up to the next prefix of the command. It is left out when the text before the word is only digits, date or time punctuation and spaces: `hw add 1 t/A s/PHYSICS due/2026-11-01 x/y` gives `x/ is not a prefix of this command. To use it inside a value, wrap the whole value in straight double quotes.` A word that is not inside any value, such as `score/` in `hw e 1 2 score/5/10`, gets only `score/ is not a prefix of this command.` and the usage.
+
+* Only straight double quotes (`"`) can wrap a value. Curly quotes (`“ ”`), which some editors type automatically, are read as part of the value, so `hw add 1 t/“Speed in km/h” s/PHYSICS due/2026-11-01` is rejected, with `Use straight quotes ("), not curly quotes (“ ”).` on its own line before the usage.
 
 * Spaces at both ends of a quoted value are removed, both outside and inside the quotes, as they are for a value without quotes. Spaces between words are kept.<br>
   For example, `n/" Ravi s/o Kumar "` gives the name `Ravi s/o Kumar`, and `hw up due/" 3 "` is the same as `hw up due/3`. Empty quotes (`""`), or quotes with only spaces inside, give an empty value, which is treated like a prefix with nothing after it: `t/""` is rejected like `t/`.
@@ -213,7 +222,8 @@ Other invalid commands report:
 
 | Problem | Feedback |
 | --- | --- |
-| Unknown prefix or text before the first prefix | `Invalid command format`, followed by `Usage: filter [l/LEVEL] [s/SUBJECT]` on the next line |
+| Unknown prefix, e.g. `filter l/S4 p/123` | `p/ is not a prefix of this command. To use it inside a value, wrap the whole value in straight double quotes, e.g. l/"S4 p/123".`, followed by `Usage: filter [l/LEVEL] [s/SUBJECT]` on the next line (see the [notes about the command format](#features)) |
+| Text before the first prefix | `Invalid command format`, followed by `Usage: filter [l/LEVEL] [s/SUBJECT]` on the next line |
 | Repeated prefix | `Each filter may only be specified once` |
 | Empty or unsupported level | `Academic level must be a non-empty value` |
 | Empty or unsupported subject | `Subject must be a non-empty value` |
@@ -267,7 +277,8 @@ Invalid input leaves the current roster, order, selection and scroll position un
 Condition | Message
 ----------|--------
 Missing `by/` | `Invalid command format` followed by `Usage: sort by/KEY [o/ORDER]` and `Exactly one sort key must be provided` on separate lines
-Unknown prefix or text before the parameters | `Invalid command format` followed by `Usage: sort by/KEY [o/ORDER]` on a new line
+Unknown prefix, e.g. `sort by/level x/value` | `x/ is not a prefix of this command. To use it inside a value, wrap the whole value in straight double quotes, e.g. by/"level x/value".` followed by `Usage: sort by/KEY [o/ORDER]` on a new line (see the [notes about the command format](#features))
+Text before the parameters | `Invalid command format` followed by `Usage: sort by/KEY [o/ORDER]` on a new line
 Repeated prefix | `Each sort parameter may only be specified once`
 Empty or invalid key | `Sort key must be one of: level, subject, day.`
 Empty or invalid order | `Sort order must be either asc or desc.`
@@ -281,7 +292,7 @@ Adds a homework record to the end of a student's homework list.
 
 Format: `homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD`
 
-* `homework` can be shortened to `hw`, and `title/` can be shortened to `t/`.
+* `homework` can be shortened to `hw`, and `title/` can be shortened to `t/`. Give only one of them (`Use either title/ or t/, not both.`).
 * `STUDENT_INDEX` refers to the index number shown in the displayed student list. It **must be a positive whole number without leading zeroes**, such as 1, 2, 3, …​
 * `TITLE` must be 1 to 100 characters long and may contain only letters, numbers, punctuation, symbols and spaces, such as `Café`, `x² + π ≈ 3.14`, `😀 quiz` or `Ch 3 Q1-10 (pg. 45)`. Extra spaces are removed, and capitalization is kept.
 * Invisible characters, such as a zero-width space (U+200B) or the variation selector U+FE0F at the end of some emoji, are rejected wherever they are in the title. So emoji made of several characters joined by invisible ones, such as ❤️ (U+2764 U+FE0F) or 👨‍👩‍👧, are rejected.
@@ -365,7 +376,7 @@ Format: `homework|hw edit|e STUDENT_INDEX HOMEWORK_INDEX [title/|t/TITLE] [s/SUB
 * `homework` can be shortened to `hw`, `edit` can be shortened to `e`, and `title/` can be shortened to `t/`.
 * `STUDENT_INDEX` follows the same rules as in `homework add`.
 * `HOMEWORK_INDEX` refers to the number shown by `homework list STUDENT_INDEX` (or by `homework list STUDENT_INDEX all` for overdue homework). It **must be a positive whole number without leading zeroes**.
-* Give at least one of `title/` (or `t/`), `s/` and `due/`, in any order and each at most once. `title/` and `t/` cannot be used together. The details you do not give stay unchanged.
+* Give at least one of `title/` (or `t/`), `s/` and `due/`, in any order and each at most once. `title/` and `t/` cannot be used together (`Use either title/ or t/, not both.`). The details you do not give stay unchanged.
 * `TITLE`, `SUBJECT` and the due date follow the same rules as in [`homework add`](#adding-homework-to-a-student-homework-add). A due date in `MM-DD` form gets its year in the same way, and the result shows the year used.
 * The homework keeps its number, score and completion status. To change the score, use [`homework marks`](#recording-homework-marks-homework-marks).
 * The edit is rejected if it changes nothing (`No changes made; the supplied values are identical to the existing homework details.`), or if the edited homework would have the same title (ignoring case), subject and due date as another homework of the student (`This edit would make the homework a duplicate of an existing homework record.`).

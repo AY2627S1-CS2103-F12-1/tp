@@ -52,9 +52,7 @@ public class HomeworkEditCommandParser implements Parser<HomeworkEditCommand> {
         StrictArgumentTokenizer.TokenizedArguments tokenizedArguments =
                 StrictArgumentTokenizer.tokenizeWithPreamble(args, ALLOWED_PREFIXES, MESSAGE_INVALID_FORMAT);
         Map<String, String> values = tokenizedArguments.values();
-        if (values.containsKey(PREFIX_TITLE) && values.containsKey(PREFIX_TITLE_ALIAS)) {
-            throw new ParseException(String.format(StrictArgumentTokenizer.MESSAGE_REPEATED_PREFIX, PREFIX_TITLE));
-        }
+        HomeworkAddCommandParser.validateTitlePrefixes(values);
 
         String[] indices = tokenizedArguments.preamble().split("\\s+");
         if (indices.length != 2 || values.isEmpty()) {

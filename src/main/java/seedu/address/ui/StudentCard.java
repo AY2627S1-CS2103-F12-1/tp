@@ -45,7 +45,7 @@ public class StudentCard extends UiPart<Region> {
         subjects.setText(student.getSubjects().toString());
         studentPhone.setText("Student: " + student.getPhone());
         guardianName.setText("Guardian: " + student.getGuardianName());
-        guardianName.setTooltip(new Tooltip(student.getGuardianName()));
+        guardianName.setTooltip(new Tooltip(student.getGuardianName().toString()));
         guardianPhone.setText("Guardian phone: " + student.getGuardianPhone());
         upcomingHomeworkCount.setText("Upcoming homework: " + student.getUpcomingHomeworkCount(today));
         overdueHomeworkCount.setText("Overdue homework: " + student.getOverdueHomeworkCount(today));

@@ -137,6 +137,24 @@ public class StudentAddParserTest {
         assertParseFailure(VALID_ARGUMENTS.replace("p/91234567", "p/9123-4567"), StudentPhone.MESSAGE_CONSTRAINTS);
     }
 
+    @Test
+    public void parse_relationshipWordsAtEndOfName_preservesValue() throws ParseException {
+        for (String word : new String[]{"s/o", "d/o", "a/l", "a/p", "w/o", "b/o"}) {
+            String name = "Ravi " + word;
+            Student student = parser.parse(VALID_ARGUMENTS.replace(" n/John Tan", "") + " n/" + name);
+            assertEquals(name, student.getName().toString());
+        }
+    }
+
+    @Test
+    public void parse_otherSlashWords_requireQuotes() throws ParseException {
+        for (String name : new String[]{"Ravi a/", "Ravi a/1", "Ravi a/long", "Ravi s/a", "Ravi s/only"}) {
+            String remainingFields = VALID_ARGUMENTS.replace(" n/John Tan", "");
+            assertThrows(ParseException.class, () -> parser.parse(remainingFields + " n/" + name));
+            assertEquals(name, parser.parse(remainingFields + " n/\"" + name + "\"").getName().toString());
+        }
+    }
+
     private void assertParseFailure(String arguments, String expectedMessage) {
         ParseException exception = assertThrows(ParseException.class, () -> parser.parse(arguments));
         assertEquals(expectedMessage, exception.getMessage());

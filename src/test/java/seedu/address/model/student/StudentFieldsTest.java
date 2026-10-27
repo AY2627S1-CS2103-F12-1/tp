@@ -117,6 +117,8 @@ public class StudentFieldsTest {
         assertEquals(new TuitionSubjects("MATH, PHYSICS"), subjects);
         assertEquals(new TuitionSubjects("MATH, PHYSICS").hashCode(), subjects.hashCode());
         assertFalse(subjects.equals(new TuitionSubjects("PHYSICS, MATH")));
+        assertFalse(subjects.equals(null));
+        assertFalse(subjects.equals("MATH"));
         assertFalse(name.equals(new StudentName("Jane Tan")));
         assertFalse(phone.equals(new StudentPhone("81234567")));
         assertFalse(subjects.equals(new TuitionSubjects("CHEMISTRY")));

@@ -218,7 +218,10 @@ public class ActiveFilterUiTest {
                 singleLine.setFont(description.getFont());
                 assertTrue(description.getHeight() > singleLine.getLayoutBounds().getHeight(),
                         "the description should wrap onto multiple lines");
-                assertTrue(description.getBoundsInParent().getMaxX() <= root.getWidth() - root.getInsets().getRight());
+                assertTrue(description.getBoundsInParent().getMaxX() <= root.getWidth() - root.getInsets().getRight(),
+                        family + ": bounds " + description.getBoundsInParent() + "; label width "
+                                + description.getWidth() + "; panel width " + root.getWidth()
+                                + "; insets " + root.getInsets());
             }
         });
     }

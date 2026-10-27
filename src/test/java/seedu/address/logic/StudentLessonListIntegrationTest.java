@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -47,6 +48,13 @@ public class StudentLessonListIntegrationTest {
         assertTrue(feedback.contains("\n1. Alice Tan (91234567); MATH; MON; 09:00-10:00"));
         assertTrue(feedback.contains("\n3. Alice Tan (91234567); MATH; WED; 09:00-10:00"));
         assertFalse(feedback.contains("91234568"));
+        Locale previous = Locale.getDefault();
+        try {
+            Locale.setDefault(Locale.forLanguageTag("ar-EG"));
+            assertEquals(feedback, logic.execute("lesson list 1").getFeedbackToUser());
+        } finally {
+            Locale.setDefault(previous);
+        }
         assertEquals(view, model.getStudentList());
         assertEquals(Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX,
                 assertThrows(CommandException.class, () -> logic.execute("lesson list 2")).getMessage());

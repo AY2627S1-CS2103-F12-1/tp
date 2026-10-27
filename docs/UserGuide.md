@@ -608,6 +608,7 @@ Format: `lesson list [STUDENT_INDEX]`
 Use `lesson list 1` to see the first displayed student's regular lessons. After a search or sort, use the student's current displayed index. The output names the student and phone and keeps the full schedule's lesson numbers, so `lesson edit` and `lesson delete` still target the same lessons. For example, one student's lessons may be numbered 1 and 3 because another student owns lesson 2. The displayed roster and saved data remain unchanged. A student without lessons receives `No regular lessons found for NAME (PHONE).`; an index outside the displayed list is rejected.
 
 * Lessons are ordered from Monday to Sunday, then by start time.
+* Lesson numbers use the digits 0 to 9 in every locale, so they can be reused directly in edit/delete commands.
 * Lessons with the same weekday and start time are ordered by student name.
 * Each row shows the student name and phone, subject, abbreviated weekday and time range. The phone distinguishes students who share a name; lesson add, edit, delete and clash feedback use the same owner details.
 * If no lessons have been added, TutorFlow reports `No regular lessons found.`

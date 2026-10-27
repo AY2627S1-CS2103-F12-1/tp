@@ -3,6 +3,7 @@ package seedu.address.logic.commands;
 import static java.util.Objects.requireNonNull;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.logging.Level;
@@ -80,17 +81,18 @@ public class LessonListCommand extends Command {
                 continue;
             }
             matches++;
-            lines.append(String.format(MESSAGE_LESSON_LINE, i + 1,
+            lines.append(String.format(Locale.ROOT, MESSAGE_LESSON_LINE, i + 1,
                     Messages.format(entry.student(), entry.lesson())));
         }
         if (matches == 0) {
             return new CommandResult(owner.isPresent()
-                    ? String.format(MESSAGE_STUDENT_EMPTY, Messages.formatLessonOwner(owner.get())) : MESSAGE_EMPTY);
+                    ? String.format(Locale.ROOT, MESSAGE_STUDENT_EMPTY, Messages.formatLessonOwner(owner.get()))
+                    : MESSAGE_EMPTY);
         }
         String summary = owner.isPresent()
-                ? String.format(MESSAGE_STUDENT_SUCCESS, matches, matches == 1 ? "lesson" : "lessons",
+                ? String.format(Locale.ROOT, MESSAGE_STUDENT_SUCCESS, matches, matches == 1 ? "lesson" : "lessons",
                         Messages.formatLessonOwner(owner.get()))
-                : matches == 1 ? MESSAGE_SUCCESS_SINGULAR : String.format(MESSAGE_SUCCESS, matches);
+                : matches == 1 ? MESSAGE_SUCCESS_SINGULAR : String.format(Locale.ROOT, MESSAGE_SUCCESS, matches);
         return new CommandResult(summary + lines);
     }
 

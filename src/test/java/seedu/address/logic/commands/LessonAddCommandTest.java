@@ -2,6 +2,8 @@ package seedu.address.logic.commands;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static seedu.address.logic.commands.CommandTestUtil.CAUSE_READ_ONLY_FOLDER;
+import static seedu.address.logic.commands.CommandTestUtil.SHOWN_DATA_FILE_NAME;
 
 import java.time.DayOfWeek;
 import java.time.LocalTime;
@@ -123,6 +125,14 @@ public class LessonAddCommandTest {
                 new RegularLesson(TuitionSubject.MATH, DayOfWeek.MONDAY, LocalTime.NOON, LocalTime.of(13, 0)));
         assertEquals(LessonAddCommand.MESSAGE_INTERNAL,
                 assertThrows(CommandException.class, () -> command.execute(failing)).getMessage());
+    }
+
+    @Test
+    public void getSaveFailureMessage_cause_namesFileAndCause() throws Exception {
+        String expectedMessage = "The lesson could not be added because TutorFlow could not save "
+                + SHOWN_DATA_FILE_NAME + ": the data folder is read-only. No lesson data was changed.";
+        assertEquals(expectedMessage, parser.parseCommand(command(1, "16:00", "18:00"))
+                .getSaveFailureMessage(SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER));
     }
 
     private ModelManager model() {

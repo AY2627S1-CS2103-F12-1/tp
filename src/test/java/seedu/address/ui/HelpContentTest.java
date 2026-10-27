@@ -8,6 +8,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
@@ -47,12 +48,44 @@ public class HelpContentTest {
     }
 
     @Test
+    public void getSections_entries_inUserGuideOrder() {
+        Map<String, List<String>> commandWordsBySection = HelpContent.getSections().stream()
+                .collect(Collectors.toMap(HelpContent.Section::title, section -> section.entries().stream()
+                        .map(HelpContent.Entry::commandWord).toList()));
+
+        assertEquals(List.of("add", "edit", "list", "search", "filter", "sort", "delete"),
+                commandWordsBySection.get(HelpContent.SECTION_STUDENTS));
+        assertEquals(List.of("homework add", "homework list", "homework upcoming", "homework edit", "homework marks",
+                "homework delete", "homework filter", "homework status"),
+                commandWordsBySection.get(HelpContent.SECTION_HOMEWORK));
+        assertEquals(List.of("lesson add", "lesson list", "lesson delete", "lesson edit"),
+                commandWordsBySection.get(HelpContent.SECTION_LESSONS));
+        assertEquals(List.of("help", "clear", "exit"), commandWordsBySection.get(HelpContent.SECTION_GENERAL));
+    }
+
+    @Test
+    public void getSections_listEntry_showsAlias() {
+        HelpContent.Entry listEntry = getEntries().stream()
+                .filter(entry -> entry.commandWord().equals(ListCommand.COMMAND_WORD)).findFirst().orElseThrow();
+        assertEquals("list|ls", listEntry.format());
+    }
+
+    @Test
+    public void getSections_homeworkEditExample_matchesSampleData() {
+        HelpContent.Entry editEntry = getEntries().stream()
+                .filter(entry -> entry.commandWord().equals("homework edit")).findFirst().orElseThrow();
+        // homework 2 of the first sample student is the PHYSICS record "Kinematics practice set"
+        assertEquals("hw e 1 2 t/Kinematics practice set B", editEntry.example());
+    }
+
+    @Test
     public void getSections_listedCommands_useUsageConstants() {
         Map<String, String> expectedFormats = Map.ofEntries(
                 Map.entry(AddCommand.COMMAND_WORD, AddCommand.MESSAGE_USAGE),
                 Map.entry(DeleteCommand.COMMAND_WORD, DeleteCommand.MESSAGE_USAGE),
                 Map.entry(EditCommand.COMMAND_WORD, EditCommand.MESSAGE_USAGE),
-                Map.entry(ListCommand.COMMAND_WORD, ListCommand.MESSAGE_USAGE),
+                // the help entry adds the ls alias, which the list command's usage text does not show
+                Map.entry(ListCommand.COMMAND_WORD, ListCommand.COMMAND_WORD + "|" + ListCommand.SHORT_COMMAND_WORD),
                 Map.entry(SearchCommand.COMMAND_WORD, SearchCommand.MESSAGE_USAGE),
                 Map.entry(SortCommand.COMMAND_WORD, SortCommand.MESSAGE_USAGE),
                 Map.entry(FilterCommand.COMMAND_WORD, FilterCommand.MESSAGE_USAGE),

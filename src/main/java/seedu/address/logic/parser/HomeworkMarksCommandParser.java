@@ -20,8 +20,6 @@ import seedu.address.model.homework.Score;
  */
 public class HomeworkMarksCommandParser implements Parser<HomeworkMarksCommand> {
     public static final String PREFIX_SCORE = "score/";
-    public static final String MESSAGE_MISSING_PREFIXES = "Missing required prefix(es): %s\nUsage: "
-            + HomeworkMarksCommand.MESSAGE_USAGE;
 
     private static final String MESSAGE_INVALID_FORMAT = String.format(Messages.MESSAGE_INVALID_FORMAT_WITH_USAGE,
             HomeworkMarksCommand.MESSAGE_USAGE);
@@ -44,7 +42,8 @@ public class HomeworkMarksCommandParser implements Parser<HomeworkMarksCommand> 
 
         Map<String, String> values = tokenizedArguments.values();
         if (!values.containsKey(PREFIX_SCORE)) {
-            throw new ParseException(String.format(MESSAGE_MISSING_PREFIXES, PREFIX_SCORE));
+            throw new ParseException(String.format(Messages.MESSAGE_MISSING_PREFIXES_WITH_USAGE, PREFIX_SCORE,
+                    HomeworkMarksCommand.MESSAGE_USAGE));
         }
 
         Index studentIndex = ParserUtil.parseStrictIndex(indices[0], Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);

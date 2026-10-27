@@ -44,11 +44,6 @@ public class HomeworkCommandParser implements Parser<Command> {
 
     private final Clock clock;
 
-    /** Creates a parser whose subcommands take today's date from the system clock. */
-    public HomeworkCommandParser() {
-        this(Clock.systemDefaultZone());
-    }
-
     /** Creates a parser whose subcommands take today's date from {@code clock}. */
     public HomeworkCommandParser(Clock clock) {
         this.clock = requireNonNull(clock);
@@ -77,7 +72,7 @@ public class HomeworkCommandParser implements Parser<Command> {
             case SUBCOMMAND_MARKS, SUBCOMMAND_MARKS_ALIAS ->
                 new HomeworkMarksCommandParser().parse(subcommandArguments);
             case SUBCOMMAND_DELETE, SUBCOMMAND_DELETE_ALIAS ->
-                new HomeworkDeleteCommandParser().parse(subcommandArguments);
+                new HomeworkDeleteCommandParser(clock).parse(subcommandArguments);
             default -> throw new ParseException(MESSAGE_INVALID_FORMAT);
         };
     }

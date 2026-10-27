@@ -27,7 +27,7 @@ public class LessonDeleteCommand extends Command {
     public static final String MESSAGE_INTERNAL_ERROR =
             "TutorFlow could not delete the lesson due to an internal error.";
     public static final String MESSAGE_SAVE_FAILURE = "The lesson could not be deleted because TutorFlow could not "
-            + "save the updated data. No lesson data was changed.";
+            + "save %s: %s. No lesson data was changed.";
 
     private static final Logger logger = LogsCenter.getLogger(LessonDeleteCommand.class);
 
@@ -78,7 +78,7 @@ public class LessonDeleteCommand extends Command {
     }
 
     @Override
-    public String getSaveFailureMessage(String defaultMessage) {
+    protected String getSaveFailureFormat() {
         return MESSAGE_SAVE_FAILURE;
     }
 

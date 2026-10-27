@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
 
 import java.util.List;
 import java.util.Optional;
@@ -56,8 +58,15 @@ public class FilterCommandParserTest {
     }
 
     @Test
-    public void parse_unknownPrefixOrPreamble_reportsInvalidFormat() {
-        for (String arguments : List.of(" x/S4", " l/S4 p/123", " all s/MATH", "S4", " L/S4")) {
+    public void parse_unknownPrefix_namesPrefix() {
+        String usageLine = "\nUsage: " + FilterCommand.MESSAGE_USAGE;
+        assertParseFailure(parser, " x/S4", notPrefix("x/") + usageLine);
+        assertParseFailure(parser, " l/S4 p/123", notPrefixWithQuoteHint("p/", "l/\"S4 p/123\"") + usageLine);
+    }
+
+    @Test
+    public void parse_preamble_reportsInvalidFormat() {
+        for (String arguments : List.of(" all s/MATH", "S4", " L/S4")) {
             assertParseFailure(parser, arguments, "Invalid command format.\nUsage: filter [l/LEVEL] [s/SUBJECT]");
         }
     }

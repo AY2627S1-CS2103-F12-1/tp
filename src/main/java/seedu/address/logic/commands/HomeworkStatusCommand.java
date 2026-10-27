@@ -28,7 +28,7 @@ public class HomeworkStatusCommand extends Command {
     public static final String MESSAGE_INTERNAL = "TutorFlow could not update homework status "
             + "due to an internal error.";
     public static final String MESSAGE_SAVE_FAILURE = "The homework status could not be updated because TutorFlow "
-            + "could not save the updated data. No homework data was changed.";
+            + "could not save %s: %s. No homework data was changed.";
     private static final Logger logger = LogsCenter.getLogger(HomeworkStatusCommand.class);
 
     private final Index studentIndex;
@@ -87,7 +87,7 @@ public class HomeworkStatusCommand extends Command {
     }
 
     @Override
-    public String getSaveFailureMessage(String defaultMessage) {
+    protected String getSaveFailureFormat() {
         return MESSAGE_SAVE_FAILURE;
     }
 

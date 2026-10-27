@@ -28,7 +28,7 @@ public class LessonAddCommand extends Command {
     public static final String MESSAGE_MULTIPLE_CLASHES = "This lesson clashes with the following existing lessons:\n";
     public static final String MESSAGE_INTERNAL = "TutorFlow could not add the lesson due to an internal error.";
     public static final String MESSAGE_SAVE_FAILURE = "The lesson could not be added because TutorFlow could not "
-            + "save the updated data. No lesson data was changed.";
+            + "save %s: %s. No lesson data was changed.";
     private static final Logger logger = LogsCenter.getLogger(LessonAddCommand.class);
 
     private final Index studentIndex;
@@ -90,7 +90,7 @@ public class LessonAddCommand extends Command {
     }
 
     @Override
-    public String getSaveFailureMessage(String defaultMessage) {
+    protected String getSaveFailureFormat() {
         return MESSAGE_SAVE_FAILURE;
     }
 

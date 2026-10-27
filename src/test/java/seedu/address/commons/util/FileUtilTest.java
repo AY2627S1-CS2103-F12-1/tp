@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static seedu.address.testutil.Assert.assertThrows;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -30,6 +31,35 @@ public class FileUtilTest {
 
     @TempDir
     public Path testFolder;
+
+    @Test
+    public void readFromFile_multiByteUtf8_decoded() throws IOException {
+        Path file = testFolder.resolve("tutorflow.json");
+        // U+FEFF byte order mark, é (2 bytes), → (3 bytes) and an emoji (4 bytes)
+        Files.write(file, "\ufeffR\u00e9vision \u2192 \ud83d\ude00".getBytes(StandardCharsets.UTF_8));
+
+        assertEquals("\ufeffR\u00e9vision \u2192 \ud83d\ude00", FileUtil.readFromFile(file));
+    }
+
+    @Test
+    public void readFromFile_invalidUtf8_throwsIoException() throws IOException {
+        Path file = testFolder.resolve("tutorflow.json");
+
+        // Issue #156: Windows-1252 é (E9) followed by an ASCII letter, not a continuation byte
+        Files.write(file, new byte[] {'R', (byte) 0xE9, 'v'});
+        assertThrows(IOException.class, String.format(FileUtil.MESSAGE_INVALID_UTF8, 1), () ->
+                FileUtil.readFromFile(file));
+
+        // a sequence cut off at the end of the file
+        Files.write(file, new byte[] {'a', 'b', (byte) 0xE2, (byte) 0x82});
+        assertThrows(IOException.class, String.format(FileUtil.MESSAGE_INVALID_UTF8, 2), () ->
+                FileUtil.readFromFile(file));
+
+        // a continuation byte without a lead byte
+        Files.write(file, new byte[] {(byte) 0x80});
+        assertThrows(IOException.class, String.format(FileUtil.MESSAGE_INVALID_UTF8, 0), () ->
+                FileUtil.readFromFile(file));
+    }
 
     @Test
     public void writeToFile_missingFileAndFolder_createsFile() throws IOException {

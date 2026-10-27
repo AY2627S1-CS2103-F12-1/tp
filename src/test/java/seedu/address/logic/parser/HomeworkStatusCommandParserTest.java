@@ -2,6 +2,7 @@ package seedu.address.logic.parser;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
 
 import org.junit.jupiter.api.Test;
 
@@ -26,9 +27,15 @@ public class HomeworkStatusCommandParserTest {
         for (String args : new String[]{"", "1", "1 2", "1 2 3 status/COMPLETED", "status/COMPLETED",
             "0 1 status/COMPLETED", "1 0 status/COMPLETED", "01 2 status/COMPLETED", "1 02 status/COMPLETED",
             "2147483648 1 status/COMPLETED", "1 2 status/", "1 2 status/done", "1 2 status/true",
-            "1 2 status/COMPLETED extra", "1 2 status/COMPLETED status/ASSIGNED", "1 2 score/17",
-            "1 2 status/COMPLETED x/value"}) {
+            "1 2 status/COMPLETED extra", "1 2 status/COMPLETED status/ASSIGNED", "1 2 score/17"}) {
             assertThrows(ParseException.class, () -> parser.parseCommand("hw status " + args), args);
         }
+    }
+
+    @Test
+    public void parse_unknownPrefix_namesPrefix() {
+        assertEquals(notPrefixWithQuoteHint("x/", "status/\"COMPLETED x/value\"") + "\nUsage: "
+                + HomeworkStatusCommand.MESSAGE_USAGE, assertThrows(ParseException.class, () ->
+                        parser.parseCommand("hw status 1 2 status/COMPLETED x/value")).getMessage());
     }
 }

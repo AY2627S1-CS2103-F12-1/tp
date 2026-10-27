@@ -98,13 +98,13 @@ public class HomeworkCommandParserTest {
     @Test
     public void parse_delete_returnsHomeworkDeleteCommand() {
         assertParseSuccess(parser, " delete 1 2",
-                new HomeworkDeleteCommand(Index.fromOneBased(1), Index.fromOneBased(2)));
+                new HomeworkDeleteCommand(Index.fromOneBased(1), Index.fromOneBased(2), TODAY));
     }
 
     @Test
     public void parse_deleteAlias_returnsHomeworkDeleteCommand() {
         assertParseSuccess(parser, " del 3 1",
-                new HomeworkDeleteCommand(Index.fromOneBased(3), Index.fromOneBased(1)));
+                new HomeworkDeleteCommand(Index.fromOneBased(3), Index.fromOneBased(1), TODAY));
     }
 
     @Test

@@ -213,9 +213,6 @@ public class HomeworkMarksCommandParserTest {
         // spaces inside
         assertParseFailure(parser, "1 2 score/5 / 10", Score.MESSAGE_CONSTRAINTS);
 
-        // leading zero
-        assertParseFailure(parser, "1 2 score/05/10", Score.MESSAGE_CONSTRAINTS);
-
         // sign
         assertParseFailure(parser, "1 2 score/-1/10", Score.MESSAGE_CONSTRAINTS);
 
@@ -228,9 +225,6 @@ public class HomeworkMarksCommandParserTest {
 
     @Test
     public void parse_invalidBareScore_failure() {
-        // leading zero
-        assertParseFailure(parser, "1 2 score/017", Score.MESSAGE_CONSTRAINTS);
-
         // plus sign
         assertParseFailure(parser, "1 2 score/+17", Score.MESSAGE_CONSTRAINTS);
 
@@ -242,6 +236,27 @@ public class HomeworkMarksCommandParserTest {
 
         // space inside
         assertParseFailure(parser, "1 2 score/1 7", Score.MESSAGE_CONSTRAINTS);
+    }
+
+    @Test
+    public void parse_leadingZeroes_failure() {
+        // bare score
+        assertParseFailure(parser, "1 2 score/07", Score.MESSAGE_LEADING_ZEROES);
+
+        // zero written with two digits
+        assertParseFailure(parser, "1 2 score/00", Score.MESSAGE_LEADING_ZEROES);
+
+        // marks obtained
+        assertParseFailure(parser, "3 1 score/05/10", Score.MESSAGE_LEADING_ZEROES);
+
+        // total
+        assertParseFailure(parser, "1 2 score/5/010", Score.MESSAGE_LEADING_ZEROES);
+
+        // reported before the number being too large
+        assertParseFailure(parser, "1 2 score/02147483648", Score.MESSAGE_LEADING_ZEROES);
+
+        // other format error as well
+        assertParseFailure(parser, "1 2 score/-05", Score.MESSAGE_CONSTRAINTS);
     }
 
     @Test

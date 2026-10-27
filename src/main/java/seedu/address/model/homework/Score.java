@@ -19,12 +19,17 @@ public final class Score {
             + "with whole numbers, a positive total, and marks obtained between zero and the total.";
     public static final String MESSAGE_TOO_LARGE =
             "Marks are too large. Enter whole numbers no greater than " + Integer.MAX_VALUE + ".";
+    public static final String MESSAGE_LEADING_ZEROES =
+            "Marks must not have leading zeroes. Enter whole numbers such as 5/10, not 05/10.";
 
     /**
      * A whole number without a sign, decimals or leading zeroes (except {@code 0}), optionally followed by a single
      * slash and a second such number.
      */
     private static final Pattern SCORE_FORMAT = Pattern.compile("(0|[1-9][0-9]*)(?:/(0|[1-9][0-9]*))?");
+
+    /** The same format as {@link #SCORE_FORMAT}, but with leading zeroes allowed. */
+    private static final Pattern SCORE_FORMAT_WITH_LEADING_ZEROES = Pattern.compile("[0-9]+(?:/[0-9]+)?");
 
     private final int marksObtained;
     private final Integer totalMarks;
@@ -60,15 +65,19 @@ public final class Score {
      * Returns the score represented by the input, either {@code MARKS} or {@code MARKS_OBTAINED/TOTAL_MARKS}, ignoring
      * surrounding whitespace.
      *
-     * @throws IllegalArgumentException With {@link #MESSAGE_CONSTRAINTS} if the input is in neither format or breaks
-     *         the rules of {@link #Score(int, int)}, or with {@link #MESSAGE_TOO_LARGE} if a number in the right
-     *         format is larger than {@link Integer#MAX_VALUE}.
+     * @throws IllegalArgumentException With {@link #MESSAGE_LEADING_ZEROES} if a number has leading zeroes but the
+     *         input is otherwise in one of the formats, with {@link #MESSAGE_CONSTRAINTS} if the input is in neither
+     *         format or breaks the rules of {@link #Score(int, int)}, or with {@link #MESSAGE_TOO_LARGE} if a number
+     *         in the right format is larger than {@link Integer#MAX_VALUE}.
      */
     public static Score parse(String rawScore) {
         requireNonNull(rawScore);
-        Matcher matcher = SCORE_FORMAT.matcher(rawScore.strip());
+        String strippedScore = rawScore.strip();
+        Matcher matcher = SCORE_FORMAT.matcher(strippedScore);
         if (!matcher.matches()) {
-            throw new IllegalArgumentException(MESSAGE_CONSTRAINTS);
+            throw new IllegalArgumentException(SCORE_FORMAT_WITH_LEADING_ZEROES.matcher(strippedScore).matches()
+                    ? MESSAGE_LEADING_ZEROES
+                    : MESSAGE_CONSTRAINTS);
         }
         int marksObtained = parseMarks(matcher.group(1));
         if (matcher.group(2) == null) {

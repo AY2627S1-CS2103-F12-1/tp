@@ -1,5 +1,8 @@
 package seedu.address.logic;
 
+import java.util.function.Predicate;
+
+import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.collections.ObservableList;
 import seedu.address.commons.core.GuiSettings;
 import seedu.address.logic.commands.CommandResult;
@@ -22,6 +25,11 @@ public interface Logic {
 
     /** Returns an unmodifiable view of the student roster for display. */
     ObservableList<Student> getStudentList();
+
+    /**
+     * Returns the read-only observable predicate selecting the displayed students.
+     */
+    ReadOnlyObjectProperty<Predicate<Student>> studentListPredicateProperty();
 
     /**
      * Returns an unmodifiable view of every student in the roster, ignoring any search filter.

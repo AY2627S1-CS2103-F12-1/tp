@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
 
+import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.collections.ObservableList;
 import seedu.address.commons.core.GuiSettings;
 import seedu.address.commons.core.LogsCenter;
@@ -187,6 +188,11 @@ public class LogicManager implements Logic {
     @Override
     public ObservableList<Student> getStudentList() {
         return model.getStudentList();
+    }
+
+    @Override
+    public ReadOnlyObjectProperty<Predicate<Student>> studentListPredicateProperty() {
+        return model.studentListPredicateProperty();
     }
 
     @Override

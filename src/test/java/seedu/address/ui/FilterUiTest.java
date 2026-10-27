@@ -62,7 +62,7 @@ public class FilterUiTest {
             enterCommand(stage, "filter l/S4");
 
             ListView<Student> listView = getStudentListView(stage);
-            assertEquals("Found 20 student(s)", getFeedback(stage));
+            assertEquals("Found 20 students.", getFeedback(stage));
             assertEquals("20 students", ((Label) stage.getScene().getRoot().lookup("#studentCount")).getText());
             ListCell<Student> cell = createCell(listView);
             cell.updateIndex(0);
@@ -143,7 +143,7 @@ public class FilterUiTest {
             createWindowWithFailingCards(stage, model, shouldFail).fillInnerParts();
             stage.getScene().getRoot().applyCss();
             enterCommand(stage, "filter s/CHEMISTRY");
-            assertEquals("Found 20 student(s)", getFeedback(stage));
+            assertEquals("Found 20 students.", getFeedback(stage));
             ListCell<Student> cell = createCell(getStudentListView(stage));
             shouldFail.set(true);
 

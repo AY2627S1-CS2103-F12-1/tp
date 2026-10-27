@@ -15,5 +15,7 @@
     <Region HBox.hgrow="ALWAYS" />
     <Label fx:id="studentCount" styleClass="student-count" />
   </HBox>
+  <Label fx:id="filterDescription" text="" wrapText="true" minWidth="0" maxWidth="Infinity"
+         styleClass="student-filter-description" />
   <ListView fx:id="studentListView" VBox.vgrow="ALWAYS" />
 </VBox>

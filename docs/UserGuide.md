@@ -201,19 +201,30 @@ Format: `filter [l/LEVEL] [s/SUBJECT]`
   run `list` or `ls`. Adding a student or running `homework upcoming` also restores the full roster.
 * Filtering changes only the displayed students. It does not change records or write to the data file.
 
+The student panel keeps the active criteria below its heading: `Filtered: level S4`, `Filtered: subject PHYSICS`,
+or `Filtered: level S4; subject PHYSICS`. This description remains visible after other commands replace the
+feedback, including when no students match or every student matches. The count beside the heading is the number
+of displayed students. Long descriptions wrap to fit the panel.
+
+A new filter replaces the description. `list`, `ls`, a successful student addition, or `homework upcoming`
+removes it by restoring the full roster. A new search also removes the level/subject description because it
+replaces that filter. Editing or deleting students retains the criteria; `clear` retains them on an empty roster.
+Invalid commands leave the description unchanged. If saving fails, the previous filter and description are restored.
+
 Examples:
 
 * `filter l/S4` shows every S4 student.
 * `filter s/Math` shows every student taking MATH, including those taking other subjects too.
 * `filter l/S4 s/Math` and `filter s/Math l/S4` both show S4 students taking MATH.
 
-For matches, the feedback is `Found N student(s)`, using the actual count. If nothing matches, including when
-the roster is empty, no student cards are displayed and the feedback is `No students match the selected filters`.
+For one match, the feedback is `Found 1 student.`; for multiple matches, it is `Found N students.`, using the
+actual count. If nothing matches, including when the roster is empty, no student cards are displayed and the
+feedback is `No students match the selected filters`.
 
 With no filters, TutorFlow shows:
 
 ```text
-Invalid Command Format
+Invalid command format.
 Usage: filter [l/LEVEL] [s/SUBJECT]
 At least one filter must be provided
 ```
@@ -223,10 +234,13 @@ Other invalid commands report:
 | Problem | Feedback |
 | --- | --- |
 | Unknown prefix, e.g. `filter l/S4 p/123` | `p/ is not a prefix of this command. To use it inside a value, wrap the whole value in straight double quotes, e.g. l/"S4 p/123".`, followed by `Usage: filter [l/LEVEL] [s/SUBJECT]` on the next line (see the [notes about the command format](#features)) |
-| Text before the first prefix | `Invalid command format`, followed by `Usage: filter [l/LEVEL] [s/SUBJECT]` on the next line |
+| Text before the first prefix | `Invalid command format.`, followed by `Usage: filter [l/LEVEL] [s/SUBJECT]` on the next line |
 | Repeated prefix | `Each filter may only be specified once` |
-| Empty or unsupported level | `Academic level must be a non-empty value` |
-| Empty or unsupported subject | `Subject must be a non-empty value` |
+| Empty level | `Academic level must be a non-empty value` |
+| Unsupported level | `Academic level must be one of: S1, S2, S3, S4, S5, J1, J2.` |
+| Empty subject | `Subject must be a non-empty value` |
+| Unsupported subject | `Subject must be one of: MATH, PHYSICS, CHEMISTRY.` |
+| Comma-separated subjects | `Filter accepts only one subject. Use s/SUBJECT.` |
 
 Invalid commands leave the displayed students, selection, scroll position and data file unchanged.
 If an internal problem prevents rendering, TutorFlow shows

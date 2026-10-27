@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
 
+import javafx.beans.property.ReadOnlyObjectProperty;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -23,6 +25,8 @@ public class ModelManager implements Model {
 
     private final AddressBook addressBook;
     private final UserPrefs userPrefs;
+    private final ReadOnlyObjectWrapper<Predicate<Student>> studentListPredicate =
+            new ReadOnlyObjectWrapper<>(PREDICATE_SHOW_ALL_STUDENTS);
     private final FilteredList<Student> filteredStudents;
     private final StudentDisplayList displayedStudents;
     private final ObservableList<Student> unmodifiableDisplayedStudents;
@@ -38,6 +42,7 @@ public class ModelManager implements Model {
         this.addressBook = new AddressBook(addressBook);
         this.userPrefs = new UserPrefs(userPrefs);
         filteredStudents = new FilteredList<>(this.addressBook.getStudentList());
+        filteredStudents.predicateProperty().bind(studentListPredicate);
         displayedStudents = new StudentDisplayList(filteredStudents);
         unmodifiableDisplayedStudents = FXCollections.unmodifiableObservableList(displayedStudents);
     }
@@ -107,15 +112,18 @@ public class ModelManager implements Model {
 
     @Override
     public void updateFilteredStudentList(Predicate<Student> predicate) {
-        filteredStudents.setPredicate(requireNonNull(predicate));
+        studentListPredicate.set(requireNonNull(predicate));
         displayedStudents.resetOrder();
     }
 
     @Override
     public Predicate<Student> getFilteredStudentListPredicate() {
-        Predicate<? super Student> predicate = filteredStudents.getPredicate();
-        // A filtered list without a predicate shows every student
-        return predicate == null ? PREDICATE_SHOW_ALL_STUDENTS : predicate::test;
+        return studentListPredicate.get();
+    }
+
+    @Override
+    public ReadOnlyObjectProperty<Predicate<Student>> studentListPredicateProperty() {
+        return studentListPredicate.getReadOnlyProperty();
     }
 
     @Override

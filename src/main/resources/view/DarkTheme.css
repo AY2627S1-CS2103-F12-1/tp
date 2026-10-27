@@ -144,6 +144,10 @@
     -fx-text-fill: #354a55;
 }
 
+.student-filter-description {
+    -fx-text-fill: #354a55;
+}
+
 .student-list-panel .list-view,
 .student-list-panel .list-cell:empty,
 .student-list-panel .list-cell:filled:even,

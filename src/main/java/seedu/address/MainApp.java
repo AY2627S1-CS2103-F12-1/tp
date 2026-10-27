@@ -51,6 +51,8 @@ public class MainApp extends Application {
     private final Path addressBookFilePath;
     private final Runnable shutdown;
     private boolean hasDataLoadingError;
+    /** Why the data file could not be loaded, shown in the startup dialog. */
+    private String dataLoadingReason;
 
     /** Creates the application using files in its home folder and the JavaFX shutdown action. */
     public MainApp() {
@@ -80,6 +82,7 @@ public class MainApp extends Application {
             logger.warning("Cannot load saved data. Startup stopped to preserve the original file: "
                     + StringUtil.getDetails(exception));
             hasDataLoadingError = true;
+            dataLoadingReason = getReason(exception);
             return;
         }
 
@@ -114,6 +117,15 @@ public class MainApp extends Application {
         }
         initialData = addressBookOptional.orElseGet(SampleDataUtil::getSampleAddressBook);
         return initialData;
+    }
+
+    /**
+     * Returns why the data file could not be loaded, as shown to the user: the message of the cause of
+     * {@code exception}, as the exception's own message starts with the cause's class name.
+     */
+    private static String getReason(DataLoadingException exception) {
+        Throwable cause = exception.getCause();
+        return cause == null || cause.getMessage() == null ? exception.getMessage() : cause.getMessage();
     }
 
     /**
@@ -156,6 +168,7 @@ public class MainApp extends Application {
             alert.setHeaderText("Your data file has not been changed.");
             alert.setContentText("TutorFlow could not read valid data from:\n"
                     + addressBookFilePath.toAbsolutePath().normalize()
+                    + "\nReason: " + dataLoadingReason
                     + "\n\nClose TutorFlow and restore a valid backup or correct the file. "
                     + "To start with sample data instead, move the original file to a safe location before restarting. "
                     + "Do not delete it if you need to recover your records.");

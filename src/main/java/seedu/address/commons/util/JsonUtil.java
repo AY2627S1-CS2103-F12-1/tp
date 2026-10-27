@@ -24,6 +24,7 @@ import seedu.address.commons.exceptions.DataLoadingException;
  * Converts a Java object instance to JSON and vice versa
  */
 public class JsonUtil {
+    public static final String MESSAGE_INVALID_JSON = "The file is not valid JSON near line %d, column %d.";
 
     private static final Logger logger = LogsCenter.getLogger(JsonUtil.class);
 
@@ -46,7 +47,30 @@ public class JsonUtil {
         if (json.startsWith("\ufeff")) {
             json = json.substring(1);
         }
-        return fromJsonString(json, classOfObjectToDeserialize);
+        try {
+            return fromJsonString(json, classOfObjectToDeserialize);
+        } catch (JsonProcessingException e) {
+            throw describeJsonError(json, e);
+        }
+    }
+
+    /**
+     * Returns an exception whose message gives the line and column of {@code json} near which {@code exception}
+     * found it invalid, or {@code exception} itself if Jackson gives no position.
+     */
+    private static IOException describeJsonError(String json, JsonProcessingException exception) {
+        JsonLocation location = exception.getLocation();
+        if (location == null || location.getCharOffset() < 0) {
+            return exception;
+        }
+        // At the end of the input, Jackson's column counts from the start of the file, so the position is worked
+        // out here instead; a file that ends too early points at its last character that is not whitespace.
+        int lastContentIndex = Math.max(json.stripTrailing().length() - 1, 0);
+        int offset = (int) Math.min(location.getCharOffset(), lastContentIndex);
+        int lineStart = json.lastIndexOf('\n', offset - 1) + 1;
+        long line = json.substring(0, lineStart).chars().filter(c -> c == '\n').count() + 1;
+        int column = offset - lineStart + 1;
+        return new IOException(String.format(MESSAGE_INVALID_JSON, line, column), exception);
     }
 
     /**
@@ -55,7 +79,9 @@ public class JsonUtil {
      *
      * @param filePath cannot be null.
      * @param classOfObjectToDeserialize JSON file has to correspond to the structure in the class given here.
-     * @throws DataLoadingException if loading of the JSON file failed.
+     * @throws DataLoadingException if loading of the JSON file failed. A file that Jackson cannot read, e.g. one that
+     *         is not valid JSON, gives a cause whose message names the line and column, without Jackson's technical
+     *         text.
      */
     public static <T> Optional<T> readJsonFile(
             Path filePath, Class<T> classOfObjectToDeserialize) throws DataLoadingException {

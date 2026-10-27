@@ -108,7 +108,7 @@ public final class HelpContent {
                             "Changes the title, subject or due date of homework number HOMEWORK_INDEX, as numbered"
                                     + " by homework list, of the student at STUDENT_INDEX. Give at least one of them;"
                                     + " the other details and the score stay unchanged.",
-                            "hw e 1 2 t/Complete algebra questions 1-10"),
+                            "hw e 1 2 t/Kinematics practice set B"),
                     new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_MARKS,
                             HomeworkMarksCommand.MESSAGE_USAGE,
                             "Records the marks of homework number HOMEWORK_INDEX of the student at STUDENT_INDEX,"

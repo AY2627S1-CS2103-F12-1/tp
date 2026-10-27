@@ -116,36 +116,49 @@ public class LogicManager implements Logic {
     }
 
     /**
-     * Returns the name of {@code dataFile} as the user knows it: relative to the home folder, e.g.
+     * Returns the name of {@code path} as the user knows it: relative to the home folder, e.g.
      * {@code data/tutorflow.json} with the system's separator, or the absolute path if it is outside the home folder.
      */
-    private String getShownName(Path dataFile) {
-        return dataFile.startsWith(homeFolder) ? homeFolder.relativize(dataFile).toString() : dataFile.toString();
+    private String getShownName(Path path) {
+        return path.startsWith(homeFolder) ? homeFolder.relativize(path).toString() : path.toString();
     }
 
     /**
      * Returns a plain description of why {@code dataFile} could not be saved, checking the common causes in this
-     * order: the data file is a folder, the data file is read-only, its folder is read-only, or a file is where its
-     * folder should be. Otherwise, the system's text of {@code exception} is returned.
+     * order: the data file is a folder, the data file is read-only, a file is where its folder should be, or the
+     * nearest existing folder above it is read-only. Otherwise, the system's text of {@code exception} is returned.
      * The causes are read from the file system, as the exception may be about a different file, such as the
      * internal lock file next to the data file.
      */
-    private static String describeSaveFailure(IOException exception, Path dataFile) {
-        Path dataFolder = dataFile.getParent();
+    private String describeSaveFailure(IOException exception, Path dataFile) {
         if (Files.isDirectory(dataFile)) {
             return Messages.MESSAGE_SAVE_CAUSE_FOLDER;
         }
         if (Files.exists(dataFile) && !Files.isWritable(dataFile)) {
             return Messages.MESSAGE_SAVE_CAUSE_READ_ONLY_FILE;
         }
-        if (dataFolder != null && Files.isDirectory(dataFolder) && !Files.isWritable(dataFolder)) {
-            return Messages.MESSAGE_SAVE_CAUSE_READ_ONLY_FOLDER;
-        }
         Path existingAncestor = findNearestExistingAncestor(dataFile);
         if (existingAncestor != null && !Files.isDirectory(existingAncestor)) {
             return String.format(Messages.MESSAGE_SAVE_CAUSE_BLOCKED_FOLDER, existingAncestor.getFileName());
         }
+        if (existingAncestor != null && !Files.isWritable(existingAncestor)) {
+            return describeReadOnlyFolder(existingAncestor, dataFile);
+        }
         return getSystemText(exception);
+    }
+
+    /**
+     * Returns the cause for a read-only {@code folder} that stops {@code dataFile} from being saved, naming the
+     * folder as the user knows it: the data folder, the home folder, or any other folder by its shown name.
+     */
+    private String describeReadOnlyFolder(Path folder, Path dataFile) {
+        if (folder.equals(dataFile.getParent())) {
+            return Messages.MESSAGE_SAVE_CAUSE_READ_ONLY_FOLDER;
+        }
+        if (folder.equals(homeFolder)) {
+            return Messages.MESSAGE_SAVE_CAUSE_READ_ONLY_HOME_FOLDER;
+        }
+        return String.format(Messages.MESSAGE_SAVE_CAUSE_READ_ONLY_OTHER_FOLDER, getShownName(folder));
     }
 
     /**

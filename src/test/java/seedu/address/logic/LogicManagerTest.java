@@ -84,6 +84,7 @@ public class LogicManagerTest {
     private static final String CAUSE_FOLDER = "it is a folder, not a file";
     private static final String CAUSE_READ_ONLY_FILE = "the file is read-only";
     private static final String CAUSE_BLOCKED_FOLDER = "a file named data is in the way of the data folder";
+    private static final String CAUSE_READ_ONLY_HOME_FOLDER = "the home folder is read-only";
     private static final String ADD_SAMPLE_STUDENT_COMMAND =
             "add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777";
     private static final String ADD_STUDENT_COMMAND = "add n/John Tan l/S3 s/MATH p/91234567 gn/Mary Tan gp/98765432";
@@ -705,6 +706,34 @@ public class LogicManagerTest {
             assertArrayEquals(fileBefore, Files.readAllBytes(dataFile));
         } finally {
             makeFolderWritable(dataFile.getParent());
+        }
+    }
+
+    @Test
+    public void execute_readOnlyHomeFolderNoDataFolder_reportsReadOnlyHomeFolder() throws Exception {
+        Path dataFile = temporaryFolder.resolve("data").resolve("tutorflow.json");
+        setUpLogic(getSampleAddressBook(), new JsonAddressBookStorage(dataFile), SAMPLE_CLOCK);
+        makeFolderReadOnly(temporaryFolder);
+        try {
+            assertSaveFailureRestores(ADD_SAMPLE_STUDENT_COMMAND,
+                    getGeneralSaveFailureMessage(SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_HOME_FOLDER));
+            assertFalse(Files.exists(dataFile.getParent()));
+        } finally {
+            makeFolderWritable(temporaryFolder);
+        }
+    }
+
+    @Test
+    public void execute_readOnlyFolderAboveDataFolder_namesThatFolder() throws Exception {
+        Path readOnlyFolder = Files.createDirectories(temporaryFolder.resolve("store"));
+        Path dataFile = readOnlyFolder.resolve("data").resolve("tutorflow.json");
+        setUpLogic(getSampleAddressBook(), new JsonAddressBookStorage(dataFile), SAMPLE_CLOCK);
+        makeFolderReadOnly(readOnlyFolder);
+        try {
+            assertSaveFailureRestores(ADD_SAMPLE_STUDENT_COMMAND, getGeneralSaveFailureMessage(
+                    Path.of("store", "data", "tutorflow.json").toString(), "the folder store is read-only"));
+        } finally {
+            makeFolderWritable(readOnlyFolder);
         }
     }
 

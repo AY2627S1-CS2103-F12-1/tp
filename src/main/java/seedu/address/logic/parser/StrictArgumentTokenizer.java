@@ -179,9 +179,8 @@ public final class StrictArgumentTokenizer {
 
     /**
      * Returns the error for the unknown prefix found by {@code matcher}: its name, a hint to quote the value it is in
-     * (with an example built from that value unless the text before the prefix is only digits and date or time
-     * punctuation), a hint to use straight quotes if {@code arguments} has curly quotes, and the usage text of
-     * {@code invalidFormatMessage}. There is no quote hint if the prefix is not inside any value.
+     * if there is one, a hint to use straight quotes if {@code arguments} has curly quotes, and the usage text of
+     * {@code invalidFormatMessage}.
      *
      * @param previousPrefix Prefix of the value the unknown prefix is in, or null if there is none.
      * @param valueStart Start of the value of {@code previousPrefix} in {@code arguments}.
@@ -189,26 +188,46 @@ public final class StrictArgumentTokenizer {
     private static String buildUnknownPrefixMessage(String arguments, Matcher matcher, String previousPrefix,
             int valueStart, List<String> allowedPrefixes, ValueTokenFilter valueTokenFilter,
             String invalidFormatMessage) {
-        String unknownPrefix = matcher.group(1);
-        StringBuilder message = new StringBuilder(String.format(MESSAGE_NOT_PREFIX, unknownPrefix));
+        StringBuilder message = new StringBuilder(String.format(MESSAGE_NOT_PREFIX, matcher.group(1)));
         if (previousPrefix != null) {
-            String textBeforePrefix = arguments.substring(valueStart, matcher.start()).strip();
-            if (NUMERIC_TEXT_PATTERN.matcher(textBeforePrefix).matches()) {
-                message.append(MESSAGE_QUOTE_HINT);
-            } else {
-                int valueEnd = findFieldEnd(arguments, matcher.end(), previousPrefix, allowedPrefixes,
-                        valueTokenFilter);
-                String valueText = stripQuotes(arguments.substring(valueStart, valueEnd));
-                message.append(String.format(MESSAGE_QUOTE_HINT_WITH_EXAMPLE, previousPrefix, valueText));
-            }
+            message.append(buildQuoteHint(arguments, matcher, previousPrefix, valueStart, allowedPrefixes,
+                    valueTokenFilter));
         }
-        if (arguments.chars().anyMatch(character -> CURLY_QUOTE_CHARACTERS.indexOf(character) != -1)) {
+        if (hasCurlyQuotes(arguments)) {
             message.append('\n').append(MESSAGE_CURLY_QUOTES);
         }
+        return message.append('\n').append(getUsageText(invalidFormatMessage)).toString();
+    }
+
+    /**
+     * Returns the hint to quote the value of {@code previousPrefix} that the unknown prefix found by {@code matcher}
+     * is in, with an example built from that value unless the text before the unknown prefix is only digits and
+     * date or time punctuation.
+     */
+    private static String buildQuoteHint(String arguments, Matcher matcher, String previousPrefix, int valueStart,
+            List<String> allowedPrefixes, ValueTokenFilter valueTokenFilter) {
+        String textBeforePrefix = arguments.substring(valueStart, matcher.start()).strip();
+        if (NUMERIC_TEXT_PATTERN.matcher(textBeforePrefix).matches()) {
+            return MESSAGE_QUOTE_HINT;
+        }
+        int valueEnd = findFieldEnd(arguments, matcher.end(), previousPrefix, allowedPrefixes, valueTokenFilter);
+        String valueText = stripQuotes(arguments.substring(valueStart, valueEnd));
+        return String.format(MESSAGE_QUOTE_HINT_WITH_EXAMPLE, previousPrefix, valueText);
+    }
+
+    /**
+     * Returns true if {@code arguments} contains a curly quote.
+     */
+    private static boolean hasCurlyQuotes(String arguments) {
+        return arguments.chars().anyMatch(character -> CURLY_QUOTE_CHARACTERS.indexOf(character) != -1);
+    }
+
+    /**
+     * Returns the part of {@code invalidFormatMessage} from {@code Usage:} on, or the whole message if it has none.
+     */
+    private static String getUsageText(String invalidFormatMessage) {
         int usageStart = invalidFormatMessage.indexOf(USAGE_START);
-        message.append('\n').append(usageStart == -1 ? invalidFormatMessage
-                : invalidFormatMessage.substring(usageStart));
-        return message.toString();
+        return usageStart == -1 ? invalidFormatMessage : invalidFormatMessage.substring(usageStart);
     }
 
     /**
@@ -238,15 +257,20 @@ public final class StrictArgumentTokenizer {
     private static String stripQuotes(String text) {
         int start = 0;
         int end = text.length();
-        while (start < end && (Character.isWhitespace(text.charAt(start))
-                || QUOTE_CHARACTERS.indexOf(text.charAt(start)) != -1)) {
+        while (start < end && isQuoteOrWhitespace(text.charAt(start))) {
             start++;
         }
-        while (end > start && (Character.isWhitespace(text.charAt(end - 1))
-                || QUOTE_CHARACTERS.indexOf(text.charAt(end - 1)) != -1)) {
+        while (end > start && isQuoteOrWhitespace(text.charAt(end - 1))) {
             end--;
         }
         return text.substring(start, end);
+    }
+
+    /**
+     * Returns true if {@code character} is whitespace or a straight or curly double quote.
+     */
+    private static boolean isQuoteOrWhitespace(char character) {
+        return Character.isWhitespace(character) || QUOTE_CHARACTERS.indexOf(character) != -1;
     }
 
     /**

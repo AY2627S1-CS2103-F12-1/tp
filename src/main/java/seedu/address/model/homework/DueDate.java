@@ -15,6 +15,10 @@ import java.util.regex.Pattern;
  * Guarantees: immutable; the date exists in the calendar and its year is from 2000 to 2099.
  */
 public final class DueDate {
+    /** Earliest year a due date may have, which catches typo years such as {@code 0026}. */
+    public static final int MIN_YEAR = 2000;
+    /** Latest year a due date may have, which catches typo years such as {@code 2206}. */
+    public static final int MAX_YEAR = 2099;
     public static final String MESSAGE_CONSTRAINTS = "Due date must be a valid calendar date in YYYY-MM-DD or "
             + "MM-DD format, where the month and day may have 1 or 2 digits.";
     public static final String MESSAGE_EMPTY = "The due date is empty. Enter it as YYYY-MM-DD or MM-DD, "
@@ -27,10 +31,10 @@ public final class DueDate {
     public static final String MESSAGE_NOT_REAL_DATE = "%s is not a real calendar date.";
     public static final String MESSAGE_LEAP_DAY_NOT_WITHIN_YEAR = "29 February does not occur in the next 12 "
             + "months. Enter the full date, e.g. %d-02-29.";
-    public static final String MESSAGE_YEAR_OUT_OF_RANGE = "The due date's year must be from 2000 to 2099.";
+    // Concatenation rather than String.format, which would use the default locale's digits for the years
+    public static final String MESSAGE_YEAR_OUT_OF_RANGE = "The due date's year must be from " + MIN_YEAR + " to "
+            + MAX_YEAR + ".";
 
-    private static final int MIN_YEAR = 2000;
-    private static final int MAX_YEAR = 2099;
     private static final MonthDay LEAP_DAY = MonthDay.of(2, 29);
     private static final Pattern FULL_FORM = Pattern.compile("([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})");
     private static final Pattern SHORT_FORM = Pattern.compile("([0-9]{1,2})-([0-9]{1,2})");
@@ -153,7 +157,7 @@ public final class DueDate {
     }
 
     /**
-     * Throws an {@code IllegalArgumentException} if {@code year} is outside 2000 to 2099.
+     * Throws an {@code IllegalArgumentException} if {@code year} is outside {@code MIN_YEAR} to {@code MAX_YEAR}.
      */
     private static void checkYearInRange(int year) {
         if (year < MIN_YEAR || year > MAX_YEAR) {

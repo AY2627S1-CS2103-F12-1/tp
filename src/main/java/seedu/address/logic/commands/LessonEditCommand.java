@@ -101,8 +101,8 @@ public class LessonEditCommand extends Command {
     }
 
     @Override
-    public String getSaveFailureMessage(String shownName, String cause) {
-        return String.format(MESSAGE_SAVE_FAILURE, shownName, cause);
+    protected String getSaveFailureFormat() {
+        return MESSAGE_SAVE_FAILURE;
     }
 
     @Override

@@ -142,14 +142,22 @@ public class LogicManager implements Logic {
         if (dataFolder != null && Files.isDirectory(dataFolder) && !Files.isWritable(dataFolder)) {
             return Messages.MESSAGE_SAVE_CAUSE_READ_ONLY_FOLDER;
         }
-        Path existingAncestor = dataFolder;
-        while (existingAncestor != null && !Files.exists(existingAncestor)) {
-            existingAncestor = existingAncestor.getParent();
-        }
+        Path existingAncestor = findNearestExistingAncestor(dataFile);
         if (existingAncestor != null && !Files.isDirectory(existingAncestor)) {
             return String.format(Messages.MESSAGE_SAVE_CAUSE_BLOCKED_FOLDER, existingAncestor.getFileName());
         }
         return getSystemText(exception);
+    }
+
+    /**
+     * Returns the nearest folder above {@code path}, or file in its place, that exists, or null if none does.
+     */
+    private static Path findNearestExistingAncestor(Path path) {
+        Path ancestor = path.getParent();
+        while (ancestor != null && !Files.exists(ancestor)) {
+            ancestor = ancestor.getParent();
+        }
+        return ancestor;
     }
 
     /**

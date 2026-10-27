@@ -5,6 +5,11 @@ import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailur
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
+import static seedu.address.model.homework.DueDateTest.MESSAGE_EMPTY;
+import static seedu.address.model.homework.DueDateTest.MESSAGE_YEAR_OUT_OF_RANGE;
+import static seedu.address.model.homework.DueDateTest.leapDayMessage;
+import static seedu.address.model.homework.DueDateTest.notRealDateMessage;
+import static seedu.address.model.homework.DueDateTest.wrongFormatMessage;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -255,16 +260,23 @@ public class HomeworkEditCommandParserTest {
     @Test
     public void parse_invalidDueDate_failure() {
         // empty
-        assertParseFailure(parser, "1 2 due/", DueDate.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 2 due/", MESSAGE_EMPTY);
 
         // wrong format
-        assertParseFailure(parser, "1 2 due/05/11/2026", DueDate.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 2 due/05/11/2026", wrongFormatMessage("05/11/2026"));
+        assertParseFailure(parser, "1 2 due/30-10-2026", wrongFormatMessage("30-10-2026"));
 
         // date that does not exist
-        assertParseFailure(parser, "1 2 due/2026-02-30", DueDate.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 2 due/2026-02-30", notRealDateMessage("2026-02-30"));
 
         // space inside
-        assertParseFailure(parser, "1 2 due/2026-11 -05", DueDate.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 2 due/2026-11 -05", wrongFormatMessage("2026-11 -05"));
+
+        // typo year
+        assertParseFailure(parser, "1 2 due/2206-10-30", MESSAGE_YEAR_OUT_OF_RANGE);
+
+        // today is 2026-10-05, and neither 2026 nor 2027 is a leap year
+        assertParseFailure(parser, "1 2 due/2-29", leapDayMessage(2028));
     }
 
     @Test

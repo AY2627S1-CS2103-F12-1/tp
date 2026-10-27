@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
+import static seedu.address.model.homework.DueDateTest.MESSAGE_YEAR_OUT_OF_RANGE;
+import static seedu.address.model.homework.DueDateTest.notRealDateMessage;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -54,6 +56,14 @@ public class HomeworkFilterCommandParserTest {
         for (String input : invalid) {
             assertThrows(ParseException.class, () -> parser.parseCommand("hw filter " + input), input);
         }
+    }
+
+    @Test
+    public void parse_invalidDueDate_throwsSpecificMessage() {
+        assertEquals(MESSAGE_YEAR_OUT_OF_RANGE, assertThrows(ParseException.class, () ->
+                parser.parseCommand("hw filter due/2206-10-30")).getMessage());
+        assertEquals(notRealDateMessage("2026-13-01"), assertThrows(ParseException.class, () ->
+                parser.parseCommand("hw filter due/2026-13-01")).getMessage());
     }
 
     @Test

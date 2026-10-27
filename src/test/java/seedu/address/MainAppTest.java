@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static seedu.address.model.homework.DueDateTest.MESSAGE_YEAR_OUT_OF_RANGE;
 import static seedu.address.testutil.TypicalStudents.getTypicalAddressBook;
 
 import java.nio.charset.StandardCharsets;
@@ -80,6 +81,21 @@ public class MainAppTest {
         Files.writeString(dataFilePath, invalidData);
 
         assertThrows(DataLoadingException.class, () -> MainApp.readInitialData(storage));
+        assertEquals(invalidData, Files.readString(dataFilePath));
+    }
+
+    @Test
+    public void readInitialData_dueDateYearOutOfRange_rejectsWithoutChangingFile() throws Exception {
+        Path dataFilePath = temporaryFolder.resolve("tutorflow.json");
+        Storage storage = getStorage(dataFilePath);
+        storage.saveAddressBook(getTypicalAddressBook());
+        // a typo year, which is a real calendar date
+        String invalidData = Files.readString(dataFilePath).replace("\"2026-10-15\"", "\"2206-10-30\"");
+        Files.writeString(dataFilePath, invalidData);
+
+        DataLoadingException exception = assertThrows(DataLoadingException.class, () ->
+                MainApp.readInitialData(storage));
+        assertEquals(MESSAGE_YEAR_OUT_OF_RANGE, exception.getCause().getMessage());
         assertEquals(invalidData, Files.readString(dataFilePath));
     }
 

@@ -8,6 +8,11 @@ import static seedu.address.logic.Messages.MESSAGE_UNKNOWN_COMMAND;
 import static seedu.address.logic.parser.CommandParserTestUtil.MESSAGE_TITLE_AND_ALIAS;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
+import static seedu.address.model.homework.DueDateTest.MESSAGE_EMPTY;
+import static seedu.address.model.homework.DueDateTest.MESSAGE_YEAR_OUT_OF_RANGE;
+import static seedu.address.model.homework.DueDateTest.leapDayMessage;
+import static seedu.address.model.homework.DueDateTest.notRealDateMessage;
+import static seedu.address.model.homework.DueDateTest.wrongFormatMessage;
 import static seedu.address.model.util.SampleDataUtil.getSampleAddressBook;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
@@ -272,6 +277,32 @@ public class LogicManagerTest {
                 + HomeworkEditCommand.MESSAGE_USAGE);
         assertParseException("hw del 1 x/y", notPrefix("x/") + "\nUsage: " + HomeworkDeleteCommand.MESSAGE_USAGE);
         assertFalse(Files.exists(dataFilePath));
+    }
+
+    @Test
+    public void execute_dueDateErrors_specificMessageAndNothingSaved() {
+        setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
+
+        assertParseException("hw add 1 t/X s/MATH due/", MESSAGE_EMPTY);
+        assertParseException("hw add 1 t/X s/MATH due/30-10-2026", wrongFormatMessage("30-10-2026"));
+        assertParseException("hw add 1 t/X s/MATH due/2026-13-01", notRealDateMessage("2026-13-01"));
+        assertParseException("hw add 1 t/X s/MATH due/2026-02-30", notRealDateMessage("2026-02-30"));
+        // today is 2026-10-27, and neither 2026 nor 2027 is a leap year
+        assertParseException("hw add 1 t/X s/MATH due/2-29", leapDayMessage(2028));
+        assertParseException("hw add 1 t/Typo year s/MATH due/2206-10-30", MESSAGE_YEAR_OUT_OF_RANGE);
+        assertFalse(Files.exists(dataFilePath));
+    }
+
+    @Test
+    public void execute_pastDueDateInRange_addsAndSaves() throws Exception {
+        setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
+
+        assertEquals("New homework added:\nEthan Lim; Title: X; Subject: MATH; Due: 2001-01-01",
+                logic.execute("hw add 1 t/X s/MATH due/2001-01-01").getFeedbackToUser());
+
+        Student savedStudent = addressBookStorage.readAddressBook().orElseThrow().getStudentList().getFirst();
+        assertTrue(savedStudent.getHomeworks().stream().anyMatch(homework -> homework.getTitle().toString().equals("X")
+                && homework.getDueDate().toString().equals("2001-01-01")));
     }
 
     @Test

@@ -1,6 +1,7 @@
 package seedu.address.storage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static seedu.address.model.homework.DueDateTest.assertFullDateFormatError;
 import static seedu.address.storage.JsonAdaptedStudent.MISSING_FIELD_MESSAGE_FORMAT;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
@@ -16,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.databind.node.TextNode;
 
 import seedu.address.commons.exceptions.IllegalValueException;
-import seedu.address.model.homework.DueDate;
 import seedu.address.model.homework.Homework;
 import seedu.address.model.student.AcademicLevel;
 import seedu.address.model.student.Student;
@@ -161,7 +161,7 @@ public class JsonAdaptedStudentTest {
         List<JsonAdaptedHomework> homeworks = List.of(new JsonAdaptedHomework("Algebra", "MATH", "10-15", null));
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
                 VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, homeworks);
-        assertThrows(IllegalValueException.class, DueDate.MESSAGE_FULL_DATE_CONSTRAINTS, student::toModelType);
+        assertFullDateFormatError("10-15", IllegalValueException.class, student::toModelType);
     }
 
     @Test

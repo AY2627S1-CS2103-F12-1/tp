@@ -6,6 +6,11 @@ import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailur
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
+import static seedu.address.model.homework.DueDateTest.MESSAGE_EMPTY;
+import static seedu.address.model.homework.DueDateTest.MESSAGE_YEAR_OUT_OF_RANGE;
+import static seedu.address.model.homework.DueDateTest.leapDayMessage;
+import static seedu.address.model.homework.DueDateTest.notRealDateMessage;
+import static seedu.address.model.homework.DueDateTest.wrongFormatMessage;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalHomeworks.MECHANICS;
 
@@ -74,6 +79,19 @@ public class HomeworkAddCommandParserTest {
         Homework expectedHomework = new HomeworkBuilder().withDueDate("2025-01-01").build();
 
         assertParseSuccess(parser, "1 title/Complete algebra worksheet s/MATH due/2025-01-01",
+                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, false));
+
+        // second year of the allowed range
+        assertParseSuccess(parser, "1 title/Complete algebra worksheet s/MATH due/2001-01-01",
+                new HomeworkAddCommand(Index.fromOneBased(1), new HomeworkBuilder().withDueDate("2001-01-01").build(),
+                        false));
+    }
+
+    @Test
+    public void parse_leapDayFullDate_success() {
+        Homework expectedHomework = new HomeworkBuilder().withDueDate("2028-02-29").build();
+
+        assertParseSuccess(parser, "1 title/Complete algebra worksheet s/MATH due/2028-02-29",
                 new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, false));
     }
 
@@ -351,7 +369,7 @@ public class HomeworkAddCommandParserTest {
 
     @Test
     public void parse_emptyDueDate_failure() {
-        assertParseFailure(parser, "1 title/Complete algebra worksheet s/MATH due/", DueDate.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 title/Complete algebra worksheet s/MATH due/", MESSAGE_EMPTY);
     }
 
     @Test
@@ -359,19 +377,40 @@ public class HomeworkAddCommandParserTest {
         String fieldsWithoutDueDate = "1 title/Complete algebra worksheet s/MATH due/";
 
         // wrong separator and field order
-        assertParseFailure(parser, fieldsWithoutDueDate + "15/10/2026", DueDate.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, fieldsWithoutDueDate + "15/10/2026", wrongFormatMessage("15/10/2026"));
+
+        // day-month-year order
+        assertParseFailure(parser, "1 t/X s/MATH due/30-10-2026", wrongFormatMessage("30-10-2026"));
 
         // three-digit month
-        assertParseFailure(parser, fieldsWithoutDueDate + "010-05", DueDate.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, fieldsWithoutDueDate + "010-05", wrongFormatMessage("010-05"));
 
         // single-digit short-form date that does not exist
-        assertParseFailure(parser, fieldsWithoutDueDate + "2-30", DueDate.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, fieldsWithoutDueDate + "2-30", notRealDateMessage("2-30"));
 
         // date that does not exist
-        assertParseFailure(parser, fieldsWithoutDueDate + "2026-02-30", DueDate.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, fieldsWithoutDueDate + "2026-02-30", notRealDateMessage("2026-02-30"));
+
+        // month 13
+        assertParseFailure(parser, "1 t/X s/MATH due/2026-13-01", notRealDateMessage("2026-13-01"));
 
         // short-form date that never exists
-        assertParseFailure(parser, fieldsWithoutDueDate + "02-30", DueDate.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, fieldsWithoutDueDate + "02-30", notRealDateMessage("02-30"));
+    }
+
+    @Test
+    public void parse_shortLeapDayNotWithinYear_throwsLeapDayMessage() {
+        // today is 2026-10-05, and neither 2026 nor 2027 is a leap year
+        assertParseFailure(parser, "1 t/X s/MATH due/2-29", leapDayMessage(2028));
+    }
+
+    @Test
+    public void parse_dueDateYearOutOfRange_throwsYearMessage() {
+        // typo year
+        assertParseFailure(parser, "1 t/Typo year s/MATH due/2206-10-30", MESSAGE_YEAR_OUT_OF_RANGE);
+
+        // day before the range
+        assertParseFailure(parser, "1 t/X s/MATH due/1999-12-31", MESSAGE_YEAR_OUT_OF_RANGE);
     }
 
     @Test

@@ -1,6 +1,7 @@
 package seedu.address.storage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static seedu.address.model.homework.DueDateTest.assertFullDateFormatError;
 import static seedu.address.testutil.Assert.assertThrows;
 
 import java.nio.file.Path;
@@ -12,7 +13,6 @@ import org.junit.jupiter.api.Test;
 import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.commons.util.JsonUtil;
 import seedu.address.model.AddressBook;
-import seedu.address.model.homework.DueDate;
 import seedu.address.model.student.Student;
 import seedu.address.model.student.StudentPhone;
 import seedu.address.testutil.AddressBookBuilder;
@@ -51,7 +51,8 @@ public class JsonSerializableAddressBookTest {
     public void toModelType_shortFormDueDate_throwsIllegalValueException() throws Exception {
         JsonSerializableAddressBook dataFromFile = JsonUtil.readJsonFile(INVALID_HOMEWORK_FILE,
                 JsonSerializableAddressBook.class).get();
-        assertThrows(IllegalValueException.class, DueDate.MESSAGE_FULL_DATE_CONSTRAINTS, dataFromFile::toModelType);
+        // the file's due date is "10-15"
+        assertFullDateFormatError("10-15", IllegalValueException.class, dataFromFile::toModelType);
     }
 
     @Test

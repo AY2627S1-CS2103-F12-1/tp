@@ -2,6 +2,9 @@ package seedu.address.storage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.model.homework.DueDateTest.MESSAGE_YEAR_OUT_OF_RANGE;
+import static seedu.address.model.homework.DueDateTest.assertFullDateFormatError;
+import static seedu.address.model.homework.DueDateTest.notRealDateMessage;
 import static seedu.address.storage.JsonAdaptedHomework.INVALID_NUMBER_SCORE_WARNING_FORMAT;
 import static seedu.address.storage.JsonAdaptedHomework.MISSING_FIELD_MESSAGE_FORMAT;
 import static seedu.address.testutil.Assert.assertThrows;
@@ -22,7 +25,6 @@ import com.fasterxml.jackson.databind.node.TextNode;
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.commons.util.JsonUtil;
-import seedu.address.model.homework.DueDate;
 import seedu.address.model.homework.Homework;
 import seedu.address.model.homework.HomeworkStatus;
 import seedu.address.model.homework.Score;
@@ -139,11 +141,26 @@ public class JsonAdaptedHomeworkTest {
     @Test
     public void toModelType_invalidDueDate_throwsIllegalValueException() {
         // not a calendar date
-        assertInvalidDueDate("2026-02-30");
+        assertThrows(IllegalValueException.class, notRealDateMessage("2026-02-30"),
+                withDueDate("2026-02-30")::toModelType);
         // short form, whose year is never inferred when loading
-        assertInvalidDueDate("10-15");
+        assertFullDateFormatError("10-15", IllegalValueException.class, withDueDate("10-15")::toModelType);
         // wrong separator
-        assertInvalidDueDate("15/10/2026");
+        assertFullDateFormatError("15/10/2026", IllegalValueException.class, withDueDate("15/10/2026")::toModelType);
+    }
+
+    @Test
+    public void toModelType_dueDateYearOutOfRange_throwsYearMessage() {
+        // typo year
+        assertThrows(IllegalValueException.class, MESSAGE_YEAR_OUT_OF_RANGE, withDueDate("2206-10-30")::toModelType);
+        // day before the range
+        assertThrows(IllegalValueException.class, MESSAGE_YEAR_OUT_OF_RANGE, withDueDate("1999-12-31")::toModelType);
+    }
+
+    @Test
+    public void toModelType_dueDateYearBoundaries_success() throws Exception {
+        assertEquals(new HomeworkBuilder().withDueDate("2000-01-01").build(), withDueDate("2000-01-01").toModelType());
+        assertEquals(new HomeworkBuilder().withDueDate("2099-12-31").build(), withDueDate("2099-12-31").toModelType());
     }
 
     @Test
@@ -304,8 +321,10 @@ public class JsonAdaptedHomeworkTest {
         assertThrows(IllegalValueException.class, Score.MESSAGE_CONSTRAINTS, fromJsonWithScore(score)::toModelType);
     }
 
-    private static void assertInvalidDueDate(String dueDate) {
-        JsonAdaptedHomework homework = new JsonAdaptedHomework(VALID_TITLE, VALID_SUBJECT, dueDate, null);
-        assertThrows(IllegalValueException.class, DueDate.MESSAGE_FULL_DATE_CONSTRAINTS, homework::toModelType);
+    /**
+     * Returns an adapted homework with the valid title and subject, no score and {@code dueDate}.
+     */
+    private static JsonAdaptedHomework withDueDate(String dueDate) {
+        return new JsonAdaptedHomework(VALID_TITLE, VALID_SUBJECT, dueDate, null);
     }
 }

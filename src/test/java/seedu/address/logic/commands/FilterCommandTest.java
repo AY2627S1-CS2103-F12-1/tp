@@ -42,7 +42,7 @@ public class FilterCommandTest {
                 Optional.of(AcademicLevel.S4), Optional.empty())).execute(model);
 
         assertEquals(List.of(first, second), model.getStudentList());
-        assertEquals("Found 2 student(s)", result.getFeedbackToUser());
+        assertEquals("Found 2 students.", result.getFeedbackToUser());
         assertTrue(result.isShowStudentList());
         assertEquals(before, model.getAddressBook());
     }
@@ -55,7 +55,7 @@ public class FilterCommandTest {
                 Optional.of(AcademicLevel.S4), Optional.of(TuitionSubject.MATH))).execute(model);
 
         assertEquals(List.of(first), model.getStudentList());
-        assertEquals("Found 1 student(s)", result.getFeedbackToUser());
+        assertEquals("Found 1 student.", result.getFeedbackToUser());
     }
 
     @Test

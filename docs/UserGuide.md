@@ -215,7 +215,8 @@ Examples:
 
 * `filter l/S4` shows every S4 student.
 * `filter s/Math` shows every student taking MATH, including those taking other subjects too.
-* `filter l/S4 s/Math` and `filter s/Math l/S4` both show S4 students taking MATH.
+* `filter l/S4 s/Physics` and `filter s/Physics l/S4` both show S4 students taking PHYSICS, such as
+  Nurul Aisyah in the sample roster.
 
 For one match, the feedback is `Found 1 student.`; for multiple matches, it is `Found N students.`, using the
 actual count. If nothing matches, including when the roster is empty, no student cards are displayed and the
@@ -736,7 +737,7 @@ Action | Format, Examples
 **Edit student** | `edit INDEX [n/STUDENT_NAME] [l/ACADEMIC_LEVEL] [s/SUBJECTS] [p/STUDENT_PHONE] [gn/GUARDIAN_NAME] [gp/GUARDIAN_PHONE]`<br> e.g., `edit 1 l/S4 p/91234568`
 **List** | `list` or `ls`
 **Search** | `search KEYWORD`<br> e.g., `search Tan`
-**Filter** | `filter [l/LEVEL] [s/SUBJECT]`<br> e.g., `filter l/S4 s/Math`
+**Filter** | `filter [l/LEVEL] [s/SUBJECT]`<br> e.g., `filter l/S4 s/Physics`
 **Sort** | `sort by/KEY [o/ORDER]`<br> e.g., `sort by/level`, `sort by/day o/desc`
 **Homework add** | <code>homework&#124;hw add STUDENT_INDEX title/&#124;t/TITLE s/SUBJECT due/YYYY-MM-DD&#124;MM-DD</code><br> e.g., `homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15`, `hw add 1 t/"Speed in km/h" s/PHYSICS due/2026-11-01`
 **Homework delete** | <code>homework&#124;hw delete&#124;del STUDENT_INDEX HOMEWORK_INDEX</code><br> e.g., `homework delete 1 2`

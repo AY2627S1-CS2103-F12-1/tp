@@ -5,6 +5,7 @@ import static java.util.Objects.requireNonNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.logging.Logger;
 
@@ -84,7 +85,8 @@ public class JsonUtil {
         int lineStart = json.lastIndexOf('\n', offset - 1) + 1;
         long line = json.substring(0, lineStart).chars().filter(c -> c == '\n').count() + 1;
         int column = offset - lineStart + 1;
-        return new IOException(String.format(format, line, column), exception);
+        // Locale.ROOT prints the position in ASCII digits, which editors use for line and column numbers
+        return new IOException(String.format(Locale.ROOT, format, line, column), exception);
     }
 
     /**

@@ -1,10 +1,13 @@
 package seedu.address.storage;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.Assert.assertThrows;
+import static seedu.address.testutil.TestUtil.ARABIC_EGYPT;
+import static seedu.address.testutil.TestUtil.runWithFormatLocale;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalRegularLessons.MONDAY_MATH;
 import static seedu.address.testutil.TypicalStudents.ALICE;
@@ -118,6 +121,16 @@ public class JsonAddressBookStorageTest {
     public void readAddressBook_nameNotText_reasonSaysWrongType() throws Exception {
         assertEquals("The file has a value of the wrong type near line 1, column 22.",
                 getLoadingReason("{\"students\":[{\"name\":[\"a\"]}]}"));
+    }
+
+    @Test
+    public void readAddressBook_arabicDigitsLocale_reasonGivesPositionInAsciiDigits() {
+        runWithFormatLocale(ARABIC_EGYPT, () -> {
+            assertEquals("The file is not valid JSON near line 2, column 18.", assertDoesNotThrow(() ->
+                    getLoadingReason("{\"students\":[{\n    \"name\" : \"A\",, }]}")));
+            assertEquals("The file has a value of the wrong type near line 1, column 14.", assertDoesNotThrow(() ->
+                    getLoadingReason("{\"students\": 5}")));
+        });
     }
 
     @Test

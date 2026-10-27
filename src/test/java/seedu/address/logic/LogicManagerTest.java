@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX;
 import static seedu.address.logic.Messages.MESSAGE_UNKNOWN_COMMAND;
+import static seedu.address.logic.commands.CommandTestUtil.formatHomeworkLine;
 import static seedu.address.logic.parser.CommandParserTestUtil.MESSAGE_TITLE_AND_ALIAS;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
@@ -415,6 +416,43 @@ public class LogicManagerTest {
         savedData = addressBookStorage.readAddressBook().get();
         assertEquals(0, savedData.getStudentList().get(0).getHomeworks().size());
         assertEquals(model.getAddressBook(), new AddressBook(savedData));
+    }
+
+    @Test
+    public void execute_twoDeletesFromShownNumbers_deletesIntendedRecords() throws Exception {
+        setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
+        logic.execute("hw add 2 t/Vectors revision s/MATH due/2026-11-20");
+
+        // the overdue integration homework (due 2026-10-26) is not listed
+        assertEquals("Deleted homework:\n"
+                + formatHomeworkLine(2, "Organic reaction pathways map", "CHEMISTRY", "2026-11-02", "Not recorded",
+                        "ASSIGNED")
+                + "\nListed 2 upcoming homework records for Priya Nair.\nHomework for Priya Nair:\n"
+                + formatHomeworkLine(2, "Chemical equilibrium past paper", "CHEMISTRY", "2026-11-09", "Not recorded",
+                        "ASSIGNED") + "\n"
+                + formatHomeworkLine(3, "Vectors revision", "MATH", "2026-11-20", "Not recorded", "ASSIGNED"),
+                logic.execute("hw del 2 2").getFeedbackToUser());
+
+        // 2 is the number just shown for the chemical equilibrium homework
+        logic.execute("hw del 2 2");
+        Student savedStudent = addressBookStorage.readAddressBook().orElseThrow().getStudentList().get(1);
+        assertEquals(List.of("Integration by parts exercise", "Vectors revision"), savedStudent.getHomeworks()
+                .stream().map(homework -> homework.getTitle().toString()).toList());
+    }
+
+    @Test
+    public void execute_deleteScoredHomework_showsScoreAndStatus() throws Exception {
+        setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
+        logic.execute("hw m 2 1 score/5/10");
+
+        assertEquals("Deleted homework:\n"
+                + formatHomeworkLine(1, "Integration by parts exercise", "MATH", "2026-10-26", "5/10", "ASSIGNED")
+                + "\nListed 2 upcoming homework records for Priya Nair.\nHomework for Priya Nair:\n"
+                + formatHomeworkLine(1, "Organic reaction pathways map", "CHEMISTRY", "2026-11-02", "Not recorded",
+                        "ASSIGNED") + "\n"
+                + formatHomeworkLine(2, "Chemical equilibrium past paper", "CHEMISTRY", "2026-11-09", "Not recorded",
+                        "ASSIGNED"),
+                logic.execute("hw del 2 1").getFeedbackToUser());
     }
 
     @Test

@@ -3,8 +3,11 @@ package seedu.address.logic.commands;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static seedu.address.testutil.Assert.assertThrows;
 
+import java.lang.reflect.InvocationTargetException;
+import java.time.LocalDate;
 import java.util.List;
 
+import seedu.address.commons.core.index.Index;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
@@ -57,6 +60,39 @@ public class CommandTestUtil {
         assertThrows(CommandException.class, expectedMessage, () -> command.execute(actualModel));
         assertEquals(expectedAddressBook, actualModel.getAddressBook());
         assertEquals(expectedDisplayedStudents, actualModel.getStudentList());
+    }
+
+    /**
+     * Returns the line for one homework record as {@code homework list} shows it, without the line break before it.
+     */
+    public static String formatHomeworkLine(int index, String title, String subject, String dueDate, String score,
+            String status) {
+        return index + ". " + title + " (" + subject + ") - due " + dueDate + " - score " + score + " - status "
+                + status;
+    }
+
+    /**
+     * Returns a command that deletes the homework at {@code homeworkIndex} of the student at {@code studentIndex}
+     * and then lists that student's homework that is upcoming on {@code today}.
+     * The fix for OWN_ISSUES.md B-03 adds {@code today} to the constructor. Until then the two-index constructor is
+     * used, so the tests that depend on {@code today} fail on their assertions instead of failing to compile.
+     * Replace this with a direct constructor call once the fix is in.
+     */
+    public static HomeworkDeleteCommand newHomeworkDeleteCommand(Index studentIndex, Index homeworkIndex,
+            LocalDate today) {
+        try {
+            return HomeworkDeleteCommand.class.getConstructor(Index.class, Index.class, LocalDate.class)
+                    .newInstance(studentIndex, homeworkIndex, today);
+        } catch (NoSuchMethodException exception) {
+            return new HomeworkDeleteCommand(studentIndex, homeworkIndex);
+        } catch (InvocationTargetException exception) {
+            if (exception.getCause() instanceof RuntimeException cause) {
+                throw cause;
+            }
+            throw new AssertionError(exception);
+        } catch (ReflectiveOperationException exception) {
+            throw new AssertionError(exception);
+        }
     }
 
 }

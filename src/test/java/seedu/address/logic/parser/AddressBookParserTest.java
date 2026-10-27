@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 import static seedu.address.logic.Messages.MESSAGE_UNKNOWN_COMMAND;
+import static seedu.address.logic.commands.CommandTestUtil.newHomeworkDeleteCommand;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalHomeworks.MECHANICS;
@@ -134,8 +135,11 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_homeworkAliasDelete() throws Exception {
-        HomeworkDeleteCommand deleteCommand = (HomeworkDeleteCommand) parser.parseCommand("hw del 1 2");
-        assertEquals(new HomeworkDeleteCommand(Index.fromOneBased(1), Index.fromOneBased(2)), deleteCommand);
+        Clock clock = Clock.fixed(Instant.parse("2026-10-05T00:00:00Z"), ZoneOffset.UTC);
+        HomeworkDeleteCommand deleteCommand = (HomeworkDeleteCommand) new AddressBookParser(clock)
+                .parseCommand("hw del 1 2");
+        assertEquals(newHomeworkDeleteCommand(Index.fromOneBased(1), Index.fromOneBased(2), LocalDate.of(2026, 10, 5)),
+                deleteCommand);
     }
 
     @Test

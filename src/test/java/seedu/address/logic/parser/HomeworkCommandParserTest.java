@@ -1,5 +1,6 @@
 package seedu.address.logic.parser;
 
+import static seedu.address.logic.commands.CommandTestUtil.newHomeworkDeleteCommand;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
@@ -13,7 +14,6 @@ import org.junit.jupiter.api.Test;
 
 import seedu.address.commons.core.index.Index;
 import seedu.address.logic.commands.HomeworkAddCommand;
-import seedu.address.logic.commands.HomeworkDeleteCommand;
 import seedu.address.logic.commands.HomeworkEditCommand;
 import seedu.address.logic.commands.HomeworkEditCommand.EditHomeworkDescriptor;
 import seedu.address.logic.commands.HomeworkListCommand;
@@ -98,13 +98,13 @@ public class HomeworkCommandParserTest {
     @Test
     public void parse_delete_returnsHomeworkDeleteCommand() {
         assertParseSuccess(parser, " delete 1 2",
-                new HomeworkDeleteCommand(Index.fromOneBased(1), Index.fromOneBased(2)));
+                newHomeworkDeleteCommand(Index.fromOneBased(1), Index.fromOneBased(2), TODAY));
     }
 
     @Test
     public void parse_deleteAlias_returnsHomeworkDeleteCommand() {
         assertParseSuccess(parser, " del 3 1",
-                new HomeworkDeleteCommand(Index.fromOneBased(3), Index.fromOneBased(1)));
+                newHomeworkDeleteCommand(Index.fromOneBased(3), Index.fromOneBased(1), TODAY));
     }
 
     @Test

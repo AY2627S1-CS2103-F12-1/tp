@@ -68,15 +68,19 @@ public class JsonUtil {
      * if Jackson gives no position.
      */
     private static IOException describeJsonError(String json, JsonProcessingException exception) {
-        JsonLocation location = exception.getLocation();
+        JsonParseException syntaxError = findSyntaxError(exception);
+        JsonLocation location = syntaxError == null ? exception.getLocation() : syntaxError.getLocation();
         if (location == null || location.getCharOffset() < 0) {
             return exception;
         }
-        String format = findSyntaxError(exception) == null ? MESSAGE_WRONG_VALUE_TYPE : MESSAGE_INVALID_JSON;
+        String format = syntaxError == null ? MESSAGE_WRONG_VALUE_TYPE : MESSAGE_INVALID_JSON;
+        // A value of the wrong type is located at its start, but a syntax error just after the character that
+        // breaks the JSON, so the position of a syntax error is moved back onto that character
+        long errorOffset = syntaxError == null ? location.getCharOffset() : location.getCharOffset() - 1;
         // At the end of the input, Jackson's column counts from the start of the file, so the position is worked
         // out here instead; a file that ends too early points at its last character that is not whitespace.
         int lastContentIndex = Math.max(json.stripTrailing().length() - 1, 0);
-        int offset = (int) Math.min(location.getCharOffset(), lastContentIndex);
+        int offset = (int) Math.max(Math.min(errorOffset, lastContentIndex), 0);
         int lineStart = json.lastIndexOf('\n', offset - 1) + 1;
         long line = json.substring(0, lineStart).chars().filter(c -> c == '\n').count() + 1;
         int column = offset - lineStart + 1;
@@ -85,7 +89,8 @@ public class JsonUtil {
 
     /**
      * Returns {@code exception} or its nearest cause that is about JSON that breaks the JSON syntax, or null if there
-     * is none. Jackson wraps such an error found while mapping a value, e.g. a file that ends inside a list.
+     * is none. Jackson wraps such an error found while mapping a value, e.g. a file that ends inside a list, and the
+     * wrapper's position is the start of that value, not the error.
      */
     private static JsonParseException findSyntaxError(Throwable exception) {
         Throwable cause = exception;

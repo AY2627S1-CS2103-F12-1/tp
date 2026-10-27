@@ -96,6 +96,19 @@ public class JsonAddressBookStorageTest {
     }
 
     @Test
+    public void readAddressBook_doubleCommaInStudent_reasonPointsAtSecondComma() throws Exception {
+        // Jackson finds this while mapping the student, and its own position is the start of the value before
+        assertEquals("The file is not valid JSON near line 2, column 18.",
+                getLoadingReason("{\"students\":[{\n    \"name\" : \"A\",, }]}"));
+    }
+
+    @Test
+    public void readAddressBook_textAfterStudentList_reasonPointsAtText() throws Exception {
+        assertEquals("The file is not valid JSON near line 1, column 16.",
+                getLoadingReason("{\"students\":[] x }"));
+    }
+
+    @Test
     public void readAddressBook_studentsNotList_reasonSaysWrongType() throws Exception {
         assertEquals("The file has a value of the wrong type near line 1, column 14.",
                 getLoadingReason("{\"students\": 5}"));

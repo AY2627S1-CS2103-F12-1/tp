@@ -1,6 +1,7 @@
 package seedu.address.logic;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -21,6 +22,8 @@ import static seedu.address.model.homework.DueDateTest.notRealDateMessage;
 import static seedu.address.model.homework.DueDateTest.wrongFormatMessage;
 import static seedu.address.model.util.SampleDataUtil.getSampleAddressBook;
 import static seedu.address.testutil.Assert.assertThrows;
+import static seedu.address.testutil.TestUtil.ARABIC_EGYPT;
+import static seedu.address.testutil.TestUtil.runWithFormatLocale;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalHomeworks.MECHANICS;
 import static seedu.address.testutil.TypicalRegularLessons.MONDAY_MATH;
@@ -310,6 +313,19 @@ public class LogicManagerTest {
         assertParseException("hw add 1 t/X s/MATH due/2-29", leapDayMessage(2028));
         assertParseException("hw add 1 t/Typo year s/MATH due/2206-10-30", MESSAGE_YEAR_OUT_OF_RANGE);
         assertFalse(Files.exists(dataFilePath));
+    }
+
+    @Test
+    public void execute_leapDayArabicDigitsLocale_exampleInAsciiDigitsCanBeTypedBack() {
+        setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
+
+        runWithFormatLocale(ARABIC_EGYPT, () -> {
+            // today is 2026-10-27, so the example is 2028-02-29, which the user may type back in
+            assertParseException("hw add 1 t/X s/MATH due/2-29", leapDayMessage(2028));
+            String feedback = assertDoesNotThrow(() -> logic.execute("hw add 1 t/X s/MATH due/2028-02-29"))
+                    .getFeedbackToUser();
+            assertEquals("New homework added:\nEthan Lim; Title: X; Subject: MATH; Due: 2028-02-29", feedback);
+        });
     }
 
     @Test

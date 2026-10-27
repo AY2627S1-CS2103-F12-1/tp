@@ -7,6 +7,7 @@ import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.MonthDay;
 import java.time.Year;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -153,7 +154,8 @@ public final class DueDate {
             nextLeapYear++;
         }
         checkYearInRange(nextLeapYear);
-        throw new IllegalArgumentException(String.format(MESSAGE_LEAP_DAY_NOT_WITHIN_YEAR, nextLeapYear));
+        // Locale.ROOT prints the year in ASCII digits, so the example can be typed back in, in every locale
+        throw new IllegalArgumentException(String.format(Locale.ROOT, MESSAGE_LEAP_DAY_NOT_WITHIN_YEAR, nextLeapYear));
     }
 
     /**

@@ -6,6 +6,7 @@ import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -117,7 +118,8 @@ public class HomeworkEditCommand extends Command {
     private String buildSuccessMessage(Student editedStudent, Homework editedHomework) {
         String message = String.format(MESSAGE_SUCCESS, Messages.format(editedStudent, editedHomework));
         if (isYearInferred) {
-            message += String.format(HomeworkAddCommand.MESSAGE_INFERRED_YEAR,
+            // Locale.ROOT prints the year in ASCII digits in every locale, like the due date before it
+            message += String.format(Locale.ROOT, HomeworkAddCommand.MESSAGE_INFERRED_YEAR,
                     editedHomework.getDueDate().getDate().getYear());
         }
         return message + "\n" + HomeworkListCommand.formatHomeworkList(editedStudent, today, false);

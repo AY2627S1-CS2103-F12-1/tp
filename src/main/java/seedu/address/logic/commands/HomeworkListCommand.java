@@ -6,6 +6,7 @@ import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -109,7 +110,8 @@ public class HomeworkListCommand extends Command {
                 listedIndices.size(), getRecordWord(listedIndices.size()), student.getName(), student.getName()));
         for (int zeroBasedIndex : listedIndices) {
             Homework homework = homeworks.get(zeroBasedIndex);
-            message.append(String.format(MESSAGE_HOMEWORK_LINE, zeroBasedIndex + 1, homework.getTitle(),
+            // Locale.ROOT prints the index in ASCII digits, which the index parsers accept, in every locale
+            message.append(String.format(Locale.ROOT, MESSAGE_HOMEWORK_LINE, zeroBasedIndex + 1, homework.getTitle(),
                     homework.getSubject(), homework.getDueDate(), Messages.formatScore(homework),
                     homework.getStatus()));
         }

@@ -1,11 +1,14 @@
 package seedu.address.logic.commands;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.testutil.Assert.assertThrows;
+import static seedu.address.testutil.TestUtil.ARABIC_EGYPT;
+import static seedu.address.testutil.TestUtil.runWithFormatLocale;
 import static seedu.address.testutil.TypicalHomeworks.COMPLETED_MECHANICS;
 import static seedu.address.testutil.TypicalStudents.ALICE;
 import static seedu.address.testutil.TypicalStudents.BENSON;
@@ -101,6 +104,22 @@ public class HomeworkListCommandTest {
 
         assertCommandSuccess(new HomeworkListCommand(FIRST, AFTER_ALL_DUE_DATES, true), model, expectedMessage,
                 expectedModel);
+    }
+
+    @Test
+    public void execute_arabicDigitsLocale_listsAsciiIndices() {
+        // Issue #151: under ar-EG, String.format prints Arabic-Indic digits, which the index parser rejects
+        String expectedLines = "Homework for Alice Tan:\n"
+                + "1. Complete algebra worksheet (MATH) - due 2026-10-15 - score Not recorded - status ASSIGNED\n"
+                + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20 - status ASSIGNED\n"
+                + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded"
+                + " - status ASSIGNED";
+        HomeworkListCommand command = new HomeworkListCommand(FIRST, AFTER_ALL_DUE_DATES, true);
+
+        runWithFormatLocale(ARABIC_EGYPT, () -> {
+            String feedback = assertDoesNotThrow(() -> command.execute(model)).getFeedbackToUser();
+            assertTrue(feedback.endsWith(expectedLines), feedback);
+        });
     }
 
     @Test

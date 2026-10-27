@@ -2,6 +2,7 @@ package seedu.address.logic.parser;
 
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
 
 import org.junit.jupiter.api.Test;
 
@@ -49,7 +50,9 @@ public class HomeworkDeleteCommandParserTest {
 
     @Test
     public void parse_prefixSupplied_failure() {
-        assertParseFailure(parser, "1 s/2", MESSAGE_INVALID_FORMAT);
+        String usageLine = "\nUsage: " + HomeworkDeleteCommand.MESSAGE_USAGE;
+        assertParseFailure(parser, "1 s/2", notPrefix("s/") + usageLine);
+        assertParseFailure(parser, "1 x/2", notPrefix("x/") + usageLine);
     }
 
     @Test

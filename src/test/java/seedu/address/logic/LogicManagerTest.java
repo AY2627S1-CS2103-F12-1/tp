@@ -5,6 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX;
 import static seedu.address.logic.Messages.MESSAGE_UNKNOWN_COMMAND;
+import static seedu.address.logic.parser.CommandParserTestUtil.MESSAGE_TITLE_AND_ALIAS;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
 import static seedu.address.model.util.SampleDataUtil.getSampleAddressBook;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
@@ -63,6 +66,8 @@ public class LogicManagerTest {
             DUMMY_IO_EXCEPTION.getMessage());
     private static final IOException DUMMY_AD_EXCEPTION = new AccessDeniedException("dummy access denied exception");
     private static final String ADD_STUDENT_COMMAND = "add n/John Tan l/S3 s/MATH p/91234567 gn/Mary Tan gp/98765432";
+    /** Fixed clock at 2026-10-27, the day the sample students were alpha-tested. */
+    private static final Clock SAMPLE_CLOCK = Clock.fixed(Instant.parse("2026-10-27T00:00:00Z"), ZoneOffset.UTC);
 
     @TempDir
     public Path temporaryFolder;
@@ -218,6 +223,55 @@ public class LogicManagerTest {
     public void execute_invalidCommandFormat_throwsParseException() {
         String invalidCommand = "uicfhmowqewca";
         assertParseException(invalidCommand, MESSAGE_UNKNOWN_COMMAND);
+    }
+
+    @Test
+    public void execute_unknownPrefixInTitle_namesWordAndKeepsData() {
+        setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
+
+        String usageLine = "\nUsage: " + HomeworkAddCommand.MESSAGE_USAGE;
+        assertParseException("hw add 1 t/Speed in km/h s/PHYSICS due/2026-11-01",
+                notPrefixWithQuoteHint("km/", "t/\"Speed in km/h\"") + usageLine);
+        // the quotes around the title are not doubled in the example
+        assertParseException("hw add 1 t/\"Speed in km/h\"s/PHYSICS due/2026-11-20",
+                notPrefixWithQuoteHint("km/", "t/\"Speed in km/h\"") + usageLine);
+        // the due date before x/ is only digits and dashes, so no example is given
+        assertParseException("hw add 1 t/A s/PHYSICS due/2026-11-01 x/y", notPrefixWithQuoteHint("x/") + usageLine);
+        assertFalse(Files.exists(dataFilePath));
+    }
+
+    @Test
+    public void execute_quotedTitleWithSlashWord_addsAndSaves() throws Exception {
+        setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
+
+        logic.execute("hw add 1 t/\"Speed in km/h\" s/PHYSICS due/2026-11-01");
+
+        Student savedStudent = addressBookStorage.readAddressBook().orElseThrow().getStudentList().getFirst();
+        assertEquals("Speed in km/h", savedStudent.getHomeworks().get(2).getTitle().toString());
+    }
+
+    @Test
+    public void execute_titleAndAliasInEdit_reportsUseEither() {
+        setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
+
+        assertParseException("hw e 1 2 t/A title/B", MESSAGE_TITLE_AND_ALIAS);
+        assertFalse(Files.exists(dataFilePath));
+    }
+
+    @Test
+    public void execute_unknownPrefixInOtherCommands_namesPrefix() {
+        setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
+
+        assertParseException("edit 1 l/S3 x/value", notPrefixWithQuoteHint("x/", "l/\"S3 x/value\"") + "\nUsage: "
+                + EditCommand.MESSAGE_USAGE);
+        // the end time before x/ is only digits and a colon, so no example is given
+        assertParseException("lesson add 1 s/MATH d/FRIDAY st/10:00 et/11:00 x/y", notPrefixWithQuoteHint("x/")
+                + "\nUsage: " + LessonAddCommand.MESSAGE_USAGE);
+        // no value comes before the word, so there is no quote hint
+        assertParseException("hw e 1 2 score/5/10", notPrefix("score/") + "\nUsage: "
+                + HomeworkEditCommand.MESSAGE_USAGE);
+        assertParseException("hw del 1 x/y", notPrefix("x/") + "\nUsage: " + HomeworkDeleteCommand.MESSAGE_USAGE);
+        assertFalse(Files.exists(dataFilePath));
     }
 
     @Test

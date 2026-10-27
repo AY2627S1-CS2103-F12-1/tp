@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -52,5 +54,14 @@ public class HomeworkFilterCommandParserTest {
         for (String input : invalid) {
             assertThrows(ParseException.class, () -> parser.parseCommand("hw filter " + input), input);
         }
+    }
+
+    @Test
+    public void parse_unknownPrefix_namesPrefix() {
+        String usageLine = "\nUsage: " + HomeworkFilterCommand.MESSAGE_USAGE;
+        assertEquals(notPrefixWithQuoteHint("x/", "s/\"MATH x/value\"") + usageLine, assertThrows(
+                ParseException.class, () -> parser.parseCommand("hw filter s/MATH x/value")).getMessage());
+        assertEquals(notPrefix("score/") + usageLine, assertThrows(
+                ParseException.class, () -> parser.parseCommand("hw filter score/17")).getMessage());
     }
 }

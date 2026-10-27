@@ -1,7 +1,10 @@
 package seedu.address.logic.parser;
 
+import static seedu.address.logic.parser.CommandParserTestUtil.MESSAGE_TITLE_AND_ALIAS;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -21,6 +24,7 @@ import seedu.address.model.student.TuitionSubject;
 public class HomeworkEditCommandParserTest {
     /** Fixed clock at 2026-10-05, so short-form due dates always infer the same year and today never changes. */
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-05T00:00:00Z"), ZoneOffset.UTC);
+    private static final String USAGE_LINE = "\nUsage: " + HomeworkEditCommand.MESSAGE_USAGE;
     private static final String MESSAGE_INVALID_FORMAT = "Invalid command format.\n"
             + "Usage: homework|hw edit|e STUDENT_INDEX HOMEWORK_INDEX [title/|t/TITLE] [s/SUBJECT] "
             + "[due/YYYY-MM-DD|MM-DD]";
@@ -113,10 +117,13 @@ public class HomeworkEditCommandParserTest {
 
     @Test
     public void parse_unknownPrefix_failure() {
-        assertParseFailure(parser, "1 2 t/Algebra x/extra", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 2 t/Algebra x/extra",
+                notPrefixWithQuoteHint("x/", "t/\"Algebra x/extra\"") + USAGE_LINE);
+        assertParseFailure(parser, "1 2 t/Speed in km/h", notPrefixWithQuoteHint("km/", "t/\"Speed in km/h\"")
+                + USAGE_LINE);
 
-        // score is recorded with homework marks, not edited here
-        assertParseFailure(parser, "1 2 score/5/10", MESSAGE_INVALID_FORMAT);
+        // score is recorded with homework marks, not edited here; it is not inside any value
+        assertParseFailure(parser, "1 2 score/5/10", notPrefix("score/") + USAGE_LINE);
     }
 
     @Test
@@ -135,22 +142,20 @@ public class HomeworkEditCommandParserTest {
     }
 
     @Test
-    public void parse_titleAndTitleAlias_reportsTitleRepeated() {
-        String expectedMessage = String.format(StrictArgumentTokenizer.MESSAGE_REPEATED_PREFIX, "title/");
-
-        assertParseFailure(parser, "1 2 t/A title/B", expectedMessage);
-        assertParseFailure(parser, "1 2 title/A t/B", expectedMessage);
+    public void parse_titleAndTitleAlias_reportsUseEither() {
+        assertParseFailure(parser, "1 2 t/A title/B", MESSAGE_TITLE_AND_ALIAS);
+        assertParseFailure(parser, "1 2 title/A t/B", MESSAGE_TITLE_AND_ALIAS);
     }
 
     @Test
-    public void parse_unknownPrefixAndTitleConflict_reportsInvalidFormat() {
-        assertParseFailure(parser, "1 2 t/A title/B x/C", MESSAGE_INVALID_FORMAT);
+    public void parse_unknownPrefixAndTitleConflict_reportsUnknownPrefix() {
+        assertParseFailure(parser, "1 2 t/A title/B x/C", notPrefixWithQuoteHint("x/", "title/\"B x/C\"")
+                + USAGE_LINE);
     }
 
     @Test
-    public void parse_titleConflictAndInvalidIndex_reportsTitleRepeated() {
-        assertParseFailure(parser, "0 2 t/A title/B",
-                String.format(StrictArgumentTokenizer.MESSAGE_REPEATED_PREFIX, "title/"));
+    public void parse_titleConflictAndInvalidIndex_reportsUseEither() {
+        assertParseFailure(parser, "0 2 t/A title/B", MESSAGE_TITLE_AND_ALIAS);
     }
 
     @Test

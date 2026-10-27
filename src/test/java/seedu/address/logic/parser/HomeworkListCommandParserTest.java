@@ -2,6 +2,7 @@ package seedu.address.logic.parser;
 
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -18,6 +19,7 @@ public class HomeworkListCommandParserTest {
     /** Fixed clock at 2026-10-05, so today never changes. */
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-05T00:00:00Z"), ZoneOffset.UTC);
     private static final LocalDate TODAY = LocalDate.of(2026, 10, 5);
+    private static final String USAGE_LINE = "\nUsage: " + HomeworkListCommand.MESSAGE_USAGE;
     private static final String MESSAGE_INVALID_FORMAT = "Invalid command format.\n"
             + "Usage: homework|hw list|ls STUDENT_INDEX [all]";
 
@@ -65,13 +67,14 @@ public class HomeworkListCommandParserTest {
 
     @Test
     public void parse_prefixedIndex_failure() {
-        assertParseFailure(parser, "s/1", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "s/1", notPrefix("s/") + USAGE_LINE);
     }
 
     @Test
     public void parse_indexWithPrefix_failure() {
-        assertParseFailure(parser, "1 s/MATH", MESSAGE_INVALID_FORMAT);
-        assertParseFailure(parser, "1 all/", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 s/MATH", notPrefix("s/") + USAGE_LINE);
+        assertParseFailure(parser, "1 all/", notPrefix("all/") + USAGE_LINE);
+        assertParseFailure(parser, "1 x/all", notPrefix("x/") + USAGE_LINE);
     }
 
     @Test

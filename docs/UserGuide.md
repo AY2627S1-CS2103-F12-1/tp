@@ -198,13 +198,14 @@ Examples:
 * `filter s/Math` shows every student taking MATH, including those taking other subjects too.
 * `filter l/S4 s/Math` and `filter s/Math l/S4` both show S4 students taking MATH.
 
-For matches, the feedback is `Found N student(s)`, using the actual count. If nothing matches, including when
-the roster is empty, no student cards are displayed and the feedback is `No students match the selected filters`.
+For one match, the feedback is `Found 1 student.`; for multiple matches, it is `Found N students.`, using the
+actual count. If nothing matches, including when the roster is empty, no student cards are displayed and the
+feedback is `No students match the selected filters`.
 
 With no filters, TutorFlow shows:
 
 ```text
-Invalid Command Format
+Invalid command format.
 Usage: filter [l/LEVEL] [s/SUBJECT]
 At least one filter must be provided
 ```
@@ -213,10 +214,13 @@ Other invalid commands report:
 
 | Problem | Feedback |
 | --- | --- |
-| Unknown prefix or text before the first prefix | `Invalid command format`, followed by `Usage: filter [l/LEVEL] [s/SUBJECT]` on the next line |
+| Unknown prefix or text before the first prefix | `Invalid command format.`, followed by `Usage: filter [l/LEVEL] [s/SUBJECT]` on the next line |
 | Repeated prefix | `Each filter may only be specified once` |
-| Empty or unsupported level | `Academic level must be a non-empty value` |
-| Empty or unsupported subject | `Subject must be a non-empty value` |
+| Empty level | `Academic level must be a non-empty value` |
+| Unsupported level | `Academic level must be one of: S1, S2, S3, S4, S5, J1, J2.` |
+| Empty subject | `Subject must be a non-empty value` |
+| Unsupported subject | `Subject must be one of: MATH, PHYSICS, CHEMISTRY.` |
+| Comma-separated subjects | `Filter accepts only one subject. Use s/SUBJECT.` |
 
 Invalid commands leave the displayed students, selection, scroll position and data file unchanged.
 If an internal problem prevents rendering, TutorFlow shows

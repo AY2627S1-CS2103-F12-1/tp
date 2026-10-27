@@ -22,7 +22,6 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import seedu.address.logic.LogicManager;
-import seedu.address.logic.commands.LessonEditCommand;
 import seedu.address.model.AddressBook;
 import seedu.address.model.ModelManager;
 import seedu.address.model.ReadOnlyAddressBook;
@@ -77,7 +76,11 @@ public class LessonSaveSelectionTest {
                 input.fireEvent(new ActionEvent());
 
                 TextArea result = (TextArea) stage.getScene().lookup("#resultDisplay");
-                assertEquals(LessonEditCommand.MESSAGE_SAVE_FAILURE, result.getText());
+                // the data file is outside the home folder, so the shown name depends on where the tests run
+                assertTrue(result.getText().startsWith(
+                        "The lesson could not be edited because TutorFlow could not save "));
+                assertTrue(result.getText().endsWith(
+                        ": Simulated save failure. No lesson data was changed."));
                 assertEquals("lesson edit 1 st/16:00", input.getText());
                 assertEquals(before, model.getAddressBook());
             } finally {

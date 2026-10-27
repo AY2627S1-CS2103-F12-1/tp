@@ -3,6 +3,9 @@ package seedu.address.logic.commands;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.logic.commands.CommandTestUtil.CAUSE_READ_ONLY_FOLDER;
+import static seedu.address.logic.commands.CommandTestUtil.SHOWN_DATA_FILE_NAME;
+import static seedu.address.logic.commands.CommandTestUtil.getSaveFailureMessage;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -109,6 +112,14 @@ public class HomeworkStatusCommandTest {
         assertEquals(HomeworkStatusCommand.MESSAGE_INTERNAL,
                 assertThrows(CommandException.class, () -> execute(failing, "hw status 1 1 status/COMPLETED"))
                         .getMessage());
+    }
+
+    @Test
+    public void getSaveFailureMessage_cause_namesFileAndCause() throws Exception {
+        String expectedMessage = "The homework status could not be updated because TutorFlow could not save "
+                + SHOWN_DATA_FILE_NAME + ": the data folder is read-only. No homework data was changed.";
+        assertEquals(expectedMessage, getSaveFailureMessage(parser.parseCommand("hw status 1 1 status/COMPLETED"),
+                SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER));
     }
 
     private Homework homework(ModelManager model) {

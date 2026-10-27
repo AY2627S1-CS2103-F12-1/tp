@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static seedu.address.testutil.Assert.assertThrows;
 
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -17,6 +18,9 @@ import seedu.address.model.student.Student;
  * Contains helper methods for testing commands.
  */
 public class CommandTestUtil {
+    /** The data file as save-failure messages name it: relative to the home folder, with the system's separator. */
+    public static final String SHOWN_DATA_FILE_NAME = Path.of("data", "tutorflow.json").toString();
+    public static final String CAUSE_READ_ONLY_FOLDER = "the data folder is read-only";
 
     /**
      * Executes the given {@code command}, confirms that <br>
@@ -90,6 +94,24 @@ public class CommandTestUtil {
                 throw cause;
             }
             throw new AssertionError(exception);
+        } catch (ReflectiveOperationException exception) {
+            throw new AssertionError(exception);
+        }
+    }
+
+    /**
+     * Returns the message {@code command} shows when the data file, named {@code shownName}, could not be saved
+     * because of {@code cause}.
+     * The fix for OWN_ISSUES.md B-05 passes the name and the cause to {@code getSaveFailureMessage}. Until then the
+     * one-argument method is called, so the tests fail on the message instead of failing to compile.
+     * Replace this with a direct call once the fix is in.
+     */
+    public static String getSaveFailureMessage(Command command, String shownName, String cause) {
+        try {
+            return (String) command.getClass().getMethod("getSaveFailureMessage", String.class, String.class)
+                    .invoke(command, shownName, cause);
+        } catch (NoSuchMethodException exception) {
+            return command.getSaveFailureMessage(shownName + ": " + cause);
         } catch (ReflectiveOperationException exception) {
             throw new AssertionError(exception);
         }

@@ -4,6 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.logic.commands.CommandTestUtil.CAUSE_READ_ONLY_FOLDER;
+import static seedu.address.logic.commands.CommandTestUtil.SHOWN_DATA_FILE_NAME;
+import static seedu.address.logic.commands.CommandTestUtil.getSaveFailureMessage;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalRegularLessons.MONDAY_MATH;
 
@@ -152,9 +155,11 @@ public class EditCommandTest {
     }
 
     @Test
-    public void getSaveFailureMessage_returnsEditSpecificMessage() throws ParseException {
-        assertEquals(EditCommand.MESSAGE_SAVE_FAILURE,
-                parser.parse("1 n/Jane").getSaveFailureMessage("default"));
+    public void getSaveFailureMessage_cause_namesFileAndCause() throws ParseException {
+        String expectedMessage = "The student could not be edited because TutorFlow could not save "
+                + SHOWN_DATA_FILE_NAME + ": the data folder is read-only. No student data was changed.";
+        assertEquals(expectedMessage, getSaveFailureMessage(parser.parse("1 n/Jane"), SHOWN_DATA_FILE_NAME,
+                CAUSE_READ_ONLY_FOLDER));
     }
 
     @Test

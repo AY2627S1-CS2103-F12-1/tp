@@ -3,9 +3,12 @@ package seedu.address.logic.commands;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.logic.commands.CommandTestUtil.CAUSE_READ_ONLY_FOLDER;
+import static seedu.address.logic.commands.CommandTestUtil.SHOWN_DATA_FILE_NAME;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.logic.commands.CommandTestUtil.formatHomeworkLine;
+import static seedu.address.logic.commands.CommandTestUtil.getSaveFailureMessage;
 import static seedu.address.logic.commands.CommandTestUtil.newHomeworkDeleteCommand;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
@@ -210,11 +213,11 @@ public class HomeworkDeleteCommandTest {
     }
 
     @Test
-    public void getSaveFailureMessage_anyDefaultMessage_returnsHomeworkMessage() {
-        String expectedMessage = "The homework could not be deleted because TutorFlow could not save the updated data. "
-                + "No homework data was changed.";
+    public void getSaveFailureMessage_cause_namesFileAndCause() {
+        String expectedMessage = "The homework could not be deleted because TutorFlow could not save "
+                + SHOWN_DATA_FILE_NAME + ": the data folder is read-only. No homework data was changed.";
         HomeworkDeleteCommand command = new HomeworkDeleteCommand(Index.fromOneBased(1), Index.fromOneBased(1));
-        assertEquals(expectedMessage, command.getSaveFailureMessage("Could not save data"));
+        assertEquals(expectedMessage, getSaveFailureMessage(command, SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER));
     }
 
     @Test

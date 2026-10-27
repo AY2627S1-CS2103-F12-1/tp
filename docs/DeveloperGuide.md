@@ -237,7 +237,19 @@ This section describes some noteworthy details on how certain features are imple
 
 ### Splitting arguments at prefixes
 
-`StrictArgumentTokenizer` splits the arguments of `add`, `edit`, `filter`, `sort`, `lesson add`, `lesson edit`, `lesson delete` and every homework subcommand (`add`, `list`, `upcoming`, `edit`, `marks`, `delete`, `filter` and `status`) into a preamble (the text before the first prefix, such as the indices in `hw e 1 2 t/Algebra`) and the value of each prefix. Any lowercase word followed by `/` at the start of the arguments or after whitespace is a prefix, so a `/` inside a word such as `3/4` does not start one. Each prefix is checked in the order it appears: an unknown prefix gives the error described below, and a repeated prefix gives `Prefix X must be specified exactly once.` A caller may also pass a `ValueTokenFilter`, which keeps some prefix-shaped words in the previous value; `StudentAddParser` and `EditCommandParser` use `StudentAddParser#isPartOfName` so that names can contain words such as `s/o` and `d/o`.
+`StrictArgumentTokenizer` splits the arguments of `add`, `edit`, `filter`, `sort`, `lesson add`, `lesson edit`,
+`lesson delete` and every homework subcommand (`add`, `list`, `upcoming`, `edit`, `marks`, `delete`, `filter` and
+`status`) into a preamble (the text before the first prefix, such as the indices in `hw e 1 2 t/Algebra`) and the
+value of each prefix. Any lowercase word followed by `/` at the start of the arguments or after whitespace is
+a prefix, so a `/` inside a word such as `3/4` does not start one.
+
+Each prefix is checked in the order it appears: an unknown prefix gives the error described below, and a repeated
+prefix gives `Prefix X must be specified exactly once.` by default. The student `filter` command supplies its
+own repeated-prefix message: `Each filter may only be specified once`.
+
+A caller may also pass a `ValueTokenFilter`, which keeps some prefix-shaped words in the previous value;
+`StudentAddParser` and `EditCommandParser` use `StudentAddParser#isPartOfName` so that names can contain words
+such as `s/o` and `d/o`.
 
 **Quoted values.** A value wrapped in double quotes may contain prefix-shaped words. After reading a prefix, `StrictArgumentTokenizer#findQuotedValueEnd` decides whether its value is quoted:
 
@@ -434,26 +446,23 @@ selection/scroll recovery, exact feedback and diagnostic ownership. See the [log
 
 ### Filtering students
 
-`AddressBookParser` routes `filter [l/LEVEL] [s/SUBJECT]` to `FilterCommandParser`. The parser allows one or both
-prefixes, rejects unknown and repeated prefixes, and normalizes values through `AcademicLevel#parse` and
-`TuitionSubject#parse`. Empty values receive field-specific non-empty errors; unsupported values retain the domain
-constraint message and its exception cause. Comma-separated subjects receive a single-subject restriction error.
-Format errors use the shared `Messages.MESSAGE_INVALID_FORMAT_WITH_USAGE` header and command usage.
-The tokenizer overload accepts the filter-specific repeated-prefix message while keeping existing callers'
-messages unchanged. Structural validation completes before value validation; values are checked in prefix order.
-No parser failure changes the displayed list or requests a UI refresh.
+**Parsing.** `AddressBookParser` routes `filter [l/LEVEL] [s/SUBJECT]` to `FilterCommandParser`. At least one
+criterion is required, and each prefix may appear only once. The tokenizer checks argument structure before
+the parser validates values in prefix order. `AcademicLevel` and `TuitionSubject` validate supported values
+and normalize their case and surrounding whitespace. Empty values receive field-specific non-empty errors;
+unsupported values retain the domain constraint message and its exception cause. Comma-separated subjects
+receive a single-subject restriction error. Format errors use the shared invalid-format header and command usage.
+Invalid input is rejected before the displayed list changes or a UI refresh is requested.
 
-`StudentFilterPredicate` holds optional typed criteria and requires at least one to be present. It compares levels
-for equality and checks membership in `TuitionSubjects#getSubjects()`, combining both results with AND. `FilterCommand`
-replaces the predicate of the existing `FilteredList`, whose source is the full stored roster. It never sorts or
-deduplicates results. Existing roster uniqueness checks remain in place; a synthetic duplicate-containing source
-verifies that filtering itself preserves every matching entry independently.
+**Matching and display.** `StudentFilterPredicate` combines the supplied criteria with AND: the student's level
+must match and their subjects must include the selected subject. An omitted criterion imposes no restriction.
+`FilterCommand` applies the predicate to the full stored roster, replacing any previous search or filter.
+Results retain roster order and receive displayed indices starting at 1; commands taking a student index use
+these displayed indices. Lesson scheduling and clash detection continue to consider the full roster.
 
-The result is `Found 1 student.`, `Found N students.` for multiple matches, or
-`No students match the selected filters`. A successful command requests the
-existing `showFromTop` action. Displayed student indices therefore identify filtered students, while lesson scheduling
-and clash checks continue to use `Model#getAddressBook().getStudentList()`. `list`, `ls`, a successful student addition
-and `homework upcoming` restore the full roster. Search and filter commands replace each other's criteria.
+Feedback is `Found 1 student.`, `Found N students.` for multiple matches, or `No students match the selected filters`.
+Successful filtering returns the panel to the top. `list`, `ls`, a successful student addition and
+`homework upcoming` restore the full roster. Search and filter commands replace each other's criteria.
 
 **Active filter indication.** The model exposes its active predicate as a read-only observable property through
 `Logic`. This property also drives the filtered list, so the panel can observe criteria changes even when the
@@ -472,21 +481,11 @@ the observable displayed list; those callbacks and parsing details are summarize
 **Persistence.** Only the displayed predicate changes. The stored `AddressBook` remains equal to the snapshot taken
 by `LogicManager`, so `Storage#saveAddressBook` is never called and no storage format change is needed.
 
-**Rendering errors and logging.** `FilterCommand` catches unexpected execution exceptions and logs the cause at
-`WARNING`. `StudentListPanel` handles card-rendering exceptions, including cells created after command execution,
-clears the failing graphic and logs the cause once per rendering attempt. Its callback makes `MainWindow` show the
-specified internal-error message. The rendering-error flag prevents command success feedback from overwriting a
-synchronous rendering failure. All display updates within one command share a rendering attempt, including predicate
-changes followed by order resets. A subsequent command or an independent displayed-list update starts another attempt.
-`UiPart` wraps FXML loading I/O failures in `UncheckedIOException`; genuine assertion failures are not caught
-by this recovery path.
-Existing command/result `INFO` logging is reused, with criteria and match counts available at `FINE`.
-
-**Verification.** Predicate and parser tests cover criterion combinations, normalization, ordering, duplicate entries
-and exact validation messages. `FilterIntegrationTest` checks storage-call counts, unchanged file bytes, displayed
-indices, hidden-student lessons and view-reset commands. `FilterUiTest` verifies real JavaFX card indices, selection
-and viewport preservation, synchronous/deferred rendering errors and recovery. `StudentListPanelTest` checks the
-warning level, original cause, one diagnostic per attempt and propagation of assertion failures.
+**Rendering errors and logging.** Unexpected filtering or card-rendering failures are logged with their cause and
+reported to the user as an internal error. Rendering errors take precedence over success feedback, including when
+a card is first displayed after the command has completed. Student records remain unchanged; the user can retry
+or run `list` to restore the full view. Assertion failures remain programming errors and are not caught by this
+recovery path. See the [logging guide](Logging.md) for diagnostic conventions.
 
 ### Homework management
 
@@ -1010,7 +1009,16 @@ testers are expected to do more *exploratory* testing.
 
 ### Filtering students
 
-1. Use a test roster containing Alice (S4, MATH and PHYSICS), Ben (S4, CHEMISTRY) and Cara (J1, MATH), in that order.
+1. In a disposable test folder, run the following commands to create Alice (S4, MATH and PHYSICS),
+   Ben (S4, CHEMISTRY) and Cara (J1, MATH), in that order. `clear` removes any existing test records.
+
+   ```text
+   clear
+   add n/Alice l/S4 s/MATH, PHYSICS p/91111111 gn/Alice Mum gp/92222222
+   add n/Ben l/S4 s/CHEMISTRY p/93333333 gn/Ben Mum gp/94444444
+   add n/Cara l/J1 s/MATH p/95555555 gn/Cara Mum gp/96666666
+   ```
+
    1. Run `filter l/S4`.<br>
       Expected: Alice and Ben are displayed as students 1 and 2; feedback is `Found 2 students.`
    1. Run `filter s/Math`.<br>
@@ -1018,7 +1026,8 @@ testers are expected to do more *exploratory* testing.
    1. Run `filter l/S4 s/Math`, then `filter s/Math l/S4`.<br>
       Expected: Both commands display only Alice, with `Found 1 student.`
    1. Run `filter l/S5`.<br>
-      Expected: The roster is empty and feedback is `No students match the selected filters`.
+      Expected: The displayed student list is empty and feedback is `No students match the selected filters`.
+      All three students remain in the stored roster.
    1. Run `list`.<br>
       Expected: All three students reappear in their original order.
 

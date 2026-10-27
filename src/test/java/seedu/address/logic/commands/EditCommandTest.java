@@ -85,6 +85,23 @@ public class EditCommandTest {
     }
 
     @Test
+    public void execute_duplicateIdentityHiddenBySearch_isRejectedWithoutChangingViews() throws Exception {
+        Student first = new StudentBuilder().build();
+        Student second = new StudentBuilder().withName("Jane Tan").withPhone("92345678").build();
+        ModelManager model = modelWith(first, second);
+        List<Student> originalRoster = List.copyOf(model.getAddressBook().getStudentList());
+
+        new SearchCommand("Jane").execute(model);
+        assertEquals(List.of(second), model.getStudentList());
+
+        assertFailure("1 n/John Tan p/+6591234567", model,
+                String.format(EditCommand.MESSAGE_DUPLICATE, first.getName(), first.getPhone()));
+
+        assertEquals(originalRoster, model.getAddressBook().getStudentList());
+        assertEquals(List.of(second), model.getStudentList());
+    }
+
+    @Test
     public void execute_caseOnlyNameChange_succeeds() throws Exception {
         ModelManager model = modelWith(new StudentBuilder().build());
 

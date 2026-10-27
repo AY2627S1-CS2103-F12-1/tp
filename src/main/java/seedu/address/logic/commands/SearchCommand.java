@@ -75,6 +75,9 @@ public class SearchCommand extends Command {
         return new CommandResult(feedback + "\n" + MESSAGE_SHOW_ALL, false, false, true);
     }
 
+    /**
+     * Returns whether {@code value} contains {@code keyword}, ignoring case.
+     */
     private static boolean matches(String value, String keyword) {
         for (int start = 0; start <= value.length() - keyword.length(); start++) {
             if (value.regionMatches(true, start, keyword, 0, keyword.length())) {

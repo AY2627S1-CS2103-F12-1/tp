@@ -58,6 +58,21 @@ public class HelpWindowTest {
     }
 
     @Test
+    public void constructor_entriesShownInContentOrder() throws Exception {
+        List<String> formats = HelpContent.getSections().stream()
+                .flatMap(section -> section.entries().stream()).map(HelpContent.Entry::format).toList();
+        runOnFxThread(() -> {
+            Parent root = new HelpWindow().getRoot().getScene().getRoot();
+            root.applyCss();
+            List<String> shownFormats = root.lookupAll(".label").stream()
+                    .map(node -> ((Label) node).getText()).filter(formats::contains).toList();
+
+            assertEquals(formats, shownFormats);
+            assertTrue(shownFormats.contains("list|ls"));
+        });
+    }
+
+    @Test
     public void show_focusesScrollPane_keysScrollAndHide() throws Exception {
         runOnFxThread(() -> {
             HelpWindow helpWindow = new HelpWindow();

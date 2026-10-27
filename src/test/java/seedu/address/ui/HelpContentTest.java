@@ -8,6 +8,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
@@ -44,6 +45,29 @@ public class HelpContentTest {
         List<String> titles = HelpContent.getSections().stream().map(HelpContent.Section::title).toList();
         assertEquals(List.of(HelpContent.SECTION_STUDENTS, HelpContent.SECTION_HOMEWORK,
                 HelpContent.SECTION_LESSONS, HelpContent.SECTION_GENERAL), titles);
+    }
+
+    @Test
+    public void getSections_entries_inUserGuideOrder() {
+        Map<String, List<String>> commandWordsBySection = HelpContent.getSections().stream()
+                .collect(Collectors.toMap(HelpContent.Section::title, section -> section.entries().stream()
+                        .map(HelpContent.Entry::commandWord).toList()));
+
+        assertEquals(List.of("add", "edit", "list", "search", "filter", "sort", "delete"),
+                commandWordsBySection.get(HelpContent.SECTION_STUDENTS));
+        assertEquals(List.of("homework add", "homework list", "homework upcoming", "homework edit", "homework marks",
+                "homework delete", "homework filter", "homework status"),
+                commandWordsBySection.get(HelpContent.SECTION_HOMEWORK));
+        assertEquals(List.of("lesson add", "lesson list", "lesson delete", "lesson edit"),
+                commandWordsBySection.get(HelpContent.SECTION_LESSONS));
+        assertEquals(List.of("help", "clear", "exit"), commandWordsBySection.get(HelpContent.SECTION_GENERAL));
+    }
+
+    @Test
+    public void getSections_listEntry_showsAlias() {
+        HelpContent.Entry listEntry = getEntries().stream()
+                .filter(entry -> entry.commandWord().equals(ListCommand.COMMAND_WORD)).findFirst().orElseThrow();
+        assertEquals("list|ls", listEntry.format());
     }
 
     @Test

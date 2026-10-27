@@ -634,7 +634,7 @@ TutorFlow saves your students, homework and regular lessons automatically after 
 
 TutorFlow data is saved automatically as `data/tutorflow.json` inside the folder containing the JAR. Preferences (`preferences.json`) and log files (`addressbook.log.*`) stay in that same home folder. Launching the JAR by its full path from a different terminal folder still uses the files beside the JAR. The status bar shows the full data path.
 
-To move TutorFlow, close it and copy the JAR together with its `data` folder and `preferences.json` to the new folder. If you previously launched v1.4 from a different terminal folder, copy your saved files from that folder into the folder containing the JAR before starting v1.5; back up both locations first. The JSON format remains compatible.
+To move TutorFlow, close it and copy the JAR together with its `data` folder and `preferences.json` to the new folder. If you previously launched v1.4 from a different terminal folder, copy your saved files from that folder into the folder containing the JAR before starting v1.5; back up both locations first. The JSON structure is unchanged, but saved records must satisfy v1.5's validation rules. In particular, students with the same name and equivalent local/+65 phone numbers are duplicates; resolve these in v1.4 before upgrading. If a file is rejected, TutorFlow preserves it and reports the reason.
 
 Advanced users may edit this JSON file while TutorFlow is closed. Back it up first.
 

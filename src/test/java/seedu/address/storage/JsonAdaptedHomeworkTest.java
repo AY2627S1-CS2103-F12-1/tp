@@ -1,6 +1,7 @@
 package seedu.address.storage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.model.homework.DueDateTest.MESSAGE_YEAR_OUT_OF_RANGE;
 import static seedu.address.model.homework.DueDateTest.assertFullDateFormatError;
@@ -56,6 +57,23 @@ public class JsonAdaptedHomeworkTest {
         assertEquals(assignedScored, new JsonAdaptedHomework(assignedScored).toModelType());
         assertEquals(completed, new JsonAdaptedHomework(VALID_TITLE, VALID_SUBJECT, VALID_DUE_DATE,
                 null, " completed ").toModelType());
+    }
+
+    @Test
+    public void toModelType_statusAnyCase_loads() throws Exception {
+        assertEquals(HomeworkStatus.COMPLETED, withStatus("completed").toModelType().getStatus());
+        assertEquals(HomeworkStatus.COMPLETED, withStatus(" Completed ").toModelType().getStatus());
+        assertEquals(HomeworkStatus.ASSIGNED, withStatus("assigned").toModelType().getStatus());
+    }
+
+    @Test
+    public void toModelType_misspelledStatusKey_loadsAssigned() throws Exception {
+        // an unknown key is ignored, so the homework loads as assigned and the next save drops the key
+        Homework homework = JsonUtil.fromJsonString(toJson(", \"stauts\": \"COMPLETED\""), JsonAdaptedHomework.class)
+                .toModelType();
+
+        assertEquals(HomeworkStatus.ASSIGNED, homework.getStatus());
+        assertFalse(JsonUtil.toJsonString(new JsonAdaptedHomework(homework)).contains("stauts"));
     }
 
     @Test
@@ -326,5 +344,12 @@ public class JsonAdaptedHomeworkTest {
      */
     private static JsonAdaptedHomework withDueDate(String dueDate) {
         return new JsonAdaptedHomework(VALID_TITLE, VALID_SUBJECT, dueDate, null);
+    }
+
+    /**
+     * Returns an adapted homework with the valid title, subject and due date, no score and {@code status}.
+     */
+    private static JsonAdaptedHomework withStatus(String status) {
+        return new JsonAdaptedHomework(VALID_TITLE, VALID_SUBJECT, VALID_DUE_DATE, null, status);
     }
 }

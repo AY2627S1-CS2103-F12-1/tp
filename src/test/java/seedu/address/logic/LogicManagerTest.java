@@ -66,12 +66,14 @@ import seedu.address.model.homework.Homework;
 import seedu.address.model.homework.HomeworkStatus;
 import seedu.address.model.homework.Score;
 import seedu.address.model.student.Student;
+import seedu.address.model.student.TuitionSubject;
 import seedu.address.storage.DataFileConflictException;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
 import seedu.address.storage.Storage;
 import seedu.address.storage.StorageManager;
 import seedu.address.testutil.StudentBuilder;
+import seedu.address.ui.HelpContent;
 
 public class LogicManagerTest {
     private static final IOException DUMMY_IO_EXCEPTION = new IOException("dummy IO exception");
@@ -320,6 +322,21 @@ public class LogicManagerTest {
         Student savedStudent = addressBookStorage.readAddressBook().orElseThrow().getStudentList().getFirst();
         assertTrue(savedStudent.getHomeworks().stream().anyMatch(homework -> homework.getTitle().toString().equals("X")
                 && homework.getDueDate().toString().equals("2001-01-01")));
+    }
+
+    @Test
+    public void execute_helpEditExampleOnSampleData_editsPhysicsRecord() throws Exception {
+        setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
+        String example = HelpContent.getSections().stream().flatMap(section -> section.entries().stream())
+                .filter(entry -> entry.commandWord().equals("homework edit")).findFirst().orElseThrow().example();
+
+        logic.execute(example);
+
+        Homework savedHomework = addressBookStorage.readAddressBook().orElseThrow().getStudentList().getFirst()
+                .getHomeworks().get(1);
+        assertEquals("Kinematics practice set B", savedHomework.getTitle().toString());
+        assertEquals(TuitionSubject.PHYSICS, savedHomework.getSubject());
+        assertEquals("2026-10-28", savedHomework.getDueDate().toString());
     }
 
     @Test

@@ -305,7 +305,14 @@ public class DueDateTest {
      */
     public static void assertFullDateFormatError(String rawDate, Class<? extends Throwable> expectedType,
             Executable executable) {
-        String message = Assertions.assertThrows(expectedType, executable).getMessage();
+        assertFullDateFormatMessage(rawDate, Assertions.assertThrows(expectedType, executable).getMessage());
+    }
+
+    /**
+     * Asserts that {@code message} is the error for {@code rawDate}, a date in the data file that is not in the full
+     * {@code YYYY-MM-DD} format, as described in {@link #assertFullDateFormatError}.
+     */
+    public static void assertFullDateFormatMessage(String rawDate, String message) {
         assertTrue(message.startsWith(rawDate + " "), message);
         assertTrue(message.contains("YYYY-MM-DD"), message);
         assertFalse(message.contains("or MM-DD"), message);

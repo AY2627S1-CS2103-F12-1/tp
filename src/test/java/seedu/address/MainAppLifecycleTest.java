@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.model.homework.DueDateTest.MESSAGE_YEAR_OUT_OF_RANGE;
+import static seedu.address.model.homework.DueDateTest.assertFullDateFormatMessage;
 import static seedu.address.testutil.TypicalStudents.getTypicalAddressBook;
 
 import java.nio.file.Files;
@@ -13,6 +15,7 @@ import java.nio.file.Path;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -47,10 +50,45 @@ public class MainAppLifecycleTest {
 
     @Test
     public void invalidData_startShowsRecoveryAndRequestsShutdownWithoutOpeningRoster() throws Exception {
+        String content = getRecoveryDialogContent("{\"students\":[");
+
+        // the line and column are where the JSON parser stopped; the reason is taken from the cause, so the
+        // exception class name is not shown
+        assertEquals("The file is not valid JSON near line 1, column 13.", getReason(content));
+        assertFalse(content.contains("Exception"), content);
+    }
+
+    @Test
+    public void invalidData_shortFormDueDate_dialogShowsReason() throws Exception {
+        String content = getRecoveryDialogContent(getTypicalDataReplacing("\"2026-10-15\"", "\"10-15\""));
+        assertFullDateFormatMessage("10-15", getReason(content));
+    }
+
+    @Test
+    public void invalidData_dueDateYearOutOfRange_dialogShowsReason() throws Exception {
+        String content = getRecoveryDialogContent(getTypicalDataReplacing("\"2026-10-15\"", "\"2206-10-30\""));
+        assertTrue(getReason(content).startsWith(MESSAGE_YEAR_OUT_OF_RANGE), content);
+    }
+
+    @Test
+    public void invalidData_missingStudentField_dialogShowsReason() throws Exception {
+        // unknown keys are ignored, so the renamed key reads as missing
+        String content = getRecoveryDialogContent(getTypicalDataReplacing("\"guardianPhone\"",
+                "\"unknownGuardianPhone\""));
+        assertTrue(getReason(content).startsWith("Student's guardianPhone field is missing!"), content);
+    }
+
+    /**
+     * Starts the app on a data file holding {@code dataFileContent}, which cannot be loaded, and returns the content
+     * text of the recovery dialog. Also checks that the dialog names the file and the ways to recover, that the app
+     * shuts down without opening the roster, and that neither the data file nor the preferences file is changed.
+     */
+    private String getRecoveryDialogContent(String dataFileContent) throws Exception {
         Path data = temporaryFolder.resolve("tutorflow.json");
         Path preferences = temporaryFolder.resolve("preferences.json");
-        Files.writeString(data, "{\"students\":[");
+        Files.writeString(data, dataFileContent);
         byte[] originalData = Files.readAllBytes(data);
+        AtomicReference<String> content = new AtomicReference<>();
         AtomicBoolean shutdownRequested = new AtomicBoolean();
         MainApp app = new MainApp(preferences, data, () -> shutdownRequested.set(true));
 
@@ -68,6 +106,7 @@ public class MainAppLifecycleTest {
                         .map(window -> (Stage) window).findFirst().orElseThrow();
                 try {
                     DialogPane pane = (DialogPane) dialog.getScene().getRoot();
+                    content.set(pane.getContentText());
                     assertEquals("Your data file has not been changed.", pane.getHeaderText());
                     assertTrue(pane.getContentText().contains(data.toAbsolutePath().normalize().toString()));
                     assertTrue(pane.getContentText().contains("restore a valid backup"));
@@ -94,6 +133,28 @@ public class MainAppLifecycleTest {
 
         assertArrayEquals(originalData, Files.readAllBytes(data));
         assertArrayEquals(preferencesAfterInit, Files.readAllBytes(preferences));
+        return content.get();
+    }
+
+    /**
+     * Returns the data file of the typical students with {@code target} replaced by {@code replacement}.
+     */
+    private String getTypicalDataReplacing(String target, String replacement) throws Exception {
+        Path typicalData = temporaryFolder.resolve("typical.json");
+        new JsonAddressBookStorage(typicalData).saveAddressBook(getTypicalAddressBook());
+        String data = Files.readString(typicalData);
+        assertTrue(data.contains(target), target);
+        return data.replace(target, replacement);
+    }
+
+    /**
+     * Returns the reason that {@code dialogContent} gives on its line starting with "Reason: ".
+     */
+    private static String getReason(String dialogContent) {
+        String reasonPrefix = "Reason: ";
+        return dialogContent.lines().filter(line -> line.startsWith(reasonPrefix)).findFirst()
+                .map(line -> line.substring(reasonPrefix.length()))
+                .orElseThrow(() -> new AssertionError("The dialog gives no reason:\n" + dialogContent));
     }
 
     @Test

@@ -71,6 +71,14 @@ public class HelpContentTest {
     }
 
     @Test
+    public void getSections_homeworkEditExample_matchesSampleData() {
+        HelpContent.Entry editEntry = getEntries().stream()
+                .filter(entry -> entry.commandWord().equals("homework edit")).findFirst().orElseThrow();
+        // homework 2 of the first sample student is the PHYSICS record "Kinematics practice set"
+        assertEquals("hw e 1 2 t/Kinematics practice set B", editEntry.example());
+    }
+
+    @Test
     public void getSections_listedCommands_useUsageConstants() {
         Map<String, String> expectedFormats = Map.ofEntries(
                 Map.entry(AddCommand.COMMAND_WORD, AddCommand.MESSAGE_USAGE),

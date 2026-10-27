@@ -1,6 +1,7 @@
 package seedu.address;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static seedu.address.testutil.TypicalStudents.getTypicalAddressBook;
 
@@ -12,6 +13,8 @@ import org.junit.jupiter.api.io.TempDir;
 
 import seedu.address.commons.exceptions.DataLoadingException;
 import seedu.address.model.AddressBook;
+import seedu.address.model.ModelManager;
+import seedu.address.model.UserPrefs;
 import seedu.address.model.util.SampleDataUtil;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
@@ -117,6 +120,21 @@ public class MainAppTest {
 
         assertThrows(DataLoadingException.class, () -> MainApp.readInitialData(storage));
         assertEquals(invalidData, Files.readString(dataFilePath));
+    }
+
+    @Test
+    public void initPrefs_nullGuiSettings_usesDefaultPrefs() throws Exception {
+        Path prefsFilePath = temporaryFolder.resolve("preferences.json");
+        Path dataFilePath = temporaryFolder.resolve("tutorflow.json");
+        Files.writeString(prefsFilePath, "{\"guiSettings\":null}");
+        MainApp app = new MainApp(prefsFilePath, dataFilePath, () -> { });
+
+        UserPrefs prefs = app.initPrefs(new JsonUserPrefsStorage(prefsFilePath));
+
+        assertEquals(new UserPrefs(), prefs);
+        assertEquals(new UserPrefs(), new ModelManager(new AddressBook(), prefs).getUserPrefs());
+        assertEquals(new UserPrefs(), new JsonUserPrefsStorage(prefsFilePath).readUserPrefs().orElseThrow());
+        assertFalse(Files.exists(dataFilePath));
     }
 
     private Storage getStorage(Path dataFilePath) {

@@ -11,6 +11,7 @@ import java.util.logging.Logger;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonLocation;
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -26,6 +27,8 @@ import seedu.address.commons.exceptions.DataLoadingException;
 public class JsonUtil {
     public static final String MESSAGE_EMPTY_FILE = "The file is empty.";
     public static final String MESSAGE_INVALID_JSON = "The file is not valid JSON near line %d, column %d.";
+    public static final String MESSAGE_WRONG_VALUE_TYPE =
+            "The file has a value of the wrong type near line %d, column %d.";
 
     private static final Logger logger = LogsCenter.getLogger(JsonUtil.class);
 
@@ -60,14 +63,16 @@ public class JsonUtil {
     }
 
     /**
-     * Returns an exception whose message gives the line and column of {@code json} near which {@code exception}
-     * found it invalid, or {@code exception} itself if Jackson gives no position.
+     * Returns an exception whose message says whether {@code json} breaks the JSON syntax or has a value of the
+     * wrong type, and gives the line and column near which {@code exception} found it, or {@code exception} itself
+     * if Jackson gives no position.
      */
     private static IOException describeJsonError(String json, JsonProcessingException exception) {
         JsonLocation location = exception.getLocation();
         if (location == null || location.getCharOffset() < 0) {
             return exception;
         }
+        String format = findSyntaxError(exception) == null ? MESSAGE_WRONG_VALUE_TYPE : MESSAGE_INVALID_JSON;
         // At the end of the input, Jackson's column counts from the start of the file, so the position is worked
         // out here instead; a file that ends too early points at its last character that is not whitespace.
         int lastContentIndex = Math.max(json.stripTrailing().length() - 1, 0);
@@ -75,7 +80,19 @@ public class JsonUtil {
         int lineStart = json.lastIndexOf('\n', offset - 1) + 1;
         long line = json.substring(0, lineStart).chars().filter(c -> c == '\n').count() + 1;
         int column = offset - lineStart + 1;
-        return new IOException(String.format(MESSAGE_INVALID_JSON, line, column), exception);
+        return new IOException(String.format(format, line, column), exception);
+    }
+
+    /**
+     * Returns {@code exception} or its nearest cause that is about JSON that breaks the JSON syntax, or null if there
+     * is none. Jackson wraps such an error found while mapping a value, e.g. a file that ends inside a list.
+     */
+    private static JsonParseException findSyntaxError(Throwable exception) {
+        Throwable cause = exception;
+        while (cause != null && !(cause instanceof JsonParseException)) {
+            cause = cause.getCause();
+        }
+        return (JsonParseException) cause;
     }
 
     /**

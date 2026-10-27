@@ -96,6 +96,18 @@ public class JsonAddressBookStorageTest {
     }
 
     @Test
+    public void readAddressBook_studentsNotList_reasonSaysWrongType() throws Exception {
+        assertEquals("The file has a value of the wrong type near line 1, column 14.",
+                getLoadingReason("{\"students\": 5}"));
+    }
+
+    @Test
+    public void readAddressBook_nameNotText_reasonSaysWrongType() throws Exception {
+        assertEquals("The file has a value of the wrong type near line 1, column 22.",
+                getLoadingReason("{\"students\":[{\"name\":[\"a\"]}]}"));
+    }
+
+    @Test
     public void readAddressBook_invalidStudentAddressBook_throwsDataLoadingException() {
         assertThrows(DataLoadingException.class, () -> readAddressBook("invalidStudentAddressBook.json"));
     }

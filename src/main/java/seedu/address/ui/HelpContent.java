@@ -82,8 +82,8 @@ public final class HelpContent {
                     new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_ADD,
                             HomeworkAddCommand.MESSAGE_USAGE,
                             "Adds homework to the student at STUDENT_INDEX. " + TuitionSubject.MESSAGE_CONSTRAINTS
-                                    + " " + DueDate.MESSAGE_CONSTRAINTS + " An MM-DD date is in this year, or in"
-                                    + " the next year if it has passed.",
+                                    + " " + DueDate.MESSAGE_CONSTRAINTS + " " + DueDate.MESSAGE_YEAR_OUT_OF_RANGE
+                                    + " An MM-DD date is in this year, or in the next year if it has passed.",
                             "hw add 1 t/Algebra worksheet s/MATH due/2026-10-15"),
                     new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_LIST,
                             HomeworkListCommand.MESSAGE_USAGE,

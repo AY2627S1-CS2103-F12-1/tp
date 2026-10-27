@@ -2,6 +2,9 @@ package seedu.address.logic.parser;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static seedu.address.logic.parser.CommandParserTestUtil.MESSAGE_CURLY_QUOTES;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
 import static seedu.address.testutil.Assert.assertThrows;
 
 import java.time.Duration;
@@ -18,7 +21,8 @@ import seedu.address.logic.parser.exceptions.ParseException;
 
 public class StrictArgumentTokenizerTest {
     private static final List<String> PREFIXES = List.of("n/", "t/", "due/");
-    private static final String MESSAGE_INVALID_FORMAT = "Invalid format.";
+    private static final String USAGE_LINE = "\nUsage: cmd n/N t/T due/D";
+    private static final String MESSAGE_INVALID_FORMAT = "Invalid format." + USAGE_LINE;
     private static final ValueTokenFilter ACCEPT_X_PREFIX = (arguments, prefixEnd, previousPrefix, prefix) ->
             "x/".equals(prefix);
 
@@ -60,11 +64,58 @@ public class StrictArgumentTokenizerTest {
     }
 
     @Test
-    public void tokenize_unknownPrefix_throwsParseException() {
-        assertThrows(ParseException.class, MESSAGE_INVALID_FORMAT, () ->
-                StrictArgumentTokenizer.tokenize(" n/John x/value", PREFIXES, MESSAGE_INVALID_FORMAT));
-        assertThrows(ParseException.class, MESSAGE_INVALID_FORMAT, () ->
+    public void tokenize_unknownPrefixInValue_namesWordAndQuotesWholeValue() {
+        // the example quotes the field's text up to the next allowed prefix
+        assertThrows(ParseException.class, notPrefixWithQuoteHint("km/", "t/\"Speed in km/h\"") + USAGE_LINE, () ->
+                tokenizeValues(" n/A t/Speed in km/h due/3"));
+    }
+
+    @Test
+    public void tokenize_unknownPrefixInLastValue_quotesTextToEnd() {
+        assertThrows(ParseException.class, notPrefixWithQuoteHint("km/", "t/\"Speed in km/h\"") + USAGE_LINE, () ->
+                tokenizeValues(" n/A t/Speed in km/h"));
+        assertThrows(ParseException.class, notPrefixWithQuoteHint("x/", "n/\"John x/value\"") + USAGE_LINE, () ->
+                tokenizeValues(" n/John x/value"));
+    }
+
+    @Test
+    public void tokenize_twoUnknownWordsInValue_namesFirstAndQuotesWholeValue() {
+        assertThrows(ParseException.class, notPrefixWithQuoteHint("km/", "t/\"A km/h and/or B\"") + USAGE_LINE, () ->
+                tokenizeValues(" t/A km/h and/or B n/C"));
+    }
+
+    @Test
+    public void tokenize_unknownPrefixAfterDigitsOnlyValue_omitsExample() {
+        // the value's text before the word is only digits and date punctuation
+        assertThrows(ParseException.class, notPrefixWithQuoteHint("x/") + USAGE_LINE, () ->
+                tokenizeValues(" n/A due/2026-11-01 x/y"));
+    }
+
+    @Test
+    public void tokenize_unknownPrefixFirst_omitsExample() {
+        assertThrows(ParseException.class, notPrefix("x/") + USAGE_LINE, () -> tokenizeValues(" x/y n/A"));
+    }
+
+    @Test
+    public void tokenizeWithPreamble_unknownPrefixAfterPreamble_omitsExample() {
+        assertThrows(ParseException.class, notPrefix("x/") + USAGE_LINE, () ->
+                StrictArgumentTokenizer.tokenizeWithPreamble("1 x/y t/A", PREFIXES, MESSAGE_INVALID_FORMAT));
+        assertThrows(ParseException.class, notPrefix("s/") + USAGE_LINE, () ->
                 StrictArgumentTokenizer.tokenizeWithPreamble("1 s/MATH", PREFIXES, MESSAGE_INVALID_FORMAT));
+    }
+
+    @Test
+    public void tokenize_curlyQuotes_addsStraightQuoteHint() {
+        // curly quotes are not value quotes, so km/ is an unknown prefix; they are stripped from the example
+        assertThrows(ParseException.class, notPrefixWithQuoteHint("km/", "t/\"Speed in km/h\"") + "\n"
+                + MESSAGE_CURLY_QUOTES + USAGE_LINE, () -> tokenizeValues(" t/“Speed in km/h” n/A"));
+    }
+
+    @Test
+    public void tokenize_noSpaceAfterClosingQuote_namesWord() {
+        // the quote is not followed by whitespace, so it does not close the value
+        assertThrows(ParseException.class, notPrefixWithQuoteHint("km/", "t/\"Speed in km/h\"") + USAGE_LINE, () ->
+                tokenizeValues(" t/\"Speed in km/h\"n/A"));
     }
 
     @Test
@@ -93,8 +144,8 @@ public class StrictArgumentTokenizerTest {
         String repeatedMessage = "Repeated filter";
         assertEquals(Map.of("t/", "a x/b", "n/", "c"), StrictArgumentTokenizer.tokenize(
                 " t/\"a x/b\" n/c", PREFIXES, MESSAGE_INVALID_FORMAT, repeatedMessage).values());
-        assertThrows(ParseException.class, MESSAGE_INVALID_FORMAT, () -> StrictArgumentTokenizer.tokenize(
-                " t/a x/b", PREFIXES, MESSAGE_INVALID_FORMAT, repeatedMessage));
+        assertThrows(ParseException.class, notPrefixWithQuoteHint("x/", "t/\"a x/b\"") + USAGE_LINE, () ->
+                StrictArgumentTokenizer.tokenize(" t/a x/b", PREFIXES, MESSAGE_INVALID_FORMAT, repeatedMessage));
         assertThrows(ParseException.class, MESSAGE_INVALID_FORMAT, () -> StrictArgumentTokenizer.tokenize(
                 " text t/a", PREFIXES, MESSAGE_INVALID_FORMAT, repeatedMessage));
     }
@@ -154,8 +205,8 @@ public class StrictArgumentTokenizerTest {
     @Test
     public void tokenize_filterRejectsToken_throwsParseException() {
         // unknown prefix
-        assertThrows(ParseException.class, MESSAGE_INVALID_FORMAT, () -> StrictArgumentTokenizer.tokenize(
-                " n/A x/b y/c", PREFIXES, MESSAGE_INVALID_FORMAT, ACCEPT_X_PREFIX));
+        assertThrows(ParseException.class, notPrefixWithQuoteHint("y/", "n/\"A x/b y/c\"") + USAGE_LINE, () ->
+                StrictArgumentTokenizer.tokenize(" n/A x/b y/c", PREFIXES, MESSAGE_INVALID_FORMAT, ACCEPT_X_PREFIX));
         // repeated prefix
         String repeatedMessage = String.format(StrictArgumentTokenizer.MESSAGE_REPEATED_PREFIX, "n/");
         assertThrows(ParseException.class, repeatedMessage, () -> StrictArgumentTokenizer.tokenize(
@@ -199,8 +250,8 @@ public class StrictArgumentTokenizerTest {
 
     @Test
     public void tokenize_unclosedQuote_readAsUnquoted() throws ParseException {
-        // prefix-shaped word inside is read as an unknown prefix
-        assertThrows(ParseException.class, MESSAGE_INVALID_FORMAT, () ->
+        // prefix-shaped word inside is read as an unknown prefix; the opening quote is not doubled in the example
+        assertThrows(ParseException.class, notPrefixWithQuoteHint("km/", "t/\"Speed in km/h\"") + USAGE_LINE, () ->
                 tokenizeValues(" t/\"Speed in km/h n/A"));
         // opening quote kept as typed
         assertEquals(Map.of("t/", "\"Speed", "n/", "A"), tokenizeValues(" t/\"Speed n/A"));

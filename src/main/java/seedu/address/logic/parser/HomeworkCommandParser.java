@@ -72,7 +72,7 @@ public class HomeworkCommandParser implements Parser<Command> {
             case SUBCOMMAND_MARKS, SUBCOMMAND_MARKS_ALIAS ->
                 new HomeworkMarksCommandParser().parse(subcommandArguments);
             case SUBCOMMAND_DELETE, SUBCOMMAND_DELETE_ALIAS ->
-                new HomeworkDeleteCommandParser().parse(subcommandArguments);
+                new HomeworkDeleteCommandParser(clock).parse(subcommandArguments);
             default -> throw new ParseException(MESSAGE_INVALID_FORMAT);
         };
     }

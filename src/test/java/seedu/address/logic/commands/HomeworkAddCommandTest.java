@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.logic.commands.CommandTestUtil.CAUSE_READ_ONLY_FOLDER;
+import static seedu.address.logic.commands.CommandTestUtil.SHOWN_DATA_FILE_NAME;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.testutil.Assert.assertThrows;
@@ -213,11 +215,11 @@ public class HomeworkAddCommandTest {
     }
 
     @Test
-    public void getSaveFailureMessage_anyDefaultMessage_returnsHomeworkMessage() {
-        String expectedMessage = "The homework could not be added because TutorFlow could not save the updated data. "
-                + "No homework data was changed.";
+    public void getSaveFailureMessage_cause_namesFileAndCause() {
+        String expectedMessage = "The homework could not be added because TutorFlow could not save "
+                + SHOWN_DATA_FILE_NAME + ": the data folder is read-only. No homework data was changed.";
         HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(1), ALGEBRA, false);
-        assertEquals(expectedMessage, command.getSaveFailureMessage("Could not save data"));
+        assertEquals(expectedMessage, command.getSaveFailureMessage(SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER));
     }
 
     @Test

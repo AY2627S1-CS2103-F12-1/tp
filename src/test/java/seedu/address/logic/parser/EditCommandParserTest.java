@@ -2,6 +2,7 @@ package seedu.address.logic.parser;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
 
 import org.junit.jupiter.api.Test;
 
@@ -69,7 +70,8 @@ public class EditCommandParserTest {
 
     @Test
     public void parse_unknownOrRepeatedPrefix_reportsError() {
-        assertParseFailure("1 l/S3 x/value", EditCommand.MESSAGE_INVALID_FORMAT);
+        assertParseFailure("1 l/S3 x/value", notPrefixWithQuoteHint("x/", "l/\"S3 x/value\"") + "\nUsage: "
+                + EditCommand.MESSAGE_USAGE);
         assertParseFailure("1 n/Jane n/Mary",
                 String.format(StrictArgumentTokenizer.MESSAGE_REPEATED_PREFIX, "n/"));
         assertParseFailure("1 gn/Mary gn/Jane",

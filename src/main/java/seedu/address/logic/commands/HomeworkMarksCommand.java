@@ -34,7 +34,7 @@ public class HomeworkMarksCommand extends Command {
     public static final String MESSAGE_INTERNAL_ERROR =
             "TutorFlow could not record the homework marks due to an internal error.";
     public static final String MESSAGE_SAVE_FAILURE = "The homework marks could not be recorded because TutorFlow "
-            + "could not save the updated data. No homework data was changed.";
+            + "could not save %s: %s. No homework data was changed.";
 
     private static final Logger logger = LogsCenter.getLogger(HomeworkMarksCommand.class);
 
@@ -109,7 +109,7 @@ public class HomeworkMarksCommand extends Command {
     }
 
     @Override
-    public String getSaveFailureMessage(String defaultMessage) {
+    protected String getSaveFailureFormat() {
         return MESSAGE_SAVE_FAILURE;
     }
 

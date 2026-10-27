@@ -1,5 +1,6 @@
 package seedu.address.logic.commands;
 
+import seedu.address.logic.Messages;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.Model;
 
@@ -19,13 +20,22 @@ public abstract class Command {
 
     /**
      * Returns the message shown when the data changed by this command could not be saved, after the change has
-     * been undone. Commands override this to describe the failure in their own words.
+     * been undone: the format of {@link #getSaveFailureFormat()} filled in with the file's name and the cause.
      *
-     * @param defaultMessage Message describing the save error, shown if the command has no message of its own.
+     * @param shownName Name of the data file as the user knows it, e.g. {@code data/tutorflow.json}.
+     * @param cause Plain description of why saving failed, e.g. {@code the data folder is read-only}.
      * @return The message to show to the user.
      */
-    public String getSaveFailureMessage(String defaultMessage) {
-        return defaultMessage;
+    public final String getSaveFailureMessage(String shownName, String cause) {
+        return String.format(getSaveFailureFormat(), shownName, cause);
+    }
+
+    /**
+     * Returns the format of the save-failure message, whose two {@code %s} are the data file's name and the cause.
+     * Commands override this to describe the failure in their own words.
+     */
+    protected String getSaveFailureFormat() {
+        return Messages.MESSAGE_SAVE_FAILURE;
     }
 
 }

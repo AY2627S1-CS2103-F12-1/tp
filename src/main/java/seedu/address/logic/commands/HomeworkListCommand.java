@@ -109,13 +109,19 @@ public class HomeworkListCommand extends Command {
         StringBuilder message = new StringBuilder(String.format(isAllShown ? MESSAGE_SUCCESS_ALL : MESSAGE_SUCCESS,
                 listedIndices.size(), getRecordWord(listedIndices.size()), student.getName(), student.getName()));
         for (int zeroBasedIndex : listedIndices) {
-            Homework homework = homeworks.get(zeroBasedIndex);
-            // Locale.ROOT prints the index in ASCII digits, which the index parsers accept, in every locale
-            message.append(String.format(Locale.ROOT, MESSAGE_HOMEWORK_LINE, zeroBasedIndex + 1, homework.getTitle(),
-                    homework.getSubject(), homework.getDueDate(), Messages.formatScore(homework),
-                    homework.getStatus()));
+            message.append(formatHomeworkLine(zeroBasedIndex + 1, homeworks.get(zeroBasedIndex)));
         }
         return message.toString();
+    }
+
+    /**
+     * Returns the line, starting with a line break, that this command shows for {@code homework} numbered
+     * {@code oneBasedIndex}: its title, subject, due date, score and status.
+     */
+    static String formatHomeworkLine(int oneBasedIndex, Homework homework) {
+        // Locale.ROOT prints the index in ASCII digits, which the index parsers accept, in every locale
+        return String.format(Locale.ROOT, MESSAGE_HOMEWORK_LINE, oneBasedIndex, homework.getTitle(),
+                homework.getSubject(), homework.getDueDate(), Messages.formatScore(homework), homework.getStatus());
     }
 
     /**

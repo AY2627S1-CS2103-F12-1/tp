@@ -83,12 +83,28 @@ class JsonAdaptedHomework {
         final Title modelTitle = toModelValue("title", title, Title::new, Title.MESSAGE_CONSTRAINTS);
         final TuitionSubject modelSubject = toModelValue("subject", subject, TuitionSubject::parse,
                 TuitionSubject.MESSAGE_CONSTRAINTS);
-        final DueDate modelDueDate = toModelValue("dueDate", dueDate, DueDate::parseFullDate,
-                DueDate.MESSAGE_FULL_DATE_CONSTRAINTS);
+        final DueDate modelDueDate = toModelDueDate();
         final Score modelScore = toModelScore(modelTitle);
         final HomeworkStatus modelStatus = status == null ? HomeworkStatus.ASSIGNED
                 : toModelValue("status", status, HomeworkStatus::parse, HomeworkStatus.MESSAGE_CONSTRAINTS);
         return new Homework(modelTitle, modelSubject, modelDueDate, modelScore, modelStatus);
+    }
+
+    /**
+     * Returns the model due date parsed from the required field {@code dueDate}. Unlike the other fields, an invalid
+     * value keeps the parser's message, which says whether the format, the calendar date or the year is wrong.
+     *
+     * @throws IllegalValueException If the field is missing or its value is invalid.
+     */
+    private DueDate toModelDueDate() throws IllegalValueException {
+        if (dueDate == null) {
+            throw new IllegalValueException(String.format(MISSING_FIELD_MESSAGE_FORMAT, "dueDate"));
+        }
+        try {
+            return DueDate.parseFullDate(dueDate);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalValueException(exception.getMessage());
+        }
     }
 
     /**

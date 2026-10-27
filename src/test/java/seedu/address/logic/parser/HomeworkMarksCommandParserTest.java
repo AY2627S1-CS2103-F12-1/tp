@@ -2,6 +2,8 @@ package seedu.address.logic.parser;
 
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
 
 import org.junit.jupiter.api.Test;
 
@@ -129,8 +131,10 @@ public class HomeworkMarksCommandParserTest {
 
     @Test
     public void parse_unknownPrefix_failure() {
-        assertParseFailure(parser, "1 2 score/5/10 x/extra", MESSAGE_INVALID_FORMAT);
-        assertParseFailure(parser, "1 2 s/5/10", MESSAGE_INVALID_FORMAT);
+        String usageLine = "\nUsage: " + HomeworkMarksCommand.MESSAGE_USAGE;
+        // the score before x/ is only digits and a slash, so no example is given
+        assertParseFailure(parser, "1 2 score/5/10 x/extra", notPrefixWithQuoteHint("x/") + usageLine);
+        assertParseFailure(parser, "1 2 s/5/10", notPrefix("s/") + usageLine);
     }
 
     @Test

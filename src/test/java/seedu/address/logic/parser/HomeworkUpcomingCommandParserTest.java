@@ -3,6 +3,8 @@ package seedu.address.logic.parser;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
 import static seedu.address.logic.parser.HomeworkUpcomingCommandParser.MESSAGE_INVALID_DAYS;
 
 import java.time.Clock;
@@ -126,8 +128,10 @@ public class HomeworkUpcomingCommandParserTest {
 
     @Test
     public void parse_unknownPrefix_failure() {
-        assertParseFailure(parser, "d/3", MESSAGE_INVALID_FORMAT);
-        assertParseFailure(parser, "due/3 s/MATH", MESSAGE_INVALID_FORMAT);
+        String usageLine = "\nUsage: " + HomeworkUpcomingCommand.MESSAGE_USAGE;
+        assertParseFailure(parser, "d/3", notPrefix("d/") + usageLine);
+        // the days before s/ are only digits, so no example is given
+        assertParseFailure(parser, "due/3 s/MATH", notPrefixWithQuoteHint("s/") + usageLine);
     }
 
     @Test

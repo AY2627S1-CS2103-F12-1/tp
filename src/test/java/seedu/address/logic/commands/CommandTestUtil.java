@@ -3,6 +3,7 @@ package seedu.address.logic.commands;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static seedu.address.testutil.Assert.assertThrows;
 
+import java.nio.file.Path;
 import java.util.List;
 
 import seedu.address.logic.commands.exceptions.CommandException;
@@ -14,6 +15,9 @@ import seedu.address.model.student.Student;
  * Contains helper methods for testing commands.
  */
 public class CommandTestUtil {
+    /** The data file as save-failure messages name it: relative to the home folder, with the system's separator. */
+    public static final String SHOWN_DATA_FILE_NAME = Path.of("data", "tutorflow.json").toString();
+    public static final String CAUSE_READ_ONLY_FOLDER = "the data folder is read-only";
 
     /**
      * Executes the given {@code command}, confirms that <br>
@@ -59,4 +63,12 @@ public class CommandTestUtil {
         assertEquals(expectedDisplayedStudents, actualModel.getStudentList());
     }
 
+    /**
+     * Returns the line for one homework record as {@code homework list} shows it, without the line break before it.
+     */
+    public static String formatHomeworkLine(int index, String title, String subject, String dueDate, String score,
+            String status) {
+        return index + ". " + title + " (" + subject + ") - due " + dueDate + " - score " + score + " - status "
+                + status;
+    }
 }

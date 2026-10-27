@@ -31,6 +31,7 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
     public static final String PREFIX_TITLE_ALIAS = "t/";
     public static final String PREFIX_SUBJECT = "s/";
     public static final String PREFIX_DUE_DATE = "due/";
+    public static final String MESSAGE_TITLE_AND_ALIAS = "Use either title/ or t/, not both.";
 
     /** Prefixes accepted by both {@code homework add} and {@code homework edit}. */
     static final List<String> ALLOWED_PREFIXES = List.of(PREFIX_TITLE, PREFIX_TITLE_ALIAS, PREFIX_SUBJECT,
@@ -80,12 +81,13 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
 
     /**
      * Checks that the title prefix and its alias are not both present in {@code values}.
+     * Also used by {@code homework edit}.
      *
      * @throws ParseException If both title prefixes are present.
      */
-    private static void validateTitlePrefixes(Map<String, String> values) throws ParseException {
+    static void validateTitlePrefixes(Map<String, String> values) throws ParseException {
         if (values.containsKey(PREFIX_TITLE) && values.containsKey(PREFIX_TITLE_ALIAS)) {
-            throw new ParseException(String.format(StrictArgumentTokenizer.MESSAGE_REPEATED_PREFIX, PREFIX_TITLE));
+            throw new ParseException(MESSAGE_TITLE_AND_ALIAS);
         }
     }
 

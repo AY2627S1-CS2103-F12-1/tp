@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static seedu.address.model.homework.DueDateTest.MESSAGE_YEAR_OUT_OF_RANGE;
 import static seedu.address.testutil.TypicalStudents.getTypicalAddressBook;
 
 import java.nio.charset.StandardCharsets;
@@ -84,6 +85,21 @@ public class MainAppTest {
     }
 
     @Test
+    public void readInitialData_dueDateYearOutOfRange_rejectsWithoutChangingFile() throws Exception {
+        Path dataFilePath = temporaryFolder.resolve("tutorflow.json");
+        Storage storage = getStorage(dataFilePath);
+        storage.saveAddressBook(getTypicalAddressBook());
+        // a typo year, which is a real calendar date
+        String invalidData = Files.readString(dataFilePath).replace("\"2026-10-15\"", "\"2206-10-30\"");
+        Files.writeString(dataFilePath, invalidData);
+
+        DataLoadingException exception = assertThrows(DataLoadingException.class, () ->
+                MainApp.readInitialData(storage));
+        assertEquals(MESSAGE_YEAR_OUT_OF_RANGE, exception.getCause().getMessage());
+        assertEquals(invalidData, Files.readString(dataFilePath));
+    }
+
+    @Test
     public void readInitialData_duplicateKey_rejectsWithoutChangingFile() throws Exception {
         Path dataFilePath = temporaryFolder.resolve("tutorflow.json");
         Storage storage = getStorage(dataFilePath);
@@ -129,7 +145,7 @@ public class MainAppTest {
         Path prefsFilePath = temporaryFolder.resolve("preferences.json");
         Path dataFilePath = temporaryFolder.resolve("tutorflow.json");
         Files.writeString(prefsFilePath, "{\"guiSettings\":null}");
-        MainApp app = new MainApp(prefsFilePath, dataFilePath, () -> { });
+        MainApp app = new MainApp(temporaryFolder, prefsFilePath, dataFilePath, () -> { });
 
         UserPrefs prefs = app.initPrefs(new JsonUserPrefsStorage(prefsFilePath));
 
@@ -159,7 +175,7 @@ public class MainAppTest {
         // valid GUI settings, but the file also holds the Windows-1252 byte E9, which is not UTF-8
         String prefs = "{\"guiSettings\":{\"windowWidth\":1000.0,\"windowHeight\":500.0},\"note\":\"\u00e9\"}";
         Files.write(prefsFilePath, prefs.getBytes(StandardCharsets.ISO_8859_1));
-        MainApp app = new MainApp(prefsFilePath, temporaryFolder.resolve("tutorflow.json"), () -> { });
+        MainApp app = new MainApp(temporaryFolder, prefsFilePath, temporaryFolder.resolve("tutorflow.json"), () -> { });
 
         assertEquals(new UserPrefs(), app.initPrefs(new JsonUserPrefsStorage(prefsFilePath)));
     }

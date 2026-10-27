@@ -8,7 +8,6 @@ import static seedu.address.logic.commands.CommandTestUtil.SHOWN_DATA_FILE_NAME;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.logic.commands.CommandTestUtil.formatHomeworkLine;
-import static seedu.address.logic.commands.CommandTestUtil.getSaveFailureMessage;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalHomeworks.ATOMIC_STRUCTURE;
@@ -224,7 +223,7 @@ public class HomeworkDeleteCommandTest {
         String expectedMessage = "The homework could not be deleted because TutorFlow could not save "
                 + SHOWN_DATA_FILE_NAME + ": the data folder is read-only. No homework data was changed.";
         HomeworkDeleteCommand command = deleteCommand(1, 1, TODAY);
-        assertEquals(expectedMessage, getSaveFailureMessage(command, SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER));
+        assertEquals(expectedMessage, command.getSaveFailureMessage(SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER));
     }
 
     @Test

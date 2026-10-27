@@ -3,7 +3,8 @@ package seedu.address.logic;
 import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 
 import java.io.IOException;
-import java.nio.file.AccessDeniedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
 import java.util.function.Predicate;
@@ -28,16 +29,12 @@ import seedu.address.storage.Storage;
  * The main LogicManager of the app.
  */
 public class LogicManager implements Logic {
-    public static final String FILE_OPS_ERROR_FORMAT = "Could not save data due to the following error: %s";
-
-    public static final String FILE_OPS_PERMISSION_ERROR_FORMAT =
-            "Could not save data to file %s due to insufficient permissions to write to the file or the folder.";
-
     private final Logger logger = LogsCenter.getLogger(LogicManager.class);
 
     private final Model model;
     private final Storage storage;
     private final AddressBookParser addressBookParser;
+    private final Path homeFolder;
 
     /**
      * Constructs a {@code LogicManager} with the given {@code Model} and {@code Storage}.
@@ -48,11 +45,22 @@ public class LogicManager implements Logic {
 
     /**
      * Constructs a {@code LogicManager} whose {@code homework} commands take today's date from {@code clock}.
+     * Save-failure messages name the data file relative to the current working folder, which is the app's home
+     * folder.
      */
     public LogicManager(Model model, Storage storage, Clock clock) {
-        requireAllNonNull(model, storage, clock);
+        this(model, storage, clock, Path.of(""));
+    }
+
+    /**
+     * Constructs a {@code LogicManager} whose {@code homework} commands take today's date from {@code clock} and
+     * whose save-failure messages name the data file relative to {@code homeFolder}, if it is inside it.
+     */
+    public LogicManager(Model model, Storage storage, Clock clock, Path homeFolder) {
+        requireAllNonNull(model, storage, clock, homeFolder);
         this.model = model;
         this.storage = storage;
+        this.homeFolder = homeFolder.toAbsolutePath().normalize();
         addressBookParser = new AddressBookParser(clock);
     }
 
@@ -60,7 +68,7 @@ public class LogicManager implements Logic {
      * {@inheritDoc}
      * The data file is written only if the command changed the data. If writing fails, the change is undone, so the
      * model again matches the data file and the displayed students and their order are unchanged; the command's save
-     * failure message is reported.
+     * failure message, with the data file's name and a plain cause, is reported.
      */
     @Override
     public CommandResult execute(String commandText) throws CommandException, ParseException {
@@ -82,8 +90,9 @@ public class LogicManager implements Logic {
         } catch (IOException ioe) {
             logger.warning("Could not save data, so the command's changes are undone: " + ioe);
             restoreModel(dataBeforeCommand, predicateBeforeCommand, displayedBeforeCommand);
+            Path dataFile = storage.getAddressBookFilePath().toAbsolutePath().normalize();
             String message = ioe instanceof DataFileConflictException ? ioe.getMessage()
-                    : command.getSaveFailureMessage(getSaveErrorMessage(ioe));
+                    : command.getSaveFailureMessage(getShownName(dataFile), describeSaveFailure(ioe, dataFile));
             throw new CommandException(message, ioe);
         }
 
@@ -108,13 +117,51 @@ public class LogicManager implements Logic {
     }
 
     /**
-     * Returns the message describing why the data could not be saved.
+     * Returns the name of {@code dataFile} as the user knows it: relative to the home folder, e.g.
+     * {@code data/tutorflow.json} with the system's separator, or the absolute path if it is outside the home folder.
      */
-    private static String getSaveErrorMessage(IOException exception) {
-        if (exception instanceof AccessDeniedException) {
-            return String.format(FILE_OPS_PERMISSION_ERROR_FORMAT, exception.getMessage());
+    private String getShownName(Path dataFile) {
+        return dataFile.startsWith(homeFolder) ? homeFolder.relativize(dataFile).toString() : dataFile.toString();
+    }
+
+    /**
+     * Returns a plain description of why {@code dataFile} could not be saved, checking the common causes in this
+     * order: the data file is a folder, the data file is read-only, its folder is read-only, or a file is where its
+     * folder should be. Otherwise, the system's text of {@code exception} is returned.
+     * The causes are read from the file system, as the exception may be about a different file, such as the
+     * internal lock file next to the data file.
+     */
+    private static String describeSaveFailure(IOException exception, Path dataFile) {
+        Path dataFolder = dataFile.getParent();
+        if (Files.isDirectory(dataFile)) {
+            return Messages.MESSAGE_SAVE_CAUSE_FOLDER;
         }
-        return String.format(FILE_OPS_ERROR_FORMAT, exception.getMessage());
+        if (Files.exists(dataFile) && !Files.isWritable(dataFile)) {
+            return Messages.MESSAGE_SAVE_CAUSE_READ_ONLY_FILE;
+        }
+        if (dataFolder != null && Files.isDirectory(dataFolder) && !Files.isWritable(dataFolder)) {
+            return Messages.MESSAGE_SAVE_CAUSE_READ_ONLY_FOLDER;
+        }
+        Path existingAncestor = dataFolder;
+        while (existingAncestor != null && !Files.exists(existingAncestor)) {
+            existingAncestor = existingAncestor.getParent();
+        }
+        if (existingAncestor != null && !Files.isDirectory(existingAncestor)) {
+            return String.format(Messages.MESSAGE_SAVE_CAUSE_BLOCKED_FOLDER, existingAncestor.getFileName());
+        }
+        return getSystemText(exception);
+    }
+
+    /**
+     * Returns the system's text of {@code exception} without a final period, as the message adds its own, or the
+     * exception's class name if it has no text.
+     */
+    private static String getSystemText(IOException exception) {
+        String text = exception.getMessage() == null ? "" : exception.getMessage().strip();
+        if (text.isEmpty()) {
+            return exception.getClass().getSimpleName();
+        }
+        return text.endsWith(".") ? text.substring(0, text.length() - 1) : text;
     }
 
     @Override

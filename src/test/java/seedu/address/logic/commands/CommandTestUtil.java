@@ -71,23 +71,4 @@ public class CommandTestUtil {
         return index + ". " + title + " (" + subject + ") - due " + dueDate + " - score " + score + " - status "
                 + status;
     }
-
-    /**
-     * Returns the message {@code command} shows when the data file, named {@code shownName}, could not be saved
-     * because of {@code cause}.
-     * The fix for OWN_ISSUES.md B-05 passes the name and the cause to {@code getSaveFailureMessage}. Until then the
-     * one-argument method is called, so the tests fail on the message instead of failing to compile.
-     * Replace this with a direct call once the fix is in.
-     */
-    public static String getSaveFailureMessage(Command command, String shownName, String cause) {
-        try {
-            return (String) command.getClass().getMethod("getSaveFailureMessage", String.class, String.class)
-                    .invoke(command, shownName, cause);
-        } catch (NoSuchMethodException exception) {
-            return command.getSaveFailureMessage(shownName + ": " + cause);
-        } catch (ReflectiveOperationException exception) {
-            throw new AssertionError(exception);
-        }
-    }
-
 }

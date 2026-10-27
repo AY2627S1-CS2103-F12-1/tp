@@ -31,7 +31,7 @@ public class HomeworkDeleteCommand extends Command {
     public static final String MESSAGE_INTERNAL_ERROR =
             "TutorFlow could not delete the homework due to an internal error.";
     public static final String MESSAGE_SAVE_FAILURE = "The homework could not be deleted because TutorFlow could not "
-            + "save the updated data. No homework data was changed.";
+            + "save %s: %s. No homework data was changed.";
 
     private static final Logger logger = LogsCenter.getLogger(HomeworkDeleteCommand.class);
 
@@ -88,8 +88,8 @@ public class HomeworkDeleteCommand extends Command {
     }
 
     @Override
-    public String getSaveFailureMessage(String defaultMessage) {
-        return MESSAGE_SAVE_FAILURE;
+    public String getSaveFailureMessage(String shownName, String cause) {
+        return String.format(MESSAGE_SAVE_FAILURE, shownName, cause);
     }
 
     @Override

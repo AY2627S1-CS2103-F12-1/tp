@@ -7,7 +7,6 @@ import static seedu.address.logic.commands.CommandTestUtil.CAUSE_READ_ONLY_FOLDE
 import static seedu.address.logic.commands.CommandTestUtil.SHOWN_DATA_FILE_NAME;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
-import static seedu.address.logic.commands.CommandTestUtil.getSaveFailureMessage;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalRegularLessons.MONDAY_MATH;
 import static seedu.address.testutil.TypicalRegularLessons.SATURDAY_CHEMISTRY;
@@ -107,7 +106,7 @@ public class LessonDeleteCommandTest {
         String expectedMessage = "The lesson could not be deleted because TutorFlow could not save "
                 + SHOWN_DATA_FILE_NAME + ": the data folder is read-only. No lesson data was changed.";
 
-        assertEquals(expectedMessage, getSaveFailureMessage(deleteCommand, SHOWN_DATA_FILE_NAME,
+        assertEquals(expectedMessage, deleteCommand.getSaveFailureMessage(SHOWN_DATA_FILE_NAME,
                 CAUSE_READ_ONLY_FOLDER));
     }
 

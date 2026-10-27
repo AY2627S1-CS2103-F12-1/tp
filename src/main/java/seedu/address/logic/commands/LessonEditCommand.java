@@ -32,7 +32,7 @@ public class LessonEditCommand extends Command {
     public static final String MESSAGE_MULTIPLE_CLASHES = "This lesson clashes with the following existing lessons:\n";
     public static final String MESSAGE_INTERNAL = "TutorFlow could not edit the lesson due to an internal error.";
     public static final String MESSAGE_SAVE_FAILURE = "The lesson could not be edited because TutorFlow could not "
-            + "save the updated data. No lesson data was changed.";
+            + "save %s: %s. No lesson data was changed.";
     private static final Logger logger = LogsCenter.getLogger(LessonEditCommand.class);
 
     private final Index lessonIndex;
@@ -101,8 +101,8 @@ public class LessonEditCommand extends Command {
     }
 
     @Override
-    public String getSaveFailureMessage(String defaultMessage) {
-        return MESSAGE_SAVE_FAILURE;
+    public String getSaveFailureMessage(String shownName, String cause) {
+        return String.format(MESSAGE_SAVE_FAILURE, shownName, cause);
     }
 
     @Override

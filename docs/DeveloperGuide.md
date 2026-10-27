@@ -601,8 +601,9 @@ The activity diagram below shows these steps for a command that does not throw a
 
 1. Before executing the command, `LogicManager` copies the current data: `new AddressBook(model.getAddressBook())`. The copy is cheap because `Student` and `Homework` are immutable, so only the list is copied. It also records the displayed students in their current order (`Model#getStudentList()`) and the search or filter predicate that selects them (`Model#getFilteredStudentListPredicate()`).
 1. After the command succeeds, `LogicManager` compares the data with the copy. If they are equal, the command changed nothing (e.g. `homework list`, `homework upcoming`, `help`, `exit`, or `clear` with no students), and nothing is saved.
-1. Otherwise, `LogicManager` calls `Storage#saveAddressBook`. If this throws an `IOException`, `LogicManager#restoreModel` restores the copy with `Model#setAddressBook`, then the recorded predicate with `Model#updateFilteredStudentList` and the recorded order with `Model#setStudentListOrder`, and `LogicManager` throws a `CommandException`. For a `DataFileConflictException`, its message is the conflict's own message; otherwise it comes from `Command#getSaveFailureMessage(defaultMessage)`. Restoring the data alone is not enough: `StudentDisplayList` keeps displayed positions, not students, across a replacement of the whole roster, so a failed `delete` after a `sort` would shift the students after the deleted one, a failed `clear` would lose the sort, and a failed `add` would keep showing every student instead of the earlier search or filter.
-1. By default, `getSaveFailureMessage` returns the AB3 message (`LogicManager#FILE_OPS_ERROR_FORMAT`, or `FILE_OPS_PERMISSION_ERROR_FORMAT` when access is denied). The homework commands that change data (`HomeworkAddCommand`, `HomeworkEditCommand`, `HomeworkMarksCommand`, `HomeworkDeleteCommand`, `HomeworkStatusCommand`), `EditCommand`, `LessonAddCommand`, `LessonEditCommand` and `LessonDeleteCommand` override it to return their own messages (the messages of the first four are from the specification). A new command that needs its own message only overrides this method.
+1. Otherwise, `LogicManager` calls `Storage#saveAddressBook`. If this throws an `IOException`, `LogicManager#restoreModel` restores the copy with `Model#setAddressBook`, then the recorded predicate with `Model#updateFilteredStudentList` and the recorded order with `Model#setStudentListOrder`, and `LogicManager` throws a `CommandException`. For a `DataFileConflictException`, its message is the conflict's own message; otherwise it comes from `Command#getSaveFailureMessage(shownName, cause)` (see the next step). Restoring the data alone is not enough: `StudentDisplayList` keeps displayed positions, not students, across a replacement of the whole roster, so a failed `delete` after a `sort` would shift the students after the deleted one, a failed `clear` would lose the sort, and a failed `add` would keep showing every student instead of the earlier search or filter.
+1. `shownName` is the data file as the user knows it: relative to the home folder that `LogicManager` is given (the working folder in the app), e.g. `data/tutorflow.json` with the system's separator, or the absolute path if the file is outside it. `cause` comes from `LogicManager#describeSaveFailure`, which checks the file system rather than the exception, as the exception may be about another file, such as the `.lock` file next to the data file, or have system-specific text. It checks, in this order: the data file is a folder (`it is a folder, not a file`), the data file is read-only (`the file is read-only`), the data folder is read-only (`the data folder is read-only`), and the nearest existing folder on the path is a file (`a file named data is in the way of the data folder`, with that file's name). Otherwise, the cause is the exception's own text.
+1. By default, `getSaveFailureMessage` returns `Messages#MESSAGE_SAVE_FAILURE`, e.g. `Could not save data/tutorflow.json: it is a folder, not a file. Nothing was changed.` The homework commands that change data (`HomeworkAddCommand`, `HomeworkEditCommand`, `HomeworkMarksCommand`, `HomeworkDeleteCommand`, `HomeworkStatusCommand`), `EditCommand`, `LessonAddCommand`, `LessonEditCommand` and `LessonDeleteCommand` override it to put the name and cause into their own messages, e.g. `The homework could not be added because TutorFlow could not save data/tutorflow.json: the data folder is read-only. No homework data was changed.` A new command that needs its own message only overrides this method.
 
 #### Design considerations:
 
@@ -724,7 +725,7 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
   * 3e2. Use case ends.
 * 4a. TutorFlow cannot save the updated data.
   * 4a1. TutorFlow leaves the lesson schedule unchanged.
-  * 4a2. TutorFlow informs the tutor that no lesson data was changed.
+  * 4a2. TutorFlow informs the tutor that no lesson data was changed, naming the data file and the likely cause.
   * 4a3. Use case ends.
 
 #### Use case: UC02 - Delete a regular lesson
@@ -747,7 +748,7 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
   * 3a2. Use case resumes at step 3.
 * 4a. TutorFlow cannot save the updated data.
   * 4a1. TutorFlow leaves the lesson schedule unchanged.
-  * 4a2. TutorFlow informs the tutor that no lesson data was changed.
+  * 4a2. TutorFlow informs the tutor that no lesson data was changed, naming the data file and the likely cause.
   * 4a3. Use case ends.
 
 #### Use case: UC03 - Edit a homework record
@@ -783,7 +784,7 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
   * 3e2. Use case ends.
 * 4a. TutorFlow cannot save the updated data.
   * 4a1. TutorFlow leaves the homework unchanged.
-  * 4a2. TutorFlow informs the tutor that no homework data was changed.
+  * 4a2. TutorFlow informs the tutor that no homework data was changed, naming the data file and the likely cause.
   * 4a3. Use case ends.
 
 #### Use case: UC04 - Record homework marks
@@ -819,7 +820,7 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
   * 3e2. Use case ends.
 * 4a. TutorFlow cannot save the updated data.
   * 4a1. TutorFlow leaves the score unchanged.
-  * 4a2. TutorFlow informs the tutor that no homework data was changed.
+  * 4a2. TutorFlow informs the tutor that no homework data was changed, naming the data file and the likely cause.
   * 4a3. Use case ends.
 
 #### Use case: UC05 - List upcoming homework of all students
@@ -1259,7 +1260,16 @@ The automated smoke check is `./gradlew test --tests '*LessonEditUiTest' --tests
 1. Dealing with a data file that cannot be written
 
    1. Make `data/tutorflow.json` read-only, then run `homework add 1 t/Test s/MATH due/2026-12-01` (the 1st student must take MATH).<br>
-      Expected: An error message says that the homework could not be added and that no homework data was changed. `homework list 1` does not show the homework.
+      Expected: `The homework could not be added because TutorFlow could not save data/tutorflow.json: the file is read-only. No homework data was changed.` `homework list 1` does not show the homework.
+
+   1. Make the `data` folder read-only instead (e.g. `chmod 555 data` on macOS or Linux), then run `delete 1`.<br>
+      Expected: `Could not save data/tutorflow.json: the data folder is read-only. Nothing was changed.` Restore the folder's write permission afterwards.
+
+   1. Close the app, move `data/tutorflow.json` away and create a folder named `tutorflow.json` in `data` in its place. Launch the app and run `delete 1`.<br>
+      Expected: `Could not save data/tutorflow.json: it is a folder, not a file. Nothing was changed.` and Ethan Lim is still student 1.
+
+   1. In a fresh folder, create an empty file named `data` next to the JAR. Launch the app and run `add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777`.<br>
+      Expected: `Could not save data/tutorflow.json: a file named data is in the way of the data folder. Nothing was changed.` `list` shows 6 students.
 
    1. In a fresh folder, launch the app with the sample students and run `add n/Temp Student l/S1 s/MATH p/90000000 gn/Temp Parent gp/90000001`, then `delete 7`, to create the data file. Make `data/tutorflow.json` read-only, then run `sort by/level o/desc` and `delete 1`.<br>
-      Expected: `Could not save data to file ... due to insufficient permissions to write to the file or the folder.` Daniel Wong is still student 1, and the order (Daniel Wong, Priya Nair, Nurul Aisyah, Ethan Lim, Chloe Chua, Marcus Tan) is the same as after the sort. Run `filter s/MATH`, `sort by/level o/desc` and `add n/John Tan l/S3 s/MATH p/91234567 gn/Mary Tan gp/98765432`: the addition fails and the same 5 MATH students stay displayed in the sorted order. Restore the file's write permission afterwards.
+      Expected: `Could not save data/tutorflow.json: the file is read-only. Nothing was changed.` Daniel Wong is still student 1, and the order (Daniel Wong, Priya Nair, Nurul Aisyah, Ethan Lim, Chloe Chua, Marcus Tan) is the same as after the sort. Run `filter s/MATH`, `sort by/level o/desc` and `add n/John Tan l/S3 s/MATH p/91234567 gn/Mary Tan gp/98765432`: the addition fails and the same 5 MATH students stay displayed in the sorted order. Restore the file's write permission afterwards.

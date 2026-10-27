@@ -601,7 +601,8 @@ Listed 2 regular lessons.
 TutorFlow saves your students, homework and regular lessons automatically after every command that changes them. You do not need to save manually.
 
 * Commands that do not change the data, such as `filter`, `search`, `list`, `homework list`, `homework upcoming`, `lesson list`, `help` and `exit`, do not write to the data file.
-* If TutorFlow cannot save the data (for example, because the data file is read-only), the command is cancelled: its changes are undone and an error message is shown. Homework and lesson commands state that their respective data was not changed.
+* If TutorFlow cannot save the data, the command is cancelled: its changes are undone and the error names the data file and the likely cause, e.g. `Could not save data/tutorflow.json: the data folder is read-only. Nothing was changed.` The homework and lesson commands and `edit` say which data was not changed, e.g. `The homework could not be added because TutorFlow could not save data/tutorflow.json: the data folder is read-only. No homework data was changed.`
+* The causes TutorFlow recognizes are: `it is a folder, not a file` (a folder named `tutorflow.json` is in the `data` folder), `the file is read-only`, `the data folder is read-only`, and `a file named data is in the way of the data folder` (a file, not a folder, named `data` is next to the JAR). Fix the cause, e.g. make the file or folder writable again, and repeat the command. For any other problem, the error shows the system's description of it. On Windows, the file is shown as `data\tutorflow.json`.
 * If another copy of TutorFlow or an editor changes the data file, a stale session refuses to overwrite it. Restart TutorFlow to load the latest data before making more changes. If another copy is saving at the same moment, wait for it to finish and try again.
 
 ### Editing the data file

@@ -7,7 +7,6 @@ import static seedu.address.logic.commands.CommandTestUtil.CAUSE_READ_ONLY_FOLDE
 import static seedu.address.logic.commands.CommandTestUtil.SHOWN_DATA_FILE_NAME;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
-import static seedu.address.logic.commands.CommandTestUtil.getSaveFailureMessage;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalHomeworks.ATOMIC_STRUCTURE;
@@ -237,8 +236,8 @@ public class HomeworkMarksCommandTest {
     public void getSaveFailureMessage_cause_namesFileAndCause() {
         String expectedMessage = "The homework marks could not be recorded because TutorFlow could not save "
                 + SHOWN_DATA_FILE_NAME + ": the data folder is read-only. No homework data was changed.";
-        assertEquals(expectedMessage, getSaveFailureMessage(new HomeworkMarksCommand(FIRST, FIRST, FIVE_OUT_OF_TEN),
-                SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER));
+        assertEquals(expectedMessage, new HomeworkMarksCommand(FIRST, FIRST, FIVE_OUT_OF_TEN)
+                .getSaveFailureMessage(SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER));
     }
 
     @Test

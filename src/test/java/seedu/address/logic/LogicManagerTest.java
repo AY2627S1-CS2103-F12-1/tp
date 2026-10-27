@@ -70,7 +70,6 @@ import seedu.address.model.student.TuitionSubject;
 import seedu.address.storage.DataFileConflictException;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
-import seedu.address.storage.Storage;
 import seedu.address.storage.StorageManager;
 import seedu.address.testutil.StudentBuilder;
 import seedu.address.ui.HelpContent;
@@ -105,7 +104,7 @@ public class LogicManagerTest {
         addressBookStorage = new JsonAddressBookStorage(dataFilePath);
         JsonUserPrefsStorage userPrefsStorage = new JsonUserPrefsStorage(temporaryFolder.resolve("userPrefs.json"));
         StorageManager storage = new StorageManager(addressBookStorage, userPrefsStorage);
-        logic = createLogic(model, storage, Clock.systemDefaultZone(), temporaryFolder);
+        logic = new LogicManager(model, storage, Clock.systemDefaultZone(), temporaryFolder);
     }
 
     @Test
@@ -972,24 +971,7 @@ public class LogicManagerTest {
             Path homeFolder) {
         model = new ModelManager(data, new UserPrefs());
         JsonUserPrefsStorage userPrefsStorage = new JsonUserPrefsStorage(temporaryFolder.resolve("userPrefs.json"));
-        logic = createLogic(model, new StorageManager(storage, userPrefsStorage), clock, homeFolder);
-    }
-
-    /**
-     * Returns a logic manager whose save-failure messages name the data file relative to {@code homeFolder}.
-     * The fix for OWN_ISSUES.md B-05 gives LogicManager the home folder. Until then the constructor without it is
-     * used, so the tests that check the file name fail on their messages instead of failing to compile.
-     * Replace this with a direct constructor call once the fix is in.
-     */
-    private static Logic createLogic(Model model, Storage storage, Clock clock, Path homeFolder) {
-        try {
-            return LogicManager.class.getConstructor(Model.class, Storage.class, Clock.class, Path.class)
-                    .newInstance(model, storage, clock, homeFolder);
-        } catch (NoSuchMethodException exception) {
-            return new LogicManager(model, storage, clock);
-        } catch (ReflectiveOperationException exception) {
-            throw new AssertionError(exception);
-        }
+        logic = new LogicManager(model, new StorageManager(storage, userPrefsStorage), clock, homeFolder);
     }
 
     /**

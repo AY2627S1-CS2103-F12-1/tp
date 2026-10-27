@@ -8,7 +8,6 @@ import static seedu.address.logic.commands.CommandTestUtil.CAUSE_READ_ONLY_FOLDE
 import static seedu.address.logic.commands.CommandTestUtil.SHOWN_DATA_FILE_NAME;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
-import static seedu.address.logic.commands.CommandTestUtil.getSaveFailureMessage;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TestUtil.ARABIC_EGYPT;
 import static seedu.address.testutil.TestUtil.runWithFormatLocale;
@@ -220,7 +219,7 @@ public class HomeworkAddCommandTest {
         String expectedMessage = "The homework could not be added because TutorFlow could not save "
                 + SHOWN_DATA_FILE_NAME + ": the data folder is read-only. No homework data was changed.";
         HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(1), ALGEBRA, false);
-        assertEquals(expectedMessage, getSaveFailureMessage(command, SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER));
+        assertEquals(expectedMessage, command.getSaveFailureMessage(SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER));
     }
 
     @Test

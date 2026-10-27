@@ -17,7 +17,8 @@ import seedu.address.model.student.StudentFilterPredicate;
 public final class FilterCommand extends Command {
     public static final String COMMAND_WORD = "filter";
     public static final String MESSAGE_USAGE = "filter [l/LEVEL] [s/SUBJECT]";
-    public static final String MESSAGE_SUCCESS = "Found %d student(s)";
+    public static final String MESSAGE_SUCCESS_SINGULAR = "Found 1 student.";
+    public static final String MESSAGE_SUCCESS = "Found %d students.";
     public static final String MESSAGE_NO_MATCHES = "No students match the selected filters";
     public static final String MESSAGE_INTERNAL_ERROR =
             "TutorFlow could not display the filtered results due to an internal error";
@@ -40,7 +41,14 @@ public final class FilterCommand extends Command {
             model.updateFilteredStudentList(predicate);
             int count = model.getStudentList().size();
             logger.fine(() -> "Student filters: " + predicate + "; matches: " + count);
-            String feedback = count == 0 ? MESSAGE_NO_MATCHES : String.format(MESSAGE_SUCCESS, count);
+            String feedback;
+            if (count == 0) {
+                feedback = MESSAGE_NO_MATCHES;
+            } else if (count == 1) {
+                feedback = MESSAGE_SUCCESS_SINGULAR;
+            } else {
+                feedback = String.format(MESSAGE_SUCCESS, count);
+            }
             return new CommandResult(feedback, false, false, true);
         } catch (RuntimeException exception) {
             logger.log(Level.WARNING, "Unexpected error while filtering students", exception);

@@ -50,6 +50,7 @@ test {
         systemProperty 'monocle.platform', 'Headless'
         systemProperty 'prism.order', 'sw'
         systemProperty 'java.awt.headless', 'true'
+        testLogging.exceptionFormat = 'full'
     }
     // Keep matching JavaFX natives for tests without narrowing the release jar.
     classpath = classpath.filter { file ->

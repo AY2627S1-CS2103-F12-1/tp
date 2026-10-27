@@ -112,6 +112,13 @@ public class ModelManager implements Model {
     }
 
     @Override
+    public Predicate<Student> getFilteredStudentListPredicate() {
+        Predicate<? super Student> predicate = filteredStudents.getPredicate();
+        // A filtered list without a predicate shows every student
+        return predicate == null ? PREDICATE_SHOW_ALL_STUDENTS : predicate::test;
+    }
+
+    @Override
     public void setStudentListOrder(List<Student> students) {
         displayedStudents.setOrder(students);
     }

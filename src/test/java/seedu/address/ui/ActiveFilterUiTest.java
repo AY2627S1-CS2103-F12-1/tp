@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.FxTestUtil.runOnFxThread;
+import static seedu.address.testutil.TypicalRegularLessons.MONDAY_MATH;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -65,6 +66,36 @@ public class ActiveFilterUiTest {
                 enterCommand(stage, "filter l/J2");
                 assertDescription(stage, "Filtered: level J2");
                 assertCount(stage, "0 students");
+            } finally {
+                stage.hide();
+            }
+        });
+    }
+
+    @Test
+    public void filter_meetingDay_updatesCriteriaWhenResultsStayEmptyOrLessonMoves() throws Exception {
+        runOnFxThread(() -> {
+            ModelManager model = createModel();
+            var first = model.getStudentList().getFirst();
+            model.setStudent(first, first.withLessons(List.of(MONDAY_MATH)));
+            Stage stage = createWindow(model, new AtomicBoolean());
+            try {
+                enterCommand(stage, "filter d/MONDAY");
+                assertDescription(stage, "Filtered: day MONDAY");
+                assertCount(stage, "1 student");
+                enterCommand(stage, "filter l/S4 s/MATH d/MONDAY");
+                assertDescription(stage, "Filtered: level S4; subject MATH; day MONDAY");
+                enterCommand(stage, "lesson edit 1 d/WEDNESDAY");
+                assertDescription(stage, "Filtered: level S4; subject MATH; day MONDAY");
+                assertCount(stage, "0 students");
+                enterCommand(stage, "filter d/TUESDAY");
+                assertDescription(stage, "Filtered: day TUESDAY");
+                assertCount(stage, "0 students");
+                enterCommand(stage, "filter d/bad");
+                assertDescription(stage, "Filtered: day TUESDAY");
+                enterCommand(stage, "list");
+                assertDescription(stage, "");
+                assertCount(stage, "2 students");
             } finally {
                 stage.hide();
             }
@@ -164,7 +195,7 @@ public class ActiveFilterUiTest {
     @Test
     public void filter_narrowPanel_wrapsDescriptionWithoutClipping() throws Exception {
         ModelManager model = createModel();
-        createLogic(model, new AtomicBoolean()).execute("filter l/S4 s/CHEMISTRY");
+        createLogic(model, new AtomicBoolean()).execute("filter l/S4 s/CHEMISTRY d/WEDNESDAY");
         runOnFxThread(() -> {
             StudentListPanel panel = new StudentListPanel(model.getStudentList());
             panel.bindStudentListPredicate(model.studentListPredicateProperty());
@@ -179,7 +210,7 @@ public class ActiveFilterUiTest {
                 root.layout();
                 root.layout();
 
-                assertEquals("Filtered: level S4; subject CHEMISTRY", description.getText());
+                assertEquals("Filtered: level S4; subject CHEMISTRY; day WEDNESDAY", description.getText());
                 assertTrue(description.getHeight() >= description.prefHeight(description.getWidth()) - 1,
                         "label " + description.getWidth() + "x" + description.getHeight()
                                 + " needs height " + description.prefHeight(description.getWidth()));

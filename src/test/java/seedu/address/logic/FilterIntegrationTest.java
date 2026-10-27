@@ -64,7 +64,8 @@ public class FilterIntegrationTest {
     public void execute_filterSuccessAndNoMatches_neverSavesOrCreatesDataFile() throws Exception {
         AddressBook before = new AddressBook(model.getAddressBook());
 
-        for (String command : List.of("filter l/S4", "filter s/Math", "filter l/S4 s/Math", "filter l/S5")) {
+        for (String command : List.of("filter l/S4", "filter s/Math", "filter l/S4 s/Math", "filter l/S5",
+                "filter d/MONDAY", "filter l/S4 s/MATH d/MONDAY", "filter d/SUNDAY")) {
             logic.execute(command);
 
             assertEquals(0, storage.saveCalls);
@@ -83,7 +84,8 @@ public class FilterIntegrationTest {
         Predicate<Student> predicateBefore = logic.studentListPredicateProperty().get();
 
         for (String command : List.of("filter", "filter x/value", "filter l/S4 l/S4", "filter l/", "filter s/bad",
-                "filter l/S6", "filter l/Sec 4", "filter s/Math, Physics")) {
+                "filter l/S6", "filter l/Sec 4", "filter s/Math, Physics", "filter d/", "filter d/MON",
+                "filter d/MONDAY d/TUESDAY")) {
             assertThrows(ParseException.class, () -> logic.execute(command));
 
             assertEquals(displayedBefore, model.getStudentList());
@@ -105,6 +107,25 @@ public class FilterIntegrationTest {
 
         assertArrayEquals(savedBefore, Files.readAllBytes(dataFile));
         assertEquals(0, storage.saveCalls);
+    }
+
+    @Test
+    public void execute_dayFilter_replacesSearchAndTracksLessonChangesWithoutLosingCriteria() throws Exception {
+        logic.execute("search Ben");
+        logic.execute("filter l/S4 s/MATH d/MONDAY");
+        assertEquals(List.of(first), model.getStudentList());
+        Predicate<Student> predicate = model.getFilteredStudentListPredicate();
+        assertEquals(0, storage.saveCalls);
+
+        logic.execute("lesson edit 1 d/TUESDAY");
+        assertTrue(model.getStudentList().isEmpty());
+        assertSame(predicate, model.getFilteredStudentListPredicate());
+        logic.execute("filter d/TUESDAY");
+        assertEquals("Alice Tan", model.getStudentList().getFirst().getName().toString());
+        logic.execute("lesson delete 1");
+        assertTrue(model.getStudentList().isEmpty());
+        assertEquals(2, storage.saveCalls);
+        assertEquals(model.getAddressBook(), new AddressBook(storage.readAddressBook().orElseThrow()));
     }
 
     @Test
@@ -181,7 +202,7 @@ public class FilterIntegrationTest {
 
     @Test
     public void execute_failedAdd_restoresExactFilterCriteriaAndResults() throws Exception {
-        logic.execute("filter s/CHEMISTRY l/S4");
+        logic.execute("filter s/MATH l/S4 d/MONDAY");
         Predicate<Student> predicateBefore = logic.studentListPredicateProperty().get();
         AddressBook rosterBefore = new AddressBook(model.getAddressBook());
         StorageManager failingStorage = new StorageManager(new JsonAddressBookStorage(dataFile),
@@ -197,7 +218,7 @@ public class FilterIntegrationTest {
                 failingLogic.execute("add n/Dan Lee l/S2 s/MATH p/92345678 gn/Mary Lee gp/98765432"));
 
         assertSame(predicateBefore, failingLogic.studentListPredicateProperty().get());
-        assertEquals(List.of(second), model.getStudentList());
+        assertEquals(List.of(first), model.getStudentList());
         assertEquals(rosterBefore, model.getAddressBook());
         assertFalse(Files.exists(dataFile));
     }

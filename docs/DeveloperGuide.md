@@ -434,9 +434,10 @@ selection/scroll recovery, exact feedback and diagnostic ownership. See the [log
 
 ### Filtering students
 
-`AddressBookParser` routes `filter [l/LEVEL] [s/SUBJECT]` to `FilterCommandParser`. The parser allows one or both
-prefixes, rejects unknown and repeated prefixes, and normalizes values through `AcademicLevel#parse` and
-`TuitionSubject#parse`. Empty values receive field-specific non-empty errors; unsupported values retain the domain
+`AddressBookParser` routes `filter [l/LEVEL] [s/SUBJECT] [d/DAY]` to `FilterCommandParser`. The parser allows any
+nonempty combination of prefixes, rejects unknown and repeated prefixes, and normalizes values through `AcademicLevel#parse` and
+`TuitionSubject#parse`; the optional day uses `RegularLesson#parseDay`, matching lesson commands' full-weekday rules.
+Empty values receive field-specific non-empty errors; unsupported values retain the domain
 constraint message and its exception cause. Comma-separated subjects receive a single-subject restriction error.
 Format errors use the shared `Messages.MESSAGE_INVALID_FORMAT_WITH_USAGE` header and command usage.
 The tokenizer overload accepts the filter-specific repeated-prefix message while keeping existing callers'
@@ -444,7 +445,9 @@ messages unchanged. Structural validation completes before value validation; val
 No parser failure changes the displayed list or requests a UI refresh.
 
 `StudentFilterPredicate` holds optional typed criteria and requires at least one to be present. It compares levels
-for equality and checks membership in `TuitionSubjects#getSubjects()`, combining both results with AND. `FilterCommand`
+for equality, checks membership in `TuitionSubjects#getSubjects()`, and matches any regular lesson on the selected
+day. Every supplied criterion is combined with AND. Subject registration and lesson day are independent checks.
+Immutable student replacements after lesson edits/deletions are re-evaluated against the active criteria. `FilterCommand`
 replaces the predicate of the existing `FilteredList`, whose source is the full stored roster. It never sorts or
 deduplicates results. Existing roster uniqueness checks remain in place; a synthetic duplicate-containing source
 verifies that filtering itself preserves every matching entry independently.
@@ -1009,6 +1012,18 @@ testers are expected to do more *exploratory* testing.
    and the student without meetings moves last. The stored roster order stays unchanged.
 
 ### Filtering students
+
+1. On fresh sample data, run `filter d/MONDAY`, then `filter l/S3 s/MATH d/MONDAY`.<br>
+   Expected: Both show Ethan Lim with `Found 1 student.`. The second displays
+   `Filtered: level S3; subject MATH; day MONDAY`. No saved data changes.
+   1. Run `lesson edit 1 d/TUESDAY`.<br>
+      Expected: Ethan no longer matches; the roster panel shows `0 students` but keeps the Monday criteria.
+   1. Run `filter d/TUESDAY`, then `lesson delete 1`.<br>
+      Expected: Ethan first appears with the moved lesson, then disappears when it is deleted. `lesson list` still
+      includes Priya's hidden Saturday lesson. Run `list` to reset the filter.
+   1. Try `filter d/`, `filter d/MON`, and `filter d/MONDAY d/TUESDAY`.<br>
+      Expected: Empty, unsupported and repeated criteria receive their respective errors; the previous roster,
+      criteria and saved data remain unchanged.
 
 1. Use a test roster containing Alice (S4, MATH and PHYSICS), Ben (S4, CHEMISTRY) and Cara (J1, MATH), in that order.
    1. Run `filter l/S4`.<br>

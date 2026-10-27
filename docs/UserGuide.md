@@ -186,16 +186,19 @@ Format: `search KEYWORD`
 
 ### Filtering students: `filter`
 
-Shows students at an academic level, taking a tuition subject, or satisfying both conditions.
+Shows students matching an academic level, a tuition subject, a regular meeting day, or any combination.
 
-Format: `filter [l/LEVEL] [s/SUBJECT]`
+Format: `filter [l/LEVEL] [s/SUBJECT] [d/DAY]`
 
-* Supply at least one filter. Each prefix may appear only once, in either order.
+* Supply at least one filter. Each prefix may appear only once, in any order.
 * `LEVEL` must be `S1`, `S2`, `S3`, `S4`, `S5`, `J1` or `J2`.
 * `SUBJECT` must be one of `MATH`, `PHYSICS` or `CHEMISTRY`. A student taking several subjects matches if one
   of them is the selected subject. Supply only one subject to the filter command.
+* `DAY` must be a full weekday name from `MONDAY` to `SUNDAY`. A student matches if any of their regular lessons
+  falls on that day. Students without regular lessons do not match a day filter.
 * Values ignore letter case and surrounding whitespace, so `s/Math` matches `MATH`.
-* With both filters, a student must match **both**. Matches retain roster order and receive displayed indexes
+* A student must match **every** supplied filter. Subject checks the student's registered subjects; day checks any
+  regular lesson, independently of its subject. Matches retain roster order and receive displayed indexes
   starting at 1. Subsequent student-index commands use these displayed indexes.
 * Each filter examines the full roster and replaces any previous search or filter. To show all students again,
   run `list` or `ls`. Adding a student or running `homework upcoming` also restores the full roster.
@@ -216,6 +219,9 @@ Examples:
 * `filter l/S4` shows every S4 student.
 * `filter s/Math` shows every student taking MATH, including those taking other subjects too.
 * `filter l/S4 s/Math` and `filter s/Math l/S4` both show S4 students taking MATH.
+* `filter d/MONDAY` shows students with a Monday lesson; on fresh sample data this is Ethan Lim.
+* `filter l/S3 s/MATH d/MONDAY` shows S3 MATH students with a Monday lesson. Adding, moving or deleting their
+  lessons updates which students match while retaining the selected criteria.
 
 For one match, the feedback is `Found 1 student.`; for multiple matches, it is `Found N students.`, using the
 actual count. If nothing matches, including when the roster is empty, no student cards are displayed and the
@@ -225,7 +231,7 @@ With no filters, TutorFlow shows:
 
 ```text
 Invalid command format.
-Usage: filter [l/LEVEL] [s/SUBJECT]
+Usage: filter [l/LEVEL] [s/SUBJECT] [d/DAY]
 At least one filter must be provided
 ```
 
@@ -233,12 +239,14 @@ Other invalid commands report:
 
 | Problem | Feedback |
 | --- | --- |
-| Unknown prefix, e.g. `filter l/S4 p/123` | `p/ is not a prefix of this command. To use it inside a value, wrap the whole value in straight double quotes, e.g. l/"S4 p/123".`, followed by `Usage: filter [l/LEVEL] [s/SUBJECT]` on the next line (see the [notes about the command format](#features)) |
-| Text before the first prefix | `Invalid command format.`, followed by `Usage: filter [l/LEVEL] [s/SUBJECT]` on the next line |
+| Unknown prefix, e.g. `filter l/S4 p/123` | `p/ is not a prefix of this command. To use it inside a value, wrap the whole value in straight double quotes, e.g. l/"S4 p/123".`, followed by `Usage: filter [l/LEVEL] [s/SUBJECT] [d/DAY]` on the next line (see the [notes about the command format](#features)) |
+| Text before the first prefix | `Invalid command format.`, followed by `Usage: filter [l/LEVEL] [s/SUBJECT] [d/DAY]` on the next line |
 | Repeated prefix | `Each filter may only be specified once` |
 | Empty level | `Academic level must be a non-empty value` |
 | Unsupported level | `Academic level must be one of: S1, S2, S3, S4, S5, J1, J2.` |
 | Empty subject | `Subject must be a non-empty value` |
+| Empty day | `Meeting day must be a non-empty value` |
+| Unsupported or abbreviated day, e.g. `filter d/MON` | `Day must be one of: MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY.` |
 | Unsupported subject | `Subject must be one of: MATH, PHYSICS, CHEMISTRY.` |
 | Comma-separated subjects | `Filter accepts only one subject. Use s/SUBJECT.` |
 
@@ -731,7 +739,7 @@ Action | Format, Examples
 **Edit student** | `edit INDEX [n/STUDENT_NAME] [l/ACADEMIC_LEVEL] [s/SUBJECTS] [p/STUDENT_PHONE] [gn/GUARDIAN_NAME] [gp/GUARDIAN_PHONE]`<br> e.g., `edit 1 l/S4 p/91234568`
 **List** | `list` or `ls`
 **Search** | `search KEYWORD`<br> e.g., `search Tan`
-**Filter** | `filter [l/LEVEL] [s/SUBJECT]`<br> e.g., `filter l/S4 s/Math`
+**Filter** | `filter [l/LEVEL] [s/SUBJECT] [d/DAY]`<br> e.g., `filter d/MONDAY`, `filter l/S3 s/MATH d/MONDAY`
 **Sort** | `sort by/KEY [o/ORDER]`<br> e.g., `sort by/level`, `sort by/day o/desc`
 **Homework add** | <code>homework&#124;hw add STUDENT_INDEX title/&#124;t/TITLE s/SUBJECT due/YYYY-MM-DD&#124;MM-DD</code><br> e.g., `homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15`, `hw add 1 t/"Speed in km/h" s/PHYSICS due/2026-11-01`
 **Homework delete** | <code>homework&#124;hw delete&#124;del STUDENT_INDEX HOMEWORK_INDEX</code><br> e.g., `homework delete 1 2`

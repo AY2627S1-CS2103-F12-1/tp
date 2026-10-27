@@ -5,7 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.testutil.TypicalRegularLessons.MONDAY_MATH;
+import static seedu.address.testutil.TypicalRegularLessons.TUESDAY_PHYSICS;
 
+import java.time.DayOfWeek;
 import java.util.List;
 import java.util.Optional;
 
@@ -51,6 +54,39 @@ public class StudentFilterPredicateTest {
         assertFalse(predicate.test(levelOnly));
         assertFalse(predicate.test(subjectOnly));
         assertFalse(predicate.test(neither));
+    }
+
+    @Test
+    public void test_meetingDay_matchesAnyLessonAndRequiresOtherCriteria() {
+        Student lessons = both.withLessons(List.of(MONDAY_MATH, TUESDAY_PHYSICS));
+        StudentFilterPredicate dayOnly = new StudentFilterPredicate(
+                Optional.empty(), Optional.empty(), Optional.of(DayOfWeek.TUESDAY));
+        StudentFilterPredicate combined = new StudentFilterPredicate(
+                Optional.of(AcademicLevel.S4), Optional.of(TuitionSubject.MATH), Optional.of(DayOfWeek.TUESDAY));
+
+        assertTrue(dayOnly.test(lessons));
+        assertTrue(combined.test(lessons));
+        assertFalse(dayOnly.test(both));
+        assertFalse(dayOnly.test(both.withLessons(List.of(MONDAY_MATH))));
+        assertFalse(combined.test(subjectOnly.withLessons(List.of(TUESDAY_PHYSICS))));
+        assertFalse(combined.test(levelOnly.withLessons(List.of(TUESDAY_PHYSICS))));
+        assertEquals(Optional.of(DayOfWeek.TUESDAY), dayOnly.getDay());
+    }
+
+    @Test
+    public void constructor_dayCriteria_validatesAndParticipatesInEquality() {
+        StudentFilterPredicate monday = new StudentFilterPredicate(
+                Optional.empty(), Optional.empty(), Optional.of(DayOfWeek.MONDAY));
+        StudentFilterPredicate same = new StudentFilterPredicate(
+                Optional.empty(), Optional.empty(), Optional.of(DayOfWeek.MONDAY));
+        assertEquals(monday, same);
+        assertEquals(monday.hashCode(), same.hashCode());
+        assertNotEquals(monday, new StudentFilterPredicate(
+                Optional.empty(), Optional.empty(), Optional.of(DayOfWeek.TUESDAY)));
+        assertThrows(IllegalArgumentException.class, () -> new StudentFilterPredicate(
+                Optional.empty(), Optional.empty(), Optional.empty()));
+        assertThrows(NullPointerException.class, () -> new StudentFilterPredicate(
+                Optional.of(AcademicLevel.S4), Optional.empty(), null));
     }
 
     @Test

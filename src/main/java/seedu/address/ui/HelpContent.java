@@ -28,6 +28,7 @@ import seedu.address.logic.parser.HomeworkCommandParser;
 import seedu.address.logic.parser.HomeworkUpcomingCommandParser;
 import seedu.address.logic.parser.LessonCommandParser;
 import seedu.address.model.homework.DueDate;
+import seedu.address.model.lesson.RegularLesson;
 import seedu.address.model.student.AcademicLevel;
 import seedu.address.model.student.TuitionSubject;
 import seedu.address.model.student.TuitionSubjects;
@@ -63,7 +64,9 @@ public final class HelpContent {
                     new Entry(FilterCommand.COMMAND_WORD, FilterCommand.MESSAGE_USAGE,
                             "Shows students matching every supplied filter. Supply at least one filter. "
                                     + AcademicLevel.MESSAGE_CONSTRAINTS + " " + TuitionSubject.MESSAGE_CONSTRAINTS
-                                    + " Type list to show all students again.", "filter l/S4 s/Math"),
+                                    + " " + RegularLesson.MESSAGE_DAY
+                                    + " Day matches any regular lesson; all supplied criteria must match."
+                                    + " Type list to show all students again.", "filter d/MONDAY"),
                     new Entry(SortCommand.COMMAND_WORD, SortCommand.MESSAGE_USAGE,
                             "Sorts the displayed students by level, subject or day. Order is asc (default) or desc."
                                     + " Missing meetings stay last; ties retain their previous displayed order."

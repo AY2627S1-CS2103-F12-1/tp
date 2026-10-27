@@ -8,6 +8,7 @@ import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSucces
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
 
+import java.time.DayOfWeek;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import seedu.address.logic.commands.FilterCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
+import seedu.address.model.lesson.RegularLesson;
 import seedu.address.model.student.AcademicLevel;
 import seedu.address.model.student.StudentFilterPredicate;
 import seedu.address.model.student.TuitionSubject;
@@ -41,6 +43,38 @@ public class FilterCommandParserTest {
     }
 
     @Test
+    public void parse_dayOnly_acceptsEveryFullWeekday() {
+        for (DayOfWeek day : DayOfWeek.values()) {
+            assertParseSuccess(parser, " d/" + day, new FilterCommand(new StudentFilterPredicate(
+                    Optional.empty(), Optional.empty(), Optional.of(day))));
+        }
+    }
+
+    @Test
+    public void parse_threeCriteria_acceptsAnyPrefixOrderAndNormalizesDay() {
+        FilterCommand expected = new FilterCommand(new StudentFilterPredicate(Optional.of(AcademicLevel.S4),
+                Optional.of(TuitionSubject.MATH), Optional.of(DayOfWeek.MONDAY)));
+        assertParseSuccess(parser, " d/\" monday \" s/Math l/S4", expected);
+        assertParseSuccess(parser, " l/S4 d/Monday s/MATH", expected);
+        assertParseSuccess(parser, " s/MATH l/s4 d/monday", expected);
+    }
+
+    @Test
+    public void parse_invalidDay_distinguishesEmptyUnsupportedAndRepeated() {
+        for (String arguments : List.of(" d/", " d/\" \"", " l/S4 d/")) {
+            assertParseFailure(parser, arguments, "Meeting day must be a non-empty value");
+        }
+        for (String arguments : List.of(" d/MON", " d/8", " d/MONDAY,TUESDAY")) {
+            assertParseFailure(parser, arguments, RegularLesson.MESSAGE_DAY);
+        }
+        assertParseFailure(parser, " d/MONDAY d/TUESDAY", "Each filter may only be specified once");
+        ParseException exception = assertThrows(ParseException.class, () -> parser.parse(" d/MON"));
+        assertInstanceOf(IllegalArgumentException.class, exception.getCause());
+        assertParseFailure(parser, " d/bad l/bad", RegularLesson.MESSAGE_DAY);
+        assertParseFailure(parser, " l/bad d/bad", AcademicLevel.MESSAGE_CONSTRAINTS);
+    }
+
+    @Test
     public void parse_bothCriteria_normalizesCaseWhitespaceAndPrefixOrder() {
         FilterCommand expected = new FilterCommand(new StudentFilterPredicate(
                 Optional.of(AcademicLevel.S4), Optional.of(TuitionSubject.MATH)));
@@ -52,7 +86,7 @@ public class FilterCommandParserTest {
     @Test
     public void parse_noCriteria_reportsMissingFilters() {
         for (String arguments : List.of("", "  ", "\t")) {
-            assertParseFailure(parser, arguments, "Invalid command format.\nUsage: filter [l/LEVEL] [s/SUBJECT]"
+            assertParseFailure(parser, arguments, "Invalid command format.\nUsage: filter [l/LEVEL] [s/SUBJECT] [d/DAY]"
                     + "\nAt least one filter must be provided");
         }
     }
@@ -67,7 +101,8 @@ public class FilterCommandParserTest {
     @Test
     public void parse_preamble_reportsInvalidFormat() {
         for (String arguments : List.of(" all s/MATH", "S4", " L/S4")) {
-            assertParseFailure(parser, arguments, "Invalid command format.\nUsage: filter [l/LEVEL] [s/SUBJECT]");
+            assertParseFailure(parser, arguments,
+                    "Invalid command format.\nUsage: filter [l/LEVEL] [s/SUBJECT] [d/DAY]");
         }
     }
 
@@ -133,7 +168,7 @@ public class FilterCommandParserTest {
     @Test
     public void parseCommand_filter_routesArgumentsAndValidation() throws Exception {
         AddressBookParser addressBookParser = new AddressBookParser();
-        String missingMessage = "Invalid command format.\nUsage: filter [l/LEVEL] [s/SUBJECT]"
+        String missingMessage = "Invalid command format.\nUsage: filter [l/LEVEL] [s/SUBJECT] [d/DAY]"
                 + "\nAt least one filter must be provided";
 
         assertEquals(parser.parse(" l/S4 s/MATH"), addressBookParser.parseCommand("filter l/S4 s/MATH"));

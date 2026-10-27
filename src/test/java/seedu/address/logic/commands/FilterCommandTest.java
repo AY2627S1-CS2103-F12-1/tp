@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.DayOfWeek;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -117,6 +118,26 @@ public class FilterCommandTest {
             assertTrue(model.getAddressBook().getStudentList().isEmpty());
         } finally {
             logger.removeHandler(handler);
+        }
+    }
+
+    @Test
+    public void execute_dayFilter_logsSelectedDayAndMatchCount() throws Exception {
+        Logger logger = LogsCenter.getLogger(FilterCommand.class);
+        Level previousLevel = logger.getLevel();
+        List<LogRecord> records = new ArrayList<>();
+        Handler handler = createRecordingHandler(records);
+        logger.addHandler(handler);
+        logger.setLevel(Level.FINE);
+        try {
+            new FilterCommand(new StudentFilterPredicate(Optional.empty(), Optional.empty(),
+                    Optional.of(DayOfWeek.MONDAY))).execute(createModel());
+
+            assertTrue(records.stream().anyMatch(record -> record.getLevel() == Level.FINE
+                    && record.getMessage().contains("MONDAY") && record.getMessage().contains("matches: 0")));
+        } finally {
+            logger.removeHandler(handler);
+            logger.setLevel(previousLevel);
         }
     }
 

@@ -34,6 +34,14 @@ public final class StudentFilterPredicate implements Predicate<Student> {
         this.subject = subject;
     }
 
+    public Optional<AcademicLevel> getAcademicLevel() {
+        return academicLevel;
+    }
+
+    public Optional<TuitionSubject> getSubject() {
+        return subject;
+    }
+
     @Override
     public boolean test(Student student) {
         requireNonNull(student);

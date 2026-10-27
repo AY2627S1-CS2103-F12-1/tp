@@ -151,6 +151,7 @@ public class MainWindow extends UiPart<Stage> {
         resultDisplayPlaceholder.getChildren().add(resultDisplay.getRoot());
 
         studentListPanel = createStudentListPanel(logic.getStudentList(), this::handleStudentRenderingError);
+        studentListPanel.bindStudentListPredicate(logic.studentListPredicateProperty());
         studentListPanelPlaceholder.getChildren().add(studentListPanel.getRoot());
 
         upcomingPanel = new UpcomingPanel(logic.getAllStudentList(), clock);

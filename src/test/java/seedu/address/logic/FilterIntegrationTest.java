@@ -3,6 +3,7 @@ package seedu.address.logic;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.TypicalHomeworks.ATOMIC_STRUCTURE;
@@ -16,6 +17,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -78,12 +80,14 @@ public class FilterIntegrationTest {
         AddressBook rosterBefore = new AddressBook(model.getAddressBook());
         logic.execute("filter s/Math");
         List<Student> displayedBefore = List.copyOf(model.getStudentList());
+        Predicate<Student> predicateBefore = logic.studentListPredicateProperty().get();
 
         for (String command : List.of("filter", "filter x/value", "filter l/S4 l/S4", "filter l/", "filter s/bad",
                 "filter l/S6", "filter l/Sec 4", "filter s/Math, Physics")) {
             assertThrows(ParseException.class, () -> logic.execute(command));
 
             assertEquals(displayedBefore, model.getStudentList());
+            assertSame(predicateBefore, logic.studentListPredicateProperty().get());
             assertEquals(rosterBefore, model.getAddressBook());
             assertArrayEquals(savedBefore, Files.readAllBytes(dataFile));
             assertEquals(0, storage.saveCalls);
@@ -162,6 +166,7 @@ public class FilterIntegrationTest {
             logic.execute(command);
 
             assertEquals(List.of(first, second, third), model.getStudentList());
+            assertSame(ModelManager.PREDICATE_SHOW_ALL_STUDENTS, logic.studentListPredicateProperty().get());
         }
         logic.execute("filter s/CHEMISTRY");
         logic.execute("search Alice");
@@ -170,7 +175,31 @@ public class FilterIntegrationTest {
         logic.execute("filter s/CHEMISTRY");
         logic.execute("add n/Dan Lee l/S2 s/MATH p/92345678 gn/Mary Lee gp/98765432");
         assertEquals(4, model.getStudentList().size());
+        assertSame(ModelManager.PREDICATE_SHOW_ALL_STUDENTS, logic.studentListPredicateProperty().get());
         assertEquals(1, storage.saveCalls);
+    }
+
+    @Test
+    public void execute_failedAdd_restoresExactFilterCriteriaAndResults() throws Exception {
+        logic.execute("filter s/CHEMISTRY l/S4");
+        Predicate<Student> predicateBefore = logic.studentListPredicateProperty().get();
+        AddressBook rosterBefore = new AddressBook(model.getAddressBook());
+        StorageManager failingStorage = new StorageManager(new JsonAddressBookStorage(dataFile),
+                new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json"))) {
+            @Override
+            public void saveAddressBook(ReadOnlyAddressBook addressBook) throws IOException {
+                throw new IOException("Simulated save failure");
+            }
+        };
+        LogicManager failingLogic = new LogicManager(model, failingStorage);
+
+        assertThrows(CommandException.class, () ->
+                failingLogic.execute("add n/Dan Lee l/S2 s/MATH p/92345678 gn/Mary Lee gp/98765432"));
+
+        assertSame(predicateBefore, failingLogic.studentListPredicateProperty().get());
+        assertEquals(List.of(second), model.getStudentList());
+        assertEquals(rosterBefore, model.getAddressBook());
+        assertFalse(Files.exists(dataFile));
     }
 
     private static class RecordingStorage extends StorageManager {

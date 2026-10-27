@@ -2,6 +2,7 @@ package seedu.address.model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
@@ -10,13 +11,17 @@ import static seedu.address.testutil.TypicalStudents.BENSON;
 import static seedu.address.testutil.TypicalStudents.getTypicalAddressBook;
 import static seedu.address.testutil.TypicalStudents.getTypicalStudents;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 import org.junit.jupiter.api.Test;
 
 import seedu.address.commons.core.GuiSettings;
+import seedu.address.model.student.AcademicLevel;
 import seedu.address.model.student.Student;
+import seedu.address.model.student.StudentFilterPredicate;
 import seedu.address.testutil.AddressBookBuilder;
 import seedu.address.testutil.StudentBuilder;
 
@@ -98,6 +103,36 @@ public class ModelManagerTest {
 
         assertTrue(predicate.test(ALICE));
         assertFalse(predicate.test(BENSON));
+    }
+
+    @Test
+    public void studentListPredicateProperty_sameResults_notifiesCriteriaChanges() {
+        Student student = new StudentBuilder().withAcademicLevel("S4").build();
+        modelManager.addStudent(student);
+        List<Predicate<Student>> changes = new ArrayList<>();
+        modelManager.studentListPredicateProperty()
+                .addListener((observable, previous, current) -> changes.add(current));
+        StudentFilterPredicate level = new StudentFilterPredicate(Optional.of(AcademicLevel.S4), Optional.empty());
+        Predicate<Student> sameResults = candidate -> true;
+
+        modelManager.updateFilteredStudentList(level);
+        assertEquals(List.of(student), modelManager.getStudentList());
+        modelManager.updateFilteredStudentList(sameResults);
+
+        assertEquals(List.of(student), modelManager.getStudentList());
+        assertEquals(List.of(level, sameResults), changes);
+        assertSame(sameResults, modelManager.studentListPredicateProperty().get());
+        assertSame(sameResults, modelManager.getFilteredStudentListPredicate());
+    }
+
+    @Test
+    public void updateFilteredStudentList_nullPredicate_preservesActiveCriteria() {
+        Predicate<Student> predicate = student -> student.equals(ALICE);
+        modelManager.updateFilteredStudentList(predicate);
+
+        assertThrows(NullPointerException.class, () -> modelManager.updateFilteredStudentList(null));
+
+        assertSame(predicate, modelManager.studentListPredicateProperty().get());
     }
 
     @Test

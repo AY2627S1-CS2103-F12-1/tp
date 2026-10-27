@@ -5,6 +5,7 @@ import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -98,5 +99,10 @@ public class LessonAddCommand extends Command {
     public boolean equals(Object other) {
         return other instanceof LessonAddCommand command && studentIndex.equals(command.studentIndex)
                 && lesson.equals(command.lesson);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(studentIndex.getZeroBased(), lesson);
     }
 }

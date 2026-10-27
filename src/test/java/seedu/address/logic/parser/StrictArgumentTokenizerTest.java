@@ -1,8 +1,10 @@
 package seedu.address.logic.parser;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static seedu.address.testutil.Assert.assertThrows;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -262,6 +264,21 @@ public class StrictArgumentTokenizerTest {
                 "n/".equals(previousPrefix);
         assertEquals(Map.of("n/", "A", "t/", "b"), StrictArgumentTokenizer.tokenize(" n/\"A\" t/b", PREFIXES,
                 MESSAGE_INVALID_FORMAT, acceptAfterName).values());
+    }
+
+    @Test
+    public void tokenize_manyQuotes_returnsQuickly() {
+        // Issue #154: every quote is a candidate closing quote, so checking each must not copy the rest of the input.
+        // The issue used 200,000 quotes; 1,000,000 makes a quadratic scan exceed the limit on fast machines too.
+        String quotes = "\"".repeat(1_000_000);
+
+        // the last quote is followed by the end (and trailing whitespace), so it closes the value
+        assertTimeoutPreemptively(Duration.ofSeconds(1), () -> assertEquals(Map.of("due/", quotes.substring(2)),
+                tokenizeValues("due/" + quotes + " \t ")));
+        // no quote is followed by the end or an allowed prefix, so the value is read as typed
+        String unclosedQuotes = "\" x".repeat(500_000);
+        assertTimeoutPreemptively(Duration.ofSeconds(1), () -> assertEquals(Map.of("due/", unclosedQuotes),
+                tokenizeValues("due/" + unclosedQuotes)));
     }
 
     @Test

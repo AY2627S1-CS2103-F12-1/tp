@@ -112,6 +112,13 @@ public class JsonAddressBookStorageTest {
     }
 
     @Test
+    public void readAddressBook_sampleDataMissingClosingBrace_reasonPointsAtLastCharacter() throws Exception {
+        // the sample data without its final }, as in the developer guide's manual test
+        String content = Files.readString(TEST_DATA_FOLDER.resolve("missingClosingBraceAddressBook.json"));
+        assertEquals("The file is not valid JSON near line 120, column 5.", getLoadingReason(content));
+    }
+
+    @Test
     public void readAddressBook_studentsNotList_reasonSaysWrongType() throws Exception {
         assertEquals("The file has a value of the wrong type near line 1, column 14.",
                 getLoadingReason("{\"students\": 5}"));

@@ -76,14 +76,4 @@ public class Messages {
         return homework.getScore().map(Score::toString).orElse(MESSAGE_SCORE_NOT_RECORDED);
     }
 
-    /**
-     * Returns the deleted lesson in the detailed deletion-result format.
-     */
-    public static String formatDeletedLesson(Student student, RegularLesson lesson) {
-        return formatLessonOwner(student)
-                + "; Subject: " + lesson.getSubject()
-                + "; Day: " + lesson.getDayOfWeek().name().substring(0, 3)
-                + "; Time: " + lesson.getStartTime() + "-" + lesson.getEndTime();
-    }
-
 }

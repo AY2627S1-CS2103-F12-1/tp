@@ -74,7 +74,7 @@ public class LessonDeleteCommand extends Command {
 
         model.setStudent(lessonOwner, lessonOwner.withLessons(updatedLessons));
         return new CommandResult(String.format(MESSAGE_SUCCESS,
-                Messages.formatDeletedLesson(lessonOwner, selectedLesson)));
+                Messages.format(lessonOwner, selectedLesson)));
     }
 
     @Override

@@ -29,7 +29,7 @@ public class LessonDeleteCommandParser implements Parser<LessonDeleteCommand> {
             throw new ParseException(MESSAGE_INVALID_FORMAT);
         }
         Index displayedLessonIndex = ParserUtil.parseStrictIndex(indexArguments[0],
-                Messages.MESSAGE_INVALID_LESSON_INDEX_SYNTAX);
+                Messages.MESSAGE_INVALID_LESSON_INDEX_SYNTAX, Messages.MESSAGE_INVALID_LESSON_DISPLAYED_INDEX);
         return new LessonDeleteCommand(displayedLessonIndex);
     }
 }

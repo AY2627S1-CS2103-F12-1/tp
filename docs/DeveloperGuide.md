@@ -197,6 +197,10 @@ The app data is saved in `data/tutorflow.json`. `JsonSerializableAddressBook` ho
 * Homework fields: `title`, `subject`, `dueDate`, `score`, and `status`.
 * Lesson fields: `subject`, `dayOfWeek`, `startTime`, and `endTime`.
 
+`JsonUtil#readJsonFile` reads both `data/tutorflow.json` and `preferences.json`. It skips a leading UTF-8 byte order mark, then `JsonUtil#fromJsonString` reads exactly one JSON value. Anything but whitespace after that value, such as a second root object, makes it throw an `IOException`, so the file is invalid. `ObjectMapper#readValue` alone stops after the first value, so the rest of the file would be ignored and then lost at the next save. The project's Jackson 2.7 has no `DeserializationFeature.FAIL_ON_TRAILING_TOKENS` (added in Jackson 2.9), so `fromJsonString` checks itself that the parser has no next token. An invalid `preferences.json` is replaced with the default preferences (see `MainApp#initPrefs`).
+
+`JsonUtil` also turns on Jackson's `JsonParser.Feature.STRICT_DUPLICATE_DETECTION`, so a key repeated in one JSON object, at any level, makes the file invalid. Without it, Jackson keeps the last value: a second `"students"` key would replace the whole roster, and the next save would delete the replaced students from the file.
+
 Contact and academic fields, homework titles, dates and completion statuses, and lesson fields are strings. `subjects` is a list of strings, `homeworks` and `lessons` are lists of objects, and `score` is a `MARKS` or `MARKS_OBTAINED/TOTAL_MARKS` string such as `"17"` or `"5/10"`, or `null`. Homework status is `ASSIGNED` or `COMPLETED`; missing or null status defaults to `ASSIGNED`, independently of scores. Lessons store weekdays by name and times in `HH:mm` format.
 
 Each adapted class checks its values in `toModelType()` with the same value classes that commands use. Student and homework adapters report missing fields with `MISSING_FIELD_MESSAGE_FORMAT` and invalid values with the value class's `MESSAGE_CONSTRAINTS`. `JsonAdaptedLesson` reports missing lesson fields together and delegates value validation to `TuitionSubject` and `RegularLesson`. Invalid data produces an `IllegalValueException`. Loading also rejects:
@@ -1204,8 +1208,11 @@ The automated smoke check is `./gradlew test --tests '*LessonEditUiTest' --tests
 
 1. Dealing with a corrupted data file
 
-   1. Close the app. In `data/tutorflow.json`, change the `dueDate` of a homework to `10-15` (no year), or delete the closing `}`. Launch the app.<br>
+   1. Close the app. In `data/tutorflow.json`, change the `dueDate` of a homework to `10-15` (no year), delete the closing `}`, or add a second object such as `{"students":[]}` after the closing `}`. Launch the app.<br>
       Expected: An error dialog shows the absolute data path and recovery instructions; the roster does not open. Dismiss the dialog and verify that the file bytes are unchanged. Restore the valid backup and relaunch: the original records appear.
+
+   1. Close the app. In `data/tutorflow.json`, add `, "students" : [ ]` just before the last `}` of the file, so that the file has two `"students"` keys. Launch the app.<br>
+      Expected: The same error dialog as above; the roster does not open and the file bytes are unchanged.
 
 1. Dealing with a score saved by an older version
 

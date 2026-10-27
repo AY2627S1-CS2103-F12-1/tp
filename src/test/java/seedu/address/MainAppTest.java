@@ -78,6 +78,47 @@ public class MainAppTest {
         assertEquals(invalidData, Files.readString(dataFilePath));
     }
 
+    @Test
+    public void readInitialData_duplicateKey_rejectsWithoutChangingFile() throws Exception {
+        Path dataFilePath = temporaryFolder.resolve("tutorflow.json");
+        Storage storage = getStorage(dataFilePath);
+        storage.saveAddressBook(getTypicalAddressBook());
+        // A second "students" key would replace the saved roster, and the next save would delete those students
+        String savedData = Files.readString(dataFilePath).stripTrailing();
+        String invalidData = savedData.substring(0, savedData.length() - 1) + ", \"students\" : [ ] }";
+        Files.writeString(dataFilePath, invalidData);
+
+        assertThrows(DataLoadingException.class, () -> MainApp.readInitialData(storage));
+        assertEquals(invalidData, Files.readString(dataFilePath));
+    }
+
+    @Test
+    public void readInitialData_duplicateNestedKey_rejectsWithoutChangingFile() throws Exception {
+        Path dataFilePath = temporaryFolder.resolve("tutorflow.json");
+        Storage storage = getStorage(dataFilePath);
+        storage.saveAddressBook(getTypicalAddressBook());
+        // A student with two "phone" keys would keep only the last one
+        String invalidData = Files.readString(dataFilePath)
+                .replaceFirst("\"phone\" : (\"[0-9]+\")", "\"phone\" : $1, \"phone\" : \"99999999\"");
+        Files.writeString(dataFilePath, invalidData);
+
+        assertThrows(DataLoadingException.class, () -> MainApp.readInitialData(storage));
+        assertEquals(invalidData, Files.readString(dataFilePath));
+    }
+
+    @Test
+    public void readInitialData_trailingJsonObject_rejectsWithoutChangingFile() throws Exception {
+        Path dataFilePath = temporaryFolder.resolve("tutorflow.json");
+        Storage storage = getStorage(dataFilePath);
+        storage.saveAddressBook(getTypicalAddressBook());
+        // A second root object after the saved one, as in Issue #149
+        String invalidData = Files.readString(dataFilePath) + "{\"students\":[]}";
+        Files.writeString(dataFilePath, invalidData);
+
+        assertThrows(DataLoadingException.class, () -> MainApp.readInitialData(storage));
+        assertEquals(invalidData, Files.readString(dataFilePath));
+    }
+
     private Storage getStorage(Path dataFilePath) {
         return new StorageManager(new JsonAddressBookStorage(dataFilePath),
                 new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json")));

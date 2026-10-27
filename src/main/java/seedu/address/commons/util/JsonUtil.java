@@ -10,6 +10,8 @@ import java.util.logging.Logger;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.core.JsonLocation;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,6 +30,8 @@ public class JsonUtil {
     private static ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules()
             .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            // Rejects a repeated key, whose last value would otherwise silently replace the earlier ones
+            .configure(JsonParser.Feature.STRICT_DUPLICATE_DETECTION, true)
             .setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE)
             .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
 
@@ -97,9 +101,19 @@ public class JsonUtil {
      * Converts a given string representation of JSON data to an instance of a class
      * @param <T> The generic type to create an instance of
      * @return The instance of T with the specified values in the JSON string
+     * @throws IOException If the string is not one JSON value of that class, or anything but whitespace follows it.
      */
     public static <T> T fromJsonString(String json, Class<T> instanceClass) throws IOException {
-        return objectMapper.readValue(json, instanceClass);
+        try (JsonParser parser = objectMapper.getFactory().createParser(json)) {
+            T instance = objectMapper.readValue(parser, instanceClass);
+            // Jackson stops after the first value, so content after it would be ignored and lost at the next save
+            if (parser.nextToken() != null) {
+                JsonLocation location = parser.getTokenLocation();
+                throw new IOException("Unexpected content after the JSON data at line " + location.getLineNr()
+                        + ", column " + location.getColumnNr());
+            }
+            return instance;
+        }
     }
 
     /**

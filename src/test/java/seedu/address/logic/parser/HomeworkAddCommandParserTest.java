@@ -290,6 +290,15 @@ public class HomeworkAddCommandParserTest {
     }
 
     @Test
+    public void parse_zeroWidthSpaceTitle_failure() {
+        // a zero-width space (U+200B) followed by an ordinary space
+        assertParseFailure(parser, "3 t/\u200B s/MATH due/2026-12-01", Title.MESSAGE_CONSTRAINTS);
+
+        // a zero-width space inside the title
+        assertParseFailure(parser, "3 t/Alge\u200Bbra drill s/MATH due/2026-12-02", Title.MESSAGE_CONSTRAINTS);
+    }
+
+    @Test
     public void parse_titleTooLong_failure() {
         assertParseFailure(parser, "1 title/" + "a".repeat(101) + " s/MATH due/2026-10-15",
                 Title.MESSAGE_CONSTRAINTS);

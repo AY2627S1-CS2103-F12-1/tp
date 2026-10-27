@@ -2,37 +2,38 @@ package seedu.address.model.homework;
 
 import static java.util.Objects.requireNonNull;
 
+import java.text.Normalizer;
 import java.util.regex.Pattern;
 
 /**
  * Represents the title of a homework record.
- * Guarantees: immutable; whitespace is normalized; length and characters satisfy the Add Homework specification.
+ * Guarantees: immutable; whitespace and Unicode (to NFC) are normalized; length and characters satisfy the Add
+ * Homework specification.
  */
 public final class Title {
     public static final int MAX_LENGTH = 100;
     public static final String MESSAGE_CONSTRAINTS = "Homework title must be 1 to " + MAX_LENGTH + " characters and"
-            + " must not contain line breaks or control characters.";
+            + " may contain only letters, numbers, punctuation, symbols and spaces.";
 
     private static final Pattern WHITESPACE = Pattern.compile("\\s+", Pattern.UNICODE_CHARACTER_CLASS);
-    private static final Pattern LINE_BREAK_OR_CONTROL = Pattern.compile("[\\p{Cc}\\u2028\\u2029]");
+    private static final Pattern VALID_CHARACTERS = Pattern.compile("[\\p{L}\\p{N}\\p{P}\\p{S} ]+");
 
     private final String value;
 
     /**
-     * Creates a title after replacing consecutive spaces with one space and removing surrounding whitespace.
-     * Line breaks and control characters are rejected before normalization. Capitalization is preserved for display.
+     * Creates a title after converting it to Unicode NFC, replacing consecutive whitespace with one space and
+     * removing surrounding whitespace. NFC gives canonically equivalent text one encoding, e.g. {@code é} written as
+     * one character or as {@code e} followed by a combining accent. Capitalization is preserved for display.
      *
-     * @throws IllegalArgumentException If the input contains a line break or control character, or the normalized
-     *         title is empty or longer than {@link #MAX_LENGTH} characters.
+     * @throws IllegalArgumentException If the normalized title is empty, longer than {@link #MAX_LENGTH} characters,
+     *         or has unsupported characters.
      */
     public Title(String rawTitle) {
         requireNonNull(rawTitle);
-        if (LINE_BREAK_OR_CONTROL.matcher(rawTitle).find()) {
-            throw new IllegalArgumentException(MESSAGE_CONSTRAINTS);
-        }
-        String normalizedTitle = WHITESPACE.matcher(rawTitle).replaceAll(" ").strip();
+        String nfcTitle = Normalizer.normalize(rawTitle, Normalizer.Form.NFC);
+        String normalizedTitle = WHITESPACE.matcher(nfcTitle).replaceAll(" ").strip();
         int length = normalizedTitle.codePointCount(0, normalizedTitle.length());
-        if (length < 1 || length > MAX_LENGTH) {
+        if (length < 1 || length > MAX_LENGTH || !VALID_CHARACTERS.matcher(normalizedTitle).matches()) {
             throw new IllegalArgumentException(MESSAGE_CONSTRAINTS);
         }
         value = normalizedTitle;

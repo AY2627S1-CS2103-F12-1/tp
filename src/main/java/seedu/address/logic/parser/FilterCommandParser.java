@@ -1,6 +1,7 @@
 package seedu.address.logic.parser;
 
 import static java.util.Objects.requireNonNull;
+import static seedu.address.logic.Messages.MESSAGE_INVALID_FORMAT_WITH_USAGE;
 
 import java.util.List;
 import java.util.Map;
@@ -17,12 +18,13 @@ import seedu.address.model.student.TuitionSubject;
  */
 public final class FilterCommandParser implements Parser<FilterCommand> {
     public static final String MESSAGE_INVALID_FORMAT =
-            "Invalid command format\nUsage: " + FilterCommand.MESSAGE_USAGE;
-    public static final String MESSAGE_MISSING_FILTERS = "Invalid Command Format\nUsage: " + FilterCommand.MESSAGE_USAGE
+            String.format(MESSAGE_INVALID_FORMAT_WITH_USAGE, FilterCommand.MESSAGE_USAGE);
+    public static final String MESSAGE_MISSING_FILTERS = MESSAGE_INVALID_FORMAT
             + "\n" + StudentFilterPredicate.MESSAGE_CONSTRAINTS;
     public static final String MESSAGE_REPEATED_FILTER = "Each filter may only be specified once";
-    public static final String MESSAGE_INVALID_LEVEL = "Academic level must be a non-empty value";
-    public static final String MESSAGE_INVALID_SUBJECT = "Subject must be a non-empty value";
+    public static final String MESSAGE_EMPTY_LEVEL = "Academic level must be a non-empty value";
+    public static final String MESSAGE_EMPTY_SUBJECT = "Subject must be a non-empty value";
+    public static final String MESSAGE_MULTIPLE_SUBJECTS = "Filter accepts only one subject. Use s/SUBJECT.";
 
     private static final String PREFIX_LEVEL = "l/";
     private static final String PREFIX_SUBJECT = "s/";
@@ -50,24 +52,33 @@ public final class FilterCommandParser implements Parser<FilterCommand> {
     }
 
     /**
-     * Returns the normalized level, translating invalid values to the filter-specific error.
+     * Returns the normalized level, preserving the domain constraint message for unsupported values.
      */
     private AcademicLevel parseAcademicLevel(String value) throws ParseException {
+        if (value.isBlank()) {
+            throw new ParseException(MESSAGE_EMPTY_LEVEL);
+        }
         try {
             return AcademicLevel.parse(value);
         } catch (IllegalArgumentException exception) {
-            throw new ParseException(MESSAGE_INVALID_LEVEL, exception);
+            throw new ParseException(exception.getMessage(), exception);
         }
     }
 
     /**
-     * Returns the normalized subject, translating invalid values to the filter-specific error.
+     * Returns one normalized subject, rejecting empty values and comma-separated lists.
      */
     private TuitionSubject parseSubject(String value) throws ParseException {
+        if (value.isBlank()) {
+            throw new ParseException(MESSAGE_EMPTY_SUBJECT);
+        }
+        if (value.contains(",")) {
+            throw new ParseException(MESSAGE_MULTIPLE_SUBJECTS);
+        }
         try {
             return TuitionSubject.parse(value);
         } catch (IllegalArgumentException exception) {
-            throw new ParseException(MESSAGE_INVALID_SUBJECT, exception);
+            throw new ParseException(exception.getMessage(), exception);
         }
     }
 }

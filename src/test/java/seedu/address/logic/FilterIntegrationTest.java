@@ -79,7 +79,8 @@ public class FilterIntegrationTest {
         logic.execute("filter s/Math");
         List<Student> displayedBefore = List.copyOf(model.getStudentList());
 
-        for (String command : List.of("filter", "filter x/value", "filter l/S4 l/S4", "filter l/", "filter s/bad")) {
+        for (String command : List.of("filter", "filter x/value", "filter l/S4 l/S4", "filter l/", "filter s/bad",
+                "filter l/S6", "filter l/Sec 4", "filter s/Math, Physics")) {
             assertThrows(ParseException.class, () -> logic.execute(command));
 
             assertEquals(displayedBefore, model.getStudentList());

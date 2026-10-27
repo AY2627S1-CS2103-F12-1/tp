@@ -1,9 +1,10 @@
 package seedu.address.logic.parser;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
-import static seedu.address.testutil.Assert.assertThrows;
 
 import java.util.List;
 import java.util.Optional;
@@ -49,7 +50,7 @@ public class FilterCommandParserTest {
     @Test
     public void parse_noCriteria_reportsMissingFilters() {
         for (String arguments : List.of("", "  ", "\t")) {
-            assertParseFailure(parser, arguments, "Invalid Command Format\nUsage: filter [l/LEVEL] [s/SUBJECT]"
+            assertParseFailure(parser, arguments, "Invalid command format.\nUsage: filter [l/LEVEL] [s/SUBJECT]"
                     + "\nAt least one filter must be provided");
         }
     }
@@ -57,7 +58,7 @@ public class FilterCommandParserTest {
     @Test
     public void parse_unknownPrefixOrPreamble_reportsInvalidFormat() {
         for (String arguments : List.of(" x/S4", " l/S4 p/123", " all s/MATH", "S4", " L/S4")) {
-            assertParseFailure(parser, arguments, "Invalid command format\nUsage: filter [l/LEVEL] [s/SUBJECT]");
+            assertParseFailure(parser, arguments, "Invalid command format.\nUsage: filter [l/LEVEL] [s/SUBJECT]");
         }
     }
 
@@ -69,33 +70,65 @@ public class FilterCommandParserTest {
     }
 
     @Test
-    public void parse_emptyOrInvalidLevel_reportsLevelError() {
-        for (String arguments : List.of(" l/", " l/   ", " l/S6", " l/S4,J1", " l/\"\"", " s/MATH l/bad")) {
+    public void parse_emptyLevel_reportsEmptyValue() {
+        for (String arguments : List.of(" l/", " l/   ", " l/\"\"", " l/\"   \"", " s/MATH l/")) {
             assertParseFailure(parser, arguments, "Academic level must be a non-empty value");
         }
     }
 
     @Test
-    public void parse_emptyOrInvalidSubject_reportsSubjectError() {
-        for (String arguments : List.of(" s/", " s/   ", " s/BIOLOGY", " s/MATH,PHYSICS", " s/\"\"",
-                " l/S4 s/bad")) {
+    public void parse_emptySubject_reportsEmptyValue() {
+        for (String arguments : List.of(" s/", " s/   ", " s/\"\"", " s/\"   \"", " l/S4 s/")) {
             assertParseFailure(parser, arguments, "Subject must be a non-empty value");
         }
     }
 
     @Test
+    public void parse_unsupportedLevel_reportsSupportedLevels() {
+        for (String arguments : List.of(" l/S6", " l/Sec 4", " l/S4,J1", " s/MATH l/bad")) {
+            assertParseFailure(parser, arguments, AcademicLevel.MESSAGE_CONSTRAINTS);
+        }
+    }
+
+    @Test
+    public void parse_unsupportedSubject_reportsSupportedSubjects() {
+        for (String arguments : List.of(" s/BIOLOGY", " s/Math Physics", " l/S4 s/bad")) {
+            assertParseFailure(parser, arguments, TuitionSubject.MESSAGE_CONSTRAINTS);
+        }
+    }
+
+    @Test
+    public void parse_commaSeparatedSubjects_reportsSingleSubjectRestriction() {
+        for (String arguments : List.of(" s/MATH,PHYSICS", " s/Math, Physics", " s/\"Math, Physics\"",
+                " l/S4 s/MATH,CHEMISTRY", " s/MATH,MATH", " s/MATH,")) {
+            assertParseFailure(parser, arguments, "Filter accepts only one subject. Use s/SUBJECT.");
+        }
+    }
+
+    @Test
+    public void parse_unsupportedValues_preservesValidationCause() {
+        for (String arguments : List.of(" l/S6", " s/Biology")) {
+            ParseException exception = assertThrows(ParseException.class, () -> parser.parse(arguments));
+
+            assertInstanceOf(IllegalArgumentException.class, exception.getCause());
+            assertEquals(exception.getCause().getMessage(), exception.getMessage());
+        }
+    }
+
+    @Test
     public void parse_bothValuesInvalid_reportsFirstSuppliedValue() {
-        assertParseFailure(parser, " s/bad l/bad", "Subject must be a non-empty value");
-        assertParseFailure(parser, " l/bad s/bad", "Academic level must be a non-empty value");
+        assertParseFailure(parser, " s/bad l/bad", TuitionSubject.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, " l/bad s/bad", AcademicLevel.MESSAGE_CONSTRAINTS);
     }
 
     @Test
     public void parseCommand_filter_routesArgumentsAndValidation() throws Exception {
         AddressBookParser addressBookParser = new AddressBookParser();
-        String missingMessage = "Invalid Command Format\nUsage: filter [l/LEVEL] [s/SUBJECT]"
+        String missingMessage = "Invalid command format.\nUsage: filter [l/LEVEL] [s/SUBJECT]"
                 + "\nAt least one filter must be provided";
 
         assertEquals(parser.parse(" l/S4 s/MATH"), addressBookParser.parseCommand("filter l/S4 s/MATH"));
-        assertThrows(ParseException.class, missingMessage, () -> addressBookParser.parseCommand("filter"));
+        ParseException exception = assertThrows(ParseException.class, () -> addressBookParser.parseCommand("filter"));
+        assertEquals(missingMessage, exception.getMessage());
     }
 }

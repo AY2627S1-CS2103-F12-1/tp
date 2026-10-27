@@ -211,6 +211,17 @@ public class DueDateTest {
     }
 
     @Test
+    public void parse_arabicIndicDigits_throwsWrongFormat() {
+        // 2028-02-29 with the year in Arabic-Indic digits, as the default ar-EG format prints it; only the digits 0 to
+        // 9 are accepted
+        String arabicIndicDate = "\u0662\u0660\u0662\u0668-02-29";
+
+        assertWrongFormat(arabicIndicDate, TODAY);
+        assertThrows(IllegalArgumentException.class, fullDateFormatMessage(arabicIndicDate), () ->
+                DueDate.parseFullDate(arabicIndicDate));
+    }
+
+    @Test
     public void parseFullDate_notRealDate_throwsNotRealDate() {
         assertThrows(IllegalArgumentException.class, notRealDateMessage("2026-02-30"), () ->
                 DueDate.parseFullDate("2026-02-30"));

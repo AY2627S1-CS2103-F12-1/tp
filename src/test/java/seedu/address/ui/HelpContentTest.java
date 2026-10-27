@@ -36,6 +36,9 @@ import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.SearchCommand;
 import seedu.address.logic.commands.SortCommand;
 import seedu.address.logic.parser.AddressBookParser;
+import seedu.address.model.ModelManager;
+import seedu.address.model.UserPrefs;
+import seedu.address.model.util.SampleDataUtil;
 
 public class HelpContentTest {
     private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-10-05T00:00:00Z"), ZoneOffset.UTC);
@@ -76,6 +79,18 @@ public class HelpContentTest {
                 .filter(entry -> entry.commandWord().equals("homework edit")).findFirst().orElseThrow();
         // homework 2 of the first sample student is the PHYSICS record "Kinematics practice set"
         assertEquals("hw e 1 2 t/Kinematics practice set B", editEntry.example());
+    }
+
+    @Test
+    public void getSections_filterExample_matchesSampleStudent() throws Exception {
+        HelpContent.Entry filterEntry = getEntries().stream()
+                .filter(entry -> entry.commandWord().equals(FilterCommand.COMMAND_WORD)).findFirst().orElseThrow();
+        ModelManager model = new ModelManager(SampleDataUtil.getSampleAddressBook(), new UserPrefs());
+
+        new AddressBookParser(FIXED_CLOCK).parseCommand(filterEntry.example()).execute(model);
+
+        assertEquals(List.of("Nurul Aisyah"), model.getStudentList().stream()
+                .map(student -> student.getName().toString()).toList());
     }
 
     @Test

@@ -63,7 +63,7 @@ public final class HelpContent {
                     new Entry(FilterCommand.COMMAND_WORD, FilterCommand.MESSAGE_USAGE,
                             "Shows students matching every supplied filter. Supply at least one filter. "
                                     + AcademicLevel.MESSAGE_CONSTRAINTS + " " + TuitionSubject.MESSAGE_CONSTRAINTS
-                                    + " Type list to show all students again.", "filter l/S4 s/Math"),
+                                    + " Type list to show all students again.", "filter l/S4 s/Physics"),
                     new Entry(SortCommand.COMMAND_WORD, SortCommand.MESSAGE_USAGE,
                             "Sorts the displayed students by level, subject or day. Order is asc (default) or desc."
                                     + " Missing meetings stay last; ties retain their previous displayed order."

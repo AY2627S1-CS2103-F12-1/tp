@@ -999,7 +999,16 @@ testers are expected to do more *exploratory* testing.
 
 ### Filtering students
 
-1. Use a test roster containing Alice (S4, MATH and PHYSICS), Ben (S4, CHEMISTRY) and Cara (J1, MATH), in that order.
+1. In a disposable test folder, run the following commands to create Alice (S4, MATH and PHYSICS),
+   Ben (S4, CHEMISTRY) and Cara (J1, MATH), in that order. `clear` removes any existing test records.
+
+   ```text
+   clear
+   add n/Alice l/S4 s/MATH, PHYSICS p/91111111 gn/Alice Mum gp/92222222
+   add n/Ben l/S4 s/CHEMISTRY p/93333333 gn/Ben Mum gp/94444444
+   add n/Cara l/J1 s/MATH p/95555555 gn/Cara Mum gp/96666666
+   ```
+
    1. Run `filter l/S4`.<br>
       Expected: Alice and Ben are displayed as students 1 and 2; feedback is `Found 2 student(s)`.
    1. Run `filter s/Math`.<br>
@@ -1007,7 +1016,8 @@ testers are expected to do more *exploratory* testing.
    1. Run `filter l/S4 s/Math`, then `filter s/Math l/S4`.<br>
       Expected: Both commands display only Alice, with `Found 1 student(s)`.
    1. Run `filter l/S5`.<br>
-      Expected: The roster is empty and feedback is `No students match the selected filters`.
+      Expected: The displayed student list is empty and feedback is `No students match the selected filters`.
+      All three students remain in the stored roster.
    1. Run `list`.<br>
       Expected: All three students reappear in their original order.
 

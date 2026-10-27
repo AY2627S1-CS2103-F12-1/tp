@@ -63,17 +63,27 @@ public final class StudentAddParser {
 
     /**
      * Returns true if a prefix-shaped token belongs to a name rather than the command structure.
-     * Names may contain slashes, and the standalone name token {@code s/o} overlaps the subjects prefix.
+     * Relationship words such as {@code s/o}, {@code d/o}, {@code a/l}, {@code a/p}, {@code w/o} and {@code b/o}
+     * are one letter, a slash and one letter. Longer prefix-shaped words, such as a mistyped {@code ph/}, remain
+     * command errors.
      */
     static boolean isPartOfName(String arguments, int prefixEnd, String previousPrefix, String prefix) {
         if (!"n/".equals(previousPrefix) && !"gn/".equals(previousPrefix)) {
             return false;
         }
-        if (!("s/".equals(prefix) || "d/".equals(prefix)) || prefixEnd >= arguments.length()
-                || Character.toLowerCase(arguments.charAt(prefixEnd)) != 'o') {
+
+        boolean isSubjectPrefix = "s/".equals(prefix);
+        if (REQUIRED_PREFIXES.contains(prefix) && !isSubjectPrefix) {
+            return false;
+        }
+        if (prefix.length() != 2 || prefixEnd >= arguments.length()
+                || !Character.isLetter(arguments.charAt(prefixEnd))) {
             return false;
         }
         int tokenEnd = prefixEnd + 1;
-        return tokenEnd == arguments.length() || Character.isWhitespace(arguments.charAt(tokenEnd));
+        boolean isSingleLetterWord = tokenEnd == arguments.length()
+                || Character.isWhitespace(arguments.charAt(tokenEnd));
+        return isSingleLetterWord
+                && (!isSubjectPrefix || Character.toLowerCase(arguments.charAt(prefixEnd)) == 'o');
     }
 }

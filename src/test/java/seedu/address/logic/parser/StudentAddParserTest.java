@@ -38,6 +38,17 @@ public class StudentAddParserTest {
     }
 
     @Test
+    public void parse_relationshipWordsInNames_preservesNames() throws ParseException {
+        Student student = parser.parse(VALID_ARGUMENTS.replace("n/John Tan", "n/Muthu a/l Rajan")
+                .replace("gn/Mary Tan", "gn/Lim w/o Tan"));
+        Student anotherStudent = parser.parse(VALID_ARGUMENTS.replace("n/John Tan", "n/Siti a/p Ahmad"));
+
+        assertEquals("Muthu a/l Rajan", student.getName().toString());
+        assertEquals("Lim w/o Tan", student.getGuardianName().toString());
+        assertEquals("Siti a/p Ahmad", anotherStudent.getName().toString());
+    }
+
+    @Test
     public void parse_slashSeparatedNames_preservesStudentAndGuardianNames() throws ParseException {
         Student student = parser.parse(VALID_ARGUMENTS.replace("n/John Tan", "n/Ravi s/o Kumar")
                 .replace("gn/Mary Tan", "gn/Maya d/o Raj"));

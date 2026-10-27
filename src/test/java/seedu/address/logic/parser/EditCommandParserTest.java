@@ -46,6 +46,12 @@ public class EditCommandParserTest {
     }
 
     @Test
+    public void parse_relationshipWordsInNames_preservesNames() throws ParseException {
+        assertEquals(command(new StudentName("Ahmad b/o Ali"), null, null, null,
+                new StudentName("Lim w/o Tan"), null), parser.parse("1 n/Ahmad b/o Ali gn/Lim w/o Tan"));
+    }
+
+    @Test
     public void parse_quotedNameContainingAllowedPrefix_preservesName() throws ParseException {
         assertEquals(command(new StudentName("Ravi p/ Kumar"), null, null, null, null, null),
                 parser.parse("1 n/\"Ravi p/ Kumar\""));

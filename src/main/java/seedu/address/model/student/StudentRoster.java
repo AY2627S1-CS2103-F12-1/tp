@@ -73,14 +73,24 @@ public final class StudentRoster {
     public void setStudents(List<Student> replacement) {
         // Copied first, as replacement may be a view of this roster
         List<Student> newStudents = List.copyOf(replacement);
-        for (int i = 0; i < newStudents.size(); i++) {
-            for (int j = i + 1; j < newStudents.size(); j++) {
-                if (newStudents.get(i).isSameStudent(newStudents.get(j))) {
-                    throw new IllegalArgumentException(MESSAGE_DUPLICATE_STUDENT);
+        if (hasDuplicateIdentity(newStudents)) {
+            throw new IllegalArgumentException(MESSAGE_DUPLICATE_STUDENT);
+        }
+        students.setAll(newStudents);
+    }
+
+    /**
+     * Returns true if two students in {@code students} have the same identity.
+     */
+    private static boolean hasDuplicateIdentity(List<Student> students) {
+        for (int i = 0; i < students.size(); i++) {
+            for (int j = i + 1; j < students.size(); j++) {
+                if (students.get(i).isSameStudent(students.get(j))) {
+                    return true;
                 }
             }
         }
-        students.setAll(newStudents);
+        return false;
     }
 
     /** Returns an unmodifiable observable view of the roster in insertion order. */

@@ -60,6 +60,9 @@ public interface Model {
     /** Updates the students displayed in the UI without changing the stored roster. */
     void updateFilteredStudentList(Predicate<Student> predicate);
 
+    /** Returns the predicate that selects the displayed students. */
+    Predicate<Student> getFilteredStudentListPredicate();
+
     /**
      * Reorders the displayed occurrences without changing the active predicate or stored roster.
      * The supplied list must contain the same student references with the same multiplicities.

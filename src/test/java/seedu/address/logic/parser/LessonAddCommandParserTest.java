@@ -2,9 +2,11 @@ package seedu.address.logic.parser;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
 
 import org.junit.jupiter.api.Test;
 
+import seedu.address.logic.commands.LessonAddCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 
 public class LessonAddCommandParserTest {
@@ -26,7 +28,6 @@ public class LessonAddCommandParserTest {
     public void parse_invalidStructure_rejects() {
         for (String args : new String[]{"add", "add s/MATH d/MONDAY st/16:00 et/18:00",
             "add 1 extra s/MATH d/MONDAY st/16:00 et/18:00", "add 1 s/MATH d/MONDAY st/16:00",
-            "add 1 s/MATH d/MONDAY st/16:00 et/18:00 x/test",
             "add 1 s/MATH d/MONDAY st/16:00 et/18:00 extra"}) {
             assertEquals(LessonAddCommandParser.MESSAGE_FORMAT,
                     assertThrows(ParseException.class, () ->
@@ -35,6 +36,14 @@ public class LessonAddCommandParserTest {
         assertEquals(
                 "Prefix s/ must be specified exactly once.", assertThrows(ParseException.class, () ->
                         parser.parseCommand("lesson add 1 s/MATH s/PHYSICS d/MONDAY st/16:00 et/18:00")).getMessage());
+    }
+
+    @Test
+    public void parse_unknownPrefix_namesPrefix() {
+        // the end time before x/ is only digits and a colon, so no example is given
+        assertEquals(notPrefixWithQuoteHint("x/") + "\nUsage: " + LessonAddCommand.MESSAGE_USAGE,
+                assertThrows(ParseException.class, () ->
+                        parser.parseCommand("lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00 x/test")).getMessage());
     }
 
     @Test

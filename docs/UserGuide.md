@@ -72,7 +72,16 @@ TutorFlow is a **desktop application for private tutors to manage their students
   For example, if the command specifies `n/NAME p/PHONE_NUMBER`, `p/PHONE_NUMBER n/NAME` is also acceptable.
 
 * A lowercase word directly followed by `/` after a space (such as `km/h` or `and/or`) is read as a prefix. To use such a word in a value, wrap the whole value in double quotes (`"`). The outer quotes are removed before the value is checked. This works for every value that follows a prefix.<br>
-  For example, `hw add 1 t/"Speed in km/h" s/PHYSICS due/2026-11-01` adds homework titled `Speed in km/h`, while `hw add 1 t/Speed in km/h s/PHYSICS due/2026-11-01` is rejected because `km/` is not a prefix of `hw add`.
+  For example, `hw add 1 t/"Speed in km/h" s/PHYSICS due/2026-11-01` adds homework titled `Speed in km/h`, while `hw add 1 t/Speed in km/h s/PHYSICS due/2026-11-01` is rejected because `km/` is not a prefix of `hw add`:
+
+  ```text
+  km/ is not a prefix of this command. To use it inside a value, wrap the whole value in straight double quotes, e.g. t/"Speed in km/h".
+  Usage: homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD
+  ```
+
+* The error for such a word names it and shows the command's usage on the next line. The example is built from the value the word is in, up to the next prefix of the command. It is left out when the text before the word is only digits, date or time punctuation and spaces: `hw add 1 t/A s/PHYSICS due/2026-11-01 x/y` gives `x/ is not a prefix of this command. To use it inside a value, wrap the whole value in straight double quotes.` A word that is not inside any value, such as `score/` in `hw e 1 2 score/5/10`, gets only `score/ is not a prefix of this command.` and the usage.
+
+* Only straight double quotes (`"`) can wrap a value. Curly quotes (`“ ”`), which some editors type automatically, are read as part of the value, so `hw add 1 t/“Speed in km/h” s/PHYSICS due/2026-11-01` is rejected, with `Use straight quotes ("), not curly quotes (“ ”).` on its own line before the usage.
 
 * Spaces at both ends of a quoted value are removed, both outside and inside the quotes, as they are for a value without quotes. Spaces between words are kept.<br>
   For example, `n/" Ravi s/o Kumar "` gives the name `Ravi s/o Kumar`, and `hw up due/" 3 "` is the same as `hw up due/3`. Empty quotes (`""`), or quotes with only spaces inside, give an empty value, which is treated like a prefix with nothing after it: `t/""` is rejected like `t/`.
@@ -214,7 +223,8 @@ Other invalid commands report:
 
 | Problem | Feedback |
 | --- | --- |
-| Unknown prefix or text before the first prefix | `Invalid command format`, followed by `Usage: filter [l/LEVEL] [s/SUBJECT]` on the next line |
+| Unknown prefix, e.g. `filter l/S4 p/123` | `p/ is not a prefix of this command. To use it inside a value, wrap the whole value in straight double quotes, e.g. l/"S4 p/123".`, followed by `Usage: filter [l/LEVEL] [s/SUBJECT]` on the next line (see the [notes about the command format](#features)) |
+| Text before the first prefix | `Invalid command format`, followed by `Usage: filter [l/LEVEL] [s/SUBJECT]` on the next line |
 | Repeated prefix | `Each filter may only be specified once` |
 | Empty or unsupported level | `Academic level must be a non-empty value` |
 | Empty or unsupported subject | `Subject must be a non-empty value` |
@@ -268,7 +278,8 @@ Invalid input leaves the current roster, order, selection and scroll position un
 Condition | Message
 ----------|--------
 Missing `by/` | `Invalid command format` followed by `Usage: sort by/KEY [o/ORDER]` and `Exactly one sort key must be provided` on separate lines
-Unknown prefix or text before the parameters | `Invalid command format` followed by `Usage: sort by/KEY [o/ORDER]` on a new line
+Unknown prefix, e.g. `sort by/level x/value` | `x/ is not a prefix of this command. To use it inside a value, wrap the whole value in straight double quotes, e.g. by/"level x/value".` followed by `Usage: sort by/KEY [o/ORDER]` on a new line (see the [notes about the command format](#features))
+Text before the parameters | `Invalid command format` followed by `Usage: sort by/KEY [o/ORDER]` on a new line
 Repeated prefix | `Each sort parameter may only be specified once`
 Empty or invalid key | `Sort key must be one of: level, subject, day.`
 Empty or invalid order | `Sort order must be either asc or desc.`
@@ -282,16 +293,23 @@ Adds a homework record to the end of a student's homework list.
 
 Format: `homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD`
 
-* `homework` can be shortened to `hw`, and `title/` can be shortened to `t/`.
+* `homework` can be shortened to `hw`, and `title/` can be shortened to `t/`. Give only one of them (`Use either title/ or t/, not both.`).
 * `STUDENT_INDEX` refers to the index number shown in the displayed student list. It **must be a positive whole number without leading zeroes**, such as 1, 2, 3, …​
-* `TITLE` must be 1 to 100 characters long and must not contain line breaks or control characters (such as tabs). Extra spaces are removed, and capitalization is kept.
+* `TITLE` must be 1 to 100 characters long and may contain only letters, numbers, punctuation, symbols and spaces, such as `Café`, `x² + π ≈ 3.14`, `😀 quiz` or `Ch 3 Q1-10 (pg. 45)`. Extra spaces are removed, and capitalization is kept.
+* Invisible characters, such as a zero-width space (U+200B) or the variation selector U+FE0F at the end of some emoji, are rejected wherever they are in the title. So emoji made of several characters joined by invisible ones, such as ❤️ (U+2764 U+FE0F) or 👨‍👩‍👧, are rejected.
+* Scripts that use combining vowel signs, such as Tamil, Hindi or Thai, are not supported, the same as in student names: a title that contains such a sign, e.g. `தமிழ்`, is rejected.
 * A lowercase word directly followed by `/` in `TITLE` (such as `km/h` or `and/or`) is read as a prefix, so the command is rejected. Wrap the title in double quotes to keep such words, e.g. `t/"Speed in km/h"` (see the [notes about the command format](#features)).
 * `SUBJECT` must be `MATH`, `PHYSICS` or `CHEMISTRY` (in any case), and the student must take that subject.
-* The due date must be a real calendar date in `YYYY-MM-DD` format. Past dates are accepted, so you can record homework that was assigned earlier.
+* The due date must be a real calendar date in `YYYY-MM-DD` format, with a year from 2000 to 2099. Past dates are accepted, so you can record homework that was assigned earlier.
 * The due date can also be given as `MM-DD`. The year is then this year, or next year if that date has already passed this year, and the result shows the year used.
-* For 29 February (`02-29` or `2-29`), the year is this year only if this year is a leap year and 29 February has not passed yet. Otherwise it is next year, and if next year is not a leap year, the date is rejected. For example, `due/2-29` is rejected throughout 2026, and gives `2028-02-29` throughout 2027.
+* For 29 February (`02-29` or `2-29`), the year is this year only if this year is a leap year and 29 February has not passed yet. Otherwise it is next year, and if next year is not a leap year, the date is rejected with a message that names the next leap year. For example, `due/2-29` gives `2028-02-29` throughout 2027, and throughout 2026 it is rejected with `29 February does not occur in the next 12 months. Enter the full date, e.g. 2028-02-29.`
 * In both formats, the month and day may have 1 or 2 digits, so `2026-2-5` means 5 February 2026 and `10-5` means 5 October. The year must have 4 digits.
+* A wrong due date is rejected with a message that says what is wrong:
+  * `due/30-10-2026` gives `30-10-2026 is not in YYYY-MM-DD or MM-DD format, e.g. 2026-10-30 or 10-30.`
+  * `due/2026-02-30` gives `2026-02-30 is not a real calendar date.`
+  * `due/2206-10-30` gives `The due date's year must be from 2000 to 2099.` An `MM-DD` date whose year would be after 2099 gets the same message.
 * A student cannot have two homework records with the same title (ignoring case), subject and due date. The same homework can be added to different students. New homework starts as `ASSIGNED` with no recorded score.
+* An accented letter counts as the same whether it is typed as one character (`é`) or as a letter followed by a combining accent. Letters that only look alike, such as a Cyrillic `а` and a Latin `a`, are different.
 * Each student card shows `Upcoming homework: N`, the number of the student's homework records due today or later (including scored or completed homework), and `Overdue homework: N`, the number of `ASSIGNED` homework records due before today, regardless of score.
 
 Examples:
@@ -312,7 +330,7 @@ Format: `homework|hw list|ls STUDENT_INDEX [all]`
 * Without `all`, homework due before today is left out. With `all` (in lowercase), all of the student's homework is shown.
 * Homework is sorted by due date, earliest first. Homework due on the same date is shown in the order it was added.
 * The result starts with `Listed N upcoming homework records for NAME.` (`Listed N homework records for NAME.` with `all`, and `record` when there is only one) and `Homework for NAME:`, followed by one line per homework with its number, title, subject, due date, score and status, e.g. `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score 5/10 - status ASSIGNED`. Homework without marks shows `score Not recorded`.
-* Each homework is numbered by its position in the order the homework was added, so the numbers may appear out of order. These numbers are the `HOMEWORK_INDEX` values used by `homework edit`, `homework marks` and `homework delete`. They change only when homework is deleted.
+* Each homework is numbered by its position in the order the homework was added, so the numbers may appear out of order. These numbers are the `HOMEWORK_INDEX` values used by `homework edit`, `homework marks` and `homework delete`. They change only when homework is deleted. They are always written with the digits 0 to 9, even if your computer's language and region settings use other digits, so you can type them into these commands.
 * If the student has no homework, the result is `No homework found for NAME.` If none of the student's homework is due today or later, the result is `No upcoming homework found for NAME.`; use `all` to see the overdue homework.
 
 Examples:
@@ -321,31 +339,43 @@ Examples:
 
 ### Listing upcoming homework of all students: `homework upcoming`
 
-Shows the homework of all students that is due in the next few days, earliest due date first, with the score of each.
+Shows the homework of all students that is due in the next few days, earliest due date first, with the score and completion status of each.
 
 Format: `homework|hw upcoming|up [due/DAYS]`
 
 * `homework` can be shortened to `hw`, and `upcoming` can be shortened to `up`.
-* `DAYS` is a **number of days, not a date**: the homework shown is due from today to `DAYS` days after today, both days included. For example, on 2026-10-17, `due/3` shows homework due from 2026-10-17 to 2026-10-20, and `due/0` shows homework due today only.
+* `DAYS` is a **number of days, not a date**: the homework shown is due from today to `DAYS` days after today, both days included. For example, on 2026-10-27, `due/3` shows homework due from 2026-10-27 to 2026-10-30, and `due/0` shows homework due today only.
 * `DAYS` must be a whole number from 0 to 365 without signs, decimals, spaces or leading zeroes (`0` itself is accepted). If `due/` is left out, `DAYS` is 7.
 * Homework due before today is left out. Homework is shown whether or not it has marks, including completed homework. Upcoming lists and student-card counts are based on due dates; use `homework filter status/ASSIGNED` to find unfinished work.
 * The homework of every student is searched, not only the students shown in the student list.
 * Like [`list`](#listing-all-students-list), this command shows all students in the student list again, even when no homework is due. So after a search or filter, `Student N` still matches the student list.
 * Homework is sorted by due date, earliest first. Homework due on the same date is shown in the order of the students in the student list, and then in the order it was added.
 * The result starts with `Found N homework records due from START to END.` (`record` when there is only one), followed by one line per homework with the student's `STUDENT_INDEX` and name, title, subject, due date, score and status, e.g. `Student 1: Ethan Lim; Quadratic equations worksheet; MATH; Due: 2026-10-23; Score: 5/10; Status: ASSIGNED`. Homework without marks shows `Score: Not recorded`.
-* `Student N` is the index of the student in the displayed student list, the `STUDENT_INDEX` that other commands take. It tells apart students with the same name.
+* `Student N` is the index of the student in the displayed student list, the `STUDENT_INDEX` that other commands take. It tells apart students with the same name. Like the numbers in `homework list`, it is always written with the digits 0 to 9.
 * If no homework is due in that period, the result is `No homework due from START to END.`
 * The lines are not numbered, and their order is not the `HOMEWORK_INDEX` used by other homework commands. To edit, score or delete a record shown here, find its number with [`homework list STUDENT_INDEX`](#listing-a-students-homework-homework-list), using the student index shown after `Student`.
 * This command does not change your data.
 
 Examples:
-* `hw up` shows the homework due in the next 7 days. With the sample students on 2026-10-17, the result is:
+* `hw up` shows the homework due from today to 7 days after today. The result depends on today's date. For example, with the sample students on 2026-10-27, the result is:
 
   ```
-  Found 1 homework record due from 2026-10-17 to 2026-10-24.
-  Student 1: Ethan Lim; Quadratic equations worksheet; MATH; Due: 2026-10-23; Score: Not recorded; Status: ASSIGNED
+  Found 3 homework records due from 2026-10-27 to 2026-11-03.
+  Student 1: Ethan Lim; Kinematics practice set; PHYSICS; Due: 2026-10-28; Score: Not recorded; Status: ASSIGNED
+  Student 3: Marcus Tan; Algebraic expansion worksheet; MATH; Due: 2026-10-30; Score: Not recorded; Status: ASSIGNED
+  Student 2: Priya Nair; Organic reaction pathways map; CHEMISTRY; Due: 2026-11-02; Score: Not recorded; Status: ASSIGNED
   ```
-* `hw up due/3` shows the homework due from today to 3 days later. With the sample students on 2026-10-17, the result is `No homework due from 2026-10-17 to 2026-10-20.`
+
+  On other dates the dates and the number of records differ.
+* `hw up due/3` shows the homework due from today to 3 days after today. For example, with the sample students on 2026-10-27, the result is:
+
+  ```
+  Found 2 homework records due from 2026-10-27 to 2026-10-30.
+  Student 1: Ethan Lim; Kinematics practice set; PHYSICS; Due: 2026-10-28; Score: Not recorded; Status: ASSIGNED
+  Student 3: Marcus Tan; Algebraic expansion worksheet; MATH; Due: 2026-10-30; Score: Not recorded; Status: ASSIGNED
+  ```
+
+  On other dates the dates and the number of records differ.
 * `hw up due/7` is the same as `hw up`.
 * `hw up due/0` shows the homework due today.
 * `hw upcoming due/7` is the same as `hw up due/7`.
@@ -359,15 +389,23 @@ Format: `homework|hw edit|e STUDENT_INDEX HOMEWORK_INDEX [title/|t/TITLE] [s/SUB
 * `homework` can be shortened to `hw`, `edit` can be shortened to `e`, and `title/` can be shortened to `t/`.
 * `STUDENT_INDEX` follows the same rules as in `homework add`.
 * `HOMEWORK_INDEX` refers to the number shown by `homework list STUDENT_INDEX` (or by `homework list STUDENT_INDEX all` for overdue homework). It **must be a positive whole number without leading zeroes**.
-* Give at least one of `title/` (or `t/`), `s/` and `due/`, in any order and each at most once. `title/` and `t/` cannot be used together. The details you do not give stay unchanged.
+* Give at least one of `title/` (or `t/`), `s/` and `due/`, in any order and each at most once. `title/` and `t/` cannot be used together (`Use either title/ or t/, not both.`). The details you do not give stay unchanged.
 * `TITLE`, `SUBJECT` and the due date follow the same rules as in [`homework add`](#adding-homework-to-a-student-homework-add). A due date in `MM-DD` form gets its year in the same way, and the result shows the year used.
 * The homework keeps its number, score and completion status. To change the score, use [`homework marks`](#recording-homework-marks-homework-marks).
 * The edit is rejected if it changes nothing (`No changes made; the supplied values are identical to the existing homework details.`), or if the edited homework would have the same title (ignoring case), subject and due date as another homework of the student (`This edit would make the homework a duplicate of an existing homework record.`).
 * On success, the result shows the edited homework, followed by the student's upcoming homework in the format of `homework list STUDENT_INDEX`.
 
 Examples:
-* `hw e 1 2 t/Complete algebra questions 1-10` changes the title of the 2nd homework of the 1st student.
-* `hw e 2 1 due/2026-11-05` changes the due date of the 1st homework of the 2nd student. With the sample students, the result is:
+* `hw e 1 2 t/Kinematics practice set B` changes the title of the 2nd homework of the 1st student. The upcoming homework listed depends on today's date. For example, with the sample students on 2026-10-27, the result is:
+
+  ```
+  Edited homework:
+  Ethan Lim; Title: Kinematics practice set B; Subject: PHYSICS; Due: 2026-10-28
+  Listed 1 upcoming homework record for Ethan Lim.
+  Homework for Ethan Lim:
+  2. Kinematics practice set B (PHYSICS) - due 2026-10-28 - score Not recorded - status ASSIGNED
+  ```
+* `hw e 2 1 due/2026-11-05` changes the due date of the 1st homework of the 2nd student. For example, with the sample students on 2026-10-27, the result is:
 
   ```
   Edited homework:
@@ -391,7 +429,7 @@ Format: `homework|hw marks|m STUDENT_INDEX HOMEWORK_INDEX score/[SCORE]`
 * `homework` can be shortened to `hw`, and `marks` can be shortened to `m`.
 * `STUDENT_INDEX` and `HOMEWORK_INDEX` follow the same rules as in `homework edit`.
 * `SCORE` is either the marks on their own, e.g. `17`, or `MARKS_OBTAINED/TOTAL_MARKS`, e.g. `5/10`, when the homework has a total.
-* Every number in `SCORE` is a whole number without a sign, decimals, spaces or leading zeroes, and no greater than 2147483647. So `0`, `17` and `150` are accepted, but `-1`, `+17`, `017` and `17.5` are not.
+* Every number in `SCORE` is a whole number without a sign, decimals, spaces or leading zeroes, and no greater than 2147483647. So `0`, `17` and `150` are accepted, but `-1`, `+17`, `017` and `17.5` are not. A score with a leading zero in any number, such as `05/10` or `017`, is rejected with `Marks must not have leading zeroes. Enter whole numbers such as 5/10, not 05/10.`
 * With a total, `TOTAL_MARKS` must be at least 1, and `MARKS_OBTAINED` must be from 0 to `TOTAL_MARKS`. So `0/10` and `10/10` are accepted, but `11/10`, `5/0`, `5.5/10` and `5 / 10` are not.
 * The score is kept and shown as you give it: `5/10` is not simplified to `1/2`, and `17` and `17/20` are different scores.
 * Recording the score that the homework already has is rejected with `No changes made; the homework already has this score.`
@@ -430,11 +468,22 @@ Format: `homework|hw delete|del STUDENT_INDEX HOMEWORK_INDEX`
 * `STUDENT_INDEX` follows the same rules as in `homework add`.
 * `HOMEWORK_INDEX` refers to the number shown by `homework list STUDENT_INDEX` (or by `homework list STUDENT_INDEX all` for overdue homework). It **must be a positive whole number without leading zeroes**.
 * The remaining homework keeps its order and is renumbered.
+* The result shows the deleted record as `homework list` shows it, with the number it had, its score and its status. Below it is the student's upcoming homework with the new numbers, in the format of `homework list STUDENT_INDEX`. Use these numbers for the next command, as the numbers shown before the deletion may now point to different homework.
 * Deletion cannot be undone.
 
 Examples:
 * `homework list 1` followed by `homework delete 1 2` deletes the 2nd homework of the 1st student.
 * `hw del 3 1`
+* For example, with the sample students on 2026-10-27, after `hw add 2 t/Vectors revision s/MATH due/2026-11-20`, `hw del 2 2` shows the following. On other dates, the upcoming homework listed differs.
+
+  ```text
+  Deleted homework:
+  2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-02 - score Not recorded - status ASSIGNED
+  Listed 2 upcoming homework records for Priya Nair.
+  Homework for Priya Nair:
+  2. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-09 - score Not recorded - status ASSIGNED
+  3. Vectors revision (MATH) - due 2026-11-20 - score Not recorded - status ASSIGNED
+  ```
 
 ### Updating homework completion: `homework status`
 
@@ -573,7 +622,8 @@ Listed 2 regular lessons.
 TutorFlow saves your students, homework and regular lessons automatically after every command that changes them. You do not need to save manually.
 
 * Commands that do not change the data, such as `filter`, `search`, `list`, `homework list`, `homework upcoming`, `lesson list`, `help` and `exit`, do not write to the data file.
-* If TutorFlow cannot save the data (for example, because the data file is read-only), the command is cancelled: its changes are undone and an error message is shown. Homework and lesson commands state that their respective data was not changed.
+* If TutorFlow cannot save the data, the command is cancelled: its changes are undone and the error names the data file and the likely cause, e.g. `Could not save data/tutorflow.json: the data folder is read-only. Nothing was changed.` The homework and lesson commands and `edit` say which data was not changed, e.g. `The homework could not be added because TutorFlow could not save data/tutorflow.json: the data folder is read-only. No homework data was changed.`
+* The causes TutorFlow recognizes are: `it is a folder, not a file` (a folder named `tutorflow.json` is in the `data` folder), `the file is read-only`, `the data folder is read-only`, `the home folder is read-only` (the folder containing the JAR, when it has no `data` folder yet), and `a file named data is in the way of the data folder` (a file, not a folder, named `data` is next to the JAR). Fix the cause, e.g. make the file or folder writable again, and repeat the command. For any other problem, the error shows the system's description of it. On Windows, the file is shown as `data\tutorflow.json`.
 * If another copy of TutorFlow or an editor changes the data file, a stale session refuses to overwrite it. Restart TutorFlow to load the latest data before making more changes. If another copy is saving at the same moment, wait for it to finish and try again.
 
 ### Editing the data file
@@ -583,6 +633,8 @@ TutorFlow data is saved automatically as `data/tutorflow.json` inside the folder
 To move TutorFlow, close it and copy the JAR together with its `data` folder and `preferences.json` to the new folder. If you previously launched v1.4 from a different terminal folder, copy your saved files from that folder into the folder containing the JAR before starting v1.5; back up both locations first. The JSON format remains compatible.
 
 Advanced users may edit this JSON file while TutorFlow is closed. Back it up first.
+
+`preferences.json` holds only the window size and position. If it cannot be read, for example because it is not valid JSON, or it holds `"guiSettings" : null`, TutorFlow opens with the default window size and position and saves the default preferences over that file. TutorFlow does not check the window width and height themselves: if either is `null` or `"NaN"`, the window opens at its minimum size (600 x 450). Your student data is not affected.
 
 If the data file does not exist when TutorFlow starts, for example the first time you run it, TutorFlow starts with some sample students and saves them to a new data file after the first command that changes the data. To get the sample students back, close TutorFlow, delete the data file and start TutorFlow again.
 
@@ -621,16 +673,19 @@ When editing the file, follow these rules:
 * `homeworks` may be left out, or written as `[ ]`, for a student with no homework.
 * `lessons` may be left out, or written as `[ ]`, for a student with no regular lessons. Each lesson has `subject`, `dayOfWeek`, `startTime` and `endTime`, for example `{"subject":"MATH","dayOfWeek":"MONDAY","startTime":"16:00","endTime":"18:00"}`. The same subject, weekday, time and overlap rules as `lesson add` apply. Older files without `lessons` continue to work.
 * Each homework needs `title`, `subject` and `dueDate`. `title` follows the same rules as in [`homework add`](#adding-homework-to-a-student-homework-add), and `subject` must be one of the student's `subjects`.
-* `dueDate` must be a full date in `YYYY-MM-DD` format, such as `2026-10-23`. The short `MM-DD` form is not accepted in the data file, as TutorFlow never guesses the year of a saved date.
+* `dueDate` must be a real calendar date in `YYYY-MM-DD` format with a year from 2000 to 2099, such as `2026-10-23`. The month and day may have 1 or 2 digits: `2026-1-5` loads as 2026-01-05. The short `MM-DD` form is not accepted in the data file, as TutorFlow never guesses the year of a saved date.
 * `score` is text in the same format as `SCORE` in [`homework marks`](#recording-homework-marks-homework-marks): the marks on their own, such as `"17"`, or `MARKS_OBTAINED/TOTAL_MARKS`, such as `"5/10"`. Use `null` (or leave `score` out) if the homework has no score. A score saved by an older version of TutorFlow as a number without quotes, such as `85`, loads as the score `85` and is saved as `"85"` the next time TutorFlow saves. A number that is not a valid score, such as `85.5` or `-3`, is ignored: the homework loads with no score (`Not recorded`) and the rest of the file loads as usual. Invalid text, such as `"85.5"` or `"abc"`, makes the data file invalid.
 * A student cannot have two homework records with the same title (ignoring case), subject and due date.
-* Values such as `math` or `s3` are accepted in any case, and extra spaces in names and titles are removed. TutorFlow writes them in its own format the next time it saves.
-* Spell every key exactly as shown above. A misspelled key that may be left out (`homeworks`, `lessons` or `score`) is ignored without an error: for example, with `homework` instead of `homeworks`, the student loads with no homework, and the next command that changes the data removes that homework from the file. A misspelled required key, such as `phne` instead of `phone`, makes the data file invalid (see the caution below).
-* `status` is `"ASSIGNED"` or `"COMPLETED"`, independent of `score`. Older files that include this key retain their explicit status. Missing or `null` status loads as `ASSIGNED`, including for scored homework; update historical records with `homework status` when needed. An invalid explicit status makes the data file invalid.
+* Values such as `math` or `s3` are accepted in any case, and extra spaces in names and titles are removed, with each line break or tab in them read as a space. TutorFlow writes them in its own format the next time it saves.
+* Spell every key exactly as shown above. A misspelled key that may be left out (`homeworks`, `lessons`, `score` or `status`) is ignored without an error: for example, with `homework` instead of `homeworks`, the student loads with no homework, and the next command that changes the data removes that homework from the file. A misspelled required key, such as `phne` instead of `phone`, makes the data file invalid (see the caution below).
+* `status` is `"ASSIGNED"` or `"COMPLETED"`, in any case (`"completed"` is accepted) and with any spaces around it ignored, independent of `score`. Older files that include this key retain their explicit status. Missing or `null` status loads as `ASSIGNED`, including for scored homework; update historical records with `homework status` when needed. An invalid explicit status makes the data file invalid.
 * Keys that TutorFlow does not use are ignored and removed the next time TutorFlow saves.
+* Save the file as UTF-8 text, with or without a byte order mark. A file in another encoding that holds a non-ASCII character, such as a title with `é` saved as Windows-1252, usually makes the data file invalid; TutorFlow does not guess the encoding or replace such characters. A few such characters happen to form valid UTF-8 and load as different text: for example, `Ã©` saved as Windows-1252 loads as `é`.
+* The file holds one JSON object, from the first `{` to its matching `}`. Anything after that `}` other than spaces and line breaks, such as a second `{ ... }` object, makes the data file invalid; TutorFlow does not merge it into the roster.
+* Each key appears at most once in an object. A repeated key, such as a second `"students"` key or a student with two `"phone"` keys, makes the data file invalid; TutorFlow does not pick one of the values.
 
 <div markdown="span" class="alert alert-warning">:exclamation: **Caution:**
-If the data file cannot be read or contains invalid data, TutorFlow shows an error with the full file path and stops before opening the roster. The original data file remains unchanged. Close the error dialog, restore a valid backup or correct the file, and restart from the same home folder. To start with sample data instead, move the original file to a safe location before restarting; keep it if you need to recover records.<br>
+If the data file cannot be read or contains invalid data, TutorFlow shows an error with the full file path and the reason, e.g. `Reason: 10-15 is not in YYYY-MM-DD format, e.g. 2026-10-30.`, and stops before opening the roster. For a file that is not valid JSON, the reason gives the place where reading stopped, e.g. `Reason: The file is not valid JSON near line 1, column 13.` For valid JSON with a value of the wrong kind, such as a number where a list or text is expected, the reason is e.g. `Reason: The file has a value of the wrong type near line 1, column 14.` For a file that is empty or holds only spaces and line breaks, it is `Reason: The file is empty.` The original data file remains unchanged. Close the error dialog, restore a valid backup or correct the file, and restart from the same home folder. To start with sample data instead, move the original file to a safe location before restarting; keep it if you need to recover records.<br>
 Furthermore, certain edits can cause TutorFlow to behave in unexpected ways (e.g., if a value entered is outside of the acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
 </div>
 
@@ -639,7 +694,7 @@ Furthermore, certain edits can cause TutorFlow to behave in unexpected ways (e.g
 ## FAQ
 
 **Q**: How do I transfer my data to another computer?<br>
-**A**: Install the app on the other computer and overwrite the data file it creates (`data/tutorflow.json`) with the data file from your previous TutorFlow home folder.
+**A**: Close TutorFlow on both computers and copy the `data` folder from the old TutorFlow folder into the new one, beside the JAR.
 
 **Q**: How do I start with an empty student list instead of the sample students?<br>
 **A**: Run `clear`. It deletes all students, including the sample students, and the empty list is saved.

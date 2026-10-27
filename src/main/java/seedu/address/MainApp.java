@@ -4,6 +4,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.Optional;
 import java.util.logging.Logger;
 
@@ -47,18 +48,25 @@ public class MainApp extends Application {
     protected Logic logic;
     protected Storage storage;
     protected Model model;
+    private final Path homeFolder;
     private final Path userPrefsFilePath;
     private final Path addressBookFilePath;
     private final Runnable shutdown;
     private boolean hasDataLoadingError;
+    /** Why the data file could not be loaded, shown in the startup dialog. */
+    private String dataLoadingReason;
 
     /** Creates the application using files in its home folder and the JavaFX shutdown action. */
     public MainApp() {
-        this(USER_PREFS_FILE_PATH, ADDRESS_BOOK_FILE_PATH, Platform::exit);
+        this(APP_HOME, USER_PREFS_FILE_PATH, ADDRESS_BOOK_FILE_PATH, Platform::exit);
     }
 
-    /** Creates an application with isolated paths and a shutdown action for lifecycle testing. */
-    MainApp(Path userPrefsFilePath, Path addressBookFilePath, Runnable shutdown) {
+    /**
+     * Creates an application with isolated paths and a shutdown action for lifecycle testing. Messages name the data
+     * file relative to {@code homeFolder}.
+     */
+    MainApp(Path homeFolder, Path userPrefsFilePath, Path addressBookFilePath, Runnable shutdown) {
+        this.homeFolder = requireNonNull(homeFolder);
         this.userPrefsFilePath = requireNonNull(userPrefsFilePath);
         this.addressBookFilePath = requireNonNull(addressBookFilePath);
         this.shutdown = requireNonNull(shutdown);
@@ -80,10 +88,11 @@ public class MainApp extends Application {
             logger.warning("Cannot load saved data. Startup stopped to preserve the original file: "
                     + StringUtil.getDetails(exception));
             hasDataLoadingError = true;
+            dataLoadingReason = getReason(exception);
             return;
         }
 
-        logic = new LogicManager(model, storage);
+        logic = new LogicManager(model, storage, Clock.systemDefaultZone(), homeFolder);
 
         ui = new UiManager(logic, storage.getAddressBookFilePath());
     }
@@ -117,6 +126,15 @@ public class MainApp extends Application {
     }
 
     /**
+     * Returns why the data file could not be loaded, as shown to the user: the message of the cause of
+     * {@code exception}, as the exception's own message starts with the cause's class name.
+     */
+    private static String getReason(DataLoadingException exception) {
+        Throwable cause = exception.getCause();
+        return cause == null || cause.getMessage() == null ? exception.getMessage() : cause.getMessage();
+    }
+
+    /**
      * Returns a {@code UserPrefs} using the file at {@code storage}'s user prefs file path,
      * or a new {@code UserPrefs} with default configuration if errors occur when
      * reading from the file.
@@ -134,7 +152,7 @@ public class MainApp extends Application {
             initializedPrefs = prefsOptional.orElse(new UserPrefs());
         } catch (DataLoadingException e) {
             logger.warning("Preference file at " + prefsFilePath + " could not be loaded."
-                    + " Using default preferences.");
+                    + " Using default preferences. Cause: " + e.getMessage());
             initializedPrefs = new UserPrefs();
         }
 
@@ -156,6 +174,7 @@ public class MainApp extends Application {
             alert.setHeaderText("Your data file has not been changed.");
             alert.setContentText("TutorFlow could not read valid data from:\n"
                     + addressBookFilePath.toAbsolutePath().normalize()
+                    + "\nReason: " + dataLoadingReason
                     + "\n\nClose TutorFlow and restore a valid backup or correct the file. "
                     + "To start with sample data instead, move the original file to a safe location before restarting. "
                     + "Do not delete it if you need to recover your records.");

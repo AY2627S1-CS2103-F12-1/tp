@@ -1,20 +1,26 @@
 package seedu.address.logic.commands;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.logic.commands.CommandTestUtil.CAUSE_READ_ONLY_FOLDER;
+import static seedu.address.logic.commands.CommandTestUtil.SHOWN_DATA_FILE_NAME;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.testutil.Assert.assertThrows;
+import static seedu.address.testutil.TestUtil.ARABIC_EGYPT;
+import static seedu.address.testutil.TestUtil.runWithFormatLocale;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalHomeworks.ATOMIC_STRUCTURE;
+import static seedu.address.testutil.TypicalHomeworks.COMPLETED_MECHANICS;
 import static seedu.address.testutil.TypicalHomeworks.MECHANICS;
 import static seedu.address.testutil.TypicalStudents.ALICE;
 import static seedu.address.testutil.TypicalStudents.BENSON;
 import static seedu.address.testutil.TypicalStudents.CARL;
+import static seedu.address.testutil.TypicalStudents.getModelFailingOnSetStudent;
 import static seedu.address.testutil.TypicalStudents.getModelWithStudents;
 import static seedu.address.testutil.TypicalStudents.getModelWithTypicalStudents;
-import static seedu.address.testutil.TypicalStudents.getTypicalStudents;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -25,11 +31,9 @@ import seedu.address.commons.core.index.Index;
 import seedu.address.logic.Messages;
 import seedu.address.logic.commands.HomeworkEditCommand.EditHomeworkDescriptor;
 import seedu.address.model.Model;
-import seedu.address.model.ModelManager;
 import seedu.address.model.homework.DueDate;
 import seedu.address.model.homework.Homework;
 import seedu.address.model.homework.Title;
-import seedu.address.model.student.Student;
 import seedu.address.model.student.TuitionSubject;
 import seedu.address.testutil.HomeworkBuilder;
 
@@ -49,6 +53,7 @@ public class HomeworkEditCommandTest {
         assertThrows(NullPointerException.class, () -> new HomeworkEditCommand(null, FIRST, NEW_TITLE, false, TODAY));
         assertThrows(NullPointerException.class, () -> new HomeworkEditCommand(FIRST, null, NEW_TITLE, false, TODAY));
         assertThrows(NullPointerException.class, () -> new HomeworkEditCommand(FIRST, FIRST, null, false, TODAY));
+        assertThrows(NullPointerException.class, () -> new HomeworkEditCommand(FIRST, FIRST, NEW_TITLE, false, null));
     }
 
     @Test
@@ -129,6 +134,20 @@ public class HomeworkEditCommandTest {
     }
 
     @Test
+    public void execute_yearInferredArabicDigitsLocale_showsAsciiYearAndIndices() {
+        EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(null, null,
+                DueDate.parseFullDate("2027-01-05"));
+        HomeworkEditCommand command = new HomeworkEditCommand(THIRD, FIRST, descriptor, true, TODAY);
+
+        runWithFormatLocale(ARABIC_EGYPT, () -> {
+            String feedback = assertDoesNotThrow(() -> command.execute(model)).getFeedbackToUser();
+            assertTrue(feedback.contains("Due: 2027-01-05\nInferred year: 2027\n"), feedback);
+            assertTrue(feedback.endsWith("\n1. Attempt mechanics questions 1-5 (PHYSICS) - due 2027-01-05"
+                    + " - score Not recorded - status ASSIGNED"), feedback);
+        });
+    }
+
+    @Test
     public void execute_titleCaseOnly_editsTitle() {
         // a title differing only in case is a change, and the homework is not a duplicate of itself
         EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(new Title("COMPLETE algebra worksheet"),
@@ -189,6 +208,50 @@ public class HomeworkEditCommandTest {
     }
 
     @Test
+    public void execute_filteredList_editsDisplayedStudentHomework() {
+        // CARL is third in the roster but first in the displayed list
+        model.updateFilteredStudentList(CARL::equals);
+        EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(new Title("Revise mechanics"), null, null);
+        Homework editedMechanics = new HomeworkBuilder(MECHANICS).withTitle("Revise mechanics").build();
+        String expectedMessage = "Edited homework:\n"
+                + "Carl Ng; Title: Revise mechanics; Subject: PHYSICS; Due: 2026-10-20\n"
+                + "Listed 1 upcoming homework record for Carl Ng.\n"
+                + "Homework for Carl Ng:\n"
+                + "1. Revise mechanics (PHYSICS) - due 2026-10-20 - score Not recorded - status ASSIGNED";
+        Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON,
+                CARL.withHomeworks(List.of(editedMechanics))));
+
+        assertCommandSuccess(new HomeworkEditCommand(FIRST, FIRST, descriptor, false, TODAY), model, expectedMessage,
+                expectedModel);
+    }
+
+    @Test
+    public void execute_indexBeyondFilteredList_failure() {
+        model.updateFilteredStudentList(CARL::equals);
+
+        assertCommandFailure(new HomeworkEditCommand(SECOND, FIRST, NEW_TITLE, false, TODAY), model,
+                Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
+    }
+
+    @Test
+    public void execute_completedHomework_keepsStatus() {
+        Model completedModel = getModelWithStudents(List.of(ALICE, BENSON,
+                CARL.withHomeworks(List.of(COMPLETED_MECHANICS))));
+        EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(new Title("Revise mechanics"), null, null);
+        Homework editedMechanics = new HomeworkBuilder(COMPLETED_MECHANICS).withTitle("Revise mechanics").build();
+        String expectedMessage = "Edited homework:\n"
+                + "Carl Ng; Title: Revise mechanics; Subject: PHYSICS; Due: 2026-10-20\n"
+                + "Listed 1 upcoming homework record for Carl Ng.\n"
+                + "Homework for Carl Ng:\n"
+                + "1. Revise mechanics (PHYSICS) - due 2026-10-20 - score Not recorded - status COMPLETED";
+        Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON,
+                CARL.withHomeworks(List.of(editedMechanics))));
+
+        assertCommandSuccess(new HomeworkEditCommand(THIRD, FIRST, descriptor, false, TODAY), completedModel,
+                expectedMessage, expectedModel);
+    }
+
+    @Test
     public void execute_emptyRoster_failure() {
         assertCommandFailure(new HomeworkEditCommand(FIRST, FIRST, NEW_TITLE, false, TODAY),
                 getModelWithStudents(List.of()), Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
@@ -241,6 +304,18 @@ public class HomeworkEditCommandTest {
     }
 
     @Test
+    public void execute_duplicateInDifferentUnicodeForm_failure() {
+        // ALGEBRA would get the title of the first homework, with the accent written as a combining character
+        Homework composedCafe = new HomeworkBuilder().withTitle("Caf\u00E9").withDueDate("2026-10-15").build();
+        Model modelWithCafe = getModelWithStudents(List.of(ALICE.withHomeworks(List.of(composedCafe, ALGEBRA)),
+                BENSON, CARL));
+        EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(new Title("Cafe\u0301"), null, null);
+
+        assertCommandFailure(new HomeworkEditCommand(FIRST, SECOND, descriptor, false, TODAY), modelWithCafe,
+                HomeworkEditCommand.MESSAGE_DUPLICATE_HOMEWORK);
+    }
+
+    @Test
     public void execute_duplicateWithDifferentScore_failure() {
         // the score is not part of identity: ALGEBRA would become ATOMIC_STRUCTURE, which has a score
         EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(new Title("Revise atomic structure"),
@@ -252,24 +327,18 @@ public class HomeworkEditCommandTest {
 
     @Test
     public void execute_unexpectedError_reportsInternalErrorWithoutChangingModel() {
-        Model failingModel = new ModelManager() {
-            @Override
-            public void setStudent(Student target, Student editedStudent) {
-                throw new IllegalStateException("dummy internal error");
-            }
-        };
-        getTypicalStudents().forEach(failingModel::addStudent);
+        Model failingModel = getModelFailingOnSetStudent();
 
         assertCommandFailure(new HomeworkEditCommand(FIRST, FIRST, NEW_TITLE, false, TODAY), failingModel,
                 HomeworkEditCommand.MESSAGE_INTERNAL_ERROR);
     }
 
     @Test
-    public void getSaveFailureMessage_anyDefaultMessage_returnsHomeworkMessage() {
-        String expectedMessage = "The homework could not be edited because TutorFlow could not save the updated "
-                + "data. No homework data was changed.";
-        assertEquals(expectedMessage, new HomeworkEditCommand(FIRST, FIRST, NEW_TITLE, false, TODAY)
-                .getSaveFailureMessage("Could not save data"));
+    public void getSaveFailureMessage_cause_namesFileAndCause() {
+        String expectedMessage = "The homework could not be edited because TutorFlow could not save "
+                + SHOWN_DATA_FILE_NAME + ": the data folder is read-only. No homework data was changed.";
+        assertEquals(expectedMessage, new HomeworkEditCommand(FIRST, FIRST, NEW_TITLE, false,
+                TODAY).getSaveFailureMessage(SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER));
     }
 
     @Test
@@ -290,8 +359,10 @@ public class HomeworkEditCommandTest {
         assertTrue(editCommand.equals(editCommand));
 
         // same values -> returns true
-        assertTrue(editCommand.equals(new HomeworkEditCommand(Index.fromOneBased(1), Index.fromOneBased(2),
-                new EditHomeworkDescriptor(new Title("Complete algebra questions 1-10"), null, null), false, TODAY)));
+        HomeworkEditCommand editCommandCopy = new HomeworkEditCommand(Index.fromOneBased(1), Index.fromOneBased(2),
+                new EditHomeworkDescriptor(new Title("Complete algebra questions 1-10"), null, null), false, TODAY);
+        assertTrue(editCommand.equals(editCommandCopy));
+        assertEquals(editCommand.hashCode(), editCommandCopy.hashCode());
 
         // null -> returns false
         assertFalse(editCommand.equals(null));

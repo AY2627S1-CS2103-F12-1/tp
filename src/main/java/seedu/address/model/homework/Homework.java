@@ -82,6 +82,15 @@ public final class Homework {
     }
 
     /**
+     * Returns a copy with only the score changed.
+     *
+     * @param newScore Score to record, or null to clear the recorded score.
+     */
+    public Homework withScore(Score newScore) {
+        return new Homework(title, subject, dueDate, newScore, status);
+    }
+
+    /**
      * Returns true if this homework is due on or after {@code today}.
      */
     public boolean isUpcoming(LocalDate today) {

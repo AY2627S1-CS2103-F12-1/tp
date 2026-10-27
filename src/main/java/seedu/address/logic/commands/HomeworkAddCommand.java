@@ -5,6 +5,8 @@ import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -30,7 +32,7 @@ public class HomeworkAddCommand extends Command {
     public static final String MESSAGE_INTERNAL_ERROR =
             "TutorFlow could not add the homework due to an internal error.";
     public static final String MESSAGE_SAVE_FAILURE = "The homework could not be added because TutorFlow could not "
-            + "save the updated data. No homework data was changed.";
+            + "save %s: %s. No homework data was changed.";
 
     private static final Logger logger = LogsCenter.getLogger(HomeworkAddCommand.class);
 
@@ -72,12 +74,7 @@ public class HomeworkAddCommand extends Command {
      * an exception thrown before it leaves the model unchanged.
      */
     private CommandResult addHomework(Model model) throws CommandException {
-        List<Student> students = model.getStudentList();
-        if (studentIndex.getZeroBased() >= students.size()) {
-            throw new CommandException(Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
-        }
-
-        Student student = students.get(studentIndex.getZeroBased());
+        Student student = HomeworkCommandUtil.getDisplayedStudent(model, studentIndex);
         if (!student.getSubjects().getSubjects().contains(homework.getSubject())) {
             throw new CommandException(MESSAGE_SUBJECT_NOT_TAKEN);
         }
@@ -89,7 +86,8 @@ public class HomeworkAddCommand extends Command {
         updatedHomeworks.add(homework);
         String message = String.format(MESSAGE_SUCCESS, Messages.format(student, homework));
         if (isYearInferred) {
-            message += String.format(MESSAGE_INFERRED_YEAR, homework.getDueDate().getDate().getYear());
+            // Locale.ROOT prints the year in ASCII digits in every locale, like the due date before it
+            message += String.format(Locale.ROOT, MESSAGE_INFERRED_YEAR, homework.getDueDate().getDate().getYear());
         }
 
         model.setStudent(student, student.withHomeworks(updatedHomeworks));
@@ -97,7 +95,7 @@ public class HomeworkAddCommand extends Command {
     }
 
     @Override
-    public String getSaveFailureMessage(String defaultMessage) {
+    protected String getSaveFailureFormat() {
         return MESSAGE_SAVE_FAILURE;
     }
 
@@ -115,6 +113,11 @@ public class HomeworkAddCommand extends Command {
         return studentIndex.equals(otherCommand.studentIndex)
                 && homework.equals(otherCommand.homework)
                 && isYearInferred == otherCommand.isYearInferred;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(studentIndex.getZeroBased(), homework, isYearInferred);
     }
 
     @Override

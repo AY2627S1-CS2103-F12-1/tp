@@ -1,10 +1,14 @@
 package seedu.address.logic.parser;
 
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
 import static seedu.address.logic.parser.HomeworkUpcomingCommandParser.MESSAGE_INVALID_DAYS;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -21,6 +25,16 @@ public class HomeworkUpcomingCommandParserTest {
             + "Usage: homework|hw upcoming|up [due/DAYS]";
 
     private final HomeworkUpcomingCommandParser parser = new HomeworkUpcomingCommandParser(CLOCK);
+
+    @Test
+    public void parse_manyQuotes_rejectedQuickly() {
+        // Issue #154: `hw up due/` followed by quotes; 1,000,000 rather than the issue's 200,000 so that a quadratic
+        // scan exceeds the limit on fast machines too
+        String arguments = " due/" + "\"".repeat(1_000_000);
+
+        assertTimeoutPreemptively(Duration.ofSeconds(1), () -> assertParseFailure(parser, arguments,
+                MESSAGE_INVALID_DAYS));
+    }
 
     @Test
     public void parse_noArguments_usesDefaultDays() {
@@ -114,8 +128,10 @@ public class HomeworkUpcomingCommandParserTest {
 
     @Test
     public void parse_unknownPrefix_failure() {
-        assertParseFailure(parser, "d/3", MESSAGE_INVALID_FORMAT);
-        assertParseFailure(parser, "due/3 s/MATH", MESSAGE_INVALID_FORMAT);
+        String usageLine = "\nUsage: " + HomeworkUpcomingCommand.MESSAGE_USAGE;
+        assertParseFailure(parser, "d/3", notPrefix("d/") + usageLine);
+        // the days before s/ are only digits, so no example is given
+        assertParseFailure(parser, "due/3 s/MATH", notPrefixWithQuoteHint("s/") + usageLine);
     }
 
     @Test

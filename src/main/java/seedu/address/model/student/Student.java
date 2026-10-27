@@ -24,7 +24,7 @@ public final class Student {
     private final List<RegularLesson> lessons;
 
     /**
-     * Creates a student with all six required Add Student fields and no homework.
+     * Creates a student with all six required Add Student fields, and no homework or lessons.
      *
      * @throws NullPointerException If any field is null.
      */
@@ -34,7 +34,8 @@ public final class Student {
     }
 
     /**
-     * Creates a student with all six required Add Student fields and the given homework in insertion order.
+     * Creates a student with all six required Add Student fields, the given homework in insertion order, and no
+     * lessons.
      *
      * @throws NullPointerException If any field, or any homework in {@code homeworks}, is null.
      */
@@ -47,7 +48,7 @@ public final class Student {
     public Student(StudentName name, AcademicLevel academicLevel, TuitionSubjects subjects, StudentPhone phone,
             StudentName guardianName, StudentPhone guardianPhone, List<Homework> homeworks,
             List<RegularLesson> lessons) {
-        requireAllNonNull(name, academicLevel, subjects, phone, guardianName, guardianPhone, homeworks);
+        requireAllNonNull(name, academicLevel, subjects, phone, guardianName, guardianPhone, homeworks, lessons);
         this.name = name;
         this.academicLevel = academicLevel;
         this.subjects = subjects;
@@ -108,7 +109,8 @@ public final class Student {
     }
 
     /**
-     * Returns a copy of this student with the same six profile fields and {@code homeworks} as the homework list.
+     * Returns a copy of this student with the same six profile fields and lessons, and {@code homeworks} as the
+     * homework list.
      *
      * @throws NullPointerException If {@code homeworks} or any homework in it is null.
      */

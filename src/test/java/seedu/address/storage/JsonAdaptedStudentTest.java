@@ -1,6 +1,7 @@
 package seedu.address.storage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static seedu.address.model.homework.DueDateTest.fullDateFormatMessage;
 import static seedu.address.storage.JsonAdaptedStudent.MISSING_FIELD_MESSAGE_FORMAT;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
@@ -16,7 +17,7 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.databind.node.TextNode;
 
 import seedu.address.commons.exceptions.IllegalValueException;
-import seedu.address.model.homework.DueDate;
+import seedu.address.model.homework.Homework;
 import seedu.address.model.student.AcademicLevel;
 import seedu.address.model.student.Student;
 import seedu.address.model.student.StudentName;
@@ -160,7 +161,7 @@ public class JsonAdaptedStudentTest {
         List<JsonAdaptedHomework> homeworks = List.of(new JsonAdaptedHomework("Algebra", "MATH", "10-15", null));
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
                 VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, homeworks);
-        assertThrows(IllegalValueException.class, DueDate.MESSAGE_FULL_DATE_CONSTRAINTS, student::toModelType);
+        assertThrows(IllegalValueException.class, fullDateFormatMessage("10-15"), student::toModelType);
     }
 
     @Test
@@ -196,13 +197,26 @@ public class JsonAdaptedStudentTest {
     }
 
     @Test
+    public void toModelType_duplicateHomeworkDifferentUnicodeForm_throwsIllegalValueException() {
+        // composed e with acute accent, and e followed by a combining acute accent
+        List<JsonAdaptedHomework> homeworks = List.of(
+                new JsonAdaptedHomework("Caf\u00E9", "MATH", "2026-11-20", null),
+                new JsonAdaptedHomework("Cafe\u0301", "MATH", "2026-11-20", null));
+        JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
+                VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, homeworks);
+        assertThrows(IllegalValueException.class, JsonAdaptedStudent.MESSAGE_DUPLICATE_HOMEWORK,
+                student::toModelType);
+    }
+
+    @Test
     public void toModelType_sameTitleDifferentDueDate_returnsStudentWithBothHomework() throws Exception {
         JsonAdaptedHomework laterAlgebra = new JsonAdaptedHomework(ALGEBRA.getTitle().toString(), "MATH",
                 "2026-10-22", null);
         List<JsonAdaptedHomework> homeworks = List.of(new JsonAdaptedHomework(ALGEBRA), laterAlgebra);
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
                 VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, homeworks);
-        assertEquals(2, student.toModelType().getHomeworks().size());
+        Homework expectedLaterAlgebra = new HomeworkBuilder(ALGEBRA).withDueDate("2026-10-22").build();
+        assertEquals(List.of(ALGEBRA, expectedLaterAlgebra), student.toModelType().getHomeworks());
     }
 
     private static void assertMissingField(JsonAdaptedStudent student, String fieldName) {

@@ -2,6 +2,7 @@ package seedu.address.logic.parser;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
 
 import org.junit.jupiter.api.Test;
 
@@ -112,9 +113,12 @@ public class StudentAddParserTest {
 
     @Test
     public void parse_unknownPrefixOrUnprefixedText_reportsFormat() {
-        assertParseFailure(VALID_ARGUMENTS + " x/value", StudentAddParser.MESSAGE_INVALID_FORMAT);
+        // the guardian phone before x/ is only digits, so no example is given
+        assertParseFailure(VALID_ARGUMENTS + " x/value",
+                notPrefixWithQuoteHint("x/") + "\nUsage: " + StudentAddParser.USAGE);
         assertParseFailure(VALID_ARGUMENTS.replace("n/John Tan", "n/John Tan ph/91234567"),
-                StudentAddParser.MESSAGE_INVALID_FORMAT);
+                notPrefixWithQuoteHint("ph/", "n/\"John Tan ph/91234567\"") + "\nUsage: "
+                        + StudentAddParser.USAGE);
         assertParseFailure(" unexpected" + VALID_ARGUMENTS, StudentAddParser.MESSAGE_INVALID_FORMAT);
         assertParseFailure("unexpected text", StudentAddParser.MESSAGE_INVALID_FORMAT);
     }

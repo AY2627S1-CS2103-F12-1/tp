@@ -3,6 +3,8 @@ package seedu.address.logic.commands;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.logic.commands.CommandTestUtil.CAUSE_READ_ONLY_FOLDER;
+import static seedu.address.logic.commands.CommandTestUtil.SHOWN_DATA_FILE_NAME;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.testutil.Assert.assertThrows;
@@ -99,11 +101,13 @@ public class LessonDeleteCommandTest {
     }
 
     @Test
-    public void getSaveFailureMessage_returnsLessonMessage() {
+    public void getSaveFailureMessage_cause_namesFileAndCause() {
         LessonDeleteCommand deleteCommand = new LessonDeleteCommand(Index.fromOneBased(1));
+        String expectedMessage = "The lesson could not be deleted because TutorFlow could not save "
+                + SHOWN_DATA_FILE_NAME + ": the data folder is read-only. No lesson data was changed.";
 
-        assertEquals(LessonDeleteCommand.MESSAGE_SAVE_FAILURE,
-                deleteCommand.getSaveFailureMessage("Could not save data"));
+        assertEquals(expectedMessage, deleteCommand.getSaveFailureMessage(SHOWN_DATA_FILE_NAME,
+                CAUSE_READ_ONLY_FOLDER));
     }
 
     @Test

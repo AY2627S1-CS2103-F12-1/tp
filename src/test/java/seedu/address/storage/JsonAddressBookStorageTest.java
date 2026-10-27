@@ -1,10 +1,13 @@
 package seedu.address.storage;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.Assert.assertThrows;
+import static seedu.address.testutil.TestUtil.ARABIC_EGYPT;
+import static seedu.address.testutil.TestUtil.runWithFormatLocale;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalRegularLessons.MONDAY_MATH;
 import static seedu.address.testutil.TypicalStudents.ALICE;
@@ -55,6 +58,20 @@ public class JsonAddressBookStorageTest {
         return new JsonAddressBookStorage(Paths.get(filePath)).readAddressBook(addToTestDataPathIfNotNull(filePath));
     }
 
+    /**
+     * Returns the reason the user is shown when a data file holding {@code content} cannot be loaded: the message
+     * of the {@code DataLoadingException}'s cause.
+     */
+    private String getLoadingReason(String content) throws IOException {
+        Path file = Files.writeString(testFolder.resolve("data.json"), content);
+        try {
+            new JsonAddressBookStorage(file).readAddressBook();
+        } catch (DataLoadingException e) {
+            return e.getCause().getMessage();
+        }
+        throw new AssertionError("The data file was loaded: " + content);
+    }
+
     private Path addToTestDataPathIfNotNull(String prefsFileInTestDataFolder) {
         return prefsFileInTestDataFolder != null
                 ? TEST_DATA_FOLDER.resolve(prefsFileInTestDataFolder)
@@ -72,12 +89,64 @@ public class JsonAddressBookStorageTest {
     }
 
     @Test
-    public void readAddressBook_invalidStudentAddressBook_throwDataLoadingException() {
+    public void readAddressBook_emptyFile_reasonSaysEmpty() throws Exception {
+        assertEquals("The file is empty.", getLoadingReason(""));
+    }
+
+    @Test
+    public void readAddressBook_whitespaceOnlyFile_reasonSaysEmpty() throws Exception {
+        assertEquals("The file is empty.", getLoadingReason(" \n\t\r\n"));
+    }
+
+    @Test
+    public void readAddressBook_doubleCommaInStudent_reasonPointsAtSecondComma() throws Exception {
+        // Jackson finds this while mapping the student, and its own position is the start of the value before
+        assertEquals("The file is not valid JSON near line 2, column 18.",
+                getLoadingReason("{\"students\":[{\n    \"name\" : \"A\",, }]}"));
+    }
+
+    @Test
+    public void readAddressBook_textAfterStudentList_reasonPointsAtText() throws Exception {
+        assertEquals("The file is not valid JSON near line 1, column 16.",
+                getLoadingReason("{\"students\":[] x }"));
+    }
+
+    @Test
+    public void readAddressBook_sampleDataMissingClosingBrace_reasonPointsAtLastCharacter() throws Exception {
+        // the sample data without its final }, as in the developer guide's manual test
+        String content = Files.readString(TEST_DATA_FOLDER.resolve("missingClosingBraceAddressBook.json"));
+        assertEquals("The file is not valid JSON near line 120, column 5.", getLoadingReason(content));
+    }
+
+    @Test
+    public void readAddressBook_studentsNotList_reasonSaysWrongType() throws Exception {
+        assertEquals("The file has a value of the wrong type near line 1, column 14.",
+                getLoadingReason("{\"students\": 5}"));
+    }
+
+    @Test
+    public void readAddressBook_nameNotText_reasonSaysWrongType() throws Exception {
+        assertEquals("The file has a value of the wrong type near line 1, column 22.",
+                getLoadingReason("{\"students\":[{\"name\":[\"a\"]}]}"));
+    }
+
+    @Test
+    public void readAddressBook_arabicDigitsLocale_reasonGivesPositionInAsciiDigits() {
+        runWithFormatLocale(ARABIC_EGYPT, () -> {
+            assertEquals("The file is not valid JSON near line 2, column 18.", assertDoesNotThrow(() ->
+                    getLoadingReason("{\"students\":[{\n    \"name\" : \"A\",, }]}")));
+            assertEquals("The file has a value of the wrong type near line 1, column 14.", assertDoesNotThrow(() ->
+                    getLoadingReason("{\"students\": 5}")));
+        });
+    }
+
+    @Test
+    public void readAddressBook_invalidStudentAddressBook_throwsDataLoadingException() {
         assertThrows(DataLoadingException.class, () -> readAddressBook("invalidStudentAddressBook.json"));
     }
 
     @Test
-    public void readAddressBook_invalidAndValidStudentAddressBook_throwDataLoadingException() {
+    public void readAddressBook_invalidAndValidStudentAddressBook_throwsDataLoadingException() {
         assertThrows(DataLoadingException.class, () -> readAddressBook("invalidAndValidStudentAddressBook.json"));
     }
 

@@ -1,7 +1,16 @@
 package seedu.address.logic.parser;
 
+import static seedu.address.logic.parser.CommandParserTestUtil.MESSAGE_CURLY_QUOTES;
+import static seedu.address.logic.parser.CommandParserTestUtil.MESSAGE_TITLE_AND_ALIAS;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
+import static seedu.address.model.homework.DueDateTest.MESSAGE_EMPTY;
+import static seedu.address.model.homework.DueDateTest.MESSAGE_YEAR_OUT_OF_RANGE;
+import static seedu.address.model.homework.DueDateTest.leapDayMessage;
+import static seedu.address.model.homework.DueDateTest.notRealDateMessage;
+import static seedu.address.model.homework.DueDateTest.wrongFormatMessage;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalHomeworks.MECHANICS;
 
@@ -24,6 +33,7 @@ public class HomeworkAddCommandParserTest {
     /** Fixed clock at 2026-10-05, so short-form due dates always infer the same year. */
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-05T00:00:00Z"), ZoneOffset.UTC);
     private static final String VALID_FIELDS = " title/Complete algebra worksheet s/MATH due/2026-10-15";
+    private static final String USAGE_LINE = "\nUsage: " + HomeworkAddCommand.MESSAGE_USAGE;
     private static final String MESSAGE_INVALID_FORMAT = "Invalid command format.\n"
             + "Usage: homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD";
     private static final String MESSAGE_MISSING_PREFIXES = "Missing required prefix(es): %s\n"
@@ -69,6 +79,19 @@ public class HomeworkAddCommandParserTest {
         Homework expectedHomework = new HomeworkBuilder().withDueDate("2025-01-01").build();
 
         assertParseSuccess(parser, "1 title/Complete algebra worksheet s/MATH due/2025-01-01",
+                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, false));
+
+        // second year of the allowed range
+        assertParseSuccess(parser, "1 title/Complete algebra worksheet s/MATH due/2001-01-01",
+                new HomeworkAddCommand(Index.fromOneBased(1), new HomeworkBuilder().withDueDate("2001-01-01").build(),
+                        false));
+    }
+
+    @Test
+    public void parse_leapDayFullDate_success() {
+        Homework expectedHomework = new HomeworkBuilder().withDueDate("2028-02-29").build();
+
+        assertParseSuccess(parser, "1 title/Complete algebra worksheet s/MATH due/2028-02-29",
                 new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, false));
     }
 
@@ -161,8 +184,21 @@ public class HomeworkAddCommandParserTest {
 
     @Test
     public void parse_unclosedQuotedTitle_failure() {
-        // km/ is read as an unknown prefix
-        assertParseFailure(parser, "1 t/\"Speed in km/h s/MATH due/2026-10-15", MESSAGE_INVALID_FORMAT);
+        // km/ is read as an unknown prefix; the opening quote is not doubled in the example
+        assertParseFailure(parser, "1 t/\"Speed in km/h s/MATH due/2026-10-15",
+                notPrefixWithQuoteHint("km/", "t/\"Speed in km/h\"") + USAGE_LINE);
+    }
+
+    @Test
+    public void parse_noSpaceAfterClosingQuote_throwsParseExceptionNamingWord() {
+        assertParseFailure(parser, "1 t/\"Speed in km/h\"s/PHYSICS due/2026-11-01",
+                notPrefixWithQuoteHint("km/", "t/\"Speed in km/h\"") + USAGE_LINE);
+    }
+
+    @Test
+    public void parse_curlyQuotes_throwsParseExceptionWithStraightQuoteHint() {
+        assertParseFailure(parser, "1 t/“Speed in km/h” s/PHYSICS due/2026-11-01",
+                notPrefixWithQuoteHint("km/", "t/\"Speed in km/h\"") + "\n" + MESSAGE_CURLY_QUOTES + USAGE_LINE);
     }
 
     @Test
@@ -176,10 +212,20 @@ public class HomeworkAddCommandParserTest {
     @Test
     public void parse_titleWithLowercaseSlashWord_failure() {
         // km/ is read as an unknown prefix
-        assertParseFailure(parser, "1 title/Speed in km/h s/MATH due/2026-10-15", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 title/Speed in km/h s/MATH due/2026-10-15",
+                notPrefixWithQuoteHint("km/", "title/\"Speed in km/h\"") + USAGE_LINE);
+        assertParseFailure(parser, "1 t/Speed in km/h s/PHYSICS due/2026-11-01",
+                notPrefixWithQuoteHint("km/", "t/\"Speed in km/h\"") + USAGE_LINE);
 
         // and/ is read as an unknown prefix
-        assertParseFailure(parser, "1 t/Read and/or summarize s/MATH due/2026-10-15", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 t/Read and/or summarize s/MATH due/2026-10-15",
+                notPrefixWithQuoteHint("and/", "t/\"Read and/or summarize\"") + USAGE_LINE);
+        assertParseFailure(parser, "1 t/Essay and/or summary s/MATH due/2026-11-01",
+                notPrefixWithQuoteHint("and/", "t/\"Essay and/or summary\"") + USAGE_LINE);
+
+        // w/ followed by a space is read as an unknown prefix
+        assertParseFailure(parser, "1 t/Kinematics w/ solutions s/PHYSICS due/2026-11-01",
+                notPrefixWithQuoteHint("w/", "t/\"Kinematics w/ solutions\"") + USAGE_LINE);
     }
 
     @Test
@@ -199,7 +245,8 @@ public class HomeworkAddCommandParserTest {
 
     @Test
     public void parse_unknownPrefix_failure() {
-        assertParseFailure(parser, "1" + VALID_FIELDS + " x/extra", MESSAGE_INVALID_FORMAT);
+        // the due date before x/ is only digits and date punctuation, so no example is given
+        assertParseFailure(parser, "1" + VALID_FIELDS + " x/extra", notPrefixWithQuoteHint("x/") + USAGE_LINE);
     }
 
     @Test
@@ -222,15 +269,13 @@ public class HomeworkAddCommandParserTest {
     }
 
     @Test
-    public void parse_titleThenTitleAlias_reportsTitleRepeated() {
-        assertParseFailure(parser, "1 title/First t/Second s/MATH due/2026-10-15",
-                "Prefix title/ must be specified exactly once.");
+    public void parse_titleThenTitleAlias_reportsUseEither() {
+        assertParseFailure(parser, "1 title/First t/Second s/MATH due/2026-10-15", MESSAGE_TITLE_AND_ALIAS);
     }
 
     @Test
-    public void parse_titleAliasThenTitle_reportsTitleRepeated() {
-        assertParseFailure(parser, "1 t/First title/Second s/MATH due/2026-10-15",
-                "Prefix title/ must be specified exactly once.");
+    public void parse_titleAliasThenTitle_reportsUseEither() {
+        assertParseFailure(parser, "1 t/First title/Second s/MATH due/2026-10-15", MESSAGE_TITLE_AND_ALIAS);
     }
 
     @Test
@@ -253,6 +298,9 @@ public class HomeworkAddCommandParserTest {
     public void parse_dueDateMissing_failure() {
         assertParseFailure(parser, "1 title/Complete algebra worksheet s/MATH",
                 String.format(MESSAGE_MISSING_PREFIXES, "due/"));
+
+        // title alias, as in the developer guide's manual test
+        assertParseFailure(parser, "1 t/A s/MATH", String.format(MESSAGE_MISSING_PREFIXES, "due/"));
     }
 
     @Test
@@ -290,6 +338,15 @@ public class HomeworkAddCommandParserTest {
     }
 
     @Test
+    public void parse_zeroWidthSpaceTitle_failure() {
+        // a zero-width space (U+200B) followed by an ordinary space
+        assertParseFailure(parser, "3 t/\u200B s/MATH due/2026-12-01", Title.MESSAGE_CONSTRAINTS);
+
+        // a zero-width space inside the title
+        assertParseFailure(parser, "3 t/Alge\u200Bbra drill s/MATH due/2026-12-02", Title.MESSAGE_CONSTRAINTS);
+    }
+
+    @Test
     public void parse_titleTooLong_failure() {
         assertParseFailure(parser, "1 title/" + "a".repeat(101) + " s/MATH due/2026-10-15",
                 Title.MESSAGE_CONSTRAINTS);
@@ -315,7 +372,7 @@ public class HomeworkAddCommandParserTest {
 
     @Test
     public void parse_emptyDueDate_failure() {
-        assertParseFailure(parser, "1 title/Complete algebra worksheet s/MATH due/", DueDate.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 title/Complete algebra worksheet s/MATH due/", MESSAGE_EMPTY);
     }
 
     @Test
@@ -323,30 +380,52 @@ public class HomeworkAddCommandParserTest {
         String fieldsWithoutDueDate = "1 title/Complete algebra worksheet s/MATH due/";
 
         // wrong separator and field order
-        assertParseFailure(parser, fieldsWithoutDueDate + "15/10/2026", DueDate.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, fieldsWithoutDueDate + "15/10/2026", wrongFormatMessage("15/10/2026"));
+
+        // day-month-year order
+        assertParseFailure(parser, "1 t/X s/MATH due/30-10-2026", wrongFormatMessage("30-10-2026"));
 
         // three-digit month
-        assertParseFailure(parser, fieldsWithoutDueDate + "010-05", DueDate.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, fieldsWithoutDueDate + "010-05", wrongFormatMessage("010-05"));
 
         // single-digit short-form date that does not exist
-        assertParseFailure(parser, fieldsWithoutDueDate + "2-30", DueDate.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, fieldsWithoutDueDate + "2-30", notRealDateMessage("2-30"));
 
         // date that does not exist
-        assertParseFailure(parser, fieldsWithoutDueDate + "2026-02-30", DueDate.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, fieldsWithoutDueDate + "2026-02-30", notRealDateMessage("2026-02-30"));
+
+        // month 13
+        assertParseFailure(parser, "1 t/X s/MATH due/2026-13-01", notRealDateMessage("2026-13-01"));
 
         // short-form date that never exists
-        assertParseFailure(parser, fieldsWithoutDueDate + "02-30", DueDate.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, fieldsWithoutDueDate + "02-30", notRealDateMessage("02-30"));
     }
 
     @Test
-    public void parse_unknownPrefixAndMissingPrefixes_reportsInvalidFormat() {
-        assertParseFailure(parser, "1 x/extra", MESSAGE_INVALID_FORMAT);
+    public void parse_shortLeapDayNotWithinYear_throwsLeapDayMessage() {
+        // today is 2026-10-05, and neither 2026 nor 2027 is a leap year
+        assertParseFailure(parser, "1 t/X s/MATH due/2-29", leapDayMessage(2028));
     }
 
     @Test
-    public void parse_unknownPrefixAndTitleAliasConflict_reportsInvalidFormat() {
-        assertParseFailure(parser, "1 t/Algebra title/Mechanics x/extra", MESSAGE_INVALID_FORMAT);
-        assertParseFailure(parser, "1 x/extra t/Algebra title/Mechanics", MESSAGE_INVALID_FORMAT);
+    public void parse_dueDateYearOutOfRange_throwsYearMessage() {
+        // typo year
+        assertParseFailure(parser, "1 t/Typo year s/MATH due/2206-10-30", MESSAGE_YEAR_OUT_OF_RANGE);
+
+        // day before the range
+        assertParseFailure(parser, "1 t/X s/MATH due/1999-12-31", MESSAGE_YEAR_OUT_OF_RANGE);
+    }
+
+    @Test
+    public void parse_unknownPrefixAndMissingPrefixes_reportsUnknownPrefix() {
+        assertParseFailure(parser, "1 x/extra", notPrefix("x/") + USAGE_LINE);
+    }
+
+    @Test
+    public void parse_unknownPrefixAndTitleAliasConflict_reportsUnknownPrefix() {
+        assertParseFailure(parser, "1 t/Algebra title/Mechanics x/extra",
+                notPrefixWithQuoteHint("x/", "title/\"Mechanics x/extra\"") + USAGE_LINE);
+        assertParseFailure(parser, "1 x/extra t/Algebra title/Mechanics", notPrefix("x/") + USAGE_LINE);
     }
 
     @Test
@@ -356,8 +435,8 @@ public class HomeworkAddCommandParserTest {
     }
 
     @Test
-    public void parse_titleAliasConflictAndMissingIndex_reportsTitleRepeated() {
-        assertParseFailure(parser, "t/Algebra title/Mechanics", "Prefix title/ must be specified exactly once.");
+    public void parse_titleAliasConflictAndMissingIndex_reportsUseEither() {
+        assertParseFailure(parser, "t/Algebra title/Mechanics", MESSAGE_TITLE_AND_ALIAS);
     }
 
     @Test

@@ -15,7 +15,7 @@ Class Score
 Enum "<<enumeration>>\nHomeworkStatus" as HomeworkStatus
 }
 
-Student *--> "0..*\n{ordered}" Homework : homeworks
+Student --> "0..*\n{ordered}" Homework : homeworks
 Homework --> "1" Title : title
 Homework --> "1" TuitionSubject : subject
 Homework --> "1" DueDate : dueDate

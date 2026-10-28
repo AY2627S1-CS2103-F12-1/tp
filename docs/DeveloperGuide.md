@@ -808,10 +808,10 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
   * 3c2. Use case resumes at step 3.
 * 3d. The regular lesson already exists.
   * 3d1. TutorFlow informs the tutor that the lesson already exists.
-  * 3d2. Use case ends.
+  * 3d2. Use case resumes at step 3.
 * 3e. The lesson overlaps another regular lesson on the same weekday.
-  * 3e1. TutorFlow rejects the new lesson and identifies the conflicting lesson.
-  * 3e2. Use case ends.
+  * 3e1. TutorFlow rejects the new lesson and identifies every conflicting lesson in weekly order.
+  * 3e2. Use case resumes at step 3.
 * 4a. TutorFlow cannot save the updated data.
   * 4a1. TutorFlow leaves the lesson schedule unchanged.
   * 4a2. TutorFlow informs the tutor that no lesson data was changed, naming the data file and the likely cause.

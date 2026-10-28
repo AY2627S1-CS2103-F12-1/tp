@@ -77,7 +77,7 @@ such as `CommandBox`, `ResultDisplay`, `StudentListPanel`, `UpcomingPanel`, and 
 including `MainWindow`, inherit from the abstract `UiPart` class, which captures common behavior among classes that
 represent visible GUI parts.
 
-The `HelpWindow` lists the commands from `HelpContent`, a plain Java class that groups the commands into sections. Each command format in `HelpContent` is the usage constant of the command (e.g. `HomeworkAddCommand.MESSAGE_USAGE`), so the help window shows the same format as the parser error messages. The `list` row is an exception: its format `list|ls` adds the `ls` alias that `ListCommand.MESSAGE_USAGE` leaves out. The sections and their rows are in the order of the User Guide, and `HelpContentTest` checks that order and that every example in it parses into the listed command.
+The `HelpWindow` lists the commands from `HelpContent`, a plain Java class that groups the commands into sections. Each command format in `HelpContent` is the usage constant of the command (e.g. `HomeworkAddCommand.MESSAGE_USAGE`), so the help window shows the same format as the parser error messages. The `list` row is an exception: its format `list|ls` adds the `ls` alias that `ListCommand.MESSAGE_USAGE` leaves out. The sections and their rows are in the order of the User Guide, and `HelpContentTest` checks that order and that every example in it parses into the listed command. Above the sections, the help window shows two notes from `HelpContent`: how to read the formats, and how to bring back earlier commands with `Up` and `Down`.
 
 The `UI` component uses the JavaFX UI framework. The layouts of these UI parts are defined in matching `.fxml` files in `src/main/resources/view`. For example, [`MainWindow.fxml`](https://github.com/AY2627S1-CS2103-F12-1/tp/blob/master/src/main/resources/view/MainWindow.fxml) specifies the layout of [`MainWindow`](https://github.com/AY2627S1-CS2103-F12-1/tp/blob/master/src/main/java/seedu/address/ui/MainWindow.java).
 
@@ -1080,14 +1080,6 @@ testers are expected to do more *exploratory* testing.
    1. Close the app and replace the content of `preferences.json` with `{"guiSettings":null}`. Launch the app.<br>
       Expected: The app opens with the default window size and the same students as before. `preferences.json` now holds the default preferences, and the data file is unchanged.
 
-### Recalling earlier commands
-
-1. In a fresh test folder, launch the app and run `list`, `hw ls 2` and `hw ls 99`.<br>
-   Expected: `hw ls 99` is rejected and stays in the command box in red.
-
-1. Press `Up` three times, then `Down` three times.<br>
-   Expected: `Up` shows `hw ls 99`, `hw ls 2`, then `list`. `Down` shows `hw ls 2`, `hw ls 99`, then an empty box.
-
 ### Adding and editing students
 
 1. Use a disposable test folder and run `clear` to start with an empty roster.
@@ -1113,6 +1105,20 @@ testers are expected to do more *exploratory* testing.
       Expected: Algebra disappears from outstanding homework when completed, reappears when assigned and remains visible after receiving a score, without restarting. Zoe's upcoming-homework count remains 1 because the due date is in the future; this count is independent of completion and marks.
    1. Run `search Ben`, then resize the window and drag the split-pane dividers.<br>
       Expected: The student list shows Ben only, while the sidebar still shows Zoe's lesson and assigned Algebra homework with her name and phone. Entries remain readable; each section can be scrolled whenever its contents exceed its available space. Run `list` to restore the full roster.
+
+### Recalling earlier commands
+
+1. In a fresh test folder, launch the app and run `list`, `hw ls 2` and `hw ls 99`.<br>
+   Expected: `hw ls 99` is rejected and stays in the command box in red.
+
+1. Press `Up` twice, then `Down` three times.<br>
+   Expected: The first `Up` skips `hw ls 99`, which is already in the box, and shows `hw ls 2`; the second shows `list`. `Down` shows `hw ls 2`, then `hw ls 99` in the normal style (not red), then an empty box.
+
+1. Type `search Alex` and press `Shift`+`Up`, then press `Up` alone.<br>
+   Expected: `Shift`+`Up` selects `search Alex` and leaves it in the box. `Up` replaces it with `hw ls 99`.
+
+1. Press `Up` again, delete all the text in the box, press `Enter`, then press `Up`.<br>
+   Expected: `Up` shows `hw ls 2`. `Enter` on the empty box runs nothing. The last `Up` shows `hw ls 99`, the newest command, again.
 
 ### Listing, searching, and deleting students
 

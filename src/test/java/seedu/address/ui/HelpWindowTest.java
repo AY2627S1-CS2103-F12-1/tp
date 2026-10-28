@@ -45,6 +45,7 @@ public class HelpWindowTest {
                     .map(node -> ((Label) node).getText()).toList();
 
             assertTrue(labelTexts.contains(HelpContent.FORMAT_NOTE));
+            assertTrue(labelTexts.contains(HelpContent.HISTORY_NOTE));
             for (HelpContent.Section section : HelpContent.getSections()) {
                 assertTrue(labelTexts.contains(section.title()), section.title());
                 for (HelpContent.Entry entry : section.entries()) {

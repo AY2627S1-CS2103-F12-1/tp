@@ -45,6 +45,8 @@ public final class HelpContent {
     public static final String SECTION_GENERAL = "General";
     public static final String FORMAT_NOTE = "In each format, items separated by | are alternatives; type any one"
             + " of them.";
+    public static final String HISTORY_NOTE = "In the command box, press Up and Down to bring back commands entered"
+            + " since you opened the app.";
 
     private static final List<Section> SECTIONS = List.of(
             new Section(SECTION_STUDENTS, List.of(

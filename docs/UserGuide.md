@@ -23,7 +23,7 @@ TutorFlow is a **desktop application for private tutors to manage their students
    A GUI similar to the one below should appear in a few seconds. Note how the app contains some sample data.<br>
    ![Ui](images/Ui.png)
 
-1. Type a command in the command box and press Enter to execute it. For example, type **`help`** and press Enter to open the help window. Press `Up` and `Down` in the command box to bring back commands you entered earlier, including ones that were rejected. Only commands from the current session are kept; they are forgotten when you close the app.<br>
+1. Type a command in the command box and press Enter to execute it. For example, type **`help`** and press Enter to open the help window.<br>
    Some example commands you can try:
 
    * `add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777` : Adds a student named `Aaron Koh` to the student list.
@@ -46,7 +46,7 @@ TutorFlow is a **desktop application for private tutors to manage their students
 
    * `exit` : Exits the app.
 
-1. Refer to the [Features](#features) section below for details of each command.
+1. Refer to the [Features](#features) section below for details of each command. To bring back a command you entered earlier, press `Up` in the command box (see [Viewing help](#viewing-help-help)).
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -115,6 +115,10 @@ Format: `help`
 * Pressing `F1` or choosing **Help** in the menu bar also opens the help window.
 * Use the arrow keys, `Page Up` and `Page Down` to scroll the help window.
 * Press `Esc` to close the help window. The cursor goes back to the command box, so you can type your next command straight away.
+
+<div markdown="span" class="alert alert-primary">:bulb: **Tip:**
+In the command box, press `Up` for the command you entered before; press it again to go further back. `Down` goes forward, and past the newest command it empties the box. Commands entered since you opened the app are kept, including rejected ones, so you can fix a typo instead of retyping. `Up` replaces any half-typed text.
+</div>
 
 
 ### Adding a student: `add`

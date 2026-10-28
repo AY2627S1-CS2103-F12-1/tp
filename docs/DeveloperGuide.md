@@ -489,19 +489,19 @@ recovery path. See the [logging guide](Logging.md) for diagnostic conventions.
 
 ### Homework records
 
-Homework is managed with eight subcommands of `homework` (alias `hw`): `add`, `list`, `upcoming`, `edit`, `marks`, `delete`, `filter` and `status`.
+Homework is managed with eight subcommands of `homework` (short form `hw`): `add`, `list`, `upcoming`, `edit`, `marks`, `delete`, `filter` and `status`. This section covers what they share. `filter` and `status` are described in [Filtering homework](#filtering-homework) and [Updating homework completion](#updating-homework-completion).
 
-**Parsing.** `AddressBookParser` passes the arguments of both `homework` and `hw` to `HomeworkCommandParser`. This dispatcher reads the first word as the subcommand and hands the rest to that subcommand's parser, e.g. `HomeworkDeleteCommandParser` for `delete` or `del`. This keeps one `AddressBookParser` case per command word, and a new subcommand only needs a new case in the dispatcher. The subcommand parsers use `StrictArgumentTokenizer`, which rejects unknown and repeated prefixes, unlike AB3's `ArgumentTokenizer`. Parsers that need today's date (for `MM-DD` due dates and for upcoming homework) get it from a `java.time.Clock` passed down from `AddressBookParser`, so tests use a fixed clock.
+**Parsing.** `AddressBookParser` passes everything after `homework` or `hw` to `HomeworkCommandParser`. It reads the next word as the subcommand and passes the rest to that subcommand's parser: for `hw del 1 2`, `HomeworkDeleteCommandParser` gets `1 2`. So `AddressBookParser` needs only one case for all homework commands, and a new subcommand only needs a new case in `HomeworkCommandParser`. The subcommand parsers split their arguments with `StrictArgumentTokenizer` (see [Splitting arguments at prefixes](#splitting-arguments-at-prefixes)), which rejects unknown and repeated prefixes. Parsers that need today's date get it from a `java.time.Clock` passed down from `AddressBookParser`, so tests can fix the date.
 
-**Model.** `Student` is immutable and holds its `Homework` records in insertion order. To add, edit, score or delete homework, a command copies the student's homework list, changes the copy, and calls `Model#setStudent(target, target.withHomeworks(updatedList))`, which replaces the student at the same position in the roster and refreshes the student card.
+**How homework is stored.** Each `Student` keeps its own homework records in a list, in the order they were added. The class diagram below shows the fields of a `Homework` and the methods that commands use to change homework. `Title`, `DueDate` and `Score` are small classes that each check their own value, and `TuitionSubject` and `HomeworkStatus` are enums. A record has at most one score.
 
-The class diagram below shows how homework is stored. Each `Student` owns its `Homework` records in a list, and each record has a title, a subject, a due date, a completion status and at most one score:
+<img src="images/HomeworkClassDiagram.png" width="620" alt="A student's ordered homework list, the fields of a homework record and the methods that change homework" />
 
-<img src="images/HomeworkClassDiagram.png" width="700" alt="A student owns an ordered list of homework records" />
+`Student` and `Homework` are immutable, so a command never changes a record in place. To add, edit, score or delete homework, it copies the student's homework list, changes the copy, and calls `Model#setStudent(student, student.withHomeworks(updatedList))`. This puts the new `Student` where the old one was in the roster, and the student card shows the change.
 
-**Homework index.** The homework index is the one-based position in the student's homework list (insertion order). It is not stored and changes only when earlier homework is deleted. `homework list` sorts the homework by due date but prints each record with its insertion-order number, so every number shown is a valid `HOMEWORK_INDEX` for the other homework commands. `add`, `list`, `edit`, `marks` and `delete` look up the student (and, for `edit`, `marks` and `delete`, the homework) through `HomeworkCommandUtil`, so they check the indices in the same order and report the same errors.
+**Homework index.** The `HOMEWORK_INDEX` a tutor types is the record's position in the student's list, counting from 1. It is not stored, and it changes only when an earlier record of the student is deleted (see [Deleting homework](#deleting-homework)). `add`, `list`, `edit`, `marks` and `delete` look up the student (and, for `edit`, `marks` and `delete`, the record) through `HomeworkCommandUtil`, so they check the indices in the same order and give the same errors.
 
-**Saving.** Homework is saved as part of each student (see [Storage component](#storage-component)). `homework list`, `homework upcoming` and `homework filter` do not change the stored data, so `LogicManager` never writes the data file after them (see [Saving after a command](#saving-after-a-command)).
+**Saving.** Homework is saved inside each student in the data file (see [Storage component](#storage-component)). `homework list`, `homework upcoming` and `homework filter` only read data, so the data file is not written after them (see [Saving after a command](#saving-after-a-command)).
 
 #### Design considerations:
 
@@ -513,17 +513,24 @@ The class diagram below shows how homework is stored. Each `Student` owns its `H
 
 * **Alternative 2:** One homework list in the model, with each record referring to its student.
   * Pros: Easy to show all homework across students.
-  * Cons: Homework must be kept consistent when a student is edited or deleted, and per-student indices must be computed.
+  * Cons: Homework must be kept consistent when a student is edited or deleted, and each student's homework indices must be worked out.
 
 ### Adding homework
 
-The activity diagram below shows the checks that `homework add` makes, in order, and which class makes each. A failed check reports its error and leaves the data unchanged.
+`homework add STUDENT_INDEX t/TITLE s/SUBJECT due/DATE` adds a record to the end of the student's list, so it gets the next homework index. The activity diagram below shows its checks in order. `HomeworkAddCommandParser` checks the input, `HomeworkAddCommand` checks the student, the subject and duplicates, and `LogicManager` saves. If a check fails, the error is shown and nothing is changed.
 
-<img src="images/HomeworkAddActivityDiagram.png" width="900" alt="Checks and steps of homework add, by class" />
+<img src="images/HomeworkAddActivityDiagram.png" width="800" alt="The checks of homework add, in order" />
 
-**Title.** The `Title` constructor converts the input to Unicode NFC (`java.text.Normalizer`), replaces each run of whitespace with one space and strips it, then checks that the title has 1 to 100 characters and that every character is a letter, number, punctuation, symbol or space. NFC stores text that looks the same in one way (e.g. `é` typed as one character or as `e` plus an accent), so the duplicate checks of `homework add`, `homework edit` and `JsonAdaptedStudent` (`Homework#isSameHomework`, which ignores case) treat such titles as one title.
+Two records are the same (`Homework#isSameHomework`) if they have the same title ignoring case, the same subject and the same due date. Score and status do not count. For example, on 2026-10-28 with the sample students:
 
-The character rule is an allowlist, like the one in `StudentName`. It rejects invisible characters such as the zero-width space anywhere in the title, so a title made only of them is rejected (Issue #139) and `Alge<zero-width space>bra drill` cannot be a different title from `Algebra drill`. As a result, emoji that contain invisible characters (e.g. ❤️ and 👨‍👩‍👧) and letters written with a combining mark that has no composed form (e.g. many Tamil and Hindi letters) are rejected, as in student names, while single emoji such as 😀 are accepted. A data file with a title that breaks the rule does not load.
+```
+hw add 2 t/Rates of reaction s/CHEMISTRY due/11-20         → added, due 2026-11-20
+hw add 2 t/rates of REACTION s/CHEMISTRY due/2026-11-20    → This homework already exists for the selected student.
+```
+
+**Title.** `Title` tidies the text before checking it. It converts the text to Unicode NFC, turns each run of whitespace into one space and trims both ends. NFC stores characters that look the same in one way: `é` can be typed as one character or as `e` plus an accent, and NFC makes both the same. So the duplicate check treats them as one title, and the title is saved in NFC. The title must then have 1 to 100 characters, each a letter, number, punctuation mark, symbol or space.
+
+This allowlist works like the one in `StudentName`. It rejects invisible characters such as the zero-width space wherever they are. So a title made only of them is rejected (Issue #139), and `Alge<zero-width space>bra drill` is rejected instead of being saved next to `Algebra drill` as a different title. As a result, emoji built with invisible joining characters (e.g. ❤️ and 👨‍👩‍👧) and letters that need a separate combining mark (e.g. many Tamil and Hindi letters) are rejected, as in student names. Single emoji such as 😀 are accepted. A data file with a title that breaks the rule does not load.
 
 Alternatives considered:
 
@@ -531,41 +538,70 @@ Alternatives considered:
 * A denylist of invisible characters (the previous design): rejected, as it needed several lists of special characters and still accepted invisible characters inside a title.
 * Printable ASCII only: rejected, as accented titles such as `Café` would be rejected, titles would be stricter than student names, and data files with such titles would no longer load.
 
-**Due date.** `DueDate#parse` accepts `YYYY-MM-DD` or `MM-DD`. For `MM-DD`, the year is this year, or next year if the date has already passed this year; `02-29` is rejected, with a hint to enter the full date, when no 29 February falls within the next 12 months. Its error message says what is wrong: an empty date, input in neither format, a year outside 2000 to 2099, or a date that does not exist (e.g. `2026-02-30 is not a real calendar date.`). `homework add`, `homework edit` and `homework filter` pass these messages on unchanged. `DueDate#parseFullDate`, used for the data file, accepts only `YYYY-MM-DD`, so a saved year is never inferred.
+**Due date.** `DueDate#parse` accepts `YYYY-MM-DD` or the short form `MM-DD`. For `MM-DD`, it picks this year, or next year if the date has already passed this year. For example, on 2026-10-28, `11-20` means 2026-11-20 and `10-01` means 2027-10-01. `02-29` is rejected, with a hint to type the full date, when no 29 February falls in the next 12 months. The error says what is wrong: an empty date, input in neither format, a year outside 2000 to 2099, or a date that does not exist (e.g. `2026-02-30 is not a real calendar date.`). `homework add`, `homework edit` and `homework filter` show these messages unchanged. The data file is read with `DueDate#parseFullDate`, which accepts only `YYYY-MM-DD`, so the year of a saved date is never guessed.
 
-The year range is fixed (2000 to 2099) so that typo years such as `2206` or `0001` are caught. A range relative to today (e.g. 10 years either way) was rejected: a data file that loads today would stop loading some years later.
+The year range is fixed (2000 to 2099) to catch typos such as `2206` or `0001`. A range based on today (e.g. 10 years either way) was rejected: a data file that loads today would stop loading a few years later.
 
 ### Listing a student's homework
 
-`homework list STUDENT_INDEX [all]` shows the homework of one student in the displayed list. Without `all`, it shows only the records due today or later; with `all`, it also shows overdue records. It sorts the records by due date, keeping records due on the same date in insertion order, and shows each with its homework index. It does not change the data, so nothing is saved. The activity diagram below shows these steps.
+`homework list STUDENT_INDEX [all]` shows one student's homework. Without `all`, it shows only the records due today or later; with `all`, it also shows overdue records. It sorts the records by due date, keeping records due on the same date in the order they were added, and shows each with its homework index. It only reads data, so nothing is saved.
+
+Because the numbers are homework indices, not row numbers, they can start above 1 or have gaps. For example, on 2026-10-28 Priya Nair's first record is overdue, so `hw ls 2` shows these records:
+
+```
+2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-02 - score Not recorded - status ASSIGNED
+3. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-09 - score Not recorded - status ASSIGNED
+```
+
+The activity diagram below shows these steps.
 
 <img src="images/HomeworkListActivityDiagram.png" width="600" alt="Which homework records homework list shows, and in which order" />
 
 ### Listing upcoming homework
 
-`homework upcoming` searches the whole roster, not the displayed list, and starts each line with `Student N:`, where `N` is the student's `STUDENT_INDEX`. Two students may have the same name, and the index tells them apart in a form the tutor can type into `homework list`. After building the result, it resets the displayed list to the full roster, as `list` does, so `N` matches the student list even after a `search`. If an internal error stops the command, the displayed list stays as it was.
+`homework upcoming [due/DAYS]` lists the homework of every student that is due from today to `DAYS` days after today (7 days if `due/` is not given), sorted by due date. It goes through the whole roster, not only the students shown, and starts each line with `Student N:`, where `N` is the student's `STUDENT_INDEX`. The index tells apart two students with the same name, and the tutor can type it into `homework list`. For that, `N` must match the student list on screen, so after building the result the command shows the full roster again, as `list` does (e.g. after a `search`). If an internal error stops the command, the displayed list stays as it was.
 
-The sequence diagram below shows `hw up due/3`, which lists the homework due from today to 3 days after today (7 days if `due/` is not given), sorted by due date. Parsing is shown as a reference frame.
+For example, on 2026-10-28 with the sample students, `hw up due/3` shows:
+
+```
+Found 2 homework records due from 2026-10-28 to 2026-10-31.
+Student 1: Ethan Lim; Kinematics practice set; PHYSICS; Due: 2026-10-28; Score: Not recorded; Status: ASSIGNED
+Student 3: Marcus Tan; Algebraic expansion worksheet; MATH; Due: 2026-10-30; Score: Not recorded; Status: ASSIGNED
+```
+
+The sequence diagram below shows how `hw up due/3` builds this result.
 
 <img src="images/HomeworkUpcomingSequenceDiagram.png" width="900" alt="Listing upcoming homework across the whole roster" />
 
 ### Deleting homework
 
-`homework delete` renumbers the homework after the deleted record, so a second delete typed from a list shown before the first one would remove the wrong record. Its result therefore shows the deleted record in the `homework list` line layout (`HomeworkListCommand#formatHomeworkLine`), with the number it had, its score and its status, followed by `HomeworkListCommand#formatHomeworkList` of the updated student, the same upcoming list that `homework edit` shows. `HomeworkDeleteCommand` takes `today` from its parser's `Clock` for that list. `homework add`, `homework edit` and `homework marks` keep their own record layouts.
+`homework delete STUDENT_INDEX HOMEWORK_INDEX` removes one record, and every later record of the student moves up by one. So a second delete that uses the original index may remove the wrong record. For example, `hw ls 2 all` shows Priya Nair's three records:
 
-The object diagram below shows this for `hw del 2 1` with the sample students. Deleting Priya Nair's first homework makes her other two records homework 1 and 2. As `Student` is immutable, a new `Student` object replaces the old one, while the remaining `Homework` objects are the same objects.
+```
+1. Integration by parts exercise (MATH) - due 2026-10-26 - ...
+2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-02 - ...
+3. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-09 - ...
+```
+
+After `hw del 2 1`, the map is homework 1 and the past paper is homework 2. If the tutor then types `hw del 2 2` to delete the map, reading from the old list, the past paper is deleted instead.
+
+To make this easy to notice, the result shows the deleted record with the number it had, its score and its status, in the `homework list` layout (`HomeworkListCommand#formatHomeworkLine`). It then shows the student's upcoming homework with the new numbers (`HomeworkListCommand#formatHomeworkList`), as `homework edit` does. `HomeworkDeleteCommand` gets today's date for that list from its parser's `Clock`. `homework add`, `homework edit` and `homework marks` show the changed record in their own layouts.
+
+The object diagram below shows the same `hw del 2 1`. As `Student` is immutable, a new `Student` object replaces the old one, while the two remaining `Homework` objects are the same objects, now at positions 1 and 2.
 
 <img src="images/HomeworkIndexObjectDiagram.png" width="750" alt="Homework indices before and after deleting a student's first homework" />
 
-For how a homework command runs through the `Logic` component, see the `hw del 1 2` sequence diagram in [Logic component](#logic-component).
+For how a homework command runs through the `Logic`, `Model` and `Storage` components, see the `hw del 1 2` sequence diagram in [Logic component](#logic-component).
 
 ### Editing homework and recording marks
 
-`homework edit` changes any of the title, subject and due date of one homework record (`HomeworkEditCommand.EditHomeworkDescriptor#applyTo`). Fields that are not given keep their values, and the record keeps its homework index, score and status. Like `homework add`, it rejects a subject the student does not take and a record that would duplicate another of the student's records, and it rejects an edit that changes nothing. It replaces the record in a copy of the student's homework list, as `homework marks` does below.
+`homework edit STUDENT_INDEX HOMEWORK_INDEX [t/TITLE] [s/SUBJECT] [due/DATE]` changes any of a record's title, subject and due date (`HomeworkEditCommand.EditHomeworkDescriptor#applyTo`). Fields that are not given keep their values, and the record keeps its homework index, score and status. Like `homework add`, it rejects a subject the student does not take and a record that would be the same as another of the student's records. It also rejects an edit that changes nothing: running `hw e 2 2 due/11-05` a second time gives `No changes made; the supplied values are identical to the existing homework details.`
 
-**Score.** A `Score` is either `MARKS` (e.g. `17`) or `MARKS_OBTAINED/TOTAL_MARKS` (e.g. `5/10`). It is kept as given (`5/10` is not simplified) and stored in the data file as this text, e.g. `"17"` or `"5/10"`. `Score#parse` checks the format first: a number with leading zeroes (e.g. `05/10`) is reported with `Score#MESSAGE_LEADING_ZEROES` before the size and range of the numbers are checked, so `02147483648` and `011/10` get the leading-zero message too, while input wrong in another way as well (e.g. `-05`) gets `Score#MESSAGE_CONSTRAINTS`.
+`homework marks STUDENT_INDEX HOMEWORK_INDEX score/[SCORE]` records a score, or clears it when `SCORE` is left empty. It does not change the status, so a record with a score can still be `ASSIGNED`.
 
-The sequence diagram below shows `hw m 2 1 score/8/10`, which records the score `8/10` for the first homework of student 2. Parsing works as for `hw del 1 2` and is shown as a reference frame.
+**Score.** A `Score` is either just the marks (e.g. `17`) or the marks out of a total (e.g. `5/10`). It is kept as typed (`5/10` is not simplified) and saved as text, e.g. `"17"` or `"5/10"`. `Score#parse` checks the format before the size of the numbers. So a number with leading zeroes, such as `05/10`, gets `Score#MESSAGE_LEADING_ZEROES`, even when it is also too large (`02147483648`) or more than the total (`011/10`). Input that is also wrong in another way, such as `-05`, gets `Score#MESSAGE_CONSTRAINTS`.
+
+The sequence diagram below shows `hw m 2 1 score/8/10`, which records 8 out of 10 for Priya Nair's first homework.
 
 <img src="images/HomeworkMarksSequenceDiagram.png" width="900" alt="Recording homework marks" />
 
@@ -632,19 +668,19 @@ On success, the command replaces the original at its insertion position in a cop
 
 ### Saving after a command
 
-`LogicManager#execute` saves the data after each command that changes it, and restores the pre-command data and displayed student list if the data cannot be saved.
+`LogicManager#execute` saves the data after every command that changes it. If saving fails, it puts back the data and the displayed student list as they were before the command, so the app never shows a change that is not in the data file.
 
 `JsonAddressBookStorage` records the bytes of each successfully loaded or saved file, including whether it was missing. Before saving, it acquires a short-lived OS lock on a companion `.lock` file and compares the data file with that recorded version. The lock serializes the version check and atomic replacement across cooperating processes. A stale writer is rejected without replacing newer data; `LogicManager` restores the pre-command model and reports that the user must restart to load the latest file. A busy writer reports that the command can be retried. Reading data does not create or acquire a write lock, so read-only commands and loading from a read-only folder remain possible. The empty lock file stays beside the data file so every writer continues to lock the same file.
 
-The activity diagram below shows these steps for a command that does not throw an exception. If the command throws one, `LogicManager` passes it on without saving.
+The activity diagram below shows these steps for a command that succeeds. If the command throws an exception, `LogicManager` passes it on and saves nothing.
 
 <img src="images/SaveAfterCommandActivityDiagram.png" width="300" alt="Saving after a command, and restoring the data if saving fails" />
 
-1. Before executing the command, `LogicManager` copies the current data: `new AddressBook(model.getAddressBook())`. The copy is cheap because `Student` and `Homework` are immutable, so only the list is copied. It also records the displayed students in their current order (`Model#getStudentList()`) and the search or filter predicate that selects them (`Model#getFilteredStudentListPredicate()`).
-1. After the command succeeds, `LogicManager` compares the data with the copy. If they are equal, the command changed nothing (e.g. `homework list`, `homework upcoming`, `help`, `exit`, or `clear` with no students), and nothing is saved.
-1. Otherwise, `LogicManager` calls `Storage#saveAddressBook`. If this throws an `IOException`, `LogicManager#restoreModel` restores the copy with `Model#setAddressBook`, then the recorded predicate with `Model#updateFilteredStudentList` and the recorded order with `Model#setStudentListOrder`, and `LogicManager` throws a `CommandException`. For a `DataFileConflictException`, its message is the conflict's own message; otherwise it comes from `Command#getSaveFailureMessage(shownName, cause)` (see the next step). Restoring the data alone is not enough: `StudentDisplayList` keeps displayed positions, not students, across a replacement of the whole roster, so a failed `delete` after a `sort` would shift the students after the deleted one, a failed `clear` would lose the sort, and a failed `add` would keep showing every student instead of the earlier search or filter.
-1. `shownName` is the data file as the user knows it, e.g. `data/tutorflow.json`: relative to the app's home folder (see `AppHomeUtil` in [Storage component](#storage-component)), or the absolute path if the file is outside it. `cause` comes from `LogicManager#describeSaveFailure`, which checks the file system for common causes, such as `the file is read-only` or `the data folder is read-only`, and otherwise uses the exception's own text. It checks the file system rather than the exception, as the exception may be about another file, such as the `.lock` file next to the data file.
-1. `getSaveFailureMessage` fills the name and cause into the format from `Command#getSaveFailureFormat`. By default, that is `Messages#MESSAGE_SAVE_FAILURE`, e.g. `Could not save data/tutorflow.json: it is a folder, not a file. Nothing was changed.` The homework commands that change data (`HomeworkAddCommand`, `HomeworkEditCommand`, `HomeworkMarksCommand`, `HomeworkDeleteCommand`, `HomeworkStatusCommand`), `EditCommand`, `LessonAddCommand`, `LessonEditCommand` and `LessonDeleteCommand` override `getSaveFailureFormat` to return their own `MESSAGE_SAVE_FAILURE`, e.g. `The homework could not be added because TutorFlow could not save data/tutorflow.json: the data folder is read-only. No homework data was changed.` A new command that needs its own message only overrides `getSaveFailureFormat`, so the name and cause are always filled in the same way.
+1. Before the command runs, `LogicManager` copies the current data (`new AddressBook(model.getAddressBook())`). The copy is cheap: `Student` and `Homework` are immutable, so only the list is copied, not the students. It also records which students are shown, in their current order (`Model#getStudentList()`), and the search or filter that selects them (`Model#getFilteredStudentListPredicate()`).
+1. After the command succeeds, `LogicManager` compares the data with the copy. If they are equal, the command changed nothing (e.g. `homework list`, `homework upcoming`, `help`, `exit`, or `clear` with no students), so nothing is saved.
+1. Otherwise, `LogicManager` calls `Storage#saveAddressBook`. If this throws an `IOException`, `LogicManager#restoreModel` puts back the copy (`Model#setAddressBook`), the search or filter (`Model#updateFilteredStudentList`) and the display order (`Model#setStudentListOrder`). `LogicManager` then throws a `CommandException` with the save-failure message described in the next two steps, or, for a `DataFileConflictException`, with the conflict's own message. Restoring the data alone is not enough, because `StudentDisplayList` remembers display positions, not students, when the whole roster is replaced. Without the other two, a failed `delete` after a `sort` would shift the students below the deleted one, a failed `clear` would lose the sort, and a failed `add` would show every student instead of the earlier search result.
+1. The message names the data file and the likely cause, e.g. `Could not save data/tutorflow.json: it is a folder, not a file. Nothing was changed.` The file name (`shownName`) is the one the user knows: relative to the app's home folder (see `AppHomeUtil` in [Storage component](#storage-component)), or the absolute path if the file is outside it. The cause comes from `LogicManager#describeSaveFailure`, which checks the file system for common causes, such as `the file is read-only` or `the data folder is read-only`, and otherwise uses the exception's own text. It checks the file system and not the exception, as the exception may be about another file, such as the `.lock` file next to the data file.
+1. `Command#getSaveFailureMessage(shownName, cause)` fills the name and cause into the format from `Command#getSaveFailureFormat`, which is `Messages#MESSAGE_SAVE_FAILURE` by default. Commands that want their own wording override `getSaveFailureFormat` to return their own `MESSAGE_SAVE_FAILURE`: the homework commands that change data (`HomeworkAddCommand`, `HomeworkEditCommand`, `HomeworkMarksCommand`, `HomeworkDeleteCommand`, `HomeworkStatusCommand`), `DeleteCommand`, `EditCommand`, `LessonAddCommand`, `LessonEditCommand` and `LessonDeleteCommand`. For example, a failed `hw add` shows `The homework could not be added because TutorFlow could not save data/tutorflow.json: the data folder is read-only. No homework data was changed.` So a new command that needs its own message only overrides `getSaveFailureFormat`, and the name and cause are filled in the same way for every command.
 
 #### Design considerations:
 

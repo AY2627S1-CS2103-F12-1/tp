@@ -302,6 +302,27 @@ Empty or invalid order | `Sort order must be either asc or desc.`
 If sorting or rendering fails unexpectedly, TutorFlow restores the previous displayed view and shows
 `TutorFlow could not sort the students due to an internal error.` Technical details are recorded in the logs.
 
+### Deleting a student: `delete`
+
+Deletes the specified student, together with their homework and regular lessons, from the student list. The change is saved automatically.
+
+Format: `delete INDEX`
+
+* `INDEX` is the number shown next to the student, starting at 1. It must be a positive whole number without leading zeroes.
+* If the list is empty or the index exceeds its size, no student is deleted.
+  The app shows `The student index provided is invalid.`
+* Remaining students retain their order and are renumbered. Deletion cannot be undone.
+
+Example: `delete 2` deletes the second student and their homework and regular lessons.
+
+### Clearing all students: `clear`
+
+Deletes all students together with their homework and regular lessons.
+
+Format: `clear`
+
+* Clearing cannot be undone. To keep a copy of your data, back up the data file first (see [Editing the data file](#editing-the-data-file)).
+
 ### Adding homework to a student: `homework add`
 
 Adds a homework record to the end of a student's homework list.
@@ -460,19 +481,6 @@ Examples:
 * `homework marks 4 2 score/0/10` records that the 4th student scored no marks for their 2nd homework.
 * `hw m 1 2 score/` clears the marks of the 2nd homework of the 1st student.
 
-### Deleting a student: `delete`
-
-Deletes the specified student, together with their homework and regular lessons, from the student list. The change is saved automatically.
-
-Format: `delete INDEX`
-
-* `INDEX` is the number shown next to the student, starting at 1. It must be a positive whole number without leading zeroes.
-* If the list is empty or the index exceeds its size, no student is deleted.
-  The app shows `The student index provided is invalid.`
-* Remaining students retain their order and are renumbered. Deletion cannot be undone.
-
-Example: `delete 2` deletes the second student and their homework and regular lessons.
-
 ### Deleting a student's homework: `homework delete`
 
 Deletes one homework record from a student.
@@ -543,20 +551,6 @@ Examples:
 * `hw filter status/COMPLETED` lists completed homework among displayed students, whether or not a score is recorded.
 
 For a matching assignment, a result line looks like `Student 1: John Tan; Homework 2: Algebra; MATH; Due: 2026-10-15; Score: Not recorded; Status: ASSIGNED`. Use `hw edit 1 2 t/Algebra practice` to edit that assignment.
-
-### Clearing all students: `clear`
-
-Deletes all students together with their homework and regular lessons.
-
-Format: `clear`
-
-* Clearing cannot be undone. To keep a copy of your data, back up the data file first (see [Editing the data file](#editing-the-data-file)).
-
-### Exiting the program: `exit`
-
-Exits the program.
-
-Format: `exit`
 
 ### Adding a regular lesson: `lesson add`
 
@@ -631,6 +625,12 @@ Listed 2 regular lessons.
 1. Ethan Lim (91234567); MATH; MON; 17:00-18:30
 2. Priya Nair (82345671); CHEMISTRY; SAT; 15:00-16:30
 ```
+
+### Exiting the program: `exit`
+
+Exits the program.
+
+Format: `exit`
 
 ### Saving the data
 
@@ -728,24 +728,24 @@ Furthermore, certain edits can cause TutorFlow to behave in unexpected ways (e.g
 Action | Format, Examples
 --------|------------------
 **Add** | `add n/STUDENT_NAME l/ACADEMIC_LEVEL s/SUBJECTS p/STUDENT_PHONE gn/GUARDIAN_NAME gp/GUARDIAN_PHONE` <br> e.g., `add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777`
-**Clear** | `clear`
-**Delete student** | `delete INDEX`<br> e.g., `delete 2`
-**Edit student** | `edit INDEX [n/STUDENT_NAME] [l/ACADEMIC_LEVEL] [s/SUBJECTS] [p/STUDENT_PHONE] [gn/GUARDIAN_NAME] [gp/GUARDIAN_PHONE]`<br> e.g., `edit 1 l/S4 p/91234568`
 **List** | `list` or `ls`
+**Edit student** | `edit INDEX [n/STUDENT_NAME] [l/ACADEMIC_LEVEL] [s/SUBJECTS] [p/STUDENT_PHONE] [gn/GUARDIAN_NAME] [gp/GUARDIAN_PHONE]`<br> e.g., `edit 1 l/S4 p/91234568`
 **Search** | `search KEYWORD`<br> e.g., `search Tan`
 **Filter** | `filter [l/LEVEL] [s/SUBJECT]`<br> e.g., `filter l/S4 s/Physics`
 **Sort** | `sort by/KEY [o/ORDER]`<br> e.g., `sort by/level`, `sort by/day o/desc`
+**Delete student** | `delete INDEX`<br> e.g., `delete 2`
+**Clear** | `clear`
 **Homework add** | <code>homework&#124;hw add STUDENT_INDEX title/&#124;t/TITLE s/SUBJECT due/YYYY-MM-DD&#124;MM-DD</code><br> e.g., `homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15`, `hw add 1 t/"Speed in km/h" s/PHYSICS due/2026-11-01`
-**Homework delete** | <code>homework&#124;hw delete&#124;del STUDENT_INDEX HOMEWORK_INDEX</code><br> e.g., `homework delete 1 2`
-**Homework edit** | <code>homework&#124;hw edit&#124;e STUDENT_INDEX HOMEWORK_INDEX [title/&#124;t/TITLE] [s/SUBJECT] [due/YYYY-MM-DD&#124;MM-DD]</code><br> e.g., `hw edit 1 2 t/Revise mechanics s/PHYSICS due/2026-11-10`
 **Homework list** | <code>homework&#124;hw list&#124;ls STUDENT_INDEX [all]</code><br> e.g., `homework list 1`, `hw ls 2 all`
-**Homework marks** | <code>homework&#124;hw marks&#124;m STUDENT_INDEX HOMEWORK_INDEX score/[SCORE]</code><br> e.g., `hw m 1 2 score/5/10`, `hw m 1 2 score/17`, `hw m 1 2 score/`
 **Homework upcoming** | <code>homework&#124;hw upcoming&#124;up [due/DAYS]</code><br> e.g., `hw up`, `hw up due/3`
-**Homework filter** | <code>homework&#124;hw filter [STUDENT_INDEX] [s/SUBJECT] [due/DATE] [status/STATUS]</code><br> e.g., `hw filter 1 s/MATH due/2026-10-15 status/ASSIGNED`
+**Homework edit** | <code>homework&#124;hw edit&#124;e STUDENT_INDEX HOMEWORK_INDEX [title/&#124;t/TITLE] [s/SUBJECT] [due/YYYY-MM-DD&#124;MM-DD]</code><br> e.g., `hw edit 1 2 t/Revise mechanics s/PHYSICS due/2026-11-10`
+**Homework marks** | <code>homework&#124;hw marks&#124;m STUDENT_INDEX HOMEWORK_INDEX score/[SCORE]</code><br> e.g., `hw m 1 2 score/5/10`, `hw m 1 2 score/17`, `hw m 1 2 score/`
+**Homework delete** | <code>homework&#124;hw delete&#124;del STUDENT_INDEX HOMEWORK_INDEX</code><br> e.g., `homework delete 1 2`
 **Homework status** | <code>homework&#124;hw status STUDENT_INDEX HOMEWORK_INDEX status/STATUS</code><br> e.g., `hw status 1 2 status/COMPLETED`, `hw status 1 2 status/ASSIGNED`
+**Homework filter** | <code>homework&#124;hw filter [STUDENT_INDEX] [s/SUBJECT] [due/DATE] [status/STATUS]</code><br> e.g., `hw filter 1 s/MATH due/2026-10-15 status/ASSIGNED`
 **Lesson add** | `lesson add INDEX s/SUBJECT d/DAY st/START_TIME et/END_TIME`<br> e.g., `lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00`
-**Lesson list** | `lesson list`
-**Lesson delete** | `lesson delete LESSON_INDEX`<br> e.g., `lesson delete 2`
 **Lesson edit** | `lesson edit LESSON_INDEX [s/SUBJECT] [d/DAY] [st/START_TIME] [et/END_TIME]`<br> e.g., `lesson edit 1 d/TUESDAY`
+**Lesson delete** | `lesson delete LESSON_INDEX`<br> e.g., `lesson delete 2`
+**Lesson list** | `lesson list`
 **Help** | `help`
 **Exit** | `exit`

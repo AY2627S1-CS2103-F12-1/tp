@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.scene.Scene;
+import javafx.scene.control.IndexRange;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -119,14 +120,93 @@ public class CommandBoxTest {
         });
     }
 
+    @Test
+    public void pressShiftUp_typedText_selectsToStart() throws Exception {
+        runOnFxThread(() -> {
+            enterCommandsThenTypeFindAlex();
+
+            pressKey(KeyCode.UP, true, false, false, false);
+
+            assertEquals("find n/Alex", commandTextField.getText());
+            assertEquals(new IndexRange(0, 6), commandTextField.getSelection());
+        });
+    }
+
+    @Test
+    public void pressShiftDown_typedText_selectsToEnd() throws Exception {
+        runOnFxThread(() -> {
+            enterCommandsThenTypeFindAlex();
+
+            pressKey(KeyCode.DOWN, true, false, false, false);
+
+            assertEquals("find n/Alex", commandTextField.getText());
+            assertEquals(new IndexRange(6, 11), commandTextField.getSelection());
+        });
+    }
+
+    @Test
+    public void pressUp_ctrlAltOrMetaDown_keepsTypedText() throws Exception {
+        runOnFxThread(() -> {
+            enterCommandsThenTypeFindAlex();
+
+            // Ctrl, and Meta (Cmd on macOS), also cover the platform's Shortcut key
+            pressKey(KeyCode.UP, false, true, false, false);
+            assertEquals("find n/Alex", commandTextField.getText());
+            pressKey(KeyCode.UP, false, false, true, false);
+            assertEquals("find n/Alex", commandTextField.getText());
+            pressKey(KeyCode.UP, false, false, false, true);
+            assertEquals("find n/Alex", commandTextField.getText());
+
+            // The history position has not moved, so plain Up still starts from the newest command
+            pressKey(KeyCode.UP);
+            assertRecalled("hw ls 2");
+        });
+    }
+
+    @Test
+    public void pressDown_ctrlAltOrMetaDown_keepsTypedText() throws Exception {
+        runOnFxThread(() -> {
+            enterCommandsThenTypeFindAlex();
+            pressKey(KeyCode.UP);
+            pressKey(KeyCode.UP);
+            commandTextField.setText("find n/Alex");
+
+            pressKey(KeyCode.DOWN, false, true, false, false);
+            assertEquals("find n/Alex", commandTextField.getText());
+            pressKey(KeyCode.DOWN, false, false, true, false);
+            assertEquals("find n/Alex", commandTextField.getText());
+            pressKey(KeyCode.DOWN, false, false, false, true);
+            assertEquals("find n/Alex", commandTextField.getText());
+
+            // The history position has not moved, so plain Down shows the command after the oldest one
+            pressKey(KeyCode.DOWN);
+            assertRecalled("hw ls 2");
+        });
+    }
+
+    /**
+     * Enters {@code list} and {@code hw ls 2}, then types {@code find n/Alex} with the caret after {@code n}.
+     */
+    private void enterCommandsThenTypeFindAlex() {
+        enter("list");
+        enter("hw ls 2");
+        commandTextField.setText("find n/Alex");
+        commandTextField.positionCaret(6);
+    }
+
     private void enter(String commandText) {
         commandTextField.setText(commandText);
         commandTextField.getOnAction().handle(new ActionEvent());
     }
 
     private void pressKey(KeyCode keyCode) {
+        pressKey(keyCode, false, false, false, false);
+    }
+
+    private void pressKey(KeyCode keyCode, boolean isShiftDown, boolean isControlDown, boolean isAltDown,
+            boolean isMetaDown) {
         Event.fireEvent(commandTextField, new KeyEvent(KeyEvent.KEY_PRESSED, "", "", keyCode,
-                false, false, false, false));
+                isShiftDown, isControlDown, isAltDown, isMetaDown));
     }
 
     private void assertRecalled(String expectedText) {

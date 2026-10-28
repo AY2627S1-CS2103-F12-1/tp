@@ -57,8 +57,13 @@ public class CommandBox extends UiPart<Region> {
     /**
      * Shows the previous command for Up and the next command for Down.
      * Consumes both keys, so the text field does not also move the caret to the start or end.
+     * Ignores them when a modifier key is held, so the text field keeps its own meaning for, e.g., Shift+Up.
      */
     private void handleKeyPressed(KeyEvent event) {
+        if (event.isShiftDown() || event.isControlDown() || event.isAltDown() || event.isMetaDown()) {
+            return;
+        }
+
         if (event.getCode() == KeyCode.UP) {
             commandHistory.previous().ifPresent(this::showRecalledCommand);
             event.consume();

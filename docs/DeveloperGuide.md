@@ -708,6 +708,37 @@ The activity diagram below shows these steps for a command that succeeds. If the
   * Pros: No copy is needed.
   * Cons: The message says the data could not be saved, but the change is still shown and is lost when the app closes, so the user cannot tell what is saved.
 
+### Recalling earlier commands
+
+Pressing `Up` in the command box shows the previous command entered in this session, and `Down` moves forward again, as in a shell.
+
+`CommandBox` owns a `CommandHistory`, which keeps the entered commands in a list, oldest first, and a position in that list. The position equals the number of commands when no earlier command is shown.
+
+* `CommandBox#handleCommandEntered` calls `CommandHistory#add` before running the command, so a command is recorded whether it succeeds or fails. `add` skips blank commands and a command identical to the newest entry, and moves the position to after the newest entry.
+* A `KEY_PRESSED` event filter on the text field calls `CommandHistory#previous` for `Up` and `CommandHistory#next` for `Down`, puts the returned text in the box with the caret at its end, and consumes the key so the text field does not also move the caret. `previous` stops at the oldest command. `next` returns an empty string when it moves past the newest command, so the box is cleared. Both return an empty `Optional` when there is nothing to move to (no commands, or `Down` with no earlier command shown), and the box keeps its text.
+
+#### Design considerations:
+
+**Aspect: Where the history lives:**
+
+* **Alternative 1 (current choice):** In memory, in the UI component.
+  * Pros: Recalling a command is a typing aid, not tutoring data, so it needs no `Logic`, `Model` or `Storage` change and cannot affect the data file.
+  * Cons: The history is lost when the app closes.
+
+* **Alternative 2:** In the model, saved to a file.
+  * Pros: Commands from earlier sessions can be recalled.
+  * Cons: Adds a file to keep valid and a model class with no tutoring purpose.
+
+**Aspect: Which commands are recorded:**
+
+* **Alternative 1 (current choice):** Every non-blank command, including failed ones, but not the same command twice in a row.
+  * Pros: A rejected command, often the one with a typo, can be brought back and corrected instead of retyped. Repeating a command (e.g. `list`) does not fill the history with copies.
+  * Cons: Invalid commands take up history entries.
+
+* **Alternative 2:** Only successful commands.
+  * Pros: Every recalled command is valid.
+  * Cons: A rejected command stays in the box until the next command is typed, and is lost after that.
+
 --------------------------------------------------------------------------------------------------------------------
 
 ## **Documentation, logging, testing, dev-ops**
@@ -1036,6 +1067,14 @@ testers are expected to do more *exploratory* testing.
 
    1. Close the app and replace the content of `preferences.json` with `{"guiSettings":null}`. Launch the app.<br>
       Expected: The app opens with the default window size and the same students as before. `preferences.json` now holds the default preferences, and the data file is unchanged.
+
+### Recalling earlier commands
+
+1. In a fresh test folder, launch the app and run `list`, `hw ls 2` and `hw ls 99`.<br>
+   Expected: `hw ls 99` is rejected and stays in the command box in red.
+
+1. Press `Up` three times, then `Down` three times.<br>
+   Expected: `Up` shows `hw ls 99`, `hw ls 2`, then `list`. `Down` shows `hw ls 2`, `hw ls 99`, then an empty box.
 
 ### Adding and editing students
 

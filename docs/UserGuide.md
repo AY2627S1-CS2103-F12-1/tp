@@ -23,7 +23,7 @@ TutorFlow is a **desktop application for private tutors to manage their students
    A GUI similar to the one below should appear in a few seconds. Note how the app contains some sample data.<br>
    ![Ui](images/Ui.png)
 
-1. Type a command in the command box and press Enter to execute it. For example, type **`help`** and press Enter to open the help window.<br>
+1. Type a command in the command box and press Enter to execute it. For example, type **`help`** and press Enter to open the help window. Press `Up` and `Down` in the command box to bring back commands you entered earlier, including ones that were rejected. Only commands from the current session are kept; they are forgotten when you close the app.<br>
    Some example commands you can try:
 
    * `add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777` : Adds a student named `Aaron Koh` to the student list.

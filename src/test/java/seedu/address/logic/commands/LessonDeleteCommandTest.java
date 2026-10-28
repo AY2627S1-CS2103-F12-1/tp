@@ -13,6 +13,7 @@ import static seedu.address.testutil.TypicalRegularLessons.SATURDAY_CHEMISTRY;
 import static seedu.address.testutil.TypicalRegularLessons.TUESDAY_PHYSICS;
 import static seedu.address.testutil.TypicalStudents.getModelWithStudents;
 
+import java.util.HashSet;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -119,6 +120,16 @@ public class LessonDeleteCommandTest {
         assertFalse(deleteCommand.equals(null));
         assertFalse(deleteCommand.equals(1));
         assertFalse(deleteCommand.equals(new LessonDeleteCommand(Index.fromOneBased(2))));
+    }
+
+    @Test
+    public void hashCode_equalCommands_deduplicatesInHashSet() {
+        LessonDeleteCommand firstCommand = new LessonDeleteCommand(Index.fromOneBased(1));
+        LessonDeleteCommand equalCommand = new LessonDeleteCommand(Index.fromZeroBased(0));
+
+        assertEquals(firstCommand, equalCommand);
+        assertEquals(firstCommand.hashCode(), equalCommand.hashCode());
+        assertEquals(1, new HashSet<>(List.of(firstCommand, equalCommand)).size());
     }
 
     @Test

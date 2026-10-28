@@ -50,7 +50,9 @@ public class Messages {
                 + "; Due: " + homework.getDueDate();
     }
 
-    /** Returns the owner's name and phone, and the regular lesson's subject, weekday and time range. */
+    /**
+     * Returns the owner's name and phone, and the regular lesson's subject, weekday and time range.
+     */
     public static String format(Student student, RegularLesson lesson) {
         return formatLessonOwner(student)
                 + "; " + lesson.getSubject()

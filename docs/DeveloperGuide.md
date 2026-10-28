@@ -95,15 +95,17 @@ displays `Student#getUpcomingHomeworkCount(today)` and `Student#getOverdueHomewo
 `UpcomingPanel` displays the **At a glance** sidebar. It observes the full, unmodifiable roster from
 `Logic#getAllStudentList()`, rather than the displayed list from `Logic#getStudentList()`, so `search`, `filter` and `sort`
 do not hide lessons or homework. Its list-change listener rebuilds the weekly schedule through
-`LessonSchedule#from` and sorts `ASSIGNED` homework by due date, then student name, title and phone. Both
+`LessonSchedule#buildSchedule` and sorts `ASSIGNED` homework by due date, then student name, title and phone. Both
 reports include student phone numbers to distinguish students sharing a name. The same observable roster is
 retained when data is reset, so updates continue after `clear` or a failed save is rolled back.
 
 The sidebar evaluates `Homework#isOverdue(today)` to mark overdue entries in bold red;
 `Student#getOverdueHomeworkCount(today)` uses the same model rule for student cards. A homework record is
 overdue only when its status is `ASSIGNED` and its due date is before today, regardless of its score.
-`UpcomingPanel` and `MainWindow` accept a `Clock` for deterministic UI tests. `MainWindow` schedules a refresh
-at the next local date boundary, rechecks on window activation and before commands, and rebuilds cached
+`UpcomingPanel` keeps each sidebar entry's display text and overdue state together, so styling does not depend
+on matching rendered strings. Date-only refreshes update homework while preserving weekly lesson entries
+and their selection. `UpcomingPanel` and `MainWindow` accept a `Clock` for deterministic UI tests.
+`MainWindow` schedules a refresh at the next local date boundary, rechecks on window activation and before commands, and rebuilds cached
 student cards and sidebar entries using the same date. The timer stops when the window is hidden and restarts
 when shown. The content split pane binds its minimum height to its children's minimum heights at their
 narrowest permitted widths, accounting for wrapped headings so the sidebar remains within its bounds. Both
@@ -162,7 +164,7 @@ records can be shared when a student or homework is copied. `AddressBook` owns i
 The `Model` component,
 
 * stores all app data in an `AddressBook` object: the student roster (a `StudentRoster` of `Student` objects in insertion order), in which each immutable `Student` holds its own `Homework` records and `RegularLesson` entries.
-* uses `LessonSchedule#from` to provide a view of all regular lessons ordered by weekday, start time, and student name without changing roster order.
+* uses `LessonSchedule#buildSchedule` to provide a view of all regular lessons ordered by weekday, start time, and student name without changing roster order.
 * exposes the displayed students as an unmodifiable `ObservableList<Student>` backed by a `StudentDisplayList` over a `FilteredList`, so the UI updates when roster, predicate or display order changes. `ModelManager` passes roster mutations (`hasStudent`, `addStudent`, `setStudent`, `deleteStudent`) to its `AddressBook`; `getStudentList` returns the display view. The stored roster stays in insertion order.
 * stores a `UserPrefs` object that represents the user’s preferences (currently, just the GUI settings). This is exposed to the outside as a `ReadOnlyUserPrefs` object.
 * does not depend on any of the other three components (as the `Model` represents data entities of the domain, they should make sense on their own without depending on other components)
@@ -666,7 +668,7 @@ Manual check: add a MATH student, run `lesson add 1 s/MATH d/MONDAY st/16:00 et/
 
 ![Successful regular lesson edit](images/LessonEditSequenceDiagram.png)
 
-The diagram shows a successful edit, with parsing details and the snapshot copy abbreviated. `LogicManager` snapshots the data before executing the command. `LessonEditCommand` resolves the lesson through `LessonSchedule.from` over the full roster, matching `lesson list` and `lesson delete` numbering independently of student filtering and sorting. The owner and original lesson form an `Entry`. After subject, unchanged-value and duplicate checks, `LessonSchedule.findClashes` compares the candidate against the full weekly schedule while excluding only that owner/lesson pair. The half-open interval rule permits adjacent lessons. All conflicts are reported in weekly order; any validation failure leaves records untouched.
+The diagram shows a successful edit, with parsing details and the snapshot copy abbreviated. `LogicManager` snapshots the data before executing the command. `LessonEditCommand` resolves the lesson through `LessonSchedule.buildSchedule` over the full roster, matching `lesson list` and `lesson delete` numbering independently of student filtering and sorting. The owner and original lesson form an `Entry`. After subject, unchanged-value and duplicate checks, `LessonSchedule.findClashes` compares the candidate against the full weekly schedule while excluding only that owner/lesson pair. The half-open interval rule permits adjacent lessons. All conflicts are reported in weekly order; any validation failure leaves records untouched.
 
 On success, the command replaces the original at its insertion position in a copied lesson list, then calls `Model.setStudent(owner, owner.withLessons(updated))`. The immutable replacement preserves homework and all student details. The weekly schedule may be reordered by the changed day/time, so later lesson operations should use a refreshed `lesson list`. `LogicManager` saves the changed data; on an `IOException` it restores its snapshot and uses `LessonEditCommand.MESSAGE_SAVE_FAILURE`. No JSON schema change is needed.
 

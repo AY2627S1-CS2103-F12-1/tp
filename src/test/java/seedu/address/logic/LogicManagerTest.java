@@ -591,8 +591,45 @@ public class LogicManagerTest {
                 initial.getStudentList().get(0).withLessons(List.of(MONDAY_MATH)));
         setUpLogic(initial, getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
 
-        assertCommandFailure("delete 1", CommandException.class, DUMMY_IO_ERROR_MESSAGE,
+        assertCommandFailure("delete 1", CommandException.class, getCommandSaveFailureMessage(
+                "student could not be deleted", SET_UP_DATA_FILE_NAME, DUMMY_IO_EXCEPTION, "student"),
                 new ModelManager(initial, new UserPrefs()));
+    }
+
+    @Test
+    public void execute_deleteStudentSaveFails_preservesSortedDisplayedOrder() throws Exception {
+        AddressBook initial = new AddressBook();
+        initial.addStudent(new StudentBuilder().withName("Secondary Student").withAcademicLevel("S3").build());
+        initial.addStudent(new StudentBuilder().withName("Junior Student").withPhone("92345678")
+                .withAcademicLevel("J1").build());
+        initial.addStudent(new StudentBuilder().withName("Primary Student").withPhone("93456789")
+                .withAcademicLevel("S1").build());
+        setUpLogic(initial, getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+        logic.execute("sort by/level");
+        List<Student> sortedStudents = List.copyOf(logic.getStudentList());
+        assertFalse(sortedStudents.equals(initial.getStudentList()));
+
+        String expectedMessage = getCommandSaveFailureMessage(
+                "student could not be deleted", SET_UP_DATA_FILE_NAME, DUMMY_IO_EXCEPTION, "student");
+        assertCommandException("delete 1", expectedMessage);
+
+        assertEquals(sortedStudents, logic.getStudentList());
+        assertEquals(initial, model.getAddressBook());
+    }
+
+    @Test
+    public void execute_addStudentSaveFailsWithFilteredView_restoresStoredRoster() throws Exception {
+        AddressBook initial = new AddressBook();
+        initial.addStudent(new StudentBuilder().build());
+        initial.addStudent(new StudentBuilder().withName("Jane Tan").withPhone("92345678").build());
+        setUpLogic(initial, getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+        logic.execute("search John");
+        assertEquals(1, logic.getStudentList().size());
+
+        assertCommandException("add n/Olivia Tan l/S2 s/MATH p/93456789 gn/May Tan gp/98765432",
+                DUMMY_IO_ERROR_MESSAGE);
+
+        assertEquals(initial, model.getAddressBook());
     }
 
     @Test
@@ -608,6 +645,18 @@ public class LogicManagerTest {
                 .withGuardianPhone("95554444").withHomeworks(ALGEBRA).withLessons(MONDAY_MATH).build();
         assertEquals(List.of(expected), logic.getStudentList());
         assertEquals(List.of(expected), addressBookStorage.readAddressBook().get().getStudentList());
+    }
+
+    @Test
+    public void execute_editStudentSubjectOrder_persistsNewOrder() throws Exception {
+        AddressBook initial = new AddressBook();
+        initial.addStudent(new StudentBuilder().withSubjects("MATH, PHYSICS").build());
+        setUpLogic(initial, addressBookStorage);
+
+        logic.execute("edit 1 s/PHYSICS, MATH");
+
+        Student saved = addressBookStorage.readAddressBook().orElseThrow().getStudentList().getFirst();
+        assertEquals("PHYSICS, MATH", saved.getSubjects().toString());
     }
 
     @Test
@@ -688,7 +737,8 @@ public class LogicManagerTest {
         setUpLogic(getSampleAddressBook(), new JsonAddressBookStorage(dataFile), SAMPLE_CLOCK);
         logic.execute("search Priya");
 
-        assertSaveFailureRestores("delete 1", getGeneralSaveFailureMessage(SHOWN_DATA_FILE_NAME, CAUSE_FOLDER));
+        assertSaveFailureRestores("delete 1", getCommandSaveFailureMessage(
+                "student could not be deleted", SHOWN_DATA_FILE_NAME, CAUSE_FOLDER, "student"));
         assertTrue(Files.isDirectory(dataFile));
     }
 
@@ -700,8 +750,8 @@ public class LogicManagerTest {
         makeFolderReadOnly(dataFolder);
         try {
             // the failure is on the internal lock file, which is never named
-            assertSaveFailureRestores("delete 1",
-                    getGeneralSaveFailureMessage(SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER));
+            assertSaveFailureRestores("delete 1", getCommandSaveFailureMessage(
+                    "student could not be deleted", SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER, "student"));
             assertEquals(List.of(), listFileNames(dataFolder));
         } finally {
             makeFolderWritable(dataFolder);
@@ -717,8 +767,8 @@ public class LogicManagerTest {
         makeFolderReadOnly(dataFile.getParent());
         try {
             logic.execute("sort by/level");
-            assertSaveFailureRestores("delete 1",
-                    getGeneralSaveFailureMessage(SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER));
+            assertSaveFailureRestores("delete 1", getCommandSaveFailureMessage(
+                    "student could not be deleted", SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER, "student"));
             assertArrayEquals(fileBefore, Files.readAllBytes(dataFile));
         } finally {
             makeFolderWritable(dataFile.getParent());
@@ -782,8 +832,8 @@ public class LogicManagerTest {
         setUpLogic(getSampleAddressBook(), new JsonAddressBookStorage(dataFile), SAMPLE_CLOCK,
                 Files.createDirectories(temporaryFolder.resolve("app")));
 
-        assertSaveFailureRestores("delete 1", getGeneralSaveFailureMessage(
-                dataFile.toAbsolutePath().normalize().toString(), CAUSE_FOLDER));
+        assertSaveFailureRestores("delete 1", getCommandSaveFailureMessage("student could not be deleted",
+                dataFile.toAbsolutePath().normalize().toString(), CAUSE_FOLDER, "student"));
     }
 
     @Test
@@ -847,7 +897,8 @@ public class LogicManagerTest {
         logic.execute("sort by/level o/desc");
         List<Student> displayedBefore = List.copyOf(logic.getStudentList());
 
-        assertCommandException("delete 1", DUMMY_IO_ERROR_MESSAGE);
+        assertCommandException("delete 1", getCommandSaveFailureMessage(
+                "student could not be deleted", SET_UP_DATA_FILE_NAME, DUMMY_IO_EXCEPTION, "student"));
 
         assertEquals(displayedBefore, logic.getStudentList());
     }

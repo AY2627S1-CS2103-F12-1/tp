@@ -2,10 +2,10 @@ package seedu.address.logic.commands;
 
 import static java.util.Objects.requireNonNull;
 
-import java.util.Locale;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.util.ToStringBuilder;
@@ -13,7 +13,9 @@ import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.Model;
 import seedu.address.model.student.Student;
 
-/** Shows students whose name or phone, or whose guardian's name or phone, contains a keyword. */
+/**
+ * Shows students whose name or phone, or whose guardian's name or phone, contains a keyword.
+ */
 public class SearchCommand extends Command {
     public static final String COMMAND_WORD = "search";
     public static final String MESSAGE_USAGE = "search KEYWORD";
@@ -26,12 +28,15 @@ public class SearchCommand extends Command {
             "TutorFlow could not search students due to an internal error.";
 
     private static final Logger logger = LogsCenter.getLogger(SearchCommand.class);
+    private static final Pattern WHITESPACE = Pattern.compile("\\s+", Pattern.UNICODE_CHARACTER_CLASS);
 
     private final String keyword;
 
-    /** Creates a search for the given non-blank keyword. */
+    /**
+     * Creates a search for the given non-blank keyword.
+     */
     public SearchCommand(String keyword) {
-        this.keyword = requireNonNull(keyword).strip();
+        this.keyword = WHITESPACE.matcher(requireNonNull(keyword)).replaceAll(" ").strip();
         if (this.keyword.isEmpty()) {
             throw new IllegalArgumentException("Search keyword must not be blank.");
         }
@@ -48,13 +53,14 @@ public class SearchCommand extends Command {
         }
     }
 
-    /** Updates only the displayed student view; the stored roster is unchanged. */
+    /**
+     * Updates only the displayed student view; the stored roster is unchanged.
+     */
     private CommandResult searchStudents(Model model) {
-        String normalizedKeyword = keyword.toLowerCase(Locale.ROOT);
-        Predicate<Student> matchesKeyword = student -> matches(student.getName().toString(), normalizedKeyword)
-                || matches(student.getPhone().toString(), normalizedKeyword)
-                || matches(student.getGuardianName().toString(), normalizedKeyword)
-                || matches(student.getGuardianPhone().toString(), normalizedKeyword);
+        Predicate<Student> matchesKeyword = student -> matches(student.getName().toString(), keyword)
+                || matches(student.getPhone().toString(), keyword)
+                || matches(student.getGuardianName().toString(), keyword)
+                || matches(student.getGuardianPhone().toString(), keyword);
         model.updateFilteredStudentList(matchesKeyword);
 
         int count = model.getStudentList().size();
@@ -69,8 +75,16 @@ public class SearchCommand extends Command {
         return new CommandResult(feedback + "\n" + MESSAGE_SHOW_ALL, false, false, true);
     }
 
-    private static boolean matches(String value, String normalizedKeyword) {
-        return value.toLowerCase(Locale.ROOT).contains(normalizedKeyword);
+    /**
+     * Returns whether {@code value} contains {@code keyword}, ignoring case.
+     */
+    private static boolean matches(String value, String keyword) {
+        for (int start = 0; start <= value.length() - keyword.length(); start++) {
+            if (value.regionMatches(true, start, keyword, 0, keyword.length())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

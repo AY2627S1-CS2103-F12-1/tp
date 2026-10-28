@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.logic.commands.CommandTestUtil.CAUSE_READ_ONLY_FOLDER;
+import static seedu.address.logic.commands.CommandTestUtil.SHOWN_DATA_FILE_NAME;
 import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_STUDENT;
 import static seedu.address.testutil.TypicalIndexes.INDEX_SECOND_STUDENT;
 import static seedu.address.testutil.TypicalStudents.ALICE;
@@ -97,9 +99,18 @@ public class DeleteCommandTest {
 
         assertTrue(deleteFirstCommand.equals(deleteFirstCommand));
         assertTrue(deleteFirstCommand.equals(new DeleteCommand(INDEX_FIRST_STUDENT)));
+        assertEquals(deleteFirstCommand.hashCode(), new DeleteCommand(INDEX_FIRST_STUDENT).hashCode());
         assertFalse(deleteFirstCommand.equals(1));
         assertFalse(deleteFirstCommand.equals(null));
         assertFalse(deleteFirstCommand.equals(deleteSecondCommand));
+    }
+
+    @Test
+    public void getSaveFailureMessage_cause_namesFileAndCause() {
+        String expectedMessage = "The student could not be deleted because TutorFlow could not save "
+                + SHOWN_DATA_FILE_NAME + ": " + CAUSE_READ_ONLY_FOLDER + ". No student data was changed.";
+        assertEquals(expectedMessage, new DeleteCommand(INDEX_FIRST_STUDENT).getSaveFailureMessage(
+                SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER));
     }
 
     @Test

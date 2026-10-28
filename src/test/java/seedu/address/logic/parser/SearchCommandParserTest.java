@@ -21,5 +21,6 @@ public class SearchCommandParserTest {
     public void parse_blankKeyword_throwsParseException() {
         assertThrows(ParseException.class, SearchCommand.MESSAGE_INVALID_FORMAT, () -> parser.parse(""));
         assertThrows(ParseException.class, SearchCommand.MESSAGE_INVALID_FORMAT, () -> parser.parse("   "));
+        assertThrows(ParseException.class, SearchCommand.MESSAGE_INVALID_FORMAT, () -> parser.parse("\u00a0"));
     }
 }

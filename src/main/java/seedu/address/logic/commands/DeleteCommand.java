@@ -24,6 +24,8 @@ public class DeleteCommand extends Command {
             + "Example: " + COMMAND_WORD + " 1";
 
     public static final String MESSAGE_DELETE_STUDENT_SUCCESS = "Deleted student: %1$s";
+    public static final String MESSAGE_SAVE_FAILURE = "The student could not be deleted because TutorFlow could not "
+            + "save %s: %s. No student data was changed.";
 
     private final Index targetIndex;
 
@@ -46,6 +48,11 @@ public class DeleteCommand extends Command {
     }
 
     @Override
+    protected String getSaveFailureFormat() {
+        return MESSAGE_SAVE_FAILURE;
+    }
+
+    @Override
     public boolean equals(Object other) {
         if (other == this) {
             return true;
@@ -57,6 +64,11 @@ public class DeleteCommand extends Command {
         }
 
         return targetIndex.equals(otherDeleteCommand.targetIndex);
+    }
+
+    @Override
+    public int hashCode() {
+        return Integer.hashCode(targetIndex.getZeroBased());
     }
 
     @Override

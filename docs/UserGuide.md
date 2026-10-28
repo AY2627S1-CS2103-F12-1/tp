@@ -83,7 +83,7 @@ TutorFlow is a **desktop application for private tutors to manage their students
 
 * Only straight double quotes (`"`) can wrap a value. Curly quotes (`“ ”`), which some editors type automatically, are read as part of the value, so `hw add 1 t/“Speed in km/h” s/PHYSICS due/2026-11-01` is rejected, with `Use straight quotes ("), not curly quotes (“ ”).` on its own line before the usage.
 
-* Spaces at both ends of a quoted value are removed, both outside and inside the quotes, as they are for a value without quotes. Spaces between words are kept.<br>
+* Spaces at both ends of a quoted value are removed, both outside and inside the quotes, as they are for a value without quotes. Quotes protect prefix-shaped text; they do not override a field's validation or whitespace rules. Student names, guardian names and homework titles still collapse repeated whitespace between words to one space, so `gn/"Parent  Alpha"` is saved as `Parent Alpha`.<br>
   For example, `n/" Ravi s/o Kumar "` gives the name `Ravi s/o Kumar`, and `hw up due/" 3 "` is the same as `hw up due/3`. Empty quotes (`""`), or quotes with only spaces inside, give an empty value, which is treated like a prefix with nothing after it: `t/""` is rejected like `t/`.
 
 * A quoted value ends at the first `"` that is followed by the end of the command, or by a space and another prefix of the same command. Any other `"` is kept as typed.<br>
@@ -173,7 +173,8 @@ ignores letter case. Matches stay in roster order and are numbered from 1 in the
 
 Format: `search KEYWORD`
 
-* `KEYWORD` must not be blank; it can contain spaces. For example, `search Mary Tan` searches for that full phrase.
+* `KEYWORD` must not be blank; it can contain spaces. Repeated and Unicode whitespace is treated as one space.
+  For example, `search Mary Tan` searches for that full phrase.
 * `search 9123` can find a student by part of their phone number. `search Tan` may match a student or a guardian.
 * The feedback repeats the keyword used, e.g. `Found 2 students for "Tan".` If nothing matches, TutorFlow shows
   `No students found for "Nobody".` and displays no student cards. In both cases, the feedback reminds you to type

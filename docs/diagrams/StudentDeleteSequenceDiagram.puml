@@ -45,6 +45,13 @@ DeleteCommandParser --> AddressBookParser : d
 deactivate DeleteCommandParser
 AddressBookParser --> LogicManager : d
 deactivate AddressBookParser
+destroy DeleteCommandParser
+
+LogicManager -> ModelManager : getAddressBook()
+activate ModelManager
+ModelManager --> LogicManager : current roster
+deactivate ModelManager
+LogicManager -> LogicManager : dataBeforeCommand = new AddressBook(current roster)
 
 LogicManager -> DeleteCommand : execute(model)
 activate DeleteCommand
@@ -64,8 +71,18 @@ deactivate ModelManager
 
 DeleteCommand --> LogicManager : CommandResult
 deactivate DeleteCommand
+destroy DeleteCommand
 
-LogicManager -> Storage : saveAddressBook(model.getAddressBook())
+LogicManager -> ModelManager : getAddressBook()
+activate ModelManager
+ModelManager --> LogicManager : updated roster
+deactivate ModelManager
+LogicManager -> LogicManager : updated roster.equals(dataBeforeCommand)?
+note right of LogicManager
+  The roster changed, so it must be saved.
+end note
+
+LogicManager -> Storage : saveAddressBook(updated roster)
 activate Storage
 Storage --> LogicManager
 deactivate Storage

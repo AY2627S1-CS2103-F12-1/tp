@@ -864,6 +864,58 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
   * 2b1. Tutor requests to list the homework of the student with the displayed student index to find the record's homework index, as the displayed order is not the homework index (see UC03 and UC04).
   * 2b2. Use case ends.
 
+#### Use case: UC06 - Delete a student
+
+**MSS**
+
+1. Tutor requests to list students.
+2. TutorFlow displays the students with their displayed indices.
+3. Tutor requests to delete a student using the displayed index.
+4. TutorFlow deletes the student, including their homework and lessons, and confirms the deletion.
+5. Use case ends.
+
+**Extensions**
+
+* 2a. The student roster is empty.
+  * 2a1. TutorFlow informs the tutor that no students were found.
+  * 2a2. Use case ends.
+* 3a. The supplied index is invalid or does not identify a displayed student.
+  * 3a1. TutorFlow displays an error without changing the roster.
+  * 3a2. Use case resumes at step 3.
+* 4a. TutorFlow cannot save the updated data.
+  * 4a1. TutorFlow restores the student and their homework and lessons.
+  * 4a2. TutorFlow reports that no student data was changed and explains the save error.
+  * 4a3. Use case ends.
+
+#### Use case: UC07 - Edit a student
+
+**MSS**
+
+1. Tutor requests to list students.
+2. TutorFlow displays the students with their displayed indices.
+3. Tutor requests to edit one displayed student, supplying at least one replacement field.
+4. TutorFlow updates the profile and confirms the new details.
+5. Use case ends.
+
+**Extensions**
+
+* 3a. The index or replacement field is invalid, or no field is supplied.
+  * 3a1. TutorFlow displays an error without changing the profile.
+  * 3a2. Use case resumes at step 3.
+* 3b. The proposed name and phone duplicate another student.
+  * 3b1. TutorFlow identifies the existing student and leaves both profiles unchanged.
+  * 3b2. Use case ends.
+* 3c. A removed subject is still used by the student's homework or lessons.
+  * 3c1. TutorFlow rejects the edit and explains why.
+  * 3c2. Use case ends.
+* 3d. The supplied values are identical to the existing values.
+  * 3d1. TutorFlow reports that no changes were made.
+  * 3d2. Use case ends.
+* 4a. TutorFlow cannot save the updated data.
+  * 4a1. TutorFlow restores the original profile and its related records.
+  * 4a2. TutorFlow reports that no student data was changed and explains the save error.
+  * 4a3. Use case ends.
+
 ### Non-Functional Requirements
 
 1. TutorFlow should work on Windows, Linux, and macOS on a computer with Java `25` installed.
@@ -974,7 +1026,7 @@ testers are expected to do more *exploratory* testing.
 
 1. Deleting a student with related records
 
-   1. In a fresh test folder, add a student taking MATH. Use the index shown on their card to add a homework record and a regular lesson, then run `delete INDEX` using that student's index.<br>
+   1. In a fresh test folder with the six sample students, run `add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777`, `hw add 7 t/Algebra worksheet s/MATH due/2026-12-01`, `lesson add 7 s/MATH d/SUNDAY st/20:00 et/21:00`, then `delete 7`.<br>
       Expected: Only that student disappears; the remaining students retain their order and are renumbered. Restart the app and run `list`: the deleted student is still absent. Their homework and lesson are absent from `data/tutorflow.json`.
 
    1. Try `delete 0`, `delete 01`, and an index larger than the roster size.<br>

@@ -77,7 +77,7 @@ such as `CommandBox`, `ResultDisplay`, `StudentListPanel`, `UpcomingPanel`, and 
 including `MainWindow`, inherit from the abstract `UiPart` class, which captures common behavior among classes that
 represent visible GUI parts.
 
-The `HelpWindow` lists the commands from `HelpContent`, a plain Java class that groups the commands into sections. Each command format in `HelpContent` is the usage constant of the command (e.g. `HomeworkAddCommand.MESSAGE_USAGE`), so the help window shows the same format as the parser error messages. The `list` row is an exception: its format `list|ls` adds the `ls` alias that `ListCommand.MESSAGE_USAGE` leaves out. The sections and their rows are in the order of the User Guide, and `HelpContentTest` checks that order and that every example in it parses into the listed command.
+The `HelpWindow` displays commands from `HelpContent`, grouped into sections. Search filters command words, formats and descriptions without changing their order. Each command row shows a shortened description; expanding it reveals the full description, format and example. The `list` row adds its `ls` alias to `ListCommand.MESSAGE_USAGE`. `HelpContentTest` checks the group order and that every example parses into the listed command; `HelpWindowTest` covers filtering, empty results and expanded details.
 
 The `UI` component uses the JavaFX UI framework. The layouts of these UI parts are defined in matching `.fxml` files in `src/main/resources/view`. For example, [`MainWindow.fxml`](https://github.com/AY2627S1-CS2103-F12-1/tp/blob/master/src/main/resources/view/MainWindow.fxml) specifies the layout of [`MainWindow`](https://github.com/AY2627S1-CS2103-F12-1/tp/blob/master/src/main/java/seedu/address/ui/MainWindow.java).
 
@@ -1063,7 +1063,7 @@ testers are expected to do more *exploratory* testing.
 1. Continue with the preceding two-student test roster.
 
    1. Run `help`. Use `Page Down` and `Page Up`, then `Esc`; press `F1` to reopen it.<br>
-      Expected: Help lists the implemented command formats and examples, scrolls by a page, closes with `Esc` and returns focus to the command box. Close it before continuing.
+      Expected: Help lists grouped command names and short descriptions. Type `homework marks` in the search field and confirm only matching commands remain. Select a result to reveal its full description, format and example. Clear the search to restore all groups. `Up`, `Down`, `Page Up` and `Page Down` scroll the list; `Esc` closes help and returns focus to the command box. Close it before continuing.
    1. Run `hw status 1 1 status/COMPLETED`, then `hw status 1 1 status/ASSIGNED` and `hw m 1 1 score/17`.<br>
       Expected: Algebra disappears from outstanding homework when completed, reappears when assigned and remains visible after receiving a score, without restarting. Zoe's upcoming-homework count remains 1 because the due date is in the future; this count is independent of completion and marks.
    1. Run `search Ben`, then resize the window and drag the split-pane dividers.<br>

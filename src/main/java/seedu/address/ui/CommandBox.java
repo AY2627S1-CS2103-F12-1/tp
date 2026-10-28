@@ -1,8 +1,12 @@
 package seedu.address.ui;
 
+import java.util.Optional;
+
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.TextField;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Region;
 import seedu.address.logic.commands.CommandResult;
 import seedu.address.logic.commands.exceptions.CommandException;
@@ -17,6 +21,7 @@ public class CommandBox extends UiPart<Region> {
     private static final String FXML = "CommandBox.fxml";
 
     private final CommandExecutor commandExecutor;
+    private final CommandHistory commandHistory = new CommandHistory();
 
     @FXML
     private TextField commandTextField;
@@ -29,6 +34,7 @@ public class CommandBox extends UiPart<Region> {
         this.commandExecutor = commandExecutor;
         // calls #setStyleToDefault() whenever there is a change to the text of the command box.
         commandTextField.textProperty().addListener((unused1, unused2, unused3) -> setStyleToDefault());
+        commandTextField.addEventFilter(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
     }
 
     /**
@@ -37,6 +43,7 @@ public class CommandBox extends UiPart<Region> {
     @FXML
     private void handleCommandEntered() {
         String commandText = commandTextField.getText();
+        commandHistory.add(commandText);
         if (commandText.equals("")) {
             return;
         }
@@ -47,6 +54,49 @@ public class CommandBox extends UiPart<Region> {
         } catch (CommandException | ParseException e) {
             setStyleToIndicateCommandFailure();
         }
+    }
+
+    /**
+     * Recalls commands for plain Up and Down presses while leaving modified arrow keys to the text field.
+     * Consumes plain arrow-key events so they do not also move the caret.
+     *
+     * @param event the key event to handle.
+     */
+    private void handleKeyPressed(KeyEvent event) {
+        if (event.isShiftDown() || event.isControlDown() || event.isAltDown() || event.isMetaDown()) {
+            return;
+        }
+
+        if (event.getCode() == KeyCode.UP) {
+            showPreviousCommand();
+            event.consume();
+        } else if (event.getCode() == KeyCode.DOWN) {
+            commandHistory.next().ifPresent(this::showRecalledCommand);
+            event.consume();
+        }
+    }
+
+    /**
+     * Shows the previous command, skipping it when it is already in the command box.
+     */
+    private void showPreviousCommand() {
+        Optional<String> previousCommand = commandHistory.previous();
+        if (previousCommand.equals(Optional.of(commandTextField.getText()))) {
+            previousCommand = commandHistory.previous();
+        }
+        previousCommand.ifPresent(this::showRecalledCommand);
+    }
+
+    /**
+     * Replaces the command box text with {@code commandText}, puts the caret at its end and clears error styling.
+     *
+     * @param commandText the command to show.
+     */
+    private void showRecalledCommand(String commandText) {
+        commandTextField.setText(commandText);
+        commandTextField.end();
+        // Setting the same text again does not trigger the text listener, so reset the style here too.
+        setStyleToDefault();
     }
 
     /**

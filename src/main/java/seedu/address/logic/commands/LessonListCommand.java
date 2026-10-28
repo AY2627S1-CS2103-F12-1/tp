@@ -3,6 +3,7 @@ package seedu.address.logic.commands;
 import static java.util.Objects.requireNonNull;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -52,10 +53,10 @@ public class LessonListCommand extends Command {
         }
 
         StringBuilder message = new StringBuilder(lessons.size() == 1 ? MESSAGE_SUCCESS_SINGULAR
-                : String.format(MESSAGE_SUCCESS, lessons.size()));
+                : String.format(Locale.ROOT, MESSAGE_SUCCESS, lessons.size()));
         for (int i = 0; i < lessons.size(); i++) {
             LessonSchedule.Entry entry = lessons.get(i);
-            message.append(String.format(MESSAGE_LESSON_LINE, i + 1,
+            message.append(String.format(Locale.ROOT, MESSAGE_LESSON_LINE, i + 1,
                     Messages.format(entry.student(), entry.lesson())));
         }
         return new CommandResult(message.toString());

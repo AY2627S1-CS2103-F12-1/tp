@@ -625,6 +625,8 @@ Lists every student's regular lessons in one weekly schedule.
 Format: `lesson list`
 
 * Lessons are ordered from Monday to Sunday, then by start time.
+* Lesson numbers always use the digits 0 to 9, regardless of your computer's locale. Use these numbers directly
+  in `lesson edit` and `lesson delete` commands.
 * Lessons with the same weekday and start time are ordered by student name.
 * Each row shows the student name and phone, subject, abbreviated weekday and time range. The phone distinguishes students who share a name; lesson add, edit, delete and clash feedback use the same owner details.
 * If no lessons have been added, TutorFlow reports `No regular lessons found.`

@@ -187,30 +187,36 @@ Format: `search KEYWORD`
 
 ### Filtering students: `filter`
 
-Shows students at an academic level, taking a tuition subject, or satisfying both conditions.
+Shows students matching any combination of academic level, tuition subject, and regular meeting day.
 
-Format: `filter [l/LEVEL] [s/SUBJECT]`
+Format: `filter [l/LEVEL] [s/SUBJECT] [d/DAY]`
 
 * Supply at least one filter. Each prefix may appear only once, in either order.
 * `LEVEL` must be `S1`, `S2`, `S3`, `S4`, `S5`, `J1` or `J2`.
 * `SUBJECT` must be one of `MATH`, `PHYSICS` or `CHEMISTRY`. A student taking several subjects matches if one
   of them is the selected subject. Supply only one subject to the filter command.
+* `DAY` must be a full weekday: `MONDAY`, `TUESDAY`, `WEDNESDAY`, `THURSDAY`, `FRIDAY`, `SATURDAY` or `SUNDAY`.
+  A student matches if any regular lesson is on that day. Students without regular lessons do not match.
+  Supply only one day; abbreviations such as `MON` are not accepted.
 * Values ignore letter case and surrounding whitespace, so `s/Math` matches `MATH`.
-* With both filters, a student must match **both**. Matches retain roster order and receive displayed indexes
+* A student must match **every supplied criterion**. Subject checks registration independently of the lesson
+  that matches the day: a student taking MATH with a PHYSICS lesson on Monday matches `s/MATH d/MONDAY`.
+  Matches retain roster order and receive displayed indexes
   starting at 1. Subsequent student-index commands use these displayed indexes.
 * Each filter examines the full roster and replaces any previous search or filter. To show all students again,
   run `list` or `ls`. Adding a student or running `homework upcoming` also restores the full roster.
 * Filtering changes only the displayed students. It does not change records or write to the data file.
 
-The student panel keeps the active criteria below its heading: `Filtered: level S4`, `Filtered: subject PHYSICS`,
-or `Filtered: level S4; subject PHYSICS`. This description remains visible after other commands replace the
+The student panel keeps the active criteria below its heading, such as `Filtered: day MONDAY` or
+`Filtered: level S3; subject MATH; day MONDAY`. This description remains visible after other commands replace the
 feedback, including when no students match or every student matches. The count beside the heading is the number
 of displayed students. Long descriptions wrap to fit the panel.
 
 A new filter replaces the description. `list`, `ls`, a successful student addition, or `homework upcoming`
-removes it by restoring the full roster. A new search also removes the level/subject description because it
+removes it by restoring the full roster. A new search also removes the filter description because it
 replaces that filter. Editing or deleting students retains the criteria; `clear` retains them on an empty roster.
 Invalid commands leave the description unchanged. If saving fails, the previous filter and description are restored.
+Lesson additions, edits and deletions re-evaluate day matches immediately while retaining the selected criteria.
 
 Examples:
 
@@ -218,6 +224,8 @@ Examples:
 * `filter s/Math` shows every student taking MATH, including those taking other subjects too.
 * `filter l/S4 s/Physics` and `filter s/Physics l/S4` both show S4 students taking PHYSICS, such as
   Nurul Aisyah in the sample roster.
+* `filter d/Monday` shows students with any Monday lesson, such as Ethan Lim in the sample roster.
+* `filter l/S3 s/Math d/Monday` shows S3 students taking MATH who also have a Monday lesson; Ethan Lim matches.
 
 For one match, the feedback is `Found 1 student.`; for multiple matches, it is `Found N students.`, using the
 actual count. If nothing matches, including when the roster is empty, no student cards are displayed and the
@@ -227,7 +235,7 @@ With no filters, TutorFlow shows:
 
 ```text
 Invalid command format.
-Usage: filter [l/LEVEL] [s/SUBJECT]
+Usage: filter [l/LEVEL] [s/SUBJECT] [d/DAY]
 At least one filter must be provided
 ```
 
@@ -235,14 +243,16 @@ Other invalid commands report:
 
 | Problem | Feedback |
 | --- | --- |
-| Unknown prefix, e.g. `filter l/S4 p/123` | `p/ is not a prefix of this command. To use it inside a value, wrap the whole value in straight double quotes, e.g. l/"S4 p/123".`, followed by `Usage: filter [l/LEVEL] [s/SUBJECT]` on the next line (see the [notes about the command format](#features)) |
-| Text before the first prefix | `Invalid command format.`, followed by `Usage: filter [l/LEVEL] [s/SUBJECT]` on the next line |
+| Unknown prefix, e.g. `filter l/S4 p/123` | `p/ is not a prefix of this command. To use it inside a value, wrap the whole value in straight double quotes, e.g. l/"S4 p/123".`, followed by `Usage: filter [l/LEVEL] [s/SUBJECT] [d/DAY]` on the next line (see the [notes about the command format](#features)) |
+| Text before the first prefix | `Invalid command format.`, followed by `Usage: filter [l/LEVEL] [s/SUBJECT] [d/DAY]` on the next line |
 | Repeated prefix | `Each filter may only be specified once` |
 | Empty level | `Academic level must be a non-empty value` |
 | Unsupported level | `Academic level must be one of: S1, S2, S3, S4, S5, J1, J2.` |
 | Empty subject | `Subject must be a non-empty value` |
 | Unsupported subject | `Subject must be one of: MATH, PHYSICS, CHEMISTRY.` |
 | Comma-separated subjects | `Filter accepts only one subject. Use s/SUBJECT.` |
+| Empty day | `Day must be a non-empty value` |
+| Unsupported day or multiple days | `Day must be one of: MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY.` |
 
 Invalid commands leave the displayed students, selection, scroll position and data file unchanged.
 If an internal problem prevents rendering, TutorFlow shows
@@ -732,7 +742,7 @@ Action | Format, Examples
 **List** | `list` or `ls`
 **Edit student** | `edit INDEX [n/STUDENT_NAME] [l/ACADEMIC_LEVEL] [s/SUBJECTS] [p/STUDENT_PHONE] [gn/GUARDIAN_NAME] [gp/GUARDIAN_PHONE]`<br> e.g., `edit 1 l/S4 p/91234568`
 **Search** | `search KEYWORD`<br> e.g., `search Tan`
-**Filter** | `filter [l/LEVEL] [s/SUBJECT]`<br> e.g., `filter l/S4 s/Physics`
+**Filter** | `filter [l/LEVEL] [s/SUBJECT] [d/DAY]`<br> e.g., `filter l/S4 s/Physics` or `filter d/MONDAY`
 **Sort** | `sort by/KEY [o/ORDER]`<br> e.g., `sort by/level`, `sort by/day o/desc`
 **Delete student** | `delete INDEX`<br> e.g., `delete 2`
 **Clear** | `clear`

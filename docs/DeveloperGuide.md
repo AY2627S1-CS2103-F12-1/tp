@@ -446,16 +446,20 @@ selection/scroll recovery, exact feedback and diagnostic ownership. See the [log
 
 ### Filtering students
 
-**Parsing.** `AddressBookParser` routes `filter [l/LEVEL] [s/SUBJECT]` to `FilterCommandParser`. At least one
+**Parsing.** `AddressBookParser` routes `filter [l/LEVEL] [s/SUBJECT] [d/DAY]` to `FilterCommandParser`. At least one
 criterion is required, and each prefix may appear only once. The tokenizer checks argument structure before
 the parser validates values in prefix order. `AcademicLevel` and `TuitionSubject` validate supported values
-and normalize their case and surrounding whitespace. Empty values receive field-specific non-empty errors;
+and normalize their case and surrounding whitespace. Meeting days use the same full-weekday validation as
+regular lessons, including case and whitespace normalization. Empty values receive field-specific non-empty errors;
 unsupported values retain the domain constraint message and its exception cause. Comma-separated subjects
 receive a single-subject restriction error. Format errors use the shared invalid-format header and command usage.
 Invalid input is rejected before the displayed list changes or a UI refresh is requested.
 
 **Matching and display.** `StudentFilterPredicate` combines the supplied criteria with AND: the student's level
 must match and their subjects must include the selected subject. An omitted criterion imposes no restriction.
+A supplied day must match at least one regular lesson, so students without lessons cannot match it. The subject
+criterion checks the student's registration independently of which lesson matches the day. Lesson changes replace
+the immutable student, automatically re-evaluating membership under the active predicate.
 `FilterCommand` applies the predicate to the full stored roster, replacing any previous search or filter.
 Results retain roster order and receive displayed indices starting at 1; commands taking a student index use
 these displayed indices. Lesson scheduling and clash detection continue to consider the full roster.
@@ -466,7 +470,7 @@ Successful filtering returns the panel to the top. `list`, `ls`, a successful st
 
 **Active filter indication.** The model exposes its active predicate as a read-only observable property through
 `Logic`. This property also drives the filtered list, so the panel can observe criteria changes even when the
-matching students are unchanged. `StudentListPanel` describes the level and subject from `StudentFilterPredicate`
+matching students are unchanged. `StudentListPanel` describes the level, subject and day from `StudentFilterPredicate`
 below its heading; presentation wording stays in the UI. Other predicates hide this description. Empty results,
 sorting, edits and deletions retain the active criteria. The description wraps and reserves its preferred height
 at narrow widths. Save-failure recovery restores the exact predicate, preserving its typed criteria along with
@@ -1162,6 +1166,26 @@ testers are expected to do more *exploratory* testing.
       the search shows Nurul Aisyah.
    1. Run `filter l/S4 s/PHYSICS` and narrow the student panel.<br>
       Expected: Both criteria remain readable, wrapping onto multiple lines when needed.
+
+1. To check meeting-day filtering, start in a fresh disposable folder with the six sample students.
+   1. Run `filter d/MONDAY`.<br>
+      Expected: Ethan Lim is displayed as student 1 with `Filtered: day MONDAY`; no data file is created.
+   1. Run `filter l/S3 s/MATH d/MONDAY`, then `filter s/PHYSICS d/MONDAY`.<br>
+      Expected: Both show Ethan Lim. The second matches his registered PHYSICS subject and his Monday MATH lesson.
+   1. Run `filter d/TUESDAY`, then `lesson edit 1 d/TUESDAY`.<br>
+      Expected: The empty view gains Ethan Lim after his Monday lesson moves to Tuesday. The day criterion stays
+      visible. Lesson indices are global even when their owner is hidden by the student filter.
+   1. Run `lesson delete 1`.<br>
+      Expected: Ethan's Tuesday lesson is removed; the displayed list becomes empty and retains
+      `Filtered: day TUESDAY`. The Saturday lesson still exists in the full roster.
+   1. Run `filter d/`, `filter d/MON`, and `filter d/MONDAY d/TUESDAY` separately.<br>
+      Expected: Empty, unsupported and repeated-criterion errors respectively; the previous view and data remain.
+   1. Run `filter l/S3 s/MATH d/WEDNESDAY` and narrow the student panel.<br>
+      Expected: All three criteria wrap without truncation. Run `list` to restore all six students and hide them.
+   1. To check rollback separately, start with fresh sample data and run `edit 1 l/S3 p/91234568` to create
+      the data file. Run `filter d/MONDAY`, make the data file read-only, then run `lesson edit 1 d/TUESDAY`.<br>
+      Expected: Saving fails; Ethan's original Monday lesson, the filtered view, the day label and saved bytes
+      remain unchanged. Restore the file's write permission afterwards.
 
 1. With enough matching students to scroll, select a student and scroll partway down the results.
    1. Run `filter`, `filter x/value`, `filter l/S4 l/S4`, `filter l/`, `filter s/`, `filter l/S6`,

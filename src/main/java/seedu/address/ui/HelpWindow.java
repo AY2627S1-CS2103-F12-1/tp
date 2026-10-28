@@ -55,11 +55,12 @@ public class HelpWindow extends UiPart<Stage> {
     }
 
     /**
-     * Adds the format note, then a heading for each section of {@link HelpContent} and, under it, the format,
-     * description and example of each command.
+     * Adds the format and command-history notes, then a heading for each section of {@link HelpContent} and, under it,
+     * the format, description and example of each command.
      */
     private void fillHelpContent() {
-        helpContentBox.getChildren().add(createLabel(HelpContent.FORMAT_NOTE, "help-note"));
+        helpContentBox.getChildren().addAll(createLabel(HelpContent.FORMAT_NOTE, "help-note"),
+                createLabel(HelpContent.HISTORY_NOTE, "help-note"));
         for (HelpContent.Section section : HelpContent.getSections()) {
             helpContentBox.getChildren().add(createLabel(section.title(), "help-section-title"));
             for (HelpContent.Entry entry : section.entries()) {

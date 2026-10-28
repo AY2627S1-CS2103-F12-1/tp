@@ -38,6 +38,28 @@ public class ParserUtilTest {
         assertThrows(NullPointerException.class, () -> ParserUtil.parseStrictIndex(null, MESSAGE_INVALID_STRICT_INDEX));
     }
 
+    @Test
+    public void parseStrictIndex_customRangeMessage_preservesSyntaxValidation() throws Exception {
+        String rangeMessage = "Index exceeds the supported range.";
+        assertEquals(Index.fromOneBased(Integer.MAX_VALUE),
+                ParserUtil.parseStrictIndex(" 2147483647 ", MESSAGE_INVALID_STRICT_INDEX, rangeMessage));
+        assertThrows(ParseException.class, rangeMessage, () ->
+                ParserUtil.parseStrictIndex("2147483648", MESSAGE_INVALID_STRICT_INDEX, rangeMessage));
+        assertThrows(ParseException.class, MESSAGE_INVALID_STRICT_INDEX, () ->
+                ParserUtil.parseStrictIndex("02147483648", MESSAGE_INVALID_STRICT_INDEX, rangeMessage));
+        assertThrows(ParseException.class, MESSAGE_INVALID_STRICT_INDEX, () ->
+                ParserUtil.parseStrictIndex("+2147483648", MESSAGE_INVALID_STRICT_INDEX, rangeMessage));
+    }
+
+    @Test
+    public void parseStrictIndex_nullRangeArguments_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () ->
+                ParserUtil.parseStrictIndex(null, MESSAGE_INVALID_STRICT_INDEX, "Range error."));
+        assertThrows(NullPointerException.class, () -> ParserUtil.parseStrictIndex("1", null, "Range error."));
+        assertThrows(NullPointerException.class, () ->
+                ParserUtil.parseStrictIndex("1", MESSAGE_INVALID_STRICT_INDEX, null));
+    }
+
     private static void assertInvalidStrictIndex(String oneBasedIndex) {
         assertThrows(ParseException.class, MESSAGE_INVALID_STRICT_INDEX, () ->
                 ParserUtil.parseStrictIndex(oneBasedIndex, MESSAGE_INVALID_STRICT_INDEX));

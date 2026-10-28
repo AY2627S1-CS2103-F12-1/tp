@@ -40,7 +40,7 @@ public class LessonDeleteCommandTest {
         LessonDeleteCommand deleteCommand = new LessonDeleteCommand(Index.fromOneBased(2));
 
         String expectedMessage = "Deleted regular lesson:\n"
-                + "Amy Lim (91234567); Subject: PHYSICS; Day: TUE; Time: 19:00-20:30";
+                + "Amy Lim (91234567); PHYSICS; TUE; 19:00-20:30";
         Model expectedModel = getModelWithStudents(List.of(
                 amy.withLessons(List.of(SATURDAY_CHEMISTRY)), ben));
 
@@ -53,7 +53,7 @@ public class LessonDeleteCommandTest {
         Model model = getModelWithStudents(List.of(student));
 
         assertCommandSuccess(new LessonDeleteCommand(Index.fromOneBased(1)), model,
-                "Deleted regular lesson:\nJohn Tan (91234567); Subject: MATH; Day: MON; Time: 17:00-18:30",
+                "Deleted regular lesson:\nJohn Tan (91234567); MATH; MON; 17:00-18:30",
                 getModelWithStudents(List.of(student.withLessons(List.of()))));
     }
 
@@ -66,7 +66,7 @@ public class LessonDeleteCommandTest {
         model.updateFilteredStudentList(student -> student.equals(amy));
 
         assertCommandSuccess(new LessonDeleteCommand(Index.fromOneBased(1)), model,
-                "Deleted regular lesson:\nJohn Tan (91234567); Subject: MATH; Day: MON; Time: 17:00-18:30",
+                "Deleted regular lesson:\nJohn Tan (91234567); MATH; MON; 17:00-18:30",
                 getModelWithStudents(List.of(john.withLessons(List.of()), amy)));
     }
 

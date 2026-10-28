@@ -38,6 +38,19 @@ public class ParserUtilTest {
         assertThrows(NullPointerException.class, () -> ParserUtil.parseStrictIndex(null, MESSAGE_INVALID_STRICT_INDEX));
     }
 
+    @Test
+    public void parseStrictIndex_separateRangeMessage_distinguishesSyntaxAndOverflow() throws Exception {
+        String rangeMessage = "Index is outside the supported range.";
+        assertEquals(Index.fromOneBased(Integer.MAX_VALUE),
+                ParserUtil.parseStrictIndex("2147483647", MESSAGE_INVALID_STRICT_INDEX, rangeMessage));
+        assertThrows(ParseException.class, rangeMessage, () ->
+                ParserUtil.parseStrictIndex("2147483648", MESSAGE_INVALID_STRICT_INDEX, rangeMessage));
+        assertThrows(ParseException.class, MESSAGE_INVALID_STRICT_INDEX, () ->
+                ParserUtil.parseStrictIndex("02147483648", MESSAGE_INVALID_STRICT_INDEX, rangeMessage));
+        assertThrows(NullPointerException.class, () ->
+                ParserUtil.parseStrictIndex("1", MESSAGE_INVALID_STRICT_INDEX, null));
+    }
+
     private static void assertInvalidStrictIndex(String oneBasedIndex) {
         assertThrows(ParseException.class, MESSAGE_INVALID_STRICT_INDEX, () ->
                 ParserUtil.parseStrictIndex(oneBasedIndex, MESSAGE_INVALID_STRICT_INDEX));

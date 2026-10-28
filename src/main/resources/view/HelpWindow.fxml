@@ -28,6 +28,7 @@
         <TextField fx:id="searchTextField" promptText="Search commands or descriptions..."
             styleClass="help-search-field" />
         <Label fx:id="formatNoteLabel" styleClass="help-note" />
+        <Label fx:id="historyNoteLabel" styleClass="help-note" />
         <Label fx:id="noResultsLabel" managed="false" styleClass="help-no-results"
             text="No commands match your search." visible="false" />
         <ScrollPane fx:id="helpScrollPane" fitToWidth="true" focusTraversable="true" hbarPolicy="NEVER"

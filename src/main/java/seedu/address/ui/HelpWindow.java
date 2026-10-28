@@ -41,6 +41,9 @@ public class HelpWindow extends UiPart<Stage> {
     private Label formatNoteLabel;
 
     @FXML
+    private Label historyNoteLabel;
+
+    @FXML
     private Label noResultsLabel;
 
     /**
@@ -89,6 +92,7 @@ public class HelpWindow extends UiPart<Stage> {
     private void fillHelpContent(String query) {
         String normalizedQuery = query.strip().toLowerCase(Locale.ROOT);
         formatNoteLabel.setText(HelpContent.FORMAT_NOTE);
+        historyNoteLabel.setText(HelpContent.HISTORY_NOTE);
         helpContentBox.getChildren().clear();
         boolean hasResults = false;
         for (HelpContent.Section section : HelpContent.getSections()) {

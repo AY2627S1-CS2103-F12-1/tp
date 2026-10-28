@@ -77,7 +77,12 @@ such as `CommandBox`, `ResultDisplay`, `StudentListPanel`, `UpcomingPanel`, and 
 including `MainWindow`, inherit from the abstract `UiPart` class, which captures common behavior among classes that
 represent visible GUI parts.
 
-The `HelpWindow` displays commands from `HelpContent`, grouped into sections. Search filters command words, formats and descriptions without changing their order. Each command row shows a shortened description; expanding it reveals the full description, format and example. The `list` row adds its `ls` alias to `ListCommand.MESSAGE_USAGE`. `HelpContentTest` checks the group order and that every example parses into the listed command; `HelpWindowTest` covers filtering, empty results and expanded details.
+The `HelpWindow` displays commands from `HelpContent`, grouped into sections. Search filters command words, formats
+and descriptions without changing their order. Each command row shows a shortened description; expanding it reveals
+the full description, format and example. The `list` row adds its `ls` alias to `ListCommand.MESSAGE_USAGE`.
+`HelpContentTest` checks the group order and that every example parses into the listed command; `HelpWindowTest`
+covers filtering, empty results and expanded details. The window also explains that Up and Down recall commands from
+the current session.
 
 The `UI` component uses the JavaFX UI framework. The layouts of these UI parts are defined in matching `.fxml` files in `src/main/resources/view`. For example, [`MainWindow.fxml`](https://github.com/AY2627S1-CS2103-F12-1/tp/blob/master/src/main/resources/view/MainWindow.fxml) specifies the layout of [`MainWindow`](https://github.com/AY2627S1-CS2103-F12-1/tp/blob/master/src/main/java/seedu/address/ui/MainWindow.java).
 
@@ -236,6 +241,10 @@ Classes used by multiple components are in the `seedu.address.commons` package.
 --------------------------------------------------------------------------------------------------------------------
 
 ## **Implementation**
+
+### Recalling earlier commands
+
+`CommandHistory` stores submitted non-blank command text in memory for the current session. It keeps the newest entry once when identical commands are submitted consecutively. `CommandBox` records the input on Enter, including commands that the Logic component rejects, and uses plain Up and Down to navigate the history. Navigation stays at the oldest command; moving Down past the newest clears the box. Modified arrow keys keep their normal text-field behavior. The caret moves to the end of recalled text, and recalling a command clears the error style. Pressing Enter resets the navigation position. A rejected command stays in the box, so the first Up skips that same command and shows the preceding entry.
 
 This section describes some noteworthy details on how certain features are implemented.
 

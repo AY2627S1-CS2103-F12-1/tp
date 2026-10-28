@@ -49,11 +49,13 @@ public class HelpWindowTest {
             root.applyCss();
             List<TitledPane> entries = getEntryPanes(root);
             Label formatNote = (Label) root.lookup("#formatNoteLabel");
+            Label historyNote = (Label) root.lookup("#historyNoteLabel");
             TextField searchField = (TextField) root.lookup("#searchTextField");
 
             assertEquals(expectedCommandWords, entries.stream().map(HelpWindowTest::commandWord).toList());
             assertTrue(entries.stream().noneMatch(TitledPane::isExpanded));
             assertEquals(HelpContent.FORMAT_NOTE, formatNote.getText());
+            assertEquals(HelpContent.HISTORY_NOTE, historyNote.getText());
             assertEquals("Search commands or descriptions...", searchField.getPromptText());
             assertTrue(root.lookupAll(".button").stream().noneMatch(node -> node instanceof Button));
         });

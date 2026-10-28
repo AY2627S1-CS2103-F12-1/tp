@@ -4,29 +4,30 @@ skinparam ArrowFontStyle plain
 
 box Logic LOGIC_COLOR_T1
 participant ":LogicManager" as LogicManager LOGIC_COLOR
-participant "u:HomeworkUpcomingCommand" as HomeworkUpcomingCommand LOGIC_COLOR
+participant "upcomingCommand:HomeworkUpcomingCommand" as HomeworkUpcomingCommand LOGIC_COLOR
 end box
 
 box Model MODEL_COLOR_T1
-participant "m:Model" as Model MODEL_COLOR
-participant "a:ReadOnlyAddressBook" as AddressBook MODEL_COLOR
+participant "model:Model" as Model MODEL_COLOR
+participant "addressBook:ReadOnlyAddressBook" as AddressBook MODEL_COLOR
 end box
 
 [-> LogicManager : execute("hw up due/3")
 activate LogicManager
 
-ref over LogicManager, HomeworkUpcomingCommand
-  parse "hw up due/3" into u
-  (today's date, 3 days)
-end ref
+note right of LogicManager
+  Parsing works as for hw del 1 2 and is not shown.
+  It creates upcomingCommand, which holds
+  today's date and the 3 days.
+end note
 
-LogicManager -> HomeworkUpcomingCommand : execute(m)
+LogicManager -> HomeworkUpcomingCommand : execute(model)
 activate HomeworkUpcomingCommand
 
 HomeworkUpcomingCommand -> Model : getAddressBook()
 activate Model
 
-Model --> HomeworkUpcomingCommand : a
+Model --> HomeworkUpcomingCommand : addressBook
 deactivate Model
 
 HomeworkUpcomingCommand -> AddressBook : getStudentList()

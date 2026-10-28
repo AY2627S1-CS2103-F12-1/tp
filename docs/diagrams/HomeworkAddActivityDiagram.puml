@@ -6,10 +6,7 @@ skinparam activityDiamondBackgroundColor #FFFFFF
 skinparam activityDiamondFontColor #000000
 skinparam ArrowFontStyle plain
 
-|HomeworkAddCommandParser|
 start
-:Split the arguments
-at the prefixes;
 :Parse the student index,
 title, subject and due date;
 note right
@@ -17,37 +14,31 @@ note right
   next year if it has passed
 end note
 if () then ([valid])
+  :Find the student in
+  the displayed list;
+  if () then ([found])
+    if () then ([takes the subject])
+      if () then ([no same homework])
+        :Add the homework to the end
+        of a copy of the homework list,
+        then replace the student;
+        :Save the data, or restore
+        it if saving fails;
+        stop
+      else ([same homework exists])
+        :Show the error;
+        stop
+      endif
+    else ([subject not taken])
+      :Show the error;
+      stop
+    endif
+  else ([not found])
+    :Show the error;
+    stop
+  endif
 else ([invalid])
-  :Report the error;
+  :Show the error;
   stop
 endif
-:Create a
-HomeworkAddCommand;
-
-|HomeworkAddCommand|
-:Find the student at
-STUDENT_INDEX in the
-displayed list;
-:Check that the student
-takes the subject and
-has no such homework;
-if () then ([valid])
-else ([invalid])
-  :Report the error;
-  stop
-endif
-:Add the homework to
-the end of a copy of the
-student's homework list;
-
-|Model|
-:Replace the student
-with a copy that has
-the new list;
-
-|LogicManager|
-:Save the data, or
-restore it if
-saving fails;
-stop
 @enduml

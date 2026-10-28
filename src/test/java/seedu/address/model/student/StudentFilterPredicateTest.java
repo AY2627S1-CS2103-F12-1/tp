@@ -145,9 +145,28 @@ public class StudentFilterPredicateTest {
         StudentFilterPredicate tuesday = new StudentFilterPredicate(
                 Optional.empty(), Optional.empty(), Optional.of(DayOfWeek.TUESDAY));
 
+        assertTrue(monday.equals(monday));
         assertEquals(monday, same);
         assertEquals(monday.hashCode(), same.hashCode());
         assertNotEquals(monday, tuesday);
         assertEquals(Optional.of(DayOfWeek.MONDAY), monday.getDay());
+    }
+
+    @Test
+    public void toString_dayCriteria_describesSelectedAndOmittedFilters() {
+        StudentFilterPredicate combined = new StudentFilterPredicate(
+                Optional.of(AcademicLevel.S4), Optional.of(TuitionSubject.PHYSICS), Optional.of(DayOfWeek.MONDAY));
+        StudentFilterPredicate dayOnly = new StudentFilterPredicate(
+                Optional.empty(), Optional.empty(), Optional.of(DayOfWeek.TUESDAY));
+
+        String combinedDescription = combined.toString();
+        assertTrue(combinedDescription.contains("academicLevel=Optional[S4]"));
+        assertTrue(combinedDescription.contains("subject=Optional[PHYSICS]"));
+        assertTrue(combinedDescription.contains("day=Optional[MONDAY]"));
+
+        String dayOnlyDescription = dayOnly.toString();
+        assertTrue(dayOnlyDescription.contains("academicLevel=Optional.empty"));
+        assertTrue(dayOnlyDescription.contains("subject=Optional.empty"));
+        assertTrue(dayOnlyDescription.contains("day=Optional[TUESDAY]"));
     }
 }

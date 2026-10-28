@@ -117,6 +117,21 @@ public class HomeworkDeleteCommandTest {
     }
 
     @Test
+    public void execute_onlyEarlierHomeworkDeleted_removesHiddenNote() {
+        // on 2026-10-16 only the algebra homework (due 2026-10-15) is due before today, so nothing is left out
+        String expectedMessage = "Deleted homework:\n"
+                + formatHomeworkLine(1, ALGEBRA_TITLE, "MATH", "2026-10-15", "Not recorded", "ASSIGNED")
+                + "\nListed 2 upcoming homework records for Alice Tan.\nHomework for Alice Tan:\n"
+                + formatHomeworkLine(2, ATOMIC_STRUCTURE_TITLE, "CHEMISTRY", "2026-10-18", "17/20", "ASSIGNED") + "\n"
+                + formatHomeworkLine(1, MECHANICS_TITLE, "PHYSICS", "2026-10-20", "Not recorded", "ASSIGNED");
+        Model expectedModel = getModelWithStudents(List.of(
+                ALICE.withHomeworks(List.of(MECHANICS, ATOMIC_STRUCTURE)), BENSON, CARL));
+
+        assertCommandSuccess(deleteCommand(1, 1, LocalDate.of(2026, 10, 16)), model, expectedMessage,
+                expectedModel);
+    }
+
+    @Test
     public void execute_onlyOverdueHomeworkLeft_showsNoUpcomingHomework() {
         String expectedMessage = "Deleted homework:\n"
                 + formatHomeworkLine(3, ATOMIC_STRUCTURE_TITLE, "CHEMISTRY", "2026-10-18", "17/20", "ASSIGNED")
@@ -182,6 +197,24 @@ public class HomeworkDeleteCommandTest {
         Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON, CARL.withHomeworks(List.of())));
 
         assertCommandSuccess(deleteCommand(1, 1, TODAY), model, expectedMessage, expectedModel);
+    }
+
+    @Test
+    public void execute_earlierHiddenInFilteredList_hintsDisplayedIndex() {
+        // ALICE is second in the roster but first in the displayed list; her homework 1 is due before 2026-10-16
+        Model actualModel = getModelWithStudents(List.of(BENSON, ALICE));
+        actualModel.updateFilteredStudentList(ALICE::equals);
+        String expectedMessage = "Deleted homework:\n"
+                + formatHomeworkLine(2, MECHANICS_TITLE, "PHYSICS", "2026-10-20", "Not recorded", "ASSIGNED")
+                + "\nListed 1 upcoming homework record for Alice Tan"
+                + " (1 record due before today not shown; use homework list 1 all to see it).\n"
+                + "Homework for Alice Tan:\n"
+                + formatHomeworkLine(2, ATOMIC_STRUCTURE_TITLE, "CHEMISTRY", "2026-10-18", "17/20", "ASSIGNED");
+        Model expectedModel = getModelWithStudents(List.of(BENSON,
+                ALICE.withHomeworks(List.of(ALGEBRA, ATOMIC_STRUCTURE))));
+
+        assertCommandSuccess(deleteCommand(1, 2, LocalDate.of(2026, 10, 16)), actualModel, expectedMessage,
+                expectedModel);
     }
 
     @Test

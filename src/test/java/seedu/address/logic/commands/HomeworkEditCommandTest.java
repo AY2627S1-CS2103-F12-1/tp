@@ -233,6 +233,48 @@ public class HomeworkEditCommandTest {
     }
 
     @Test
+    public void execute_onlyEarlierDueDateMovedToFuture_removesHiddenNote() {
+        // on 2026-10-16 only ALGEBRA (due 2026-10-15) is due before today, so after the edit nothing is left out
+        EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(null, null,
+                DueDate.parseFullDate("2026-10-30"));
+        Homework editedAlgebra = new HomeworkBuilder(ALGEBRA).withDueDate("2026-10-30").build();
+        String expectedMessage = "Edited homework:\n"
+                + "Alice Tan; Title: Complete algebra worksheet; Subject: MATH; Due: 2026-10-30\n"
+                + "Listed 3 upcoming homework records for Alice Tan.\n"
+                + "Homework for Alice Tan:\n"
+                + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20 - status ASSIGNED\n"
+                + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded"
+                + " - status ASSIGNED\n"
+                + "1. Complete algebra worksheet (MATH) - due 2026-10-30 - score Not recorded - status ASSIGNED";
+        Model expectedModel = getModelWithStudents(List.of(
+                ALICE.withHomeworks(List.of(editedAlgebra, MECHANICS, ATOMIC_STRUCTURE)), BENSON, CARL));
+
+        assertCommandSuccess(new HomeworkEditCommand(FIRST, FIRST, descriptor, false, LocalDate.of(2026, 10, 16)),
+                model, expectedMessage, expectedModel);
+    }
+
+    @Test
+    public void execute_oneOfTwoEarlierDueDatesMovedToFuture_lowersHiddenCount() {
+        // on 2026-10-19 ALGEBRA (due 2026-10-15) and ATOMIC_STRUCTURE (due 2026-10-18) are due before today
+        EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(null, null,
+                DueDate.parseFullDate("2026-10-30"));
+        Homework editedAlgebra = new HomeworkBuilder(ALGEBRA).withDueDate("2026-10-30").build();
+        String expectedMessage = "Edited homework:\n"
+                + "Alice Tan; Title: Complete algebra worksheet; Subject: MATH; Due: 2026-10-30\n"
+                + "Listed 2 upcoming homework records for Alice Tan"
+                + " (1 record due before today not shown; use homework list 1 all to see it).\n"
+                + "Homework for Alice Tan:\n"
+                + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded"
+                + " - status ASSIGNED\n"
+                + "1. Complete algebra worksheet (MATH) - due 2026-10-30 - score Not recorded - status ASSIGNED";
+        Model expectedModel = getModelWithStudents(List.of(
+                ALICE.withHomeworks(List.of(editedAlgebra, MECHANICS, ATOMIC_STRUCTURE)), BENSON, CARL));
+
+        assertCommandSuccess(new HomeworkEditCommand(FIRST, FIRST, descriptor, false, LocalDate.of(2026, 10, 19)),
+                model, expectedMessage, expectedModel);
+    }
+
+    @Test
     public void execute_studentIndexAboveListSize_failure() {
         assertCommandFailure(new HomeworkEditCommand(Index.fromOneBased(4), FIRST, NEW_TITLE, false, TODAY), model,
                 Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
@@ -254,6 +296,23 @@ public class HomeworkEditCommandTest {
 
         assertCommandSuccess(new HomeworkEditCommand(FIRST, FIRST, descriptor, false, TODAY), model, expectedMessage,
                 expectedModel);
+    }
+
+    @Test
+    public void execute_earlierHiddenInFilteredList_hintsDisplayedIndex() {
+        // CARL is third in the roster but first in the displayed list, and his only homework is due before 2026-10-21
+        model.updateFilteredStudentList(CARL::equals);
+        EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(new Title("Revise mechanics"), null, null);
+        Homework editedMechanics = new HomeworkBuilder(MECHANICS).withTitle("Revise mechanics").build();
+        String expectedMessage = "Edited homework:\n"
+                + "Carl Ng; Title: Revise mechanics; Subject: PHYSICS; Due: 2026-10-20\n"
+                + "No upcoming homework found for Carl Ng"
+                + " (1 record due before today not shown; use homework list 1 all to see it).";
+        Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON,
+                CARL.withHomeworks(List.of(editedMechanics))));
+
+        assertCommandSuccess(new HomeworkEditCommand(FIRST, FIRST, descriptor, false, LocalDate.of(2026, 10, 21)),
+                model, expectedMessage, expectedModel);
     }
 
     @Test

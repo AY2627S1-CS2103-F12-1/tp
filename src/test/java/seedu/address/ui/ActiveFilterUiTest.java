@@ -164,7 +164,7 @@ public class ActiveFilterUiTest {
     @Test
     public void filter_narrowPanel_wrapsDescriptionWithoutClipping() throws Exception {
         ModelManager model = createModel();
-        createLogic(model, new AtomicBoolean()).execute("filter l/S4 s/CHEMISTRY");
+        createLogic(model, new AtomicBoolean()).execute("filter l/S4 s/CHEMISTRY d/WEDNESDAY");
         runOnFxThread(() -> {
             StudentListPanel panel = new StudentListPanel(model.getStudentList());
             panel.bindStudentListPredicate(model.studentListPredicateProperty());
@@ -179,7 +179,7 @@ public class ActiveFilterUiTest {
                 root.layout();
                 root.layout();
 
-                assertEquals("Filtered: level S4; subject CHEMISTRY", description.getText());
+                assertEquals("Filtered: level S4; subject CHEMISTRY; day WEDNESDAY", description.getText());
                 assertTrue(description.getHeight() >= description.prefHeight(description.getWidth()) - 1,
                         "label " + description.getWidth() + "x" + description.getHeight()
                                 + " needs height " + description.prefHeight(description.getWidth()));
@@ -187,7 +187,47 @@ public class ActiveFilterUiTest {
                 singleLine.setFont(description.getFont());
                 assertTrue(description.getHeight() > singleLine.getLayoutBounds().getHeight(),
                         "the description should wrap onto multiple lines");
-                assertTrue(description.getBoundsInParent().getMaxX() <= root.getWidth() - root.getInsets().getRight());
+                assertTrue(description.getLayoutX() + description.getWidth()
+                        <= root.getWidth() - root.getInsets().getRight());
+                Text renderedText = (Text) description.lookup(".text");
+                assertEquals(description.getText(), renderedText.getText(), "filter criteria must not be truncated");
+            }
+        });
+    }
+
+    @Test
+    public void filter_dayCriteria_survivesLessonChangesAndSaveRecovery() throws Exception {
+        runOnFxThread(() -> {
+            AtomicBoolean shouldFail = new AtomicBoolean();
+            Stage stage = createWindow(createModel(), shouldFail);
+            try {
+                enterCommand(stage, "lesson add 1 s/MATH d/MONDAY st/09:00 et/10:00");
+                enterCommand(stage, "filter d/tuesday");
+                assertDescription(stage, "Filtered: day TUESDAY");
+                assertCount(stage, "0 students");
+                enterCommand(stage, "lesson edit 1 d/TUESDAY");
+                assertDescription(stage, "Filtered: day TUESDAY");
+                assertCount(stage, "1 student");
+
+                enterCommand(stage, "filter l/S4 s/MATH d/TUESDAY");
+                shouldFail.set(true);
+                enterCommand(stage, "lesson edit 1 d/MONDAY");
+                assertTrue(((TextArea) stage.getScene().getRoot().lookup("#resultDisplay")).getText()
+                        .contains("No lesson data was changed."));
+                assertDescription(stage, "Filtered: level S4; subject MATH; day TUESDAY");
+                assertCount(stage, "1 student");
+                for (String command : List.of("filter d/", "filter d/MON", "lesson list", "sort by/level")) {
+                    enterCommand(stage, command);
+                    assertDescription(stage, "Filtered: level S4; subject MATH; day TUESDAY");
+                }
+                shouldFail.set(false);
+                enterCommand(stage, "lesson delete 1");
+                assertCount(stage, "0 students");
+                assertDescription(stage, "Filtered: level S4; subject MATH; day TUESDAY");
+                enterCommand(stage, "list");
+                assertDescription(stage, "");
+            } finally {
+                stage.hide();
             }
         });
     }

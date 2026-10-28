@@ -79,13 +79,19 @@ ModelManager --> LogicManager : updated roster
 deactivate ModelManager
 LogicManager -> LogicManager : updated roster.equals(dataBeforeCommand)?
 note right of LogicManager
-  The roster changed, so it must be saved.
+  Only changed roster data is saved.
 end note
 
-LogicManager -> Storage : saveAddressBook(updated roster)
-activate Storage
-Storage --> LogicManager
-deactivate Storage
+alt Roster changed
+  LogicManager -> Storage : saveAddressBook(updated roster)
+  activate Storage
+  Storage --> LogicManager
+  deactivate Storage
+else Roster unchanged
+  note right of LogicManager
+    Skip the data-file write.
+  end note
+end
 
 LogicManager --> MainWindow : CommandResult
 deactivate LogicManager

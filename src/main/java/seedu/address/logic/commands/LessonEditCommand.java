@@ -7,6 +7,7 @@ import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -109,6 +110,11 @@ public class LessonEditCommand extends Command {
     public boolean equals(Object other) {
         return other == this || other instanceof LessonEditCommand command
                 && lessonIndex.equals(command.lessonIndex) && descriptor.equals(command.descriptor);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(lessonIndex.getZeroBased(), descriptor);
     }
 
     /**

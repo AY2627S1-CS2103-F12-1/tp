@@ -30,6 +30,6 @@ public class LessonCommandParserTest {
 
     @Test
     public void parse_invalidListArguments_reportsListUsage() {
-        assertParseFailure(parser, " list all", "Invalid command format.\nUsage: lesson list");
+        assertParseFailure(parser, " list 1 2", "Invalid command format.\nUsage: " + LessonListCommand.MESSAGE_USAGE);
     }
 }

@@ -16,6 +16,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import seedu.address.commons.core.index.Index;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
@@ -115,5 +116,12 @@ public class LessonListCommandTest {
         assertTrue(command.equals(new LessonListCommand()));
         assertFalse(command.equals(null));
         assertFalse(command.equals(1));
+        assertFalse(command.equals(new LessonListCommand(Index.fromOneBased(1))));
+        assertEquals(new LessonListCommand(Index.fromOneBased(1)),
+                new LessonListCommand(Index.fromOneBased(1)));
+        assertEquals(new LessonListCommand(Index.fromOneBased(1)).hashCode(),
+                new LessonListCommand(Index.fromOneBased(1)).hashCode());
+        assertFalse(new LessonListCommand(Index.fromOneBased(1))
+                .equals(new LessonListCommand(Index.fromOneBased(2))));
     }
 }

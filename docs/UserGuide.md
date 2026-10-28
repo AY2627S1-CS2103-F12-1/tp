@@ -570,9 +570,9 @@ Each lesson belongs to one student. All overlapping lessons are rejected as tuto
 
 Adds a weekly lesson to the student at the displayed student index.
 
-Format: `lesson add INDEX s/SUBJECT d/DAY st/START_TIME et/END_TIME`
+Format: `lesson add STUDENT_INDEX s/SUBJECT d/DAY st/START_TIME et/END_TIME`
 
-Example: `lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00`
+Example: `lesson add 1 s/MATH d/TUESDAY st/16:00 et/18:00`
 
 * Use a positive student index without leading zeroes. Use `list` to see the current indices.
 * Supply each prefix exactly once, in any order. Unknown prefixes are rejected.
@@ -581,7 +581,9 @@ Example: `lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00`
 * Times must use the 24-hour `HH:mm` format, such as `09:00`. End time must be later than start time on the same day; overnight lessons are not supported.
 * An identical lesson for the same student is rejected. A lesson that overlaps any existing lesson, for any student, is rejected. TutorFlow lists every conflicting lesson, with its student's name and lesson details, in weekly order. Lessons that meet exactly at an endpoint are allowed.
 
-On success, TutorFlow shows `New lesson added: John Tan (91234567); MATH; MONDAY; 16:00-18:00` (using John's student phone) and saves the lesson automatically. The student's position, profile and homework remain unchanged. If saving fails, the addition is undone and TutorFlow reports that no lesson data was changed.
+With the sample roster, this shows `New lesson added: Ethan Lim (91234567); MATH; TUESDAY; 16:00-18:00` and saves the lesson automatically. Tuesday avoids Ethan's existing Monday lesson. The student's position, profile and homework remain unchanged. If saving fails, the addition is undone and TutorFlow reports that no lesson data was changed.
+
+`STUDENT_INDEX` refers to the displayed student list and must be from 1 to 2147483647, without signs or leading zeroes. Larger numbers report the supported upper bound. A missing field names every missing prefix, for example `Missing required prefix(es): d/, et/`, followed by usage guidance. Full weekday names and same-day times keep recurring schedules unambiguous; abbreviated days, `24:00` and overnight intervals are not supported.
 
 ### Editing a regular lesson: `lesson edit`
 
@@ -628,13 +630,16 @@ Deleted regular lesson:
 Priya Nair (82345671); CHEMISTRY; SAT; 15:00-16:30
 ```
 
-### Listing all regular lessons: `lesson list`
+### Listing regular lessons: `lesson list`
 
-Lists every student's regular lessons in one weekly schedule.
+Lists every student's regular lessons in one weekly schedule, or shows just one displayed student's lessons.
 
-Format: `lesson list`
+Format: `lesson list [STUDENT_INDEX]`
+
+Use `lesson list 1` to see the first displayed student's regular lessons. After a search or sort, use the student's current displayed index. The output names the student and phone and keeps the full schedule's lesson numbers, so `lesson edit` and `lesson delete` still target the same lessons. For example, one student's lessons may be numbered 1 and 3 because another student owns lesson 2. The displayed roster and saved data remain unchanged. A student without lessons receives `No regular lessons found for NAME (PHONE).`; an index outside the displayed list is rejected.
 
 * Lessons are ordered from Monday to Sunday, then by start time.
+* Lesson numbers use the digits 0 to 9 in every locale, so they can be reused directly in edit/delete commands.
 * Lessons with the same weekday and start time are ordered by student name.
 * Each row shows the student name and phone, subject, abbreviated weekday and time range. The phone distinguishes students who share a name; lesson add, edit, delete and clash feedback use the same owner details.
 * If no lessons have been added, TutorFlow reports `No regular lessons found.`
@@ -666,7 +671,7 @@ TutorFlow saves your students, homework and regular lessons automatically after 
 
 TutorFlow data is saved automatically as `data/tutorflow.json` inside the folder containing the JAR. Preferences (`preferences.json`) and log files (`addressbook.log.*`) stay in that same home folder. Launching the JAR by its full path from a different terminal folder still uses the files beside the JAR. The status bar shows the full data path.
 
-To move TutorFlow, close it and copy the JAR together with its `data` folder and `preferences.json` to the new folder. If you previously launched v1.4 from a different terminal folder, copy your saved files from that folder into the folder containing the JAR before starting v1.5; back up both locations first. The JSON format remains compatible.
+To move TutorFlow, close it and copy the JAR together with its `data` folder and `preferences.json` to the new folder. If you previously launched v1.4 from a different terminal folder, copy your saved files from that folder into the folder containing the JAR before starting v1.5; back up both locations first. The JSON structure is unchanged, but saved records must satisfy v1.5's validation rules. In particular, students with the same name and equivalent local/+65 phone numbers are duplicates; resolve these in v1.4 before upgrading. If a file is rejected, TutorFlow preserves it and reports the reason.
 
 Advanced users may edit this JSON file while TutorFlow is closed. Back it up first.
 
@@ -764,9 +769,9 @@ Action | Format, Examples
 **Homework delete** | <code>homework&#124;hw delete&#124;del STUDENT_INDEX HOMEWORK_INDEX</code><br> e.g., `homework delete 1 2`
 **Homework status** | <code>homework&#124;hw status STUDENT_INDEX HOMEWORK_INDEX status/STATUS</code><br> e.g., `hw status 1 2 status/COMPLETED`, `hw status 1 2 status/ASSIGNED`
 **Homework filter** | <code>homework&#124;hw filter [STUDENT_INDEX] [s/SUBJECT] [due/DATE] [status/STATUS]</code><br> e.g., `hw filter 1 s/MATH due/2026-10-15 status/ASSIGNED`
-**Lesson add** | `lesson add INDEX s/SUBJECT d/DAY st/START_TIME et/END_TIME`<br> e.g., `lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00`
+**Lesson add** | `lesson add STUDENT_INDEX s/SUBJECT d/DAY st/START_TIME et/END_TIME`<br> e.g., `lesson add 1 s/MATH d/TUESDAY st/16:00 et/18:00`
+**Lesson list** | `lesson list [STUDENT_INDEX]`<br> e.g., `lesson list 1`
 **Lesson edit** | `lesson edit LESSON_INDEX [s/SUBJECT] [d/DAY] [st/START_TIME] [et/END_TIME]`<br> e.g., `lesson edit 1 d/TUESDAY`
 **Lesson delete** | `lesson delete LESSON_INDEX`<br> e.g., `lesson delete 2`
-**Lesson list** | `lesson list`
 **Help** | `help`
 **Exit** | `exit`

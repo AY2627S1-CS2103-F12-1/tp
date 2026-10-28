@@ -659,7 +659,7 @@ Tests cover completion with and without scores, reopening, status preservation t
 
 ### Adding regular lessons
 
-`lesson add INDEX s/SUBJECT d/DAY st/START_TIME et/END_TIME` is routed by `LessonCommandParser` to `LessonAddCommandParser`. The parser reuses `StrictArgumentTokenizer` and strict student-index parsing. `RegularLesson` stores a subject, `DayOfWeek`, and two minute-precision `LocalTime` values, with end strictly after start.
+`lesson add STUDENT_INDEX s/SUBJECT d/DAY st/START_TIME et/END_TIME` is routed by `LessonCommandParser` to `LessonAddCommandParser`. The parser reuses `StrictArgumentTokenizer` and strict student-index parsing. It names missing prefixes and reports the supported integer range for an overflowing positive index. `RegularLesson` stores a subject, `DayOfWeek`, and two minute-precision `LocalTime` values, with end strictly after start. Full weekday names and non-overnight times follow the team specification; supporting abbreviated days or midnight endpoints would be a separate enhancement.
 
 `LessonAddCommand` checks the selected student's subjects and duplicate lessons before checking overlaps across the entire roster. Overlap uses `start < other.end && end > other.start` on the same weekday, allowing adjacent lessons. The command replaces the selected immutable `Student` using `withLessons`, preserving homework and roster order. Homework updates using `withHomeworks` likewise preserve lessons.
 
@@ -669,7 +669,9 @@ Lesson listing, add/edit/delete feedback and clash messages include the owner's 
 
 `LessonListCommand` and `LessonDeleteCommand` use `LessonSchedule` to flatten lessons into the same weekday, start-time and student-name order. Therefore, the one-based index accepted by `lesson delete` always identifies the corresponding row from `lesson list`. Deletion replaces only that lesson's owner through `Student.withLessons()`, without changing the storage format.
 
-Manual check: add a MATH student, run `lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00`, and restart. Inspect `data/tutorflow.json` to confirm that the lesson remains. Try the same lesson again, an overlapping slot, and an adjacent slot; the first two should fail and the last should succeed. With the data file read-only, a new lesson should fail without changing either the file or the in-memory lessons.
+`lesson list STUDENT_INDEX` resolves an owner from the displayed student view, then selects that owner's entries from the complete weekly schedule. It retains global lesson numbers, including gaps, so subsequent edits/deletions address the same records. `Locale.ROOT` keeps those numbers parseable in every locale. The command preserves the view and performs no save. `StudentLessonListIntegrationTest` checks hidden and same-name owners, global numbering, Arabic-locale output, empty schedules, invalid displayed indices, unchanged file bytes and zero save calls.
+
+See [Adding a regular lesson](#adding-a-regular-lesson) for a complete reproducible setup and persistence/error checks. The sample-data example uses Tuesday so it does not clash with Ethan's existing Monday lesson.
 
 ### Editing regular lessons
 
@@ -1399,6 +1401,29 @@ testers are expected to do more *exploratory* testing.
 
    1. Other incorrect delete commands to try: `homework delete`, `homework delete 1`, `homework delete 1 x` (where x is larger than the number of homework of the student)<br>
       Expected: Similar to previous.
+
+### Adding a regular lesson
+
+1. Use a fresh writable test folder with the JAR and no saved data. The sample roster has Ethan Lim at student index 1, with a Monday MATH lesson from 17:00 to 18:30.
+   1. Run `lesson add 1 s/MATH d/TUESDAY st/16:00 et/18:00`.<br>
+      Expected: `New lesson added: Ethan Lim (91234567); MATH; TUESDAY; 16:00-18:00`. Student details and homework are unchanged. `lesson list 1` shows Ethan's Monday and Tuesday lessons with global lesson numbers 1 and 2; Priya's Saturday lesson is omitted.
+   1. Repeat the addition, then try `lesson add 1 s/MATH d/MONDAY st/18:29 et/19:00`.<br>
+      Expected: Duplicate and clash errors respectively; no new lesson or saved change.
+   1. Run `search Ethan`, then `lesson add 1 s/MATH d/SATURDAY st/15:30 et/16:00`.<br>
+      Expected: `This lesson clashes with an existing lesson: Priya Nair (82345671); CHEMISTRY; SATURDAY; 15:00-16:30`. Priya is hidden by the search but her lesson still occupies that time. Only Ethan remains displayed and neither the roster nor saved data changes. Run `list` to restore the sample roster before continuing.
+   1. Run each invalid command below:<br>
+      `lesson add 1 s/MATH d/Mon st/10:00 et/11:00`<br>
+      `lesson add 1 s/MATH d/WEDNESDAY st/25:00 et/11:00`<br>
+      `lesson add 1 s/MATH d/WEDNESDAY st/10:00 et/10:00`<br>
+      `lesson add 1 s/MATH d/WEDNESDAY st/11:00 et/10:00`<br>
+      `lesson add 1 s/CHEMISTRY d/WEDNESDAY st/10:00 et/11:00`<br>
+      Expected, in order: the full-weekday error beginning `Day must be one of: MONDAY`, `Start time must be a valid time in HH:mm 24-hour format.`, `End time must be later than start time.` for both equal and reversed endpoints, and `The selected student is not registered for this subject.`. No command adds a lesson or changes saved data.
+   1. Run `lesson add 1 s/MATH st/16:00` and `lesson add 2147483648 s/MATH d/TUESDAY st/18:00 et/19:00`.<br>
+      Expected: The first error names `d/, et/`; the second states that STUDENT_INDEX must be no greater than 2147483647. Neither changes data.
+   1. Run `lesson add 1 s/MATH d/TUESDAY st/18:00 et/19:00`.<br>
+      Expected: Success; an endpoint adjacent to an existing lesson is allowed. Restart the app and run `lesson list 1`: all three of Ethan's lessons remain.
+   1. Make `data/tutorflow.json` read-only and try `lesson add 1 s/MATH d/WEDNESDAY st/10:00 et/11:00`.<br>
+      Expected: A save error states that no lesson data was changed. The Wednesday lesson is absent and saved bytes are unchanged. Restore write permission afterwards.
 
 ### Deleting regular lessons
 

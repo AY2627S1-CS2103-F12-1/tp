@@ -14,16 +14,19 @@ public class LessonListCommandParser implements Parser<LessonListCommand> {
             LessonListCommand.MESSAGE_USAGE);
 
     /**
-     * Returns a command that lists all regular lessons.
+     * Returns a command that lists all regular lessons, or those of one displayed student.
      *
-     * @throws ParseException If {@code args} contains any argument.
+     * @throws ParseException If {@code args} is not empty or a single strict student index.
      */
     @Override
     public LessonListCommand parse(String args) throws ParseException {
         requireNonNull(args);
-        if (!args.isBlank()) {
+        if (args.isBlank()) {
+            return new LessonListCommand();
+        }
+        if (args.strip().split("\\s+").length != 1) {
             throw new ParseException(MESSAGE_INVALID_FORMAT);
         }
-        return new LessonListCommand();
+        return new LessonListCommand(ParserUtil.parseStrictIndex(args, Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX));
     }
 }

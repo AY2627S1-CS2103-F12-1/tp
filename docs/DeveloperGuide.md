@@ -549,34 +549,6 @@ The year range is fixed (2000 to 2099) so that typo years such as `2206` or `000
   * Pros: Easy to show all homework across students.
   * Cons: Homework must be kept consistent when a student is edited or deleted, and per-student indices must be computed.
 
-### Adding regular lessons
-
-`lesson add INDEX s/SUBJECT d/DAY st/START_TIME et/END_TIME` is routed by `LessonCommandParser` to `LessonAddCommandParser`. The parser reuses `StrictArgumentTokenizer` and strict student-index parsing. `RegularLesson` stores a subject, `DayOfWeek`, and two minute-precision `LocalTime` values, with end strictly after start.
-
-`LessonAddCommand` checks the selected student's subjects and duplicate lessons before checking overlaps across the entire roster. Overlap uses `start < other.end && end > other.start` on the same weekday, allowing adjacent lessons. The command replaces the selected immutable `Student` using `withLessons`, preserving homework and roster order. Homework updates using `withHomeworks` likewise preserve lessons.
-
-Lesson listing, add/edit/delete feedback and clash messages include the owner's name and student phone through `Messages#formatLessonOwner`, distinguishing students with identical names. The global weekly lesson index remains independent of the current student view. `LessonOwnerIntegrationTest` covers same-name owners, hidden-owner clash reports, mutation feedback, correct deletion and persistence.
-
-`JsonAdaptedLesson` stores the four lesson fields inside each student's `lessons` array. A missing array is read as empty so existing data files remain compatible. Loading rejects invalid lesson fields, subject mismatches, duplicates and overlapping schedules. The existing `LogicManager` change detection and save rollback apply to lessons because `Student.equals` includes its lessons. The command supplies the lesson-specific save-failure message.
-
-`LessonListCommand` and `LessonDeleteCommand` use `LessonSchedule` to flatten lessons into the same weekday, start-time and student-name order. Therefore, the one-based index accepted by `lesson delete` always identifies the corresponding row from `lesson list`. Deletion replaces only that lesson's owner through `Student.withLessons()`, without changing the storage format.
-
-Manual check: add a MATH student, run `lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00`, and restart. Inspect `data/tutorflow.json` to confirm that the lesson remains. Try the same lesson again, an overlapping slot, and an adjacent slot; the first two should fail and the last should succeed. With the data file read-only, a new lesson should fail without changing either the file or the in-memory lessons.
-
-### Editing regular lessons
-
-`LessonCommandParser` routes `lesson edit LESSON_INDEX [s/SUBJECT] [d/DAY] [st/START_TIME] [et/END_TIME]` to `LessonEditCommandParser`. The shared tokenizer rejects unknown or repeated prefixes and handles quoted values. At least one field is required. An immutable `EditLessonDescriptor` holds only supplied fields; applying it to the original lesson constructs a complete `RegularLesson`, validating the proposed time interval even when only one endpoint changes.
-
-![Successful regular lesson edit](images/LessonEditSequenceDiagram.png)
-
-The diagram shows a successful edit, with parsing details and the snapshot copy abbreviated. `LogicManager` snapshots the data before executing the command. `LessonEditCommand` resolves the lesson through `LessonSchedule.from` over the full roster, matching `lesson list` and `lesson delete` numbering independently of student filtering and sorting. The owner and original lesson form an `Entry`. After subject, unchanged-value and duplicate checks, `LessonSchedule.findClashes` compares the candidate against the full weekly schedule while excluding only that owner/lesson pair. The half-open interval rule permits adjacent lessons. All conflicts are reported in weekly order; any validation failure leaves records untouched.
-
-On success, the command replaces the original at its insertion position in a copied lesson list, then calls `Model.setStudent(owner, owner.withLessons(updated))`. The immutable replacement preserves homework and all student details. The weekly schedule may be reordered by the changed day/time, so later lesson operations should use a refreshed `lesson list`. `LogicManager` saves the changed data; on an `IOException` it restores its snapshot and uses `LessonEditCommand.MESSAGE_SAVE_FAILURE`. No JSON schema change is needed.
-
-**Design choice:** Use the existing global lesson index, matching deletion, rather than adding a second student-local lesson numbering scheme. Partial edits reuse existing values, so a tutor can move a lesson by specifying only its weekday. Both `LessonAddCommand` and `LessonEditCommand` use `LessonSchedule.findClashes` over the full roster. The two-argument overload checks a new lesson; the three-argument overload excludes the original owner/lesson pair for an edit. It still checks the owner's other lessons and other students' lessons, regardless of subject or visibility in the student view.
-
-**Validation:** `LessonEditIntegrationTest` exercises commands through `LogicManager` and real JSON storage. It checks one-minute overlaps, containment, changes to the weekday or subject, same-owner conflicts, hidden students, all-conflict reporting, adjacency, schedule renumbering and reloads. Rejected clashes leave model data, displayed student order and saved bytes unchanged and make no save calls. `LessonEditUiTest` smoke-tests the rendered main window's command box: a clash identifies the hidden student's lesson, retains the rejected input and current selection, and a corrected edit clears the error and persists successfully.
-
 ### Filtering homework
 
 `HomeworkCommandParser` routes `homework|hw filter [STUDENT_INDEX] [s/SUBJECT] [due/DATE] [status/STATUS]` to `HomeworkFilterCommandParser`. At least one criterion is required. Subjects use `TuitionSubject.parse`; exact dates use `DueDate.parse` and the injected `Clock`, matching add/edit short-date inference; completion uses `HomeworkStatus.parse`. Unlike `homework upcoming`, `due/` takes an exact date. A full year is needed to search for an overdue date when the equivalent short form would infer next year.
@@ -609,6 +581,34 @@ are described in the notes and do not reach `setStudent`.
 `JsonAdaptedHomework` saves status as a string. Existing explicit values from pre-removal files are retained. Missing or null values in files from versions without status default to `ASSIGNED`; no score-based inference is performed. Unsupported explicit values are rejected with `HomeworkStatus.MESSAGE_CONSTRAINTS`. Recording or clearing marks does not complete or reopen homework. The listing commands display status; upcoming selection and card counts remain based solely on due dates, including completed records.
 
 Tests cover completion with and without scores, reopening, status preservation through details/marks edits, combined filtering, displayed indices after search/sort, invalid and unchanged requests, legacy loading, round-trip persistence, and rollback after a failed save. The class diagram deliberately omits unrelated student and homework value classes.
+
+### Adding regular lessons
+
+`lesson add INDEX s/SUBJECT d/DAY st/START_TIME et/END_TIME` is routed by `LessonCommandParser` to `LessonAddCommandParser`. The parser reuses `StrictArgumentTokenizer` and strict student-index parsing. `RegularLesson` stores a subject, `DayOfWeek`, and two minute-precision `LocalTime` values, with end strictly after start.
+
+`LessonAddCommand` checks the selected student's subjects and duplicate lessons before checking overlaps across the entire roster. Overlap uses `start < other.end && end > other.start` on the same weekday, allowing adjacent lessons. The command replaces the selected immutable `Student` using `withLessons`, preserving homework and roster order. Homework updates using `withHomeworks` likewise preserve lessons.
+
+Lesson listing, add/edit/delete feedback and clash messages include the owner's name and student phone through `Messages#formatLessonOwner`, distinguishing students with identical names. The global weekly lesson index remains independent of the current student view. `LessonOwnerIntegrationTest` covers same-name owners, hidden-owner clash reports, mutation feedback, correct deletion and persistence.
+
+`JsonAdaptedLesson` stores the four lesson fields inside each student's `lessons` array. A missing array is read as empty so existing data files remain compatible. Loading rejects invalid lesson fields, subject mismatches, duplicates and overlapping schedules. The existing `LogicManager` change detection and save rollback apply to lessons because `Student.equals` includes its lessons. The command supplies the lesson-specific save-failure message.
+
+`LessonListCommand` and `LessonDeleteCommand` use `LessonSchedule` to flatten lessons into the same weekday, start-time and student-name order. Therefore, the one-based index accepted by `lesson delete` always identifies the corresponding row from `lesson list`. Deletion replaces only that lesson's owner through `Student.withLessons()`, without changing the storage format.
+
+Manual check: add a MATH student, run `lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00`, and restart. Inspect `data/tutorflow.json` to confirm that the lesson remains. Try the same lesson again, an overlapping slot, and an adjacent slot; the first two should fail and the last should succeed. With the data file read-only, a new lesson should fail without changing either the file or the in-memory lessons.
+
+### Editing regular lessons
+
+`LessonCommandParser` routes `lesson edit LESSON_INDEX [s/SUBJECT] [d/DAY] [st/START_TIME] [et/END_TIME]` to `LessonEditCommandParser`. The shared tokenizer rejects unknown or repeated prefixes and handles quoted values. At least one field is required. An immutable `EditLessonDescriptor` holds only supplied fields; applying it to the original lesson constructs a complete `RegularLesson`, validating the proposed time interval even when only one endpoint changes.
+
+![Successful regular lesson edit](images/LessonEditSequenceDiagram.png)
+
+The diagram shows a successful edit, with parsing details and the snapshot copy abbreviated. `LogicManager` snapshots the data before executing the command. `LessonEditCommand` resolves the lesson through `LessonSchedule.from` over the full roster, matching `lesson list` and `lesson delete` numbering independently of student filtering and sorting. The owner and original lesson form an `Entry`. After subject, unchanged-value and duplicate checks, `LessonSchedule.findClashes` compares the candidate against the full weekly schedule while excluding only that owner/lesson pair. The half-open interval rule permits adjacent lessons. All conflicts are reported in weekly order; any validation failure leaves records untouched.
+
+On success, the command replaces the original at its insertion position in a copied lesson list, then calls `Model.setStudent(owner, owner.withLessons(updated))`. The immutable replacement preserves homework and all student details. The weekly schedule may be reordered by the changed day/time, so later lesson operations should use a refreshed `lesson list`. `LogicManager` saves the changed data; on an `IOException` it restores its snapshot and uses `LessonEditCommand.MESSAGE_SAVE_FAILURE`. No JSON schema change is needed.
+
+**Design choice:** Use the existing global lesson index, matching deletion, rather than adding a second student-local lesson numbering scheme. Partial edits reuse existing values, so a tutor can move a lesson by specifying only its weekday. Both `LessonAddCommand` and `LessonEditCommand` use `LessonSchedule.findClashes` over the full roster. The two-argument overload checks a new lesson; the three-argument overload excludes the original owner/lesson pair for an edit. It still checks the owner's other lessons and other students' lessons, regardless of subject or visibility in the student view.
+
+**Validation:** `LessonEditIntegrationTest` exercises commands through `LogicManager` and real JSON storage. It checks one-minute overlaps, containment, changes to the weekday or subject, same-owner conflicts, hidden students, all-conflict reporting, adjacency, schedule renumbering and reloads. Rejected clashes leave model data, displayed student order and saved bytes unchanged and make no save calls. `LessonEditUiTest` smoke-tests the rendered main window's command box: a clash identifies the hidden student's lesson, retains the rejected input and current selection, and a corrected edit clears the error and persists successfully.
 
 ### Saving after a command
 

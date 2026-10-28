@@ -41,11 +41,12 @@ public class CommandBox extends UiPart<Region> {
     @FXML
     private void handleCommandEntered() {
         String commandText = commandTextField.getText();
+        // Even an empty box ends browsing, so the next Up starts again from the newest command
+        commandHistory.add(commandText);
         if (commandText.equals("")) {
             return;
         }
 
-        commandHistory.add(commandText);
         try {
             commandExecutor.execute(commandText);
             commandTextField.setText("");

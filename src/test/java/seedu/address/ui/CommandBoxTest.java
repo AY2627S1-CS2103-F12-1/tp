@@ -121,6 +121,57 @@ public class CommandBoxTest {
     }
 
     @Test
+    public void enter_emptyBox_notRecordedOrExecuted() throws Exception {
+        runOnFxThread(() -> {
+            enter("list");
+            enter("");
+            enter("hw ls 2");
+
+            assertEquals(List.of("list", "hw ls 2"), executedCommands);
+            pressKey(KeyCode.UP);
+            assertRecalled("hw ls 2");
+            // A recorded empty command would show here as an empty box
+            pressKey(KeyCode.UP);
+            assertRecalled("list");
+        });
+    }
+
+    @Test
+    public void enter_emptiedBoxWhileBrowsing_resetsHistoryPosition() throws Exception {
+        runOnFxThread(() -> {
+            enter("list");
+            enter("hw ls 2");
+            enter("hw ls 3");
+            pressKey(KeyCode.UP);
+            pressKey(KeyCode.UP);
+            commandTextField.clear();
+
+            commandTextField.getOnAction().handle(new ActionEvent());
+
+            pressKey(KeyCode.UP);
+            assertRecalled("hw ls 3");
+        });
+    }
+
+    @Test
+    public void enter_whitespaceOnlyWhileBrowsing_resetsPositionWithoutRecording() throws Exception {
+        runOnFxThread(() -> {
+            enter("list");
+            enter("hw ls 2");
+            enter("hw ls 3");
+            pressKey(KeyCode.UP);
+            pressKey(KeyCode.UP);
+
+            enter("   ");
+
+            pressKey(KeyCode.UP);
+            assertRecalled("hw ls 3");
+            pressKey(KeyCode.UP);
+            assertRecalled("hw ls 2");
+        });
+    }
+
+    @Test
     public void pressShiftUp_typedText_selectsToStart() throws Exception {
         runOnFxThread(() -> {
             enterCommandsThenTypeFindAlex();

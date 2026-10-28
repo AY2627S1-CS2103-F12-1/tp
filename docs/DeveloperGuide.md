@@ -714,7 +714,7 @@ Pressing `Up` in the command box shows the previous command entered in this sess
 
 `CommandBox` owns a `CommandHistory`, which keeps the entered commands in a list, oldest first, and a position in that list. The position equals the number of commands when no earlier command is shown.
 
-* `CommandBox#handleCommandEntered` calls `CommandHistory#add` before running the command, so a command is recorded whether it succeeds or fails. `add` skips blank commands and a command identical to the newest entry, and moves the position to after the newest entry.
+* `CommandBox#handleCommandEntered` calls `CommandHistory#add` on every `Enter`, before running the command, so a command is recorded whether it succeeds or fails. `add` skips blank commands and a command identical to the newest entry, and moves the position to after the newest entry. It is called even when the box is empty, so `Enter` always ends browsing and the next `Up` starts again from the newest command.
 * A `KEY_PRESSED` event filter on the text field calls `CommandHistory#previous` for `Up` and `CommandHistory#next` for `Down` when no modifier key (Shift, Ctrl, Alt or Meta) is held, puts the returned text in the box with the caret at its end, and consumes the key so the text field does not also move the caret. `previous` stops at the oldest command. `next` returns an empty string when it moves past the newest command, so the box is cleared. Both return an empty `Optional` when there is nothing to move to (no commands, or `Down` with no earlier command shown), and the box keeps its text. With a modifier key held, the filter leaves the key to the text field, so e.g. `Shift`+`Up` still selects the text before the caret.
 
 #### Design considerations:

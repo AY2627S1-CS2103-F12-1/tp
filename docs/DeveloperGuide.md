@@ -487,7 +487,7 @@ a card is first displayed after the command has completed. Student records remai
 or run `list` to restore the full view. Assertion failures remain programming errors and are not caught by this
 recovery path. See the [logging guide](Logging.md) for diagnostic conventions.
 
-### Homework management
+### Homework records
 
 Homework is managed with eight subcommands of `homework` (alias `hw`): `add`, `list`, `upcoming`, `edit`, `marks`, `delete`, `filter` and `status`.
 
@@ -499,43 +499,9 @@ The class diagram below shows how homework is stored. Each `Student` owns its `H
 
 <img src="images/HomeworkClassDiagram.png" width="700" alt="A student owns an ordered list of homework records" />
 
-For how a homework command runs through the `Logic` component, see the `hw del 1 2` sequence diagram in [Logic component](#logic-component).
-
-**Adding.** The activity diagram below shows the checks that `homework add` makes, in order, and which class makes each. A failed check reports its error and leaves the data unchanged.
-
-<img src="images/HomeworkAddActivityDiagram.png" width="900" alt="Checks and steps of homework add, by class" />
-
 **Homework index.** The homework index is the one-based position in the student's homework list (insertion order). It is not stored and changes only when earlier homework is deleted. `homework list` sorts the homework by due date but prints each record with its insertion-order number, so every number shown is a valid `HOMEWORK_INDEX` for the other homework commands. `add`, `list`, `edit`, `marks` and `delete` look up the student (and, for `edit`, `marks` and `delete`, the homework) through `HomeworkCommandUtil`, so they check the indices in the same order and report the same errors.
 
-The object diagram below shows this for `hw del 2 1` with the sample students. Deleting Priya Nair's first homework makes her other two records homework 1 and 2. As `Student` is immutable, a new `Student` object replaces the old one, while the remaining `Homework` objects are the same objects.
-
-<img src="images/HomeworkIndexObjectDiagram.png" width="750" alt="Homework indices before and after deleting a student's first homework" />
-
-**Deleting.** `homework delete` renumbers the homework after the deleted record, so a second delete typed from a list shown before the first one would remove the wrong record. Its result therefore shows the deleted record in the `homework list` line layout (`HomeworkListCommand#formatHomeworkLine`), with the number it had, its score and its status, followed by `HomeworkListCommand#formatHomeworkList` of the updated student, the same upcoming list that `homework edit` shows. `HomeworkDeleteCommand` takes `today` from its parser's `Clock` for that list. `homework add`, `homework edit` and `homework marks` keep their own record layouts.
-
-**Title.** The `Title` constructor converts the input to Unicode NFC (`java.text.Normalizer`), replaces each run of whitespace with one space and strips it, then checks that the title has 1 to 100 characters and that every character is a letter, number, punctuation, symbol or space. NFC stores text that looks the same in one way (e.g. `é` typed as one character or as `e` plus an accent), so the duplicate checks of `homework add`, `homework edit` and `JsonAdaptedStudent` (`Homework#isSameHomework`, which ignores case) treat such titles as one title.
-
-The character rule is an allowlist, like the one in `StudentName`. It rejects invisible characters such as the zero-width space anywhere in the title, so a title made only of them is rejected (Issue #139) and `Alge<zero-width space>bra drill` cannot be a different title from `Algebra drill`. As a result, emoji that contain invisible characters (e.g. ❤️ and 👨‍👩‍👧) and letters written with a combining mark that has no composed form (e.g. many Tamil and Hindi letters) are rejected, as in student names, while single emoji such as 😀 are accepted. A data file with a title that breaks the rule does not load.
-
-Alternatives considered:
-
-* NFKC instead of NFC: rejected, as it changes visible characters, e.g. `²` to `2`.
-* A denylist of invisible characters (the previous design): rejected, as it needed several lists of special characters and still accepted invisible characters inside a title.
-* Printable ASCII only: rejected, as accented titles such as `Café` would be rejected, titles would be stricter than student names, and data files with such titles would no longer load.
-
-**Score.** A `Score` is either `MARKS` (e.g. `17`) or `MARKS_OBTAINED/TOTAL_MARKS` (e.g. `5/10`). It is kept as given (`5/10` is not simplified) and stored in the data file as this text, e.g. `"17"` or `"5/10"`. `Score#parse` checks the format first: a number with leading zeroes (e.g. `05/10`) is reported with `Score#MESSAGE_LEADING_ZEROES` before the size and range of the numbers are checked, so `02147483648` and `011/10` get the leading-zero message too, while input wrong in another way as well (e.g. `-05`) gets `Score#MESSAGE_CONSTRAINTS`.
-
-**Recording marks.** The sequence diagram below shows `hw m 2 1 score/8/10`, which records the score `8/10` for the first homework of student 2. Parsing works as for `hw del 1 2` and is shown as a reference frame.
-
-<img src="images/HomeworkMarksSequenceDiagram.png" width="900" alt="Recording homework marks" />
-
-**Due date.** `DueDate#parse` accepts `YYYY-MM-DD` or `MM-DD`. For `MM-DD`, the year is this year, or next year if the date has already passed this year; `02-29` is rejected, with a hint to enter the full date, when no 29 February falls within the next 12 months. Its error message says what is wrong: an empty date, input in neither format, a year outside 2000 to 2099, or a date that does not exist (e.g. `2026-02-30 is not a real calendar date.`). `homework add`, `homework edit` and `homework filter` pass these messages on unchanged. `DueDate#parseFullDate`, used for the data file, accepts only `YYYY-MM-DD`, so a saved year is never inferred.
-
-The year range is fixed (2000 to 2099) so that typo years such as `2206` or `0001` are caught. A range relative to today (e.g. 10 years either way) was rejected: a data file that loads today would stop loading some years later.
-
 **Saving.** Homework is saved as part of each student (see [Storage component](#storage-component)). `homework list`, `homework upcoming` and `homework filter` do not change the stored data, so `LogicManager` never writes the data file after them (see [Saving after a command](#saving-after-a-command)).
-
-**Upcoming homework.** `homework upcoming` searches the whole roster, not the displayed list, and starts each line with `Student N:`, where `N` is the student's `STUDENT_INDEX`. Two students may have the same name, and the index tells them apart in a form the tutor can type into `homework list`. After building the result, it resets the displayed list to the full roster, as `list` does, so `N` matches the student list even after a `search`. If an internal error stops the command, the displayed list stays as it was.
 
 #### Design considerations:
 
@@ -548,6 +514,60 @@ The year range is fixed (2000 to 2099) so that typo years such as `2206` or `000
 * **Alternative 2:** One homework list in the model, with each record referring to its student.
   * Pros: Easy to show all homework across students.
   * Cons: Homework must be kept consistent when a student is edited or deleted, and per-student indices must be computed.
+
+### Adding homework
+
+The activity diagram below shows the checks that `homework add` makes, in order, and which class makes each. A failed check reports its error and leaves the data unchanged.
+
+<img src="images/HomeworkAddActivityDiagram.png" width="900" alt="Checks and steps of homework add, by class" />
+
+**Title.** The `Title` constructor converts the input to Unicode NFC (`java.text.Normalizer`), replaces each run of whitespace with one space and strips it, then checks that the title has 1 to 100 characters and that every character is a letter, number, punctuation, symbol or space. NFC stores text that looks the same in one way (e.g. `é` typed as one character or as `e` plus an accent), so the duplicate checks of `homework add`, `homework edit` and `JsonAdaptedStudent` (`Homework#isSameHomework`, which ignores case) treat such titles as one title.
+
+The character rule is an allowlist, like the one in `StudentName`. It rejects invisible characters such as the zero-width space anywhere in the title, so a title made only of them is rejected (Issue #139) and `Alge<zero-width space>bra drill` cannot be a different title from `Algebra drill`. As a result, emoji that contain invisible characters (e.g. ❤️ and 👨‍👩‍👧) and letters written with a combining mark that has no composed form (e.g. many Tamil and Hindi letters) are rejected, as in student names, while single emoji such as 😀 are accepted. A data file with a title that breaks the rule does not load.
+
+Alternatives considered:
+
+* NFKC instead of NFC: rejected, as it changes visible characters, e.g. `²` to `2`.
+* A denylist of invisible characters (the previous design): rejected, as it needed several lists of special characters and still accepted invisible characters inside a title.
+* Printable ASCII only: rejected, as accented titles such as `Café` would be rejected, titles would be stricter than student names, and data files with such titles would no longer load.
+
+**Due date.** `DueDate#parse` accepts `YYYY-MM-DD` or `MM-DD`. For `MM-DD`, the year is this year, or next year if the date has already passed this year; `02-29` is rejected, with a hint to enter the full date, when no 29 February falls within the next 12 months. Its error message says what is wrong: an empty date, input in neither format, a year outside 2000 to 2099, or a date that does not exist (e.g. `2026-02-30 is not a real calendar date.`). `homework add`, `homework edit` and `homework filter` pass these messages on unchanged. `DueDate#parseFullDate`, used for the data file, accepts only `YYYY-MM-DD`, so a saved year is never inferred.
+
+The year range is fixed (2000 to 2099) so that typo years such as `2206` or `0001` are caught. A range relative to today (e.g. 10 years either way) was rejected: a data file that loads today would stop loading some years later.
+
+### Listing a student's homework
+
+`homework list STUDENT_INDEX [all]` shows the homework of one student in the displayed list. Without `all`, it shows only the records due today or later; with `all`, it also shows overdue records. It sorts the records by due date, keeping records due on the same date in insertion order, and shows each with its homework index. It does not change the data, so nothing is saved. The activity diagram below shows these steps.
+
+<img src="images/HomeworkListActivityDiagram.png" width="600" alt="Which homework records homework list shows, and in which order" />
+
+### Listing upcoming homework
+
+`homework upcoming` searches the whole roster, not the displayed list, and starts each line with `Student N:`, where `N` is the student's `STUDENT_INDEX`. Two students may have the same name, and the index tells them apart in a form the tutor can type into `homework list`. After building the result, it resets the displayed list to the full roster, as `list` does, so `N` matches the student list even after a `search`. If an internal error stops the command, the displayed list stays as it was.
+
+The sequence diagram below shows `hw up due/3`, which lists the homework due from today to 3 days after today (7 days if `due/` is not given), sorted by due date. Parsing is shown as a reference frame.
+
+<img src="images/HomeworkUpcomingSequenceDiagram.png" width="900" alt="Listing upcoming homework across the whole roster" />
+
+### Deleting homework
+
+`homework delete` renumbers the homework after the deleted record, so a second delete typed from a list shown before the first one would remove the wrong record. Its result therefore shows the deleted record in the `homework list` line layout (`HomeworkListCommand#formatHomeworkLine`), with the number it had, its score and its status, followed by `HomeworkListCommand#formatHomeworkList` of the updated student, the same upcoming list that `homework edit` shows. `HomeworkDeleteCommand` takes `today` from its parser's `Clock` for that list. `homework add`, `homework edit` and `homework marks` keep their own record layouts.
+
+The object diagram below shows this for `hw del 2 1` with the sample students. Deleting Priya Nair's first homework makes her other two records homework 1 and 2. As `Student` is immutable, a new `Student` object replaces the old one, while the remaining `Homework` objects are the same objects.
+
+<img src="images/HomeworkIndexObjectDiagram.png" width="750" alt="Homework indices before and after deleting a student's first homework" />
+
+For how a homework command runs through the `Logic` component, see the `hw del 1 2` sequence diagram in [Logic component](#logic-component).
+
+### Editing homework and recording marks
+
+`homework edit` changes any of the title, subject and due date of one homework record (`HomeworkEditCommand.EditHomeworkDescriptor#applyTo`). Fields that are not given keep their values, and the record keeps its homework index, score and status. Like `homework add`, it rejects a subject the student does not take and a record that would duplicate another of the student's records, and it rejects an edit that changes nothing. It replaces the record in a copy of the student's homework list, as `homework marks` does below.
+
+**Score.** A `Score` is either `MARKS` (e.g. `17`) or `MARKS_OBTAINED/TOTAL_MARKS` (e.g. `5/10`). It is kept as given (`5/10` is not simplified) and stored in the data file as this text, e.g. `"17"` or `"5/10"`. `Score#parse` checks the format first: a number with leading zeroes (e.g. `05/10`) is reported with `Score#MESSAGE_LEADING_ZEROES` before the size and range of the numbers are checked, so `02147483648` and `011/10` get the leading-zero message too, while input wrong in another way as well (e.g. `-05`) gets `Score#MESSAGE_CONSTRAINTS`.
+
+The sequence diagram below shows `hw m 2 1 score/8/10`, which records the score `8/10` for the first homework of student 2. Parsing works as for `hw del 1 2` and is shown as a reference frame.
+
+<img src="images/HomeworkMarksSequenceDiagram.png" width="900" alt="Recording homework marks" />
 
 ### Filtering homework
 

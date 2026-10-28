@@ -1404,6 +1404,14 @@ testers are expected to do more *exploratory* testing.
    1. Test case: `lesson delete 0`<br>
       Expected: No lesson is deleted. The result display shows an error message.
 
+   1. Test case: `lesson delete 2147483648`<br>
+      Expected: `The lesson index provided is invalid.` No lesson, displayed student or saved data changes.
+
+   1. In a fresh sample-data folder, run `search Ethan`, `lesson list`, then `lesson delete 2`.<br>
+      Expected: The schedule includes Priya Nair's hidden lesson at global index 2. Deletion reports
+      `Deleted regular lesson:` followed by `Priya Nair (82345671); CHEMISTRY; SAT; 15:00-16:30`.
+      Ethan remains the only displayed student. Restart: Priya's lesson is still absent.
+
    1. Other incorrect delete commands to try: `lesson delete`, `lesson delete 1 2`, `lesson delete x` (where x is
       larger than the number of displayed lessons)<br>
       Expected: Similar to previous.

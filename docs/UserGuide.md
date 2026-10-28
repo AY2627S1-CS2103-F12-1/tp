@@ -612,11 +612,24 @@ Format: `lesson delete LESSON_INDEX`
 
 * `LESSON_INDEX` must be a positive whole number without leading zeroes.
 * The lesson index is the number shown by `lesson list`, rather than a student index.
+* `lesson list` includes the full schedule, including lessons whose students are hidden by `search` or `filter`.
+  Use these global lesson numbers when deleting a hidden student's lesson.
+* A positive whole number outside the schedule, including a number larger than 2147483647, gives
+  `The lesson index provided is invalid.` Malformed indices, such as `01` or `-1`, give a syntax error.
 * The remaining lessons keep their weekly order and are renumbered.
 * If there are no lessons, TutorFlow reports `There are no regular lessons to delete.`
 * Deletion cannot be undone.
 
 Example: `lesson delete 2`
+
+With fresh sample data, this removes Priya Nair's Saturday lesson and shows:
+
+```text
+Deleted regular lesson:
+Priya Nair (82345671); CHEMISTRY; SAT; 15:00-16:30
+```
+
+The lesson details use the same format as the schedule row, including the student's phone number.
 
 ### Listing all regular lessons: `lesson list`
 

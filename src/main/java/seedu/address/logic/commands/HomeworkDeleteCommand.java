@@ -81,7 +81,7 @@ public class HomeworkDeleteCommand extends Command {
         Student editedStudent = student.withHomeworks(remainingHomeworks);
         String message = String.format(MESSAGE_SUCCESS,
                 HomeworkListCommand.formatHomeworkLine(homeworkIndex.getOneBased(), homeworkToDelete),
-                HomeworkListCommand.formatHomeworkList(editedStudent, today, false));
+                HomeworkListCommand.formatHomeworkList(editedStudent, studentIndex, today, false));
 
         model.setStudent(student, editedStudent);
         return new CommandResult(message);

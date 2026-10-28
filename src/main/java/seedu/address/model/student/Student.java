@@ -130,10 +130,11 @@ public final class Student {
 
     /**
      * Returns true if both students have the same whitespace-normalized name, ignoring case, and the same
-     * student phone number exactly. Guardian details, academic level, and subjects do not affect identity.
+     * student phone number, allowing an optional +65 prefix. Guardian details, academic level, and subjects
+     * do not affect identity.
      */
     public boolean isSameStudent(Student other) {
-        return other != null && name.isSameNameIgnoringCase(other.name) && phone.equals(other.phone);
+        return other != null && name.isSameNameIgnoringCase(other.name) && phone.isSameNumber(other.phone);
     }
 
     @Override

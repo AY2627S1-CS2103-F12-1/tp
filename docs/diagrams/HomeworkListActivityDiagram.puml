@@ -1,0 +1,38 @@
+@startuml
+!include style.puml
+skinparam activityBackgroundColor LOGIC_COLOR
+skinparam activityFontColor #FFFFFF
+skinparam activityDiamondBackgroundColor #FFFFFF
+skinparam activityDiamondFontColor #000000
+skinparam ArrowFontStyle plain
+
+start
+:Find the student at STUDENT_INDEX
+in the displayed list;
+if () then ([student has homework])
+  if () then ([all given])
+    :Keep every record;
+  else ([all not given])
+    :Keep the records due
+    today or later;
+  endif
+  if () then ([some records left out])
+    :Add a note saying how many records
+    due before today are left out
+    and how to list them;
+  else ([no records left out])
+  endif
+  if () then ([some records kept])
+    :Sort the kept records by due date;
+    :Show each record with its
+    HOMEWORK_INDEX;
+  else ([no records kept])
+    :Show that the student has
+    no upcoming homework;
+  endif
+else ([no homework])
+  :Show that the student
+  has no homework;
+endif
+stop
+@enduml

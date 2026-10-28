@@ -6,7 +6,9 @@ import seedu.address.commons.core.index.Index;
 import seedu.address.logic.commands.DeleteCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 
-/** Parses the displayed student index for the Delete Student command. */
+/**
+ * Parses the displayed student index for the Delete Student command.
+ */
 public class DeleteCommandParser implements Parser<DeleteCommand> {
 
     @Override

@@ -35,18 +35,22 @@ public class LessonListCommand extends Command {
 
     private final Optional<Index> studentIndex;
 
-    /** Creates a command that lists the complete weekly schedule. */
+    /**
+     * Creates a command that lists the complete weekly schedule.
+     */
     public LessonListCommand() {
         studentIndex = Optional.empty();
     }
 
-    /** Creates a command that lists the lessons of a displayed student, retaining global lesson indices. */
+    /**
+     * Creates a command that lists the lessons of a displayed student, retaining global lesson indices.
+     */
     public LessonListCommand(Index studentIndex) {
         this.studentIndex = Optional.of(requireNonNull(studentIndex));
     }
 
     /**
-     * Returns the result listing every regular lesson in weekly chronological order.
+     * Returns all regular lessons, or one displayed student's lessons, in weekly chronological order.
      * An unexpected error is logged and reported without modifying the model.
      */
     @Override
@@ -72,7 +76,7 @@ public class LessonListCommand extends Command {
             }
             owner = Optional.of(model.getStudentList().get(index));
         }
-        List<LessonSchedule.Entry> lessons = LessonSchedule.from(model.getAddressBook().getStudentList());
+        List<LessonSchedule.Entry> lessons = LessonSchedule.buildSchedule(model.getAddressBook().getStudentList());
         int matches = 0;
         StringBuilder lines = new StringBuilder();
         for (int i = 0; i < lessons.size(); i++) {

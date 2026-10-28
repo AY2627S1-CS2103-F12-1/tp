@@ -3,27 +3,38 @@
 skinparam arrowThickness 1.1
 skinparam arrowColor MODEL_COLOR
 skinparam classBackgroundColor MODEL_COLOR
-hide members
+skinparam classAttributeFontColor #FFFFFF
+skinparam classAttributeIconSize 0
+hide circle
+show members
 
-Package Model as ModelPackage {
-Class Student
-Class Homework
-Class Title
-Enum "<<enumeration>>\nTuitionSubject" as TuitionSubject
-Class DueDate
-Class Score
-Enum "<<enumeration>>\nHomeworkStatus" as HomeworkStatus
+Class Student {
+  ...
+  + getHomeworks(): List<Homework>
+  + hasHomework(homework: Homework): boolean
+  + withHomeworks(homeworks: List<Homework>): Student
 }
 
-Student --> "0..*\n{ordered}" Homework : homeworks
-Homework --> "1" Title : title
-Homework --> "1" TuitionSubject : subject
-Homework --> "1" DueDate : dueDate
-Homework --> "0..1" Score : score
-Homework --> "1" HomeworkStatus : status
+Class Homework {
+  - title: Title
+  - subject: TuitionSubject
+  - dueDate: DueDate
+  - score: Score [0..1]
+  - status: HomeworkStatus
+  + isSameHomework(other: Homework): boolean
+  + withScore(newScore: Score): Homework
+  + withStatus(newStatus: HomeworkStatus): Homework
+}
+
+Student -down--> "-homeworks  0..*\n{ordered}" Homework
 
 note right of Student
-  HOMEWORK_INDEX is the one-based
-  position in this list (insertion order).
+  HOMEWORK_INDEX is the one-based position
+  of a record in homeworks (insertion order).
+end note
+
+note right of Homework
+  Student and Homework are immutable:
+  a change builds a new object.
 end note
 @enduml

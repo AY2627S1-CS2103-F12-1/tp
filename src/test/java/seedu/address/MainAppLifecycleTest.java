@@ -29,6 +29,7 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import seedu.address.commons.core.GuiSettings;
 import seedu.address.logic.Messages;
+import seedu.address.logic.commands.DeleteCommand;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.AddressBook;
 import seedu.address.storage.JsonAddressBookStorage;
@@ -169,7 +170,7 @@ public class MainAppLifecycleTest {
         app.init();
         Files.createDirectories(data);
 
-        String expectedMessage = String.format(Messages.MESSAGE_SAVE_FAILURE, Path.of("data", "tutorflow.json"),
+        String expectedMessage = String.format(DeleteCommand.MESSAGE_SAVE_FAILURE, Path.of("data", "tutorflow.json"),
                 Messages.MESSAGE_SAVE_CAUSE_FOLDER);
         assertThrows(CommandException.class, expectedMessage, () -> app.logic.execute("delete 1"));
     }

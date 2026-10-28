@@ -77,7 +77,7 @@ such as `CommandBox`, `ResultDisplay`, `StudentListPanel`, `UpcomingPanel`, and 
 including `MainWindow`, inherit from the abstract `UiPart` class, which captures common behavior among classes that
 represent visible GUI parts.
 
-The `HelpWindow` lists the commands from `HelpContent`, a plain Java class that groups the commands into sections. Each command format in `HelpContent` is the usage constant of the command (e.g. `HomeworkAddCommand.MESSAGE_USAGE`), so the help window shows the same format as the parser error messages. The `list` row is an exception: its format `list|ls` adds the `ls` alias that `ListCommand.MESSAGE_USAGE` leaves out. The sections and their rows are in the order of the User Guide, and `HelpContentTest` checks that order and that every example in it parses into the listed command.
+The `HelpWindow` lists the commands from `HelpContent`, a plain Java class that groups the commands into sections. Each command format in `HelpContent` is the usage constant of the command (e.g. `HomeworkAddCommand.MESSAGE_USAGE`), so the help window shows the same format as the parser error messages. The `list` row is an exception: its format `list|ls` adds the `ls` alias that `ListCommand.MESSAGE_USAGE` leaves out. The sections and their rows are in the order of the User Guide, and `HelpContentTest` checks that order and that every example in it parses into the listed command. The help window also explains that Up and Down recall commands from the current session.
 
 The `UI` component uses the JavaFX UI framework. The layouts of these UI parts are defined in matching `.fxml` files in `src/main/resources/view`. For example, [`MainWindow.fxml`](https://github.com/AY2627S1-CS2103-F12-1/tp/blob/master/src/main/resources/view/MainWindow.fxml) specifies the layout of [`MainWindow`](https://github.com/AY2627S1-CS2103-F12-1/tp/blob/master/src/main/java/seedu/address/ui/MainWindow.java).
 
@@ -95,15 +95,17 @@ displays `Student#getUpcomingHomeworkCount(today)` and `Student#getOverdueHomewo
 `UpcomingPanel` displays the **At a glance** sidebar. It observes the full, unmodifiable roster from
 `Logic#getAllStudentList()`, rather than the displayed list from `Logic#getStudentList()`, so `search`, `filter` and `sort`
 do not hide lessons or homework. Its list-change listener rebuilds the weekly schedule through
-`LessonSchedule#from` and sorts `ASSIGNED` homework by due date, then student name, title and phone. Both
+`LessonSchedule#buildSchedule` and sorts `ASSIGNED` homework by due date, then student name, title and phone. Both
 reports include student phone numbers to distinguish students sharing a name. The same observable roster is
 retained when data is reset, so updates continue after `clear` or a failed save is rolled back.
 
 The sidebar evaluates `Homework#isOverdue(today)` to mark overdue entries in bold red;
 `Student#getOverdueHomeworkCount(today)` uses the same model rule for student cards. A homework record is
 overdue only when its status is `ASSIGNED` and its due date is before today, regardless of its score.
-`UpcomingPanel` and `MainWindow` accept a `Clock` for deterministic UI tests. `MainWindow` schedules a refresh
-at the next local date boundary, rechecks on window activation and before commands, and rebuilds cached
+`UpcomingPanel` keeps each sidebar entry's display text and overdue state together, so styling does not depend
+on matching rendered strings. Date-only refreshes update homework while preserving weekly lesson entries
+and their selection. `UpcomingPanel` and `MainWindow` accept a `Clock` for deterministic UI tests.
+`MainWindow` schedules a refresh at the next local date boundary, rechecks on window activation and before commands, and rebuilds cached
 student cards and sidebar entries using the same date. The timer stops when the window is hidden and restarts
 when shown. The content split pane binds its minimum height to its children's minimum heights at their
 narrowest permitted widths, accounting for wrapped headings so the sidebar remains within its bounds. Both
@@ -162,7 +164,7 @@ records can be shared when a student or homework is copied. `AddressBook` owns i
 The `Model` component,
 
 * stores all app data in an `AddressBook` object: the student roster (a `StudentRoster` of `Student` objects in insertion order), in which each immutable `Student` holds its own `Homework` records and `RegularLesson` entries.
-* uses `LessonSchedule#from` to provide a view of all regular lessons ordered by weekday, start time, and student name without changing roster order.
+* uses `LessonSchedule#buildSchedule` to provide a view of all regular lessons ordered by weekday, start time, and student name without changing roster order.
 * exposes the displayed students as an unmodifiable `ObservableList<Student>` backed by a `StudentDisplayList` over a `FilteredList`, so the UI updates when roster, predicate or display order changes. `ModelManager` passes roster mutations (`hasStudent`, `addStudent`, `setStudent`, `deleteStudent`) to its `AddressBook`; `getStudentList` returns the display view. The stored roster stays in insertion order.
 * stores a `UserPrefs` object that represents the user’s preferences (currently, just the GUI settings). This is exposed to the outside as a `ReadOnlyUserPrefs` object.
 * does not depend on any of the other three components (as the `Model` represents data entities of the domain, they should make sense on their own without depending on other components)
@@ -234,6 +236,10 @@ Classes used by multiple components are in the `seedu.address.commons` package.
 --------------------------------------------------------------------------------------------------------------------
 
 ## **Implementation**
+
+### Recalling earlier commands
+
+`CommandHistory` stores submitted non-blank command text in memory for the current session. It keeps the newest entry once when identical commands are submitted consecutively. `CommandBox` records the input on Enter, including commands that the Logic component rejects, and uses plain Up and Down to navigate the history. Navigation stays at the oldest command; moving Down past the newest clears the box. Modified arrow keys keep their normal text-field behavior. The caret moves to the end of recalled text, and recalling a command clears the error style. Pressing Enter resets the navigation position. A rejected command stays in the box, so the first Up skips that same command and shows the preceding entry.
 
 This section describes some noteworthy details on how certain features are implemented.
 
@@ -446,16 +452,20 @@ selection/scroll recovery, exact feedback and diagnostic ownership. See the [log
 
 ### Filtering students
 
-**Parsing.** `AddressBookParser` routes `filter [l/LEVEL] [s/SUBJECT]` to `FilterCommandParser`. At least one
+**Parsing.** `AddressBookParser` routes `filter [l/LEVEL] [s/SUBJECT] [d/DAY]` to `FilterCommandParser`. At least one
 criterion is required, and each prefix may appear only once. The tokenizer checks argument structure before
 the parser validates values in prefix order. `AcademicLevel` and `TuitionSubject` validate supported values
-and normalize their case and surrounding whitespace. Empty values receive field-specific non-empty errors;
+and normalize their case and surrounding whitespace. Meeting days use the same full-weekday validation as
+regular lessons, including case and whitespace normalization. Empty values receive field-specific non-empty errors;
 unsupported values retain the domain constraint message and its exception cause. Comma-separated subjects
 receive a single-subject restriction error. Format errors use the shared invalid-format header and command usage.
 Invalid input is rejected before the displayed list changes or a UI refresh is requested.
 
 **Matching and display.** `StudentFilterPredicate` combines the supplied criteria with AND: the student's level
 must match and their subjects must include the selected subject. An omitted criterion imposes no restriction.
+A supplied day must match at least one regular lesson, so students without lessons cannot match it. The subject
+criterion checks the student's registration independently of which lesson matches the day. Lesson changes replace
+the immutable student, automatically re-evaluating membership under the active predicate.
 `FilterCommand` applies the predicate to the full stored roster, replacing any previous search or filter.
 Results retain roster order and receive displayed indices starting at 1; commands taking a student index use
 these displayed indices. Lesson scheduling and clash detection continue to consider the full roster.
@@ -466,7 +476,7 @@ Successful filtering returns the panel to the top. `list`, `ls`, a successful st
 
 **Active filter indication.** The model exposes its active predicate as a read-only observable property through
 `Logic`. This property also drives the filtered list, so the panel can observe criteria changes even when the
-matching students are unchanged. `StudentListPanel` describes the level and subject from `StudentFilterPredicate`
+matching students are unchanged. `StudentListPanel` describes the level, subject and day from `StudentFilterPredicate`
 below its heading; presentation wording stays in the UI. Other predicates hide this description. Empty results,
 sorting, edits and deletions retain the active criteria. The description wraps and reserves its preferred height
 at narrow widths. Save-failure recovery restores the exact predicate, preserving its typed criteria along with
@@ -487,55 +497,21 @@ a card is first displayed after the command has completed. Student records remai
 or run `list` to restore the full view. Assertion failures remain programming errors and are not caught by this
 recovery path. See the [logging guide](Logging.md) for diagnostic conventions.
 
-### Homework management
+### Homework records
 
-Homework is managed with eight subcommands of `homework` (alias `hw`): `add`, `list`, `upcoming`, `edit`, `marks`, `delete`, `filter` and `status`.
+Homework is managed with eight subcommands of `homework` (short form `hw`): `add`, `list`, `upcoming`, `edit`, `marks`, `delete`, `filter` and `status`. This section covers what they share. `filter` and `status` are described in [Filtering homework](#filtering-homework) and [Updating homework completion](#updating-homework-completion).
 
-**Parsing.** `AddressBookParser` passes the arguments of both `homework` and `hw` to `HomeworkCommandParser`. This dispatcher reads the first word as the subcommand and hands the rest to that subcommand's parser, e.g. `HomeworkDeleteCommandParser` for `delete` or `del`. This keeps one `AddressBookParser` case per command word, and a new subcommand only needs a new case in the dispatcher. The subcommand parsers use `StrictArgumentTokenizer`, which rejects unknown and repeated prefixes, unlike AB3's `ArgumentTokenizer`. Parsers that need today's date (for `MM-DD` due dates and for upcoming homework) get it from a `java.time.Clock` passed down from `AddressBookParser`, so tests use a fixed clock.
+**Parsing.** `AddressBookParser` passes everything after `homework` or `hw` to `HomeworkCommandParser`. It reads the next word as the subcommand and passes the rest to that subcommand's parser: for `hw del 1 2`, `HomeworkDeleteCommandParser` gets `1 2`. So `AddressBookParser` needs only one case for all homework commands, and a new subcommand only needs a new case in `HomeworkCommandParser`. The subcommand parsers split their arguments with `StrictArgumentTokenizer` (see [Splitting arguments at prefixes](#splitting-arguments-at-prefixes)), which rejects unknown and repeated prefixes. Parsers that need today's date get it from a `java.time.Clock` passed down from `AddressBookParser`, so tests can fix the date.
 
-**Model.** `Student` is immutable and holds its `Homework` records in insertion order. To add, edit, score or delete homework, a command copies the student's homework list, changes the copy, and calls `Model#setStudent(target, target.withHomeworks(updatedList))`, which replaces the student at the same position in the roster and refreshes the student card.
+**How homework is stored.** Each `Student` keeps its own homework records in a list, in the order they were added. The class diagram below shows the fields of a `Homework` and the methods that commands use to change homework. `Title`, `DueDate` and `Score` are small classes that each check their own value, and `TuitionSubject` and `HomeworkStatus` are enums. A record has at most one score.
 
-The class diagram below shows how homework is stored. Each `Student` owns its `Homework` records in a list, and each record has a title, a subject, a due date, a completion status and at most one score:
+<img src="images/HomeworkClassDiagram.png" width="620" alt="A student's ordered homework list, the fields of a homework record and the methods that change homework" />
 
-<img src="images/HomeworkClassDiagram.png" width="700" alt="A student owns an ordered list of homework records" />
+`Student` and `Homework` are immutable, so a command never changes a record in place. To add, edit, score or delete homework, it copies the student's homework list, changes the copy, and calls `Model#setStudent(student, student.withHomeworks(updatedList))`. This puts the new `Student` where the old one was in the roster, and the student card shows the change.
 
-For how a homework command runs through the `Logic` component, see the `hw del 1 2` sequence diagram in [Logic component](#logic-component).
+**Homework index.** The `HOMEWORK_INDEX` a tutor types is the record's position in the student's list, counting from 1. It is not stored, and it changes only when an earlier record of the student is deleted (see [Deleting homework](#deleting-homework)). `add`, `list`, `edit`, `marks` and `delete` look up the student (and, for `edit`, `marks` and `delete`, the record) through `HomeworkCommandUtil`, so they check the indices in the same order and give the same errors.
 
-**Adding.** The activity diagram below shows the checks that `homework add` makes, in order, and which class makes each. A failed check reports its error and leaves the data unchanged.
-
-<img src="images/HomeworkAddActivityDiagram.png" width="900" alt="Checks and steps of homework add, by class" />
-
-**Homework index.** The homework index is the one-based position in the student's homework list (insertion order). It is not stored and changes only when earlier homework is deleted. `homework list` sorts the homework by due date but prints each record with its insertion-order number, so every number shown is a valid `HOMEWORK_INDEX` for the other homework commands. `add`, `list`, `edit`, `marks` and `delete` look up the student (and, for `edit`, `marks` and `delete`, the homework) through `HomeworkCommandUtil`, so they check the indices in the same order and report the same errors.
-
-The object diagram below shows this for `hw del 2 1` with the sample students. Deleting Priya Nair's first homework makes her other two records homework 1 and 2. As `Student` is immutable, a new `Student` object replaces the old one, while the remaining `Homework` objects are the same objects.
-
-<img src="images/HomeworkIndexObjectDiagram.png" width="750" alt="Homework indices before and after deleting a student's first homework" />
-
-**Deleting.** `homework delete` renumbers the homework after the deleted record, so a second delete typed from a list shown before the first one would remove the wrong record. Its result therefore shows the deleted record in the `homework list` line layout (`HomeworkListCommand#formatHomeworkLine`), with the number it had, its score and its status, followed by `HomeworkListCommand#formatHomeworkList` of the updated student, the same upcoming list that `homework edit` shows. `HomeworkDeleteCommand` takes `today` from its parser's `Clock` for that list. `homework add`, `homework edit` and `homework marks` keep their own record layouts.
-
-**Title.** The `Title` constructor converts the input to Unicode NFC (`java.text.Normalizer`), replaces each run of whitespace with one space and strips it, then checks that the title has 1 to 100 characters and that every character is a letter, number, punctuation, symbol or space. NFC stores text that looks the same in one way (e.g. `é` typed as one character or as `e` plus an accent), so the duplicate checks of `homework add`, `homework edit` and `JsonAdaptedStudent` (`Homework#isSameHomework`, which ignores case) treat such titles as one title.
-
-The character rule is an allowlist, like the one in `StudentName`. It rejects invisible characters such as the zero-width space anywhere in the title, so a title made only of them is rejected (Issue #139) and `Alge<zero-width space>bra drill` cannot be a different title from `Algebra drill`. As a result, emoji that contain invisible characters (e.g. ❤️ and 👨‍👩‍👧) and letters written with a combining mark that has no composed form (e.g. many Tamil and Hindi letters) are rejected, as in student names, while single emoji such as 😀 are accepted. A data file with a title that breaks the rule does not load.
-
-Alternatives considered:
-
-* NFKC instead of NFC: rejected, as it changes visible characters, e.g. `²` to `2`.
-* A denylist of invisible characters (the previous design): rejected, as it needed several lists of special characters and still accepted invisible characters inside a title.
-* Printable ASCII only: rejected, as accented titles such as `Café` would be rejected, titles would be stricter than student names, and data files with such titles would no longer load.
-
-**Score.** A `Score` is either `MARKS` (e.g. `17`) or `MARKS_OBTAINED/TOTAL_MARKS` (e.g. `5/10`). It is kept as given (`5/10` is not simplified) and stored in the data file as this text, e.g. `"17"` or `"5/10"`. `Score#parse` checks the format first: a number with leading zeroes (e.g. `05/10`) is reported with `Score#MESSAGE_LEADING_ZEROES` before the size and range of the numbers are checked, so `02147483648` and `011/10` get the leading-zero message too, while input wrong in another way as well (e.g. `-05`) gets `Score#MESSAGE_CONSTRAINTS`.
-
-**Recording marks.** The sequence diagram below shows `hw m 2 1 score/8/10`, which records the score `8/10` for the first homework of student 2. Parsing works as for `hw del 1 2` and is shown as a reference frame.
-
-<img src="images/HomeworkMarksSequenceDiagram.png" width="900" alt="Recording homework marks" />
-
-**Due date.** `DueDate#parse` accepts `YYYY-MM-DD` or `MM-DD`. For `MM-DD`, the year is this year, or next year if the date has already passed this year; `02-29` is rejected, with a hint to enter the full date, when no 29 February falls within the next 12 months. Its error message says what is wrong: an empty date, input in neither format, a year outside 2000 to 2099, or a date that does not exist (e.g. `2026-02-30 is not a real calendar date.`). `homework add`, `homework edit` and `homework filter` pass these messages on unchanged. `DueDate#parseFullDate`, used for the data file, accepts only `YYYY-MM-DD`, so a saved year is never inferred.
-
-The year range is fixed (2000 to 2099) so that typo years such as `2206` or `0001` are caught. A range relative to today (e.g. 10 years either way) was rejected: a data file that loads today would stop loading some years later.
-
-**Saving.** Homework is saved as part of each student (see [Storage component](#storage-component)). `homework list`, `homework upcoming` and `homework filter` do not change the stored data, so `LogicManager` never writes the data file after them (see [Saving after a command](#saving-after-a-command)).
-
-**Upcoming homework.** `homework upcoming` searches the whole roster, not the displayed list, and starts each line with `Student N:`, where `N` is the student's `STUDENT_INDEX`. Two students may have the same name, and the index tells them apart in a form the tutor can type into `homework list`. After building the result, it resets the displayed list to the full roster, as `list` does, so `N` matches the student list even after a `search`. If an internal error stops the command, the displayed list stays as it was.
+**Saving.** Homework is saved inside each student in the data file (see [Storage component](#storage-component)). `homework list`, `homework upcoming` and `homework filter` only read data, so the data file is not written after them (see [Saving after a command](#saving-after-a-command)).
 
 #### Design considerations:
 
@@ -547,37 +523,101 @@ The year range is fixed (2000 to 2099) so that typo years such as `2206` or `000
 
 * **Alternative 2:** One homework list in the model, with each record referring to its student.
   * Pros: Easy to show all homework across students.
-  * Cons: Homework must be kept consistent when a student is edited or deleted, and per-student indices must be computed.
+  * Cons: Homework must be kept consistent when a student is edited or deleted, and each student's homework indices must be worked out.
 
-### Adding regular lessons
+### Adding homework
 
-`lesson add STUDENT_INDEX s/SUBJECT d/DAY st/START_TIME et/END_TIME` is routed by `LessonCommandParser` to `LessonAddCommandParser`. The parser reuses `StrictArgumentTokenizer` and strict student-index parsing. It names missing prefixes and reports the supported integer range for an overflowing positive index. `RegularLesson` stores a subject, `DayOfWeek`, and two minute-precision `LocalTime` values, with end strictly after start. Full weekday names and non-overnight times follow the team specification; supporting abbreviated days or midnight endpoints would be a separate enhancement.
+`homework add STUDENT_INDEX t/TITLE s/SUBJECT due/DATE` adds a record to the end of the student's list, so it gets the next homework index. The activity diagram below shows its checks in order. `HomeworkAddCommandParser` checks the input, `HomeworkAddCommand` checks the student, the subject and duplicates, and `LogicManager` saves. If a check fails, the error is shown and nothing is changed.
 
-`LessonAddCommand` checks the selected student's subjects and duplicate lessons before checking overlaps across the entire roster. Overlap uses `start < other.end && end > other.start` on the same weekday, allowing adjacent lessons. The command replaces the selected immutable `Student` using `withLessons`, preserving homework and roster order. Homework updates using `withHomeworks` likewise preserve lessons.
+<img src="images/HomeworkAddActivityDiagram.png" width="800" alt="The checks of homework add, in order" />
 
-Lesson listing, add/edit/delete feedback and clash messages include the owner's name and student phone through `Messages#formatLessonOwner`, distinguishing students with identical names. The global weekly lesson index remains independent of the current student view. `LessonOwnerIntegrationTest` covers same-name owners, hidden-owner clash reports, mutation feedback, correct deletion and persistence.
+Two records are the same (`Homework#isSameHomework`) if they have the same title ignoring case, the same subject and the same due date. Score and status do not count. For example, on 2026-10-28 with the sample students:
 
-`JsonAdaptedLesson` stores the four lesson fields inside each student's `lessons` array. A missing array is read as empty so existing data files remain compatible. Loading rejects invalid lesson fields, subject mismatches, duplicates and overlapping schedules. The existing `LogicManager` change detection and save rollback apply to lessons because `Student.equals` includes its lessons. The command supplies the lesson-specific save-failure message.
+```
+hw add 2 t/Rates of reaction s/CHEMISTRY due/11-20         → added, due 2026-11-20
+hw add 2 t/rates of REACTION s/CHEMISTRY due/2026-11-20    → This homework already exists for the selected student.
+```
 
-`LessonListCommand` and `LessonDeleteCommand` use `LessonSchedule` to flatten lessons into the same weekday, start-time and student-name order. Therefore, the one-based index accepted by `lesson delete` always identifies the corresponding row from `lesson list`. Deletion replaces only that lesson's owner through `Student.withLessons()`, without changing the storage format.
+**Title.** `Title` tidies the text before checking it. It converts the text to Unicode NFC, turns each run of whitespace into one space and trims both ends. NFC stores characters that look the same in one way: `é` can be typed as one character or as `e` plus an accent, and NFC makes both the same. So the duplicate check treats them as one title, and the title is saved in NFC. The title must then have 1 to 100 characters, each a letter, number, punctuation mark, symbol or space.
 
-`lesson list STUDENT_INDEX` resolves an owner from the displayed student view, then selects that owner's entries from the complete weekly schedule. It retains global lesson numbers, including gaps, so subsequent edits/deletions address the same records. `Locale.ROOT` keeps those numbers parseable in every locale. The command preserves the view and performs no save. `StudentLessonListIntegrationTest` checks hidden and same-name owners, global numbering, Arabic-locale output, empty schedules, invalid displayed indices, unchanged file bytes and zero save calls.
+This allowlist works like the one in `StudentName`. It rejects invisible characters such as the zero-width space wherever they are. So a title made only of them is rejected (Issue #139), and `Alge<zero-width space>bra drill` is rejected instead of being saved next to `Algebra drill` as a different title. As a result, emoji built with invisible joining characters (e.g. ❤️ and 👨‍👩‍👧) and letters that need a separate combining mark (e.g. many Tamil and Hindi letters) are rejected, as in student names. Single emoji such as 😀 are accepted. A data file with a title that breaks the rule does not load.
 
-See [Adding a regular lesson](#adding-a-regular-lesson) for a complete reproducible setup and persistence/error checks. The sample-data example uses Tuesday so it does not clash with Ethan's existing Monday lesson.
+Alternatives considered:
 
-### Editing regular lessons
+* NFKC instead of NFC: rejected, as it changes visible characters, e.g. `²` to `2`.
+* A denylist of invisible characters (the previous design): rejected, as it needed several lists of special characters and still accepted invisible characters inside a title.
+* Printable ASCII only: rejected, as accented titles such as `Café` would be rejected, titles would be stricter than student names, and data files with such titles would no longer load.
 
-`LessonCommandParser` routes `lesson edit LESSON_INDEX [s/SUBJECT] [d/DAY] [st/START_TIME] [et/END_TIME]` to `LessonEditCommandParser`. The shared tokenizer rejects unknown or repeated prefixes and handles quoted values. At least one field is required. An immutable `EditLessonDescriptor` holds only supplied fields; applying it to the original lesson constructs a complete `RegularLesson`, validating the proposed time interval even when only one endpoint changes.
+**Due date.** `DueDate#parse` accepts `YYYY-MM-DD` or the short form `MM-DD`. For `MM-DD`, it picks this year, or next year if the date has already passed this year. For example, on 2026-10-28, `11-20` means 2026-11-20 and `10-01` means 2027-10-01. `02-29` is rejected, with a hint to type the full date, when no 29 February falls in the next 12 months. The error says what is wrong: an empty date, input in neither format, a year outside 2000 to 2099, or a date that does not exist (e.g. `2026-02-30 is not a real calendar date.`). `homework add`, `homework edit` and `homework filter` show these messages unchanged. The data file is read with `DueDate#parseFullDate`, which accepts only `YYYY-MM-DD`, so the year of a saved date is never guessed.
 
-![Successful regular lesson edit](images/LessonEditSequenceDiagram.png)
+The year range is fixed (2000 to 2099) to catch typos such as `2206` or `0001`. A range based on today (e.g. 10 years either way) was rejected: a data file that loads today would stop loading a few years later.
 
-The diagram shows a successful edit, with parsing details and the snapshot copy abbreviated. `LogicManager` snapshots the data before executing the command. `LessonEditCommand` resolves the lesson through `LessonSchedule.from` over the full roster, matching `lesson list` and `lesson delete` numbering independently of student filtering and sorting. The owner and original lesson form an `Entry`. After subject, unchanged-value and duplicate checks, `LessonSchedule.findClashes` compares the candidate against the full weekly schedule while excluding only that owner/lesson pair. The half-open interval rule permits adjacent lessons. All conflicts are reported in weekly order; any validation failure leaves records untouched.
+### Listing a student's homework
 
-On success, the command replaces the original at its insertion position in a copied lesson list, then calls `Model.setStudent(owner, owner.withLessons(updated))`. The immutable replacement preserves homework and all student details. The weekly schedule may be reordered by the changed day/time, so later lesson operations should use a refreshed `lesson list`. `LogicManager` saves the changed data; on an `IOException` it restores its snapshot and uses `LessonEditCommand.MESSAGE_SAVE_FAILURE`. No JSON schema change is needed.
+`homework list STUDENT_INDEX [all]` shows one student's homework. Without `all`, it shows only the records due today or later; with `all`, it also shows overdue records. It sorts the records by due date, keeping records due on the same date in the order they were added, and shows each with its homework index. It only reads data, so nothing is saved.
 
-**Design choice:** Use the existing global lesson index, matching deletion, rather than adding a second student-local lesson numbering scheme. Partial edits reuse existing values, so a tutor can move a lesson by specifying only its weekday. Both `LessonAddCommand` and `LessonEditCommand` use `LessonSchedule.findClashes` over the full roster. The two-argument overload checks a new lesson; the three-argument overload excludes the original owner/lesson pair for an edit. It still checks the owner's other lessons and other students' lessons, regardless of subject or visibility in the student view.
+Because the numbers are homework indices, not row numbers, they can start above 1 or have gaps. For example, on 2026-10-28 Priya Nair's first record is overdue, so `hw ls 2` shows these records:
 
-**Validation:** `LessonEditIntegrationTest` exercises commands through `LogicManager` and real JSON storage. It checks one-minute overlaps, containment, changes to the weekday or subject, same-owner conflicts, hidden students, all-conflict reporting, adjacency, schedule renumbering and reloads. Rejected clashes leave model data, displayed student order and saved bytes unchanged and make no save calls. `LessonEditUiTest` smoke-tests the rendered main window's command box: a clash identifies the hidden student's lesson, retains the rejected input and current selection, and a corrected edit clears the error and persists successfully.
+```
+Listed 2 upcoming homework records for Priya Nair (1 record due before today not shown; use homework list 2 all to see it).
+Homework for Priya Nair:
+2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-02 - score Not recorded - status ASSIGNED
+3. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-09 - score Not recorded - status ASSIGNED
+```
+
+So that a gap does not look like a bug, the first line says how many records due before today are left out and names the command that lists them, with the `STUDENT_INDEX` the user typed. `homework edit` and `homework delete` show the same list, so they pass their own `STUDENT_INDEX` to `HomeworkListCommand#formatHomeworkList`.
+
+The activity diagram below shows these steps.
+
+<img src="images/HomeworkListActivityDiagram.png" width="600" alt="Which homework records homework list shows, and in which order" />
+
+### Listing upcoming homework
+
+`homework upcoming [due/DAYS]` lists the homework of every student that is due from today to `DAYS` days after today (7 days if `due/` is not given), sorted by due date. It goes through the whole roster, not only the students shown, and starts each line with `Student N:`, where `N` is the student's `STUDENT_INDEX`. The index tells apart two students with the same name, and the tutor can type it into `homework list`. For that, `N` must match the student list on screen, so after building the result the command shows the full roster again, as `list` does (e.g. after a `search`). If an internal error stops the command, the displayed list stays as it was.
+
+For example, on 2026-10-28 with the sample students, `hw up due/3` shows:
+
+```
+Found 2 homework records due from 2026-10-28 to 2026-10-31.
+Student 1: Ethan Lim; Kinematics practice set; PHYSICS; Due: 2026-10-28; Score: Not recorded; Status: ASSIGNED
+Student 3: Marcus Tan; Algebraic expansion worksheet; MATH; Due: 2026-10-30; Score: Not recorded; Status: ASSIGNED
+```
+
+The sequence diagram below shows how `hw up due/3` builds this result.
+
+<img src="images/HomeworkUpcomingSequenceDiagram.png" width="900" alt="Listing upcoming homework across the whole roster" />
+
+### Deleting homework
+
+`homework delete STUDENT_INDEX HOMEWORK_INDEX` removes one record, and every later record of the student moves up by one. So a second delete that uses the original index may remove the wrong record. For example, `hw ls 2 all` shows Priya Nair's three records:
+
+```
+1. Integration by parts exercise (MATH) - due 2026-10-26 - ...
+2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-02 - ...
+3. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-09 - ...
+```
+
+After `hw del 2 1`, the map is homework 1 and the past paper is homework 2. If the tutor then types `hw del 2 2` to delete the map, reading from the old list, the past paper is deleted instead.
+
+To make this easy to notice, the result shows the deleted record with the number it had, its score and its status, in the `homework list` layout (`HomeworkListCommand#formatHomeworkLine`). It then shows the student's upcoming homework with the new numbers (`HomeworkListCommand#formatHomeworkList`), as `homework edit` does. `HomeworkDeleteCommand` gets today's date for that list from its parser's `Clock`. `homework add`, `homework edit` and `homework marks` show the changed record in their own layouts.
+
+The object diagram below shows the same `hw del 2 1`. As `Student` is immutable, a new `Student` object replaces the old one, while the two remaining `Homework` objects are the same objects, now at positions 1 and 2.
+
+<img src="images/HomeworkIndexObjectDiagram.png" width="750" alt="Homework indices before and after deleting a student's first homework" />
+
+For how a homework command runs through the `Logic`, `Model` and `Storage` components, see the `hw del 1 2` sequence diagram in [Logic component](#logic-component).
+
+### Editing homework and recording marks
+
+`homework edit STUDENT_INDEX HOMEWORK_INDEX [t/TITLE] [s/SUBJECT] [due/DATE]` changes any of a record's title, subject and due date (`HomeworkEditCommand.EditHomeworkDescriptor#applyTo`). Fields that are not given keep their values, and the record keeps its homework index, score and status. Like `homework add`, it rejects a subject the student does not take and a record that would be the same as another of the student's records. It also rejects an edit that changes nothing: running `hw e 2 2 due/11-05` a second time gives `No changes made; the supplied values are identical to the existing homework details.`
+
+`homework marks STUDENT_INDEX HOMEWORK_INDEX score/[SCORE]` records a score, or clears it when `SCORE` is left empty. It does not change the status, so a record with a score can still be `ASSIGNED`.
+
+**Score.** A `Score` is either just the marks (e.g. `17`) or the marks out of a total (e.g. `5/10`). It is kept as typed (`5/10` is not simplified) and saved as text, e.g. `"17"` or `"5/10"`. `Score#parse` checks the format before the size of the numbers. So a number with leading zeroes, such as `05/10`, gets `Score#MESSAGE_LEADING_ZEROES`, even when it is also too large (`02147483648`) or more than the total (`011/10`). Input that is also wrong in another way, such as `-05`, gets `Score#MESSAGE_CONSTRAINTS`.
+
+The sequence diagram below shows `hw m 2 1 score/8/10`, which records 8 out of 10 for Priya Nair's first homework.
+
+<img src="images/HomeworkMarksSequenceDiagram.png" width="900" alt="Recording homework marks" />
 
 ### Filtering homework
 
@@ -612,21 +652,51 @@ are described in the notes and do not reach `setStudent`.
 
 Tests cover completion with and without scores, reopening, status preservation through details/marks edits, combined filtering, displayed indices after search/sort, invalid and unchanged requests, legacy loading, round-trip persistence, and rollback after a failed save. The class diagram deliberately omits unrelated student and homework value classes.
 
+### Adding regular lessons
+
+`lesson add STUDENT_INDEX s/SUBJECT d/DAY st/START_TIME et/END_TIME` is routed by `LessonCommandParser` to `LessonAddCommandParser`. The parser reuses `StrictArgumentTokenizer` and strict student-index parsing. It names missing prefixes and reports the supported integer range for an overflowing positive index. `RegularLesson` stores a subject, `DayOfWeek`, and two minute-precision `LocalTime` values, with end strictly after start. Full weekday names and non-overnight times follow the team specification; supporting abbreviated days or midnight endpoints would be a separate enhancement.
+
+`LessonAddCommand` checks the selected student's subjects and duplicate lessons before checking overlaps across the entire roster. Overlap uses `start < other.end && end > other.start` on the same weekday, allowing adjacent lessons. The command replaces the selected immutable `Student` using `withLessons`, preserving homework and roster order. Homework updates using `withHomeworks` likewise preserve lessons.
+
+Lesson listing, add/edit/delete feedback and clash messages include the owner's name and student phone through `Messages#formatLessonOwner`, distinguishing students with identical names. The global weekly lesson index remains independent of the current student view. `LessonOwnerIntegrationTest` covers same-name owners, hidden-owner clash reports, mutation feedback, correct deletion and persistence.
+
+`JsonAdaptedLesson` stores the four lesson fields inside each student's `lessons` array. A missing array is read as empty so existing data files remain compatible. Loading rejects invalid lesson fields, subject mismatches, duplicates and overlapping schedules. The existing `LogicManager` change detection and save rollback apply to lessons because `Student.equals` includes its lessons. The command supplies the lesson-specific save-failure message.
+
+`LessonListCommand` and `LessonDeleteCommand` use `LessonSchedule` to flatten lessons into the same weekday, start-time and student-name order. Therefore, the one-based index accepted by `lesson delete` always identifies the corresponding row from `lesson list`. Deletion replaces only that lesson's owner through `Student.withLessons()`, without changing the storage format.
+
+`lesson list STUDENT_INDEX` resolves an owner from the displayed student view, then selects that owner's entries from the complete weekly schedule. It retains global lesson numbers, including gaps, so subsequent edits/deletions address the same records. `Locale.ROOT` keeps those numbers parseable in every locale. The command preserves the view and performs no save. `StudentLessonListIntegrationTest` checks hidden and same-name owners, global numbering, Arabic-locale output, empty schedules, invalid displayed indices, unchanged file bytes and zero save calls.
+
+See [Adding a regular lesson](#adding-a-regular-lesson) for a complete reproducible setup and persistence/error checks. The sample-data example uses Tuesday so it does not clash with Ethan's existing Monday lesson.
+
+### Editing regular lessons
+
+`LessonCommandParser` routes `lesson edit LESSON_INDEX [s/SUBJECT] [d/DAY] [st/START_TIME] [et/END_TIME]` to `LessonEditCommandParser`. The shared tokenizer rejects unknown or repeated prefixes and handles quoted values. At least one field is required. An immutable `EditLessonDescriptor` holds only supplied fields; applying it to the original lesson constructs a complete `RegularLesson`, validating the proposed time interval even when only one endpoint changes.
+
+![Successful regular lesson edit](images/LessonEditSequenceDiagram.png)
+
+The diagram shows a successful edit, with parsing details and the snapshot copy abbreviated. `LogicManager` snapshots the data before executing the command. `LessonEditCommand` resolves the lesson through `LessonSchedule.buildSchedule` over the full roster, matching `lesson list` and `lesson delete` numbering independently of student filtering and sorting. The owner and original lesson form an `Entry`. After subject, unchanged-value and duplicate checks, `LessonSchedule.findClashes` compares the candidate against the full weekly schedule while excluding only that owner/lesson pair. The half-open interval rule permits adjacent lessons. All conflicts are reported in weekly order; any validation failure leaves records untouched.
+
+On success, the command replaces the original at its insertion position in a copied lesson list, then calls `Model.setStudent(owner, owner.withLessons(updated))`. The immutable replacement preserves homework and all student details. The weekly schedule may be reordered by the changed day/time, so later lesson operations should use a refreshed `lesson list`. `LogicManager` saves the changed data; on an `IOException` it restores its snapshot and uses `LessonEditCommand.MESSAGE_SAVE_FAILURE`. No JSON schema change is needed.
+
+**Design choice:** Use the existing global lesson index, matching deletion, rather than adding a second student-local lesson numbering scheme. Partial edits reuse existing values, so a tutor can move a lesson by specifying only its weekday. Both `LessonAddCommand` and `LessonEditCommand` use `LessonSchedule.findClashes` over the full roster. The two-argument overload checks a new lesson; the three-argument overload excludes the original owner/lesson pair for an edit. It still checks the owner's other lessons and other students' lessons, regardless of subject or visibility in the student view.
+
+**Validation:** `LessonEditIntegrationTest` exercises commands through `LogicManager` and real JSON storage. It checks one-minute overlaps, containment, changes to the weekday or subject, same-owner conflicts, hidden students, all-conflict reporting, adjacency, schedule renumbering and reloads. Rejected clashes leave model data, displayed student order and saved bytes unchanged and make no save calls. `LessonEditUiTest` smoke-tests the rendered main window's command box: a clash identifies the hidden student's lesson, retains the rejected input and current selection, and a corrected edit clears the error and persists successfully.
+
 ### Saving after a command
 
-`LogicManager#execute` saves the data after each command that changes it, and restores the pre-command data and displayed student list if the data cannot be saved.
+`LogicManager#execute` saves the data after every command that changes it. If saving fails, it puts back the data and the displayed student list as they were before the command, so the app never shows a change that is not in the data file.
 
 `JsonAddressBookStorage` records the bytes of each successfully loaded or saved file, including whether it was missing. Before saving, it acquires a short-lived OS lock on a companion `.lock` file and compares the data file with that recorded version. The lock serializes the version check and atomic replacement across cooperating processes. A stale writer is rejected without replacing newer data; `LogicManager` restores the pre-command model and reports that the user must restart to load the latest file. A busy writer reports that the command can be retried. Reading data does not create or acquire a write lock, so read-only commands and loading from a read-only folder remain possible. The empty lock file stays beside the data file so every writer continues to lock the same file.
 
-The activity diagram below shows these steps for a command that does not throw an exception. If the command throws one, `LogicManager` passes it on without saving.
+The activity diagram below shows these steps for a command that succeeds. If the command throws an exception, `LogicManager` passes it on and saves nothing.
 
 <img src="images/SaveAfterCommandActivityDiagram.png" width="300" alt="Saving after a command, and restoring the data if saving fails" />
 
-1. Before executing the command, `LogicManager` copies the current data: `new AddressBook(model.getAddressBook())`. The copy is cheap because `Student` and `Homework` are immutable, so only the list is copied. It also records the displayed students in their current order (`Model#getStudentList()`) and the search or filter predicate that selects them (`Model#getFilteredStudentListPredicate()`).
-1. After the command succeeds, `LogicManager` compares the data with the copy. If they are equal, the command changed nothing (e.g. `homework list`, `homework upcoming`, `help`, `exit`, or `clear` with no students), and nothing is saved.
-1. Otherwise, `LogicManager` calls `Storage#saveAddressBook`. If this throws an `IOException`, `LogicManager#restoreModel` restores the copy with `Model#setAddressBook`, then the recorded predicate with `Model#updateFilteredStudentList` and the recorded order with `Model#setStudentListOrder`, and `LogicManager` throws a `CommandException`. For a `DataFileConflictException`, its message is the conflict's own message; otherwise it comes from `Command#getSaveFailureMessage(shownName, cause)` (see the next step). Restoring the data alone is not enough: `StudentDisplayList` keeps displayed positions, not students, across a replacement of the whole roster, so a failed `delete` after a `sort` would shift the students after the deleted one, a failed `clear` would lose the sort, and a failed `add` would keep showing every student instead of the earlier search or filter.
-1. `shownName` is the data file as the user knows it, e.g. `data/tutorflow.json`: relative to the app's home folder (see `AppHomeUtil` in [Storage component](#storage-component)), or the absolute path if the file is outside it. `cause` comes from `LogicManager#describeSaveFailure`, which checks the file system for common causes, such as `the file is read-only` or `the data folder is read-only`, and otherwise uses the exception's own text. It checks the file system rather than the exception, as the exception may be about another file, such as the `.lock` file next to the data file.
-1. `getSaveFailureMessage` fills the name and cause into the format from `Command#getSaveFailureFormat`. By default, that is `Messages#MESSAGE_SAVE_FAILURE`, e.g. `Could not save data/tutorflow.json: it is a folder, not a file. Nothing was changed.` The homework commands that change data (`HomeworkAddCommand`, `HomeworkEditCommand`, `HomeworkMarksCommand`, `HomeworkDeleteCommand`, `HomeworkStatusCommand`), `EditCommand`, `LessonAddCommand`, `LessonEditCommand` and `LessonDeleteCommand` override `getSaveFailureFormat` to return their own `MESSAGE_SAVE_FAILURE`, e.g. `The homework could not be added because TutorFlow could not save data/tutorflow.json: the data folder is read-only. No homework data was changed.` A new command that needs its own message only overrides `getSaveFailureFormat`, so the name and cause are always filled in the same way.
+1. Before the command runs, `LogicManager` copies the current data (`new AddressBook(model.getAddressBook())`). The copy is cheap: `Student` and `Homework` are immutable, so only the list is copied, not the students. It also records which students are shown, in their current order (`Model#getStudentList()`), and the search or filter that selects them (`Model#getFilteredStudentListPredicate()`).
+1. After the command succeeds, `LogicManager` compares the data with the copy. If they are equal, the command changed nothing (e.g. `homework list`, `homework upcoming`, `help`, `exit`, or `clear` with no students), so nothing is saved.
+1. Otherwise, `LogicManager` calls `Storage#saveAddressBook`. If this throws an `IOException`, `LogicManager#restoreModel` puts back the copy (`Model#setAddressBook`), the search or filter (`Model#updateFilteredStudentList`) and the display order (`Model#setStudentListOrder`). `LogicManager` then throws a `CommandException` with the save-failure message described in the next two steps, or, for a `DataFileConflictException`, with the conflict's own message. Restoring the data alone is not enough, because `StudentDisplayList` remembers display positions, not students, when the whole roster is replaced. Without the other two, a failed `delete` after a `sort` would shift the students below the deleted one, a failed `clear` would lose the sort, and a failed `add` would show every student instead of the earlier search result.
+1. The message names the data file and the likely cause, e.g. `Could not save data/tutorflow.json: it is a folder, not a file. Nothing was changed.` The file name (`shownName`) is the one the user knows: relative to the app's home folder (see `AppHomeUtil` in [Storage component](#storage-component)), or the absolute path if the file is outside it. The cause comes from `LogicManager#describeSaveFailure`, which checks the file system for common causes, such as `the file is read-only` or `the data folder is read-only`, and otherwise uses the exception's own text. It checks the file system and not the exception, as the exception may be about another file, such as the `.lock` file next to the data file.
+1. `Command#getSaveFailureMessage(shownName, cause)` fills the name and cause into the format from `Command#getSaveFailureFormat`, which is `Messages#MESSAGE_SAVE_FAILURE` by default. Commands that want their own wording override `getSaveFailureFormat` to return their own `MESSAGE_SAVE_FAILURE`: the homework commands that change data (`HomeworkAddCommand`, `HomeworkEditCommand`, `HomeworkMarksCommand`, `HomeworkDeleteCommand`, `HomeworkStatusCommand`), `DeleteCommand`, `EditCommand`, `LessonAddCommand`, `LessonEditCommand` and `LessonDeleteCommand`. For example, a failed `hw add` shows `The homework could not be added because TutorFlow could not save data/tutorflow.json: the data folder is read-only. No homework data was changed.` So a new command that needs its own message only overrides `getSaveFailureFormat`, and the name and cause are filled in the same way for every command.
 
 #### Design considerations:
 
@@ -744,10 +814,10 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
   * 3c2. Use case resumes at step 3.
 * 3d. The regular lesson already exists.
   * 3d1. TutorFlow informs the tutor that the lesson already exists.
-  * 3d2. Use case ends.
+  * 3d2. Use case resumes at step 3.
 * 3e. The lesson overlaps another regular lesson on the same weekday.
-  * 3e1. TutorFlow rejects the new lesson and identifies the conflicting lesson.
-  * 3e2. Use case ends.
+  * 3e1. TutorFlow rejects the new lesson and identifies every conflicting lesson in weekly order.
+  * 3e2. Use case resumes at step 3.
 * 4a. TutorFlow cannot save the updated data.
   * 4a1. TutorFlow leaves the lesson schedule unchanged.
   * 4a2. TutorFlow informs the tutor that no lesson data was changed, naming the data file and the likely cause.
@@ -866,6 +936,58 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
   * 2b1. Tutor requests to list the homework of the student with the displayed student index to find the record's homework index, as the displayed order is not the homework index (see UC03 and UC04).
   * 2b2. Use case ends.
 
+#### Use case: UC06 - Delete a student
+
+**MSS**
+
+1. Tutor requests to list students.
+2. TutorFlow displays the students with their displayed indices.
+3. Tutor requests to delete a student using the displayed index.
+4. TutorFlow deletes the student, including their homework and lessons, and confirms the deletion.
+5. Use case ends.
+
+**Extensions**
+
+* 2a. The student roster is empty.
+  * 2a1. TutorFlow informs the tutor that no students were found.
+  * 2a2. Use case ends.
+* 3a. The supplied index is invalid or does not identify a displayed student.
+  * 3a1. TutorFlow displays an error without changing the roster.
+  * 3a2. Use case resumes at step 3.
+* 4a. TutorFlow cannot save the updated data.
+  * 4a1. TutorFlow restores the student and their homework and lessons.
+  * 4a2. TutorFlow reports that no student data was changed and explains the save error.
+  * 4a3. Use case ends.
+
+#### Use case: UC07 - Edit a student
+
+**MSS**
+
+1. Tutor requests to list students.
+2. TutorFlow displays the students with their displayed indices.
+3. Tutor requests to edit one displayed student, supplying at least one replacement field.
+4. TutorFlow updates the profile and confirms the new details.
+5. Use case ends.
+
+**Extensions**
+
+* 3a. The index or replacement field is invalid, or no field is supplied.
+  * 3a1. TutorFlow displays an error without changing the profile.
+  * 3a2. Use case resumes at step 3.
+* 3b. The proposed name and phone duplicate another student.
+  * 3b1. TutorFlow identifies the existing student and leaves both profiles unchanged.
+  * 3b2. Use case ends.
+* 3c. A removed subject is still used by the student's homework or lessons.
+  * 3c1. TutorFlow rejects the edit and explains why.
+  * 3c2. Use case ends.
+* 3d. The supplied values are identical to the existing values.
+  * 3d1. TutorFlow reports that no changes were made.
+  * 3d2. Use case ends.
+* 4a. TutorFlow cannot save the updated data.
+  * 4a1. TutorFlow restores the original profile and its related records.
+  * 4a2. TutorFlow reports that no student data was changed and explains the save error.
+  * 4a3. Use case ends.
+
 ### Non-Functional Requirements
 
 1. TutorFlow should work on Windows, Linux, and macOS on a computer with Java `25` installed.
@@ -976,7 +1098,7 @@ testers are expected to do more *exploratory* testing.
 
 1. Deleting a student with related records
 
-   1. In a fresh test folder, add a student taking MATH. Use the index shown on their card to add a homework record and a regular lesson, then run `delete INDEX` using that student's index.<br>
+   1. In a fresh test folder with the six sample students, run `add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777`, `hw add 7 t/Algebra worksheet s/MATH due/2026-12-01`, `lesson add 7 s/MATH d/SUNDAY st/20:00 et/21:00`, then `delete 7`.<br>
       Expected: Only that student disappears; the remaining students retain their order and are renumbered. Restart the app and run `list`: the deleted student is still absent. Their homework and lesson are absent from `data/tutorflow.json`.
 
    1. Try `delete 0`, `delete 01`, and an index larger than the roster size.<br>
@@ -1053,6 +1175,26 @@ testers are expected to do more *exploratory* testing.
    1. Run `filter l/S4 s/PHYSICS` and narrow the student panel.<br>
       Expected: Both criteria remain readable, wrapping onto multiple lines when needed.
 
+1. To check meeting-day filtering, start in a fresh disposable folder with the six sample students.
+   1. Run `filter d/MONDAY`.<br>
+      Expected: Ethan Lim is displayed as student 1 with `Filtered: day MONDAY`; no data file is created.
+   1. Run `filter l/S3 s/MATH d/MONDAY`, then `filter s/PHYSICS d/MONDAY`.<br>
+      Expected: Both show Ethan Lim. The second matches his registered PHYSICS subject and his Monday MATH lesson.
+   1. Run `filter d/TUESDAY`, then `lesson edit 1 d/TUESDAY`.<br>
+      Expected: The empty view gains Ethan Lim after his Monday lesson moves to Tuesday. The day criterion stays
+      visible. Lesson indices are global even when their owner is hidden by the student filter.
+   1. Run `lesson delete 1`.<br>
+      Expected: Ethan's Tuesday lesson is removed; the displayed list becomes empty and retains
+      `Filtered: day TUESDAY`. The Saturday lesson still exists in the full roster.
+   1. Run `filter d/`, `filter d/MON`, and `filter d/MONDAY d/TUESDAY` separately.<br>
+      Expected: Empty, unsupported and repeated-criterion errors respectively; the previous view and data remain.
+   1. Run `filter l/S3 s/MATH d/WEDNESDAY` and narrow the student panel.<br>
+      Expected: All three criteria wrap without truncation. Run `list` to restore all six students and hide them.
+   1. To check rollback separately, start with fresh sample data and run `edit 1 l/S3 p/91234568` to create
+      the data file. Run `filter d/MONDAY`, make the data file read-only, then run `lesson edit 1 d/TUESDAY`.<br>
+      Expected: Saving fails; Ethan's original Monday lesson, the filtered view, the day label and saved bytes
+      remain unchanged. Restore the file's write permission afterwards.
+
 1. With enough matching students to scroll, select a student and scroll partway down the results.
    1. Run `filter`, `filter x/value`, `filter l/S4 l/S4`, `filter l/`, `filter s/`, `filter l/S6`,
       `filter l/Sec 4`, `filter s/BIOLOGY`, and `filter s/Math, Physics` separately.<br>
@@ -1072,7 +1214,7 @@ testers are expected to do more *exploratory* testing.
    1. Prerequisites: Start with the sample students (delete `data/tutorflow.json` first). Run `hw add 5 t/Old worksheet s/MATH due/2026-10-01`, which gives Daniel Wong (student 5) homework that is already overdue.
 
    1. Test case: `hw ls 5`<br>
-      Expected: `No upcoming homework found for Daniel Wong.` Daniel Wong's card shows `Upcoming homework: 0`.
+      Expected: `No upcoming homework found for Daniel Wong (1 record due before today not shown; use homework list 5 all to see it).` Daniel Wong's card shows `Upcoming homework: 0`.
 
    1. Test case: `hw ls 5 all`<br>
       Expected:
@@ -1241,12 +1383,12 @@ testers are expected to do more *exploratory* testing.
    1. Prerequisites: The 1st student has at least 2 homework records. Check with `homework list 1 all`, which also lists overdue homework.
 
    1. Test case: `homework delete 1 2`<br>
-      Expected: The 2nd homework of the 1st student is deleted. The result display shows `Deleted homework:` and the deleted homework in the `homework list` layout, e.g. `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score Not recorded - status ASSIGNED`, followed by the student's upcoming homework with its new numbers (or `No upcoming homework found for Ethan Lim.`). The student card shows the new number of upcoming homework. For example, with the sample students on 2026-10-27, the result is:
+      Expected: The 2nd homework of the 1st student is deleted. The result display shows `Deleted homework:` and the deleted homework in the `homework list` layout, e.g. `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score Not recorded - status ASSIGNED`, followed by the student's upcoming homework with its new numbers (or `No upcoming homework found for Ethan Lim (1 record due before today not shown; use homework list 1 all to see it).`). The student card shows the new number of upcoming homework. For example, with the sample students on 2026-10-27, the result is:
 
       ```
       Deleted homework:
       2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score Not recorded - status ASSIGNED
-      No upcoming homework found for Ethan Lim.
+      No upcoming homework found for Ethan Lim (1 record due before today not shown; use homework list 1 all to see it).
       ```
 
    1. Test case: `homework delete 1 0`<br>
@@ -1262,6 +1404,15 @@ testers are expected to do more *exploratory* testing.
       Expected: `New lesson added: Ethan Lim (91234567); MATH; TUESDAY; 16:00-18:00`. Student details and homework are unchanged. `lesson list 1` shows Ethan's Monday and Tuesday lessons with global lesson numbers 1 and 2; Priya's Saturday lesson is omitted.
    1. Repeat the addition, then try `lesson add 1 s/MATH d/MONDAY st/18:29 et/19:00`.<br>
       Expected: Duplicate and clash errors respectively; no new lesson or saved change.
+   1. Run `search Ethan`, then `lesson add 1 s/MATH d/SATURDAY st/15:30 et/16:00`.<br>
+      Expected: `This lesson clashes with an existing lesson: Priya Nair (82345671); CHEMISTRY; SATURDAY; 15:00-16:30`. Priya is hidden by the search but her lesson still occupies that time. Only Ethan remains displayed and neither the roster nor saved data changes. Run `list` to restore the sample roster before continuing.
+   1. Run each invalid command below:<br>
+      `lesson add 1 s/MATH d/Mon st/10:00 et/11:00`<br>
+      `lesson add 1 s/MATH d/WEDNESDAY st/25:00 et/11:00`<br>
+      `lesson add 1 s/MATH d/WEDNESDAY st/10:00 et/10:00`<br>
+      `lesson add 1 s/MATH d/WEDNESDAY st/11:00 et/10:00`<br>
+      `lesson add 1 s/CHEMISTRY d/WEDNESDAY st/10:00 et/11:00`<br>
+      Expected, in order: the full-weekday error beginning `Day must be one of: MONDAY`, `Start time must be a valid time in HH:mm 24-hour format.`, `End time must be later than start time.` for both equal and reversed endpoints, and `The selected student is not registered for this subject.`. No command adds a lesson or changes saved data.
    1. Run `lesson add 1 s/MATH st/16:00` and `lesson add 2147483648 s/MATH d/TUESDAY st/18:00 et/19:00`.<br>
       Expected: The first error names `d/, et/`; the second states that STUDENT_INDEX must be no greater than 2147483647. Neither changes data.
    1. Run `lesson add 1 s/MATH d/TUESDAY st/18:00 et/19:00`.<br>
@@ -1281,6 +1432,12 @@ testers are expected to do more *exploratory* testing.
 
    1. Test case: `lesson delete 0`<br>
       Expected: No lesson is deleted. The result display shows an error message.
+
+   1. Test case: `lesson delete 2147483648`<br>
+      Expected: No lesson is deleted. The result display shows `The lesson index provided is invalid.` rather than a syntax error.
+
+   1. On fresh sample data, run `search Ethan`, then `lesson list` and `lesson delete 2`.<br>
+      Expected: The full schedule still includes Priya Nair's lesson. Deletion removes it and reports `Deleted regular lesson:` followed by `Priya Nair (82345671); CHEMISTRY; SAT; 15:00-16:30`. The displayed student list remains filtered to Ethan.
 
    1. Other incorrect delete commands to try: `lesson delete`, `lesson delete 1 2`, `lesson delete x` (where x is
       larger than the number of displayed lessons)<br>

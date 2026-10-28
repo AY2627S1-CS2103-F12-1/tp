@@ -65,7 +65,7 @@ public class LessonEditCommand extends Command {
      */
     private CommandResult editLesson(Model model) throws CommandException {
         List<Student> students = model.getAddressBook().getStudentList();
-        List<LessonSchedule.Entry> schedule = LessonSchedule.from(students);
+        List<LessonSchedule.Entry> schedule = LessonSchedule.buildSchedule(students);
         if (schedule.isEmpty()) {
             throw new CommandException(MESSAGE_NO_LESSONS);
         }

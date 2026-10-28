@@ -122,7 +122,7 @@ public class HomeworkEditCommand extends Command {
             message += String.format(Locale.ROOT, HomeworkAddCommand.MESSAGE_INFERRED_YEAR,
                     editedHomework.getDueDate().getDate().getYear());
         }
-        return message + "\n" + HomeworkListCommand.formatHomeworkList(editedStudent, today, false);
+        return message + "\n" + HomeworkListCommand.formatHomeworkList(editedStudent, studentIndex, today, false);
     }
 
     /**

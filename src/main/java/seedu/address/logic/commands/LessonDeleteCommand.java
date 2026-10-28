@@ -58,7 +58,8 @@ public class LessonDeleteCommand extends Command {
      * Resolves the displayed index from the same sorted schedule used by {@link LessonListCommand}.
      */
     private CommandResult deleteSelectedLesson(Model model) throws CommandException {
-        List<LessonSchedule.Entry> orderedLessonSchedule = LessonSchedule.from(model.getAddressBook().getStudentList());
+        List<LessonSchedule.Entry> orderedLessonSchedule =
+                LessonSchedule.buildSchedule(model.getAddressBook().getStudentList());
         if (orderedLessonSchedule.isEmpty()) {
             throw new CommandException(MESSAGE_NO_LESSONS);
         }
@@ -74,7 +75,7 @@ public class LessonDeleteCommand extends Command {
 
         model.setStudent(lessonOwner, lessonOwner.withLessons(updatedLessons));
         return new CommandResult(String.format(MESSAGE_SUCCESS,
-                Messages.formatDeletedLesson(lessonOwner, selectedLesson)));
+                Messages.format(lessonOwner, selectedLesson)));
     }
 
     @Override
@@ -86,6 +87,11 @@ public class LessonDeleteCommand extends Command {
     public boolean equals(Object other) {
         return other == this || other instanceof LessonDeleteCommand command
                 && displayedLessonIndex.equals(command.displayedLessonIndex);
+    }
+
+    @Override
+    public int hashCode() {
+        return Integer.hashCode(displayedLessonIndex.getZeroBased());
     }
 
     @Override

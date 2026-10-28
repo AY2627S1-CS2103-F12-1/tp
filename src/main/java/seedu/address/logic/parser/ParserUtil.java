@@ -25,7 +25,15 @@ public class ParserUtil {
      *         larger than {@link Integer#MAX_VALUE}.
      */
     public static Index parseStrictIndex(String oneBasedIndex, String invalidSyntaxMessage) throws ParseException {
-        requireAllNonNull(oneBasedIndex, invalidSyntaxMessage);
+        return parseStrictIndex(oneBasedIndex, invalidSyntaxMessage, invalidSyntaxMessage);
+    }
+
+    /**
+     * Parses a strict index, using a separate error when a positive whole number exceeds the supported range.
+     */
+    public static Index parseStrictIndex(String oneBasedIndex, String invalidSyntaxMessage,
+            String outOfRangeMessage) throws ParseException {
+        requireAllNonNull(oneBasedIndex, invalidSyntaxMessage, outOfRangeMessage);
         String strippedIndex = oneBasedIndex.strip();
         if (!STRICT_INDEX_PATTERN.matcher(strippedIndex).matches()) {
             throw new ParseException(invalidSyntaxMessage);
@@ -33,7 +41,7 @@ public class ParserUtil {
         try {
             return Index.fromOneBased(Integer.parseInt(strippedIndex));
         } catch (NumberFormatException exception) {
-            throw new ParseException(invalidSyntaxMessage, exception);
+            throw new ParseException(outOfRangeMessage, exception);
         }
     }
 }

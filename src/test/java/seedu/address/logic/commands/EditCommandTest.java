@@ -77,8 +77,28 @@ public class EditCommandTest {
         Student second = new StudentBuilder().withName("Jane Tan").withPhone("92345678").build();
         ModelManager model = modelWith(first, second);
 
-        assertFailure("2 n/JOHN TAN p/91234567", model, EditCommand.MESSAGE_DUPLICATE);
+        assertFailure("2 n/JOHN TAN p/91234567", model,
+                String.format(EditCommand.MESSAGE_DUPLICATE, first.getName(), first.getPhone()));
+        assertFailure("2 n/JOHN TAN p/+6591234567", model,
+                String.format(EditCommand.MESSAGE_DUPLICATE, first.getName(), first.getPhone()));
         assertEquals(List.of(first, second), model.getStudentList());
+    }
+
+    @Test
+    public void execute_duplicateIdentityHiddenBySearch_isRejectedWithoutChangingViews() throws Exception {
+        Student first = new StudentBuilder().build();
+        Student second = new StudentBuilder().withName("Jane Tan").withPhone("92345678").build();
+        ModelManager model = modelWith(first, second);
+        List<Student> originalRoster = List.copyOf(model.getAddressBook().getStudentList());
+
+        new SearchCommand("Jane").execute(model);
+        assertEquals(List.of(second), model.getStudentList());
+
+        assertFailure("1 n/John Tan p/+6591234567", model,
+                String.format(EditCommand.MESSAGE_DUPLICATE, first.getName(), first.getPhone()));
+
+        assertEquals(originalRoster, model.getAddressBook().getStudentList());
+        assertEquals(List.of(second), model.getStudentList());
     }
 
     @Test
@@ -131,6 +151,18 @@ public class EditCommandTest {
     }
 
     @Test
+    public void execute_reorderingSubjects_updatesDisplayedOrder() throws Exception {
+        Student original = new StudentBuilder().withSubjects("MATH, PHYSICS").withHomeworks(ALGEBRA).build();
+        ModelManager model = modelWith(original);
+
+        execute("1 s/PHYSICS, MATH", model);
+
+        Student edited = model.getStudentList().get(0);
+        assertEquals("PHYSICS, MATH", edited.getSubjects().toString());
+        assertEquals(original.getHomeworks(), edited.getHomeworks());
+    }
+
+    @Test
     public void execute_removingUnusedSubject_succeeds() throws Exception {
         Student original = new StudentBuilder().withSubjects("MATH, PHYSICS")
                 .withHomeworks(ALGEBRA).withLessons(MONDAY_MATH).build();
@@ -166,6 +198,7 @@ public class EditCommandTest {
         EditCommand editFirst = parser.parse("1 n/Jane");
         assertTrue(editFirst.equals(editFirst));
         assertTrue(editFirst.equals(parser.parse("1 n/Jane")));
+        assertEquals(editFirst.hashCode(), parser.parse("1 n/Jane").hashCode());
         assertFalse(editFirst.equals(parser.parse("2 n/Jane")));
         assertFalse(editFirst.equals(parser.parse("1 n/Mary")));
         assertFalse(editFirst.equals(null));

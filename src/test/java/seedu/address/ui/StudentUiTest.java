@@ -75,6 +75,17 @@ public class StudentUiTest {
     }
 
     @Test
+    public void studentCard_longGuardianName_tooltipShowsFullName() throws Exception {
+        runOnFxThread(() -> {
+            Student student = new StudentBuilder().withGuardianName(LONG_NAME).build();
+            Parent card = (Parent) new StudentCard(student, 1, TODAY).getRoot();
+            Label guardianName = (Label) card.lookup("#guardianName");
+
+            assertEquals(LONG_NAME, guardianName.getTooltip().getText());
+        });
+    }
+
+    @Test
     public void studentCard_countsUpcomingHomeworkOnly() throws Exception {
         runOnFxThread(() -> {
             // ALGEBRA is overdue; MECHANICS and scored ATOMIC_STRUCTURE are due on or after TODAY.
@@ -224,36 +235,26 @@ public class StudentUiTest {
                             .withHomeworks(ALGEBRA).build());
             Parent panel = (Parent) new UpcomingPanel(students,
                     Clock.fixed(Instant.parse("2026-10-16T00:00:00Z"), ZoneOffset.UTC)).getRoot();
-            @SuppressWarnings("unchecked")
-            ListView<String> lessonListView = (ListView<String>) panel.lookup("#lessonListView");
-            @SuppressWarnings("unchecked")
-            ListView<String> homeworkListView = (ListView<String>) panel.lookup("#homeworkListView");
+            ListView<?> lessonListView = (ListView<?>) panel.lookup("#lessonListView");
+            ListView<?> homeworkListView = (ListView<?>) panel.lookup("#homeworkListView");
 
             assertEquals(List.of("MON 17:00 - 18:30\nAmy Lim (91234568) \u00b7 MATH",
-                    "TUE 19:00 - 20:30\nZoe Tan (91234567) \u00b7 PHYSICS"), lessonListView.getItems());
+                    "TUE 19:00 - 20:30\nZoe Tan (91234567) \u00b7 PHYSICS"), getEntryTexts(lessonListView));
             assertEquals(List.of("Complete algebra worksheet (overdue)\nAmy Lim (91234568)"
                     + " \u00b7 MATH \u00b7 Due 2026-10-15",
                     "Attempt mechanics questions 1-5\nZoe Tan (91234567) \u00b7 PHYSICS \u00b7 Due 2026-10-20"),
-                    homeworkListView.getItems());
+                    getEntryTexts(homeworkListView));
             assertEquals("2 lessons", labelText(panel, "lessonCount"));
             assertEquals("2 tasks", labelText(panel, "homeworkCount"));
 
-            ListCell<String> firstHomeworkCell = homeworkListView.getCellFactory().call(homeworkListView);
-            firstHomeworkCell.updateListView(homeworkListView);
-            firstHomeworkCell.updateIndex(0);
-            assertTrue(firstHomeworkCell.getGraphic().getStyleClass().contains("overdue-homework"));
-
-            ListCell<String> secondHomeworkCell = homeworkListView.getCellFactory().call(homeworkListView);
-            secondHomeworkCell.updateListView(homeworkListView);
-            secondHomeworkCell.updateIndex(1);
-            assertFalse(secondHomeworkCell.getGraphic().getStyleClass().contains("overdue-homework"));
+            assertHomeworkHighlightOnReuse(homeworkListView);
 
             students.set(0, students.get(0).withLessons(List.of()).withHomeworks(List.of()));
 
-            assertEquals(List.of("MON 17:00 - 18:30\nAmy Lim (91234568) \u00b7 MATH"), lessonListView.getItems());
+            assertEquals(List.of("MON 17:00 - 18:30\nAmy Lim (91234568) \u00b7 MATH"), getEntryTexts(lessonListView));
             assertEquals(List.of("Complete algebra worksheet (overdue)\nAmy Lim (91234568)"
                     + " \u00b7 MATH \u00b7 Due 2026-10-15"),
-                    homeworkListView.getItems());
+                    getEntryTexts(homeworkListView));
         });
     }
 
@@ -309,6 +310,26 @@ public class StudentUiTest {
 
             assertEquals(Path.of(".").resolve(dataFilePath).toString(), labelText(root, "saveLocationStatus"));
         });
+    }
+
+    private static List<String> getEntryTexts(ListView<?> listView) {
+        return listView.getItems().stream().map(Object::toString).toList();
+    }
+
+    private static <T> void assertHomeworkHighlightOnReuse(ListView<T> listView) {
+        ListCell<T> cell = listView.getCellFactory().call(listView);
+        cell.updateListView(listView);
+        cell.updateIndex(0);
+        assertTrue(cell.getGraphic().getStyleClass().contains("overdue-homework"));
+
+        cell.updateIndex(1);
+        assertFalse(cell.getGraphic().getStyleClass().contains("overdue-homework"));
+
+        cell.updateIndex(-1);
+        assertNull(cell.getGraphic());
+
+        cell.updateIndex(0);
+        assertTrue(cell.getGraphic().getStyleClass().contains("overdue-homework"));
     }
 
     private static String labelText(Parent root, String id) {

@@ -50,7 +50,9 @@ public class Messages {
                 + "; Due: " + homework.getDueDate();
     }
 
-    /** Returns the owner's name and phone, and the regular lesson's subject, weekday and time range. */
+    /**
+     * Returns the owner's name and phone, and the regular lesson's subject, weekday and time range.
+     */
     public static String format(Student student, RegularLesson lesson) {
         return formatLessonOwner(student)
                 + "; " + lesson.getSubject()
@@ -74,16 +76,6 @@ public class Messages {
     /** Returns the score of {@code homework}, or {@link #MESSAGE_SCORE_NOT_RECORDED} if it has none. */
     public static String formatScore(Homework homework) {
         return homework.getScore().map(Score::toString).orElse(MESSAGE_SCORE_NOT_RECORDED);
-    }
-
-    /**
-     * Returns the deleted lesson in the detailed deletion-result format.
-     */
-    public static String formatDeletedLesson(Student student, RegularLesson lesson) {
-        return formatLessonOwner(student)
-                + "; Subject: " + lesson.getSubject()
-                + "; Day: " + lesson.getDayOfWeek().name().substring(0, 3)
-                + "; Time: " + lesson.getStartTime() + "-" + lesson.getEndTime();
     }
 
 }

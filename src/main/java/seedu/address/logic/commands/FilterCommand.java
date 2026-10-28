@@ -12,11 +12,11 @@ import seedu.address.model.Model;
 import seedu.address.model.student.StudentFilterPredicate;
 
 /**
- * Displays every stored student matching the supplied academic level and subject criteria.
+ * Displays every stored student matching the supplied academic level, subject, and regular meeting day criteria.
  */
 public final class FilterCommand extends Command {
     public static final String COMMAND_WORD = "filter";
-    public static final String MESSAGE_USAGE = "filter [l/LEVEL] [s/SUBJECT]";
+    public static final String MESSAGE_USAGE = "filter [l/LEVEL] [s/SUBJECT] [d/DAY]";
     public static final String MESSAGE_SUCCESS_SINGULAR = "Found 1 student.";
     public static final String MESSAGE_SUCCESS = "Found %d students.";
     public static final String MESSAGE_NO_MATCHES = "No students match the selected filters";

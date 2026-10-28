@@ -4,6 +4,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -60,11 +61,12 @@ public final class TuitionSubjects {
 
     @Override
     public boolean equals(Object other) {
-        return other instanceof TuitionSubjects subjects && values.equals(subjects.values);
+        return other instanceof TuitionSubjects subjects
+                && List.copyOf(values).equals(List.copyOf(subjects.values));
     }
 
     @Override
     public int hashCode() {
-        return values.hashCode();
+        return List.copyOf(values).hashCode();
     }
 }

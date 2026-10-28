@@ -93,6 +93,9 @@ public class LogicManagerTest {
     private static final String ADD_STUDENT_COMMAND = "add n/John Tan l/S3 s/MATH p/91234567 gn/Mary Tan gp/98765432";
     /** Fixed clock at 2026-10-27, the day the sample students were alpha-tested. */
     private static final Clock SAMPLE_CLOCK = Clock.fixed(Instant.parse("2026-10-27T00:00:00Z"), ZoneOffset.UTC);
+    /** Fixed clock at 2026-10-28, the day the note about homework left out of the list was alpha-tested. */
+    private static final Clock HIDDEN_NOTE_CLOCK =
+            Clock.fixed(Instant.parse("2026-10-28T00:00:00Z"), ZoneOffset.UTC);
 
     @TempDir
     public Path temporaryFolder;
@@ -476,7 +479,9 @@ public class LogicManagerTest {
         assertEquals("Deleted homework:\n"
                 + formatHomeworkLine(2, "Organic reaction pathways map", "CHEMISTRY", "2026-11-02", "Not recorded",
                         "ASSIGNED")
-                + "\nListed 2 upcoming homework records for Priya Nair.\nHomework for Priya Nair:\n"
+                + "\nListed 2 upcoming homework records for Priya Nair"
+                + " (1 record due before today not shown; use homework list 2 all to see it).\n"
+                + "Homework for Priya Nair:\n"
                 + formatHomeworkLine(2, "Chemical equilibrium past paper", "CHEMISTRY", "2026-11-09", "Not recorded",
                         "ASSIGNED") + "\n"
                 + formatHomeworkLine(3, "Vectors revision", "MATH", "2026-11-20", "Not recorded", "ASSIGNED"),
@@ -487,6 +492,106 @@ public class LogicManagerTest {
         Student savedStudent = addressBookStorage.readAddressBook().orElseThrow().getStudentList().get(1);
         assertEquals(List.of("Integration by parts exercise", "Vectors revision"), savedStudent.getHomeworks()
                 .stream().map(homework -> homework.getTitle().toString()).toList());
+    }
+
+    @Test
+    public void execute_editEarlierSampleHomework_hintsHiddenRecord() throws Exception {
+        // Priya Nair's homework 1 is due 2026-10-26, so on 2026-10-28 the list after the edit starts at 2
+        setUpLogic(getSampleAddressBook(), addressBookStorage, HIDDEN_NOTE_CLOCK);
+
+        assertEquals("Edited homework:\n"
+                + "Priya Nair; Title: Research Organic pathways; Subject: MATH; Due: 2026-10-26\n"
+                + "Listed 2 upcoming homework records for Priya Nair"
+                + " (1 record due before today not shown; use homework list 2 all to see it).\n"
+                + "Homework for Priya Nair:\n"
+                + formatHomeworkLine(2, "Organic reaction pathways map", "CHEMISTRY", "2026-11-02", "Not recorded",
+                        "ASSIGNED") + "\n"
+                + formatHomeworkLine(3, "Chemical equilibrium past paper", "CHEMISTRY", "2026-11-09", "Not recorded",
+                        "ASSIGNED"),
+                logic.execute("hw e 2 1 t/Research Organic pathways").getFeedbackToUser());
+    }
+
+    @Test
+    public void execute_hiddenNoteAfterSearch_hintedCommandListsHiddenRecord() throws Exception {
+        // after the search Priya Nair is displayed student 1, so the hint names 1, not her roster position 2
+        setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
+        logic.execute("search Priya");
+        String hintedCommand = "homework list 1 all";
+
+        assertTrue(logic.execute("hw ls 1").getFeedbackToUser().startsWith("Listed 2 upcoming homework records for"
+                + " Priya Nair (1 record due before today not shown; use " + hintedCommand + " to see it).\n"));
+        assertTrue(logic.execute(hintedCommand).getFeedbackToUser().contains("\n"
+                + formatHomeworkLine(1, "Integration by parts exercise", "MATH", "2026-10-26", "Not recorded",
+                        "ASSIGNED")));
+    }
+
+    @Test
+    public void execute_hiddenNoteAfterFilterAndEdit_hintedCommandListsHiddenRecord() throws Exception {
+        // after the filter Priya Nair is displayed student 1, so the hint names 1, not her roster position 2
+        setUpLogic(getSampleAddressBook(), addressBookStorage, HIDDEN_NOTE_CLOCK);
+        logic.execute("filter s/CHEMISTRY");
+        String hintedCommand = "homework list 1 all";
+
+        assertTrue(logic.execute("hw e 1 2 t/Pathways map v2").getFeedbackToUser().startsWith("Edited homework:\n"
+                + "Priya Nair; Title: Pathways map v2; Subject: CHEMISTRY; Due: 2026-11-02\n"
+                + "Listed 2 upcoming homework records for Priya Nair (1 record due before today not shown; use "
+                + hintedCommand + " to see it).\n"));
+        assertTrue(logic.execute(hintedCommand).getFeedbackToUser().contains("\n"
+                + formatHomeworkLine(1, "Integration by parts exercise", "MATH", "2026-10-26", "Not recorded",
+                        "ASSIGNED")));
+    }
+
+    @Test
+    public void execute_hiddenNoteAfterSortAndDelete_hintedCommandListsHiddenRecord() throws Exception {
+        // after the sort Ethan Lim is displayed student 4, so the hint names 4, not his roster position 1
+        setUpLogic(getSampleAddressBook(), addressBookStorage, HIDDEN_NOTE_CLOCK);
+        logic.execute("sort by/level o/desc");
+        String hintedCommand = "homework list 4 all";
+
+        assertEquals("Deleted homework:\n"
+                + formatHomeworkLine(2, "Kinematics practice set", "PHYSICS", "2026-10-28", "Not recorded",
+                        "ASSIGNED")
+                + "\nNo upcoming homework found for Ethan Lim (1 record due before today not shown; use "
+                + hintedCommand + " to see it).",
+                logic.execute("hw del 4 2").getFeedbackToUser());
+        assertTrue(logic.execute(hintedCommand).getFeedbackToUser().contains("\n"
+                + formatHomeworkLine(1, "Quadratic equations worksheet", "MATH", "2026-10-23", "Not recorded",
+                        "ASSIGNED")));
+    }
+
+    @Test
+    public void execute_deleteOnlyEarlierSampleHomework_removesHiddenNote() throws Exception {
+        // Priya Nair's homework 1 (due 2026-10-26) is her only record due before today, so after deleting it
+        // none is hidden
+        setUpLogic(getSampleAddressBook(), addressBookStorage, HIDDEN_NOTE_CLOCK);
+
+        assertEquals("Deleted homework:\n"
+                + formatHomeworkLine(1, "Integration by parts exercise", "MATH", "2026-10-26", "Not recorded",
+                        "ASSIGNED")
+                + "\nListed 2 upcoming homework records for Priya Nair.\nHomework for Priya Nair:\n"
+                + formatHomeworkLine(1, "Organic reaction pathways map", "CHEMISTRY", "2026-11-02", "Not recorded",
+                        "ASSIGNED") + "\n"
+                + formatHomeworkLine(2, "Chemical equilibrium past paper", "CHEMISTRY", "2026-11-09", "Not recorded",
+                        "ASSIGNED"),
+                logic.execute("hw del 2 1").getFeedbackToUser());
+    }
+
+    @Test
+    public void execute_editEarlierSampleDueDateToFuture_removesHiddenNote() throws Exception {
+        // Priya Nair's homework 1 (due 2026-10-26) is her only record due before today until the edit moves it
+        // to December
+        setUpLogic(getSampleAddressBook(), addressBookStorage, HIDDEN_NOTE_CLOCK);
+
+        assertEquals("Edited homework:\n"
+                + "Priya Nair; Title: Integration by parts exercise; Subject: MATH; Due: 2026-12-01\n"
+                + "Listed 3 upcoming homework records for Priya Nair.\nHomework for Priya Nair:\n"
+                + formatHomeworkLine(2, "Organic reaction pathways map", "CHEMISTRY", "2026-11-02", "Not recorded",
+                        "ASSIGNED") + "\n"
+                + formatHomeworkLine(3, "Chemical equilibrium past paper", "CHEMISTRY", "2026-11-09", "Not recorded",
+                        "ASSIGNED") + "\n"
+                + formatHomeworkLine(1, "Integration by parts exercise", "MATH", "2026-12-01", "Not recorded",
+                        "ASSIGNED"),
+                logic.execute("hw e 2 1 due/2026-12-01").getFeedbackToUser());
     }
 
     @Test
@@ -591,8 +696,45 @@ public class LogicManagerTest {
                 initial.getStudentList().get(0).withLessons(List.of(MONDAY_MATH)));
         setUpLogic(initial, getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
 
-        assertCommandFailure("delete 1", CommandException.class, DUMMY_IO_ERROR_MESSAGE,
+        assertCommandFailure("delete 1", CommandException.class, getCommandSaveFailureMessage(
+                "student could not be deleted", SET_UP_DATA_FILE_NAME, DUMMY_IO_EXCEPTION, "student"),
                 new ModelManager(initial, new UserPrefs()));
+    }
+
+    @Test
+    public void execute_deleteStudentSaveFails_preservesSortedDisplayedOrder() throws Exception {
+        AddressBook initial = new AddressBook();
+        initial.addStudent(new StudentBuilder().withName("Secondary Student").withAcademicLevel("S3").build());
+        initial.addStudent(new StudentBuilder().withName("Junior Student").withPhone("92345678")
+                .withAcademicLevel("J1").build());
+        initial.addStudent(new StudentBuilder().withName("Primary Student").withPhone("93456789")
+                .withAcademicLevel("S1").build());
+        setUpLogic(initial, getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+        logic.execute("sort by/level");
+        List<Student> sortedStudents = List.copyOf(logic.getStudentList());
+        assertFalse(sortedStudents.equals(initial.getStudentList()));
+
+        String expectedMessage = getCommandSaveFailureMessage(
+                "student could not be deleted", SET_UP_DATA_FILE_NAME, DUMMY_IO_EXCEPTION, "student");
+        assertCommandException("delete 1", expectedMessage);
+
+        assertEquals(sortedStudents, logic.getStudentList());
+        assertEquals(initial, model.getAddressBook());
+    }
+
+    @Test
+    public void execute_addStudentSaveFailsWithFilteredView_restoresStoredRoster() throws Exception {
+        AddressBook initial = new AddressBook();
+        initial.addStudent(new StudentBuilder().build());
+        initial.addStudent(new StudentBuilder().withName("Jane Tan").withPhone("92345678").build());
+        setUpLogic(initial, getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+        logic.execute("search John");
+        assertEquals(1, logic.getStudentList().size());
+
+        assertCommandException("add n/Olivia Tan l/S2 s/MATH p/93456789 gn/May Tan gp/98765432",
+                DUMMY_IO_ERROR_MESSAGE);
+
+        assertEquals(initial, model.getAddressBook());
     }
 
     @Test
@@ -608,6 +750,18 @@ public class LogicManagerTest {
                 .withGuardianPhone("95554444").withHomeworks(ALGEBRA).withLessons(MONDAY_MATH).build();
         assertEquals(List.of(expected), logic.getStudentList());
         assertEquals(List.of(expected), addressBookStorage.readAddressBook().get().getStudentList());
+    }
+
+    @Test
+    public void execute_editStudentSubjectOrder_persistsNewOrder() throws Exception {
+        AddressBook initial = new AddressBook();
+        initial.addStudent(new StudentBuilder().withSubjects("MATH, PHYSICS").build());
+        setUpLogic(initial, addressBookStorage);
+
+        logic.execute("edit 1 s/PHYSICS, MATH");
+
+        Student saved = addressBookStorage.readAddressBook().orElseThrow().getStudentList().getFirst();
+        assertEquals("PHYSICS, MATH", saved.getSubjects().toString());
     }
 
     @Test
@@ -688,7 +842,8 @@ public class LogicManagerTest {
         setUpLogic(getSampleAddressBook(), new JsonAddressBookStorage(dataFile), SAMPLE_CLOCK);
         logic.execute("search Priya");
 
-        assertSaveFailureRestores("delete 1", getGeneralSaveFailureMessage(SHOWN_DATA_FILE_NAME, CAUSE_FOLDER));
+        assertSaveFailureRestores("delete 1", getCommandSaveFailureMessage(
+                "student could not be deleted", SHOWN_DATA_FILE_NAME, CAUSE_FOLDER, "student"));
         assertTrue(Files.isDirectory(dataFile));
     }
 
@@ -700,8 +855,8 @@ public class LogicManagerTest {
         makeFolderReadOnly(dataFolder);
         try {
             // the failure is on the internal lock file, which is never named
-            assertSaveFailureRestores("delete 1",
-                    getGeneralSaveFailureMessage(SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER));
+            assertSaveFailureRestores("delete 1", getCommandSaveFailureMessage(
+                    "student could not be deleted", SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER, "student"));
             assertEquals(List.of(), listFileNames(dataFolder));
         } finally {
             makeFolderWritable(dataFolder);
@@ -717,8 +872,8 @@ public class LogicManagerTest {
         makeFolderReadOnly(dataFile.getParent());
         try {
             logic.execute("sort by/level");
-            assertSaveFailureRestores("delete 1",
-                    getGeneralSaveFailureMessage(SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER));
+            assertSaveFailureRestores("delete 1", getCommandSaveFailureMessage(
+                    "student could not be deleted", SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER, "student"));
             assertArrayEquals(fileBefore, Files.readAllBytes(dataFile));
         } finally {
             makeFolderWritable(dataFile.getParent());
@@ -782,8 +937,8 @@ public class LogicManagerTest {
         setUpLogic(getSampleAddressBook(), new JsonAddressBookStorage(dataFile), SAMPLE_CLOCK,
                 Files.createDirectories(temporaryFolder.resolve("app")));
 
-        assertSaveFailureRestores("delete 1", getGeneralSaveFailureMessage(
-                dataFile.toAbsolutePath().normalize().toString(), CAUSE_FOLDER));
+        assertSaveFailureRestores("delete 1", getCommandSaveFailureMessage("student could not be deleted",
+                dataFile.toAbsolutePath().normalize().toString(), CAUSE_FOLDER, "student"));
     }
 
     @Test
@@ -847,7 +1002,8 @@ public class LogicManagerTest {
         logic.execute("sort by/level o/desc");
         List<Student> displayedBefore = List.copyOf(logic.getStudentList());
 
-        assertCommandException("delete 1", DUMMY_IO_ERROR_MESSAGE);
+        assertCommandException("delete 1", getCommandSaveFailureMessage(
+                "student could not be deleted", SET_UP_DATA_FILE_NAME, DUMMY_IO_EXCEPTION, "student"));
 
         assertEquals(displayedBefore, logic.getStudentList());
     }

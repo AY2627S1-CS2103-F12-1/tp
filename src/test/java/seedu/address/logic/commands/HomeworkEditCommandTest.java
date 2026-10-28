@@ -8,6 +8,7 @@ import static seedu.address.logic.commands.CommandTestUtil.CAUSE_READ_ONLY_FOLDE
 import static seedu.address.logic.commands.CommandTestUtil.SHOWN_DATA_FILE_NAME;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
+import static seedu.address.model.util.SampleDataUtil.getSampleStudents;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TestUtil.ARABIC_EGYPT;
 import static seedu.address.testutil.TestUtil.runWithFormatLocale;
@@ -34,6 +35,7 @@ import seedu.address.model.Model;
 import seedu.address.model.homework.DueDate;
 import seedu.address.model.homework.Homework;
 import seedu.address.model.homework.Title;
+import seedu.address.model.student.Student;
 import seedu.address.model.student.TuitionSubject;
 import seedu.address.testutil.HomeworkBuilder;
 
@@ -170,11 +172,12 @@ public class HomeworkEditCommandTest {
 
     @Test
     public void execute_overdueHomework_listsUpcomingHomeworkOnly() {
-        // on 2026-10-16 ALGEBRA (due 2026-10-15) is overdue, so the list after the edit leaves it out
+        // on 2026-10-16 ALGEBRA (due 2026-10-15) is overdue, so the list after the edit leaves it out and says so
         Homework editedAlgebra = new HomeworkBuilder(ALGEBRA).withTitle("Complete algebra questions 1-10").build();
         String expectedMessage = "Edited homework:\n"
                 + "Alice Tan; Title: Complete algebra questions 1-10; Subject: MATH; Due: 2026-10-15\n"
-                + "Listed 2 upcoming homework records for Alice Tan.\n"
+                + "Listed 2 upcoming homework records for Alice Tan"
+                + " (1 record due before today not shown; use homework list 1 all to see it).\n"
                 + "Homework for Alice Tan:\n"
                 + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20 - status ASSIGNED\n"
                 + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded"
@@ -187,13 +190,41 @@ public class HomeworkEditCommandTest {
     }
 
     @Test
+    public void execute_earlierSampleHomework_hintsHiddenRecord() {
+        // hw e 2 1 t/Research Organic pathways on 2026-10-28: Priya Nair's homework 1 (due 2026-10-26) is left
+        // out, so the list starts at 2 and the header says why
+        Student priya = getSampleStudents()[1];
+        List<Homework> homeworks = priya.getHomeworks();
+        Homework editedHomework = new HomeworkBuilder(homeworks.get(0)).withTitle("Research Organic pathways").build();
+        Model sampleModel = getModelWithStudents(List.of(getSampleStudents()));
+        Model expectedModel = getModelWithStudents(List.of(getSampleStudents()));
+        expectedModel.setStudent(priya, priya.withHomeworks(List.of(editedHomework, homeworks.get(1),
+                homeworks.get(2))));
+        String expectedMessage = "Edited homework:\n"
+                + "Priya Nair; Title: Research Organic pathways; Subject: MATH; Due: 2026-10-26\n"
+                + "Listed 2 upcoming homework records for Priya Nair"
+                + " (1 record due before today not shown; use homework list 2 all to see it).\n"
+                + "Homework for Priya Nair:\n"
+                + "2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-02 - score Not recorded"
+                + " - status ASSIGNED\n"
+                + "3. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-09 - score Not recorded"
+                + " - status ASSIGNED";
+        EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(new Title("Research Organic pathways"),
+                null, null);
+
+        assertCommandSuccess(new HomeworkEditCommand(SECOND, FIRST, descriptor, false, LocalDate.of(2026, 10, 28)),
+                sampleModel, expectedMessage, expectedModel);
+    }
+
+    @Test
     public void execute_dueDateMovedToPast_showsNoUpcomingHomework() {
         EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(null, null,
                 DueDate.parseFullDate("2026-10-01"));
         Homework editedMechanics = new HomeworkBuilder(MECHANICS).withDueDate("2026-10-01").build();
         String expectedMessage = "Edited homework:\n"
                 + "Carl Ng; Title: Attempt mechanics questions 1-5; Subject: PHYSICS; Due: 2026-10-01\n"
-                + "No upcoming homework found for Carl Ng.";
+                + "No upcoming homework found for Carl Ng"
+                + " (1 record due before today not shown; use homework list 3 all to see it).";
         Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON,
                 CARL.withHomeworks(List.of(editedMechanics))));
 

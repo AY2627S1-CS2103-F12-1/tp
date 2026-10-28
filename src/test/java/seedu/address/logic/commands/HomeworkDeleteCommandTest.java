@@ -105,7 +105,9 @@ public class HomeworkDeleteCommandTest {
         // on 2026-10-16 the algebra homework (due 2026-10-15) is overdue, so it is not listed
         String expectedMessage = "Deleted homework:\n"
                 + formatHomeworkLine(2, MECHANICS_TITLE, "PHYSICS", "2026-10-20", "Not recorded", "ASSIGNED")
-                + "\nListed 1 upcoming homework record for Alice Tan.\nHomework for Alice Tan:\n"
+                + "\nListed 1 upcoming homework record for Alice Tan"
+                + " (1 record due before today not shown; use homework list 1 all to see it).\n"
+                + "Homework for Alice Tan:\n"
                 + formatHomeworkLine(2, ATOMIC_STRUCTURE_TITLE, "CHEMISTRY", "2026-10-18", "17/20", "ASSIGNED");
         Model expectedModel = getModelWithStudents(List.of(
                 ALICE.withHomeworks(List.of(ALGEBRA, ATOMIC_STRUCTURE)), BENSON, CARL));
@@ -118,7 +120,8 @@ public class HomeworkDeleteCommandTest {
     public void execute_onlyOverdueHomeworkLeft_showsNoUpcomingHomework() {
         String expectedMessage = "Deleted homework:\n"
                 + formatHomeworkLine(3, ATOMIC_STRUCTURE_TITLE, "CHEMISTRY", "2026-10-18", "17/20", "ASSIGNED")
-                + "\nNo upcoming homework found for Alice Tan.";
+                + "\nNo upcoming homework found for Alice Tan"
+                + " (2 records due before today not shown; use homework list 1 all to see them).";
         Model expectedModel = getModelWithStudents(List.of(
                 ALICE.withHomeworks(List.of(ALGEBRA, MECHANICS)), BENSON, CARL));
 

@@ -65,8 +65,9 @@ public class HomeworkListCommandTest {
 
     @Test
     public void execute_someOverdue_listsHomeworkDueTodayOrLater() {
-        // homework 1 is overdue, homework 3 is due today
-        String expectedMessage = "Listed 2 upcoming homework records for Alice Tan.\n"
+        // homework 1 is overdue, homework 3 is due today; the header says homework 1 is hidden
+        String expectedMessage = "Listed 2 upcoming homework records for Alice Tan"
+                + " (1 record due before today not shown; use homework list 1 all to see it).\n"
                 + "Homework for Alice Tan:\n"
                 + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20 - status ASSIGNED\n"
                 + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded"
@@ -78,7 +79,9 @@ public class HomeworkListCommandTest {
 
     @Test
     public void execute_oneUpcoming_listsSingleRecord() {
-        String expectedMessage = "Listed 1 upcoming homework record for Alice Tan.\n"
+        // homework 1 and 3 are due before today
+        String expectedMessage = "Listed 1 upcoming homework record for Alice Tan"
+                + " (2 records due before today not shown; use homework list 1 all to see them).\n"
                 + "Homework for Alice Tan:\n"
                 + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded"
                 + " - status ASSIGNED";
@@ -90,7 +93,36 @@ public class HomeworkListCommandTest {
     @Test
     public void execute_allOverdue_showsNoUpcomingHomework() {
         assertCommandSuccess(new HomeworkListCommand(FIRST, AFTER_ALL_DUE_DATES, false), model,
-                "No upcoming homework found for Alice Tan.", expectedModel);
+                "No upcoming homework found for Alice Tan"
+                + " (3 records due before today not shown; use homework list 1 all to see them).", expectedModel);
+    }
+
+    @Test
+    public void execute_onlyRecordHidden_showsNoUpcomingHomeworkWithSingularHint() {
+        assertCommandSuccess(new HomeworkListCommand(Index.fromOneBased(3), AFTER_ALL_DUE_DATES, false), model,
+                "No upcoming homework found for Carl Ng"
+                + " (1 record due before today not shown; use homework list 3 all to see it).", expectedModel);
+    }
+
+    @Test
+    public void execute_earlierHiddenInFilteredList_hintsDisplayedIndex() {
+        // CARL is third in the roster but first in the displayed list
+        model.updateFilteredStudentList(CARL::equals);
+
+        assertCommandSuccess(new HomeworkListCommand(FIRST, AFTER_ALL_DUE_DATES, false), model,
+                "No upcoming homework found for Carl Ng"
+                + " (1 record due before today not shown; use homework list 1 all to see it).", expectedModel);
+    }
+
+    @Test
+    public void execute_earlierHiddenArabicDigitsLocale_hintsAsciiIndex() {
+        HomeworkListCommand command = new HomeworkListCommand(Index.fromOneBased(3), AFTER_ALL_DUE_DATES, false);
+
+        runWithFormatLocale(ARABIC_EGYPT, () -> {
+            String feedback = assertDoesNotThrow(() -> command.execute(model)).getFeedbackToUser();
+            assertTrue(feedback.endsWith(" (1 record due before today not shown; use homework list 3 all to see it)."),
+                    feedback);
+        });
     }
 
     @Test

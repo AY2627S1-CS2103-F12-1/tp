@@ -476,7 +476,9 @@ public class LogicManagerTest {
         assertEquals("Deleted homework:\n"
                 + formatHomeworkLine(2, "Organic reaction pathways map", "CHEMISTRY", "2026-11-02", "Not recorded",
                         "ASSIGNED")
-                + "\nListed 2 upcoming homework records for Priya Nair.\nHomework for Priya Nair:\n"
+                + "\nListed 2 upcoming homework records for Priya Nair"
+                + " (1 record due before today not shown; use homework list 2 all to see it).\n"
+                + "Homework for Priya Nair:\n"
                 + formatHomeworkLine(2, "Chemical equilibrium past paper", "CHEMISTRY", "2026-11-09", "Not recorded",
                         "ASSIGNED") + "\n"
                 + formatHomeworkLine(3, "Vectors revision", "MATH", "2026-11-20", "Not recorded", "ASSIGNED"),
@@ -487,6 +489,38 @@ public class LogicManagerTest {
         Student savedStudent = addressBookStorage.readAddressBook().orElseThrow().getStudentList().get(1);
         assertEquals(List.of("Integration by parts exercise", "Vectors revision"), savedStudent.getHomeworks()
                 .stream().map(homework -> homework.getTitle().toString()).toList());
+    }
+
+    @Test
+    public void execute_editEarlierSampleHomework_hintsHiddenRecord() throws Exception {
+        // Priya Nair's homework 1 is due 2026-10-26, so on 2026-10-28 the list after the edit starts at 2
+        setUpLogic(getSampleAddressBook(), addressBookStorage,
+                Clock.fixed(Instant.parse("2026-10-28T00:00:00Z"), ZoneOffset.UTC));
+
+        assertEquals("Edited homework:\n"
+                + "Priya Nair; Title: Research Organic pathways; Subject: MATH; Due: 2026-10-26\n"
+                + "Listed 2 upcoming homework records for Priya Nair"
+                + " (1 record due before today not shown; use homework list 2 all to see it).\n"
+                + "Homework for Priya Nair:\n"
+                + formatHomeworkLine(2, "Organic reaction pathways map", "CHEMISTRY", "2026-11-02", "Not recorded",
+                        "ASSIGNED") + "\n"
+                + formatHomeworkLine(3, "Chemical equilibrium past paper", "CHEMISTRY", "2026-11-09", "Not recorded",
+                        "ASSIGNED"),
+                logic.execute("hw e 2 1 t/Research Organic pathways").getFeedbackToUser());
+    }
+
+    @Test
+    public void execute_hiddenNoteAfterSearch_hintedCommandListsHiddenRecord() throws Exception {
+        // after the search Priya Nair is displayed student 1, so the hint names 1, not her roster position 2
+        setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
+        logic.execute("search Priya");
+        String hintedCommand = "homework list 1 all";
+
+        assertTrue(logic.execute("hw ls 1").getFeedbackToUser().startsWith("Listed 2 upcoming homework records for"
+                + " Priya Nair (1 record due before today not shown; use " + hintedCommand + " to see it).\n"));
+        assertTrue(logic.execute(hintedCommand).getFeedbackToUser().contains("\n"
+                + formatHomeworkLine(1, "Integration by parts exercise", "MATH", "2026-10-26", "Not recorded",
+                        "ASSIGNED")));
     }
 
     @Test

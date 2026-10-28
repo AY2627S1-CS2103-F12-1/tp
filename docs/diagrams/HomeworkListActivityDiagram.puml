@@ -16,6 +16,12 @@ if () then ([student has homework])
     :Keep the records due
     today or later;
   endif
+  if () then ([some records left out])
+    :Add a note saying how many records
+    due before today are left out
+    and how to list them;
+  else ([no records left out])
+  endif
   if () then ([some records kept])
     :Sort the kept records by due date;
     :Show each record with its

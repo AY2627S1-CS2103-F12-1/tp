@@ -365,9 +365,10 @@ Format: `homework|hw list|ls STUDENT_INDEX [all]`
 * `STUDENT_INDEX` follows the same rules as in `homework add`.
 * Without `all`, homework due before today is left out. With `all` (in lowercase), all of the student's homework is shown.
 * Homework is sorted by due date, earliest first. Homework due on the same date is shown in the order it was added.
-* The result starts with `Listed N upcoming homework records for NAME.` (`Listed N homework records for NAME.` with `all`, and `record` when there is only one) and `Homework for NAME:`, followed by one line per homework with its number, title, subject, due date, score and status, e.g. `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score 5/10 - status ASSIGNED`. Homework without marks shows `score Not recorded`.
+* The result starts with a line such as `Listed N upcoming homework records for NAME.` (`Listed N homework records for NAME.` with `all`, and `record` when there is only one) and `Homework for NAME:`, followed by one line per homework with its number, title, subject, due date, score and status, e.g. `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score 5/10 - status ASSIGNED`. Homework without marks shows `score Not recorded`.
+* Without `all`, if any homework is left out because it is due before today, the first line also says how many records are not shown and how to see them, e.g. `Listed 2 upcoming homework records for Priya Nair (1 record due before today not shown; use homework list 2 all to see it).`
 * Each homework is numbered by its position in the order the homework was added, so the numbers may appear out of order. These numbers are the `HOMEWORK_INDEX` values used by `homework edit`, `homework marks` and `homework delete`. They change only when homework is deleted. They are always written with the digits 0 to 9, even if your computer's language and region settings use other digits, so you can type them into these commands.
-* If the student has no homework, the result is `No homework found for NAME.` If none of the student's homework is due today or later, the result is `No upcoming homework found for NAME.`; use `all` to see the overdue homework.
+* If the student has no homework, the result is `No homework found for NAME.` If none of the student's homework is due today or later, the result is `No upcoming homework found for NAME (N records due before today not shown; use homework list STUDENT_INDEX all to see them).` (`1 record` and `see it` when there is only one).
 
 Examples:
 * `homework list 1`
@@ -437,7 +438,7 @@ Examples:
   ```
   Edited homework:
   Ethan Lim; Title: Kinematics practice set B; Subject: PHYSICS; Due: 2026-10-28
-  Listed 1 upcoming homework record for Ethan Lim.
+  Listed 1 upcoming homework record for Ethan Lim (1 record due before today not shown; use homework list 1 all to see it).
   Homework for Ethan Lim:
   2. Kinematics practice set B (PHYSICS) - due 2026-10-28 - score Not recorded - status ASSIGNED
   ```
@@ -502,7 +503,7 @@ Examples:
   ```text
   Deleted homework:
   2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-02 - score Not recorded - status ASSIGNED
-  Listed 2 upcoming homework records for Priya Nair.
+  Listed 2 upcoming homework records for Priya Nair (1 record due before today not shown; use homework list 2 all to see it).
   Homework for Priya Nair:
   2. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-09 - score Not recorded - status ASSIGNED
   3. Vectors revision (MATH) - due 2026-11-20 - score Not recorded - status ASSIGNED

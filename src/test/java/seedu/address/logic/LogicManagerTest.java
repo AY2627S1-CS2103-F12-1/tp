@@ -93,6 +93,9 @@ public class LogicManagerTest {
     private static final String ADD_STUDENT_COMMAND = "add n/John Tan l/S3 s/MATH p/91234567 gn/Mary Tan gp/98765432";
     /** Fixed clock at 2026-10-27, the day the sample students were alpha-tested. */
     private static final Clock SAMPLE_CLOCK = Clock.fixed(Instant.parse("2026-10-27T00:00:00Z"), ZoneOffset.UTC);
+    /** Fixed clock at 2026-10-28, the day the note about homework left out of the list was alpha-tested. */
+    private static final Clock HIDDEN_NOTE_CLOCK =
+            Clock.fixed(Instant.parse("2026-10-28T00:00:00Z"), ZoneOffset.UTC);
 
     @TempDir
     public Path temporaryFolder;
@@ -476,7 +479,9 @@ public class LogicManagerTest {
         assertEquals("Deleted homework:\n"
                 + formatHomeworkLine(2, "Organic reaction pathways map", "CHEMISTRY", "2026-11-02", "Not recorded",
                         "ASSIGNED")
-                + "\nListed 2 upcoming homework records for Priya Nair.\nHomework for Priya Nair:\n"
+                + "\nListed 2 upcoming homework records for Priya Nair"
+                + " (1 record due before today not shown; use homework list 2 all to see it).\n"
+                + "Homework for Priya Nair:\n"
                 + formatHomeworkLine(2, "Chemical equilibrium past paper", "CHEMISTRY", "2026-11-09", "Not recorded",
                         "ASSIGNED") + "\n"
                 + formatHomeworkLine(3, "Vectors revision", "MATH", "2026-11-20", "Not recorded", "ASSIGNED"),
@@ -487,6 +492,106 @@ public class LogicManagerTest {
         Student savedStudent = addressBookStorage.readAddressBook().orElseThrow().getStudentList().get(1);
         assertEquals(List.of("Integration by parts exercise", "Vectors revision"), savedStudent.getHomeworks()
                 .stream().map(homework -> homework.getTitle().toString()).toList());
+    }
+
+    @Test
+    public void execute_editEarlierSampleHomework_hintsHiddenRecord() throws Exception {
+        // Priya Nair's homework 1 is due 2026-10-26, so on 2026-10-28 the list after the edit starts at 2
+        setUpLogic(getSampleAddressBook(), addressBookStorage, HIDDEN_NOTE_CLOCK);
+
+        assertEquals("Edited homework:\n"
+                + "Priya Nair; Title: Research Organic pathways; Subject: MATH; Due: 2026-10-26\n"
+                + "Listed 2 upcoming homework records for Priya Nair"
+                + " (1 record due before today not shown; use homework list 2 all to see it).\n"
+                + "Homework for Priya Nair:\n"
+                + formatHomeworkLine(2, "Organic reaction pathways map", "CHEMISTRY", "2026-11-02", "Not recorded",
+                        "ASSIGNED") + "\n"
+                + formatHomeworkLine(3, "Chemical equilibrium past paper", "CHEMISTRY", "2026-11-09", "Not recorded",
+                        "ASSIGNED"),
+                logic.execute("hw e 2 1 t/Research Organic pathways").getFeedbackToUser());
+    }
+
+    @Test
+    public void execute_hiddenNoteAfterSearch_hintedCommandListsHiddenRecord() throws Exception {
+        // after the search Priya Nair is displayed student 1, so the hint names 1, not her roster position 2
+        setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
+        logic.execute("search Priya");
+        String hintedCommand = "homework list 1 all";
+
+        assertTrue(logic.execute("hw ls 1").getFeedbackToUser().startsWith("Listed 2 upcoming homework records for"
+                + " Priya Nair (1 record due before today not shown; use " + hintedCommand + " to see it).\n"));
+        assertTrue(logic.execute(hintedCommand).getFeedbackToUser().contains("\n"
+                + formatHomeworkLine(1, "Integration by parts exercise", "MATH", "2026-10-26", "Not recorded",
+                        "ASSIGNED")));
+    }
+
+    @Test
+    public void execute_hiddenNoteAfterFilterAndEdit_hintedCommandListsHiddenRecord() throws Exception {
+        // after the filter Priya Nair is displayed student 1, so the hint names 1, not her roster position 2
+        setUpLogic(getSampleAddressBook(), addressBookStorage, HIDDEN_NOTE_CLOCK);
+        logic.execute("filter s/CHEMISTRY");
+        String hintedCommand = "homework list 1 all";
+
+        assertTrue(logic.execute("hw e 1 2 t/Pathways map v2").getFeedbackToUser().startsWith("Edited homework:\n"
+                + "Priya Nair; Title: Pathways map v2; Subject: CHEMISTRY; Due: 2026-11-02\n"
+                + "Listed 2 upcoming homework records for Priya Nair (1 record due before today not shown; use "
+                + hintedCommand + " to see it).\n"));
+        assertTrue(logic.execute(hintedCommand).getFeedbackToUser().contains("\n"
+                + formatHomeworkLine(1, "Integration by parts exercise", "MATH", "2026-10-26", "Not recorded",
+                        "ASSIGNED")));
+    }
+
+    @Test
+    public void execute_hiddenNoteAfterSortAndDelete_hintedCommandListsHiddenRecord() throws Exception {
+        // after the sort Ethan Lim is displayed student 4, so the hint names 4, not his roster position 1
+        setUpLogic(getSampleAddressBook(), addressBookStorage, HIDDEN_NOTE_CLOCK);
+        logic.execute("sort by/level o/desc");
+        String hintedCommand = "homework list 4 all";
+
+        assertEquals("Deleted homework:\n"
+                + formatHomeworkLine(2, "Kinematics practice set", "PHYSICS", "2026-10-28", "Not recorded",
+                        "ASSIGNED")
+                + "\nNo upcoming homework found for Ethan Lim (1 record due before today not shown; use "
+                + hintedCommand + " to see it).",
+                logic.execute("hw del 4 2").getFeedbackToUser());
+        assertTrue(logic.execute(hintedCommand).getFeedbackToUser().contains("\n"
+                + formatHomeworkLine(1, "Quadratic equations worksheet", "MATH", "2026-10-23", "Not recorded",
+                        "ASSIGNED")));
+    }
+
+    @Test
+    public void execute_deleteOnlyEarlierSampleHomework_removesHiddenNote() throws Exception {
+        // Priya Nair's homework 1 (due 2026-10-26) is her only record due before today, so after deleting it
+        // none is hidden
+        setUpLogic(getSampleAddressBook(), addressBookStorage, HIDDEN_NOTE_CLOCK);
+
+        assertEquals("Deleted homework:\n"
+                + formatHomeworkLine(1, "Integration by parts exercise", "MATH", "2026-10-26", "Not recorded",
+                        "ASSIGNED")
+                + "\nListed 2 upcoming homework records for Priya Nair.\nHomework for Priya Nair:\n"
+                + formatHomeworkLine(1, "Organic reaction pathways map", "CHEMISTRY", "2026-11-02", "Not recorded",
+                        "ASSIGNED") + "\n"
+                + formatHomeworkLine(2, "Chemical equilibrium past paper", "CHEMISTRY", "2026-11-09", "Not recorded",
+                        "ASSIGNED"),
+                logic.execute("hw del 2 1").getFeedbackToUser());
+    }
+
+    @Test
+    public void execute_editEarlierSampleDueDateToFuture_removesHiddenNote() throws Exception {
+        // Priya Nair's homework 1 (due 2026-10-26) is her only record due before today until the edit moves it
+        // to December
+        setUpLogic(getSampleAddressBook(), addressBookStorage, HIDDEN_NOTE_CLOCK);
+
+        assertEquals("Edited homework:\n"
+                + "Priya Nair; Title: Integration by parts exercise; Subject: MATH; Due: 2026-12-01\n"
+                + "Listed 3 upcoming homework records for Priya Nair.\nHomework for Priya Nair:\n"
+                + formatHomeworkLine(2, "Organic reaction pathways map", "CHEMISTRY", "2026-11-02", "Not recorded",
+                        "ASSIGNED") + "\n"
+                + formatHomeworkLine(3, "Chemical equilibrium past paper", "CHEMISTRY", "2026-11-09", "Not recorded",
+                        "ASSIGNED") + "\n"
+                + formatHomeworkLine(1, "Integration by parts exercise", "MATH", "2026-12-01", "Not recorded",
+                        "ASSIGNED"),
+                logic.execute("hw e 2 1 due/2026-12-01").getFeedbackToUser());
     }
 
     @Test

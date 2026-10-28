@@ -18,16 +18,19 @@ TutorFlow focuses on student contacts and related tutoring records. It does not
 deliver lessons, process payments, contact parents directly, or replace a full
 accounting, calendar, or learning-management system.
 
-## Planned core features
+## Features
 
 * Add student profiles with student and guardian contact details, academic
   level, and tuition subjects.
-* View the student roster.
+* View, search, filter and sort the student roster, and edit student details.
 * Delete a student profile.
 * Save and restore student records automatically.
 * Add regular lessons to a student profile.
 * View all regular lessons.
 * Delete regular lessons.
+* Edit regular lessons and reject timetable clashes.
+* Add, edit and delete homework; record marks and completion status.
+* Filter homework and view weekly lessons and outstanding assignments at a glance.
 
 ## Documentation
 

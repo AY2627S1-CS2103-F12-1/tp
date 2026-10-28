@@ -2,6 +2,7 @@ package seedu.address.logic.parser;
 
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
 
 import org.junit.jupiter.api.Test;
 
@@ -24,7 +25,13 @@ public class LessonDeleteCommandParserTest {
     public void parse_invalidArguments_failure() {
         assertParseFailure(parser, "", MESSAGE_INVALID_FORMAT);
         assertParseFailure(parser, "1 2", MESSAGE_INVALID_FORMAT);
-        assertParseFailure(parser, "d/1", MESSAGE_INVALID_FORMAT);
+    }
+
+    @Test
+    public void parse_unknownPrefix_namesPrefix() {
+        String usageLine = "\nUsage: " + LessonDeleteCommand.MESSAGE_USAGE;
+        assertParseFailure(parser, "d/1", notPrefix("d/") + usageLine);
+        assertParseFailure(parser, "1 x/2", notPrefix("x/") + usageLine);
     }
 
     @Test

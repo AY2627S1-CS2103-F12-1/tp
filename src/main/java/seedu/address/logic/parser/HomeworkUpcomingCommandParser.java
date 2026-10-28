@@ -20,7 +20,7 @@ public class HomeworkUpcomingCommandParser implements Parser<HomeworkUpcomingCom
     public static final int DEFAULT_DAYS = 7;
     public static final int MAX_DAYS = 365;
     public static final String MESSAGE_INVALID_DAYS =
-            "Days must be a whole number from 0 to 365 without leading zeroes.";
+            "Days must be a whole number from 0 to " + MAX_DAYS + " without leading zeroes.";
 
     private static final String MESSAGE_INVALID_FORMAT = String.format(Messages.MESSAGE_INVALID_FORMAT_WITH_USAGE,
             HomeworkUpcomingCommand.MESSAGE_USAGE);

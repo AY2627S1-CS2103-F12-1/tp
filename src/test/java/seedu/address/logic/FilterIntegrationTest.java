@@ -3,6 +3,7 @@ package seedu.address.logic;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.TypicalHomeworks.ATOMIC_STRUCTURE;
@@ -16,6 +17,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,7 +64,8 @@ public class FilterIntegrationTest {
     public void execute_filterSuccessAndNoMatches_neverSavesOrCreatesDataFile() throws Exception {
         AddressBook before = new AddressBook(model.getAddressBook());
 
-        for (String command : List.of("filter l/S4", "filter s/Math", "filter l/S4 s/Math", "filter l/S5")) {
+        for (String command : List.of("filter l/S4", "filter s/Math", "filter l/S4 s/Math", "filter l/S5",
+                "filter d/MONDAY", "filter l/S4 s/PHYSICS d/MONDAY", "filter d/SUNDAY")) {
             logic.execute(command);
 
             assertEquals(0, storage.saveCalls);
@@ -78,11 +81,15 @@ public class FilterIntegrationTest {
         AddressBook rosterBefore = new AddressBook(model.getAddressBook());
         logic.execute("filter s/Math");
         List<Student> displayedBefore = List.copyOf(model.getStudentList());
+        Predicate<Student> predicateBefore = logic.studentListPredicateProperty().get();
 
-        for (String command : List.of("filter", "filter x/value", "filter l/S4 l/S4", "filter l/", "filter s/bad")) {
+        for (String command : List.of("filter", "filter x/value", "filter l/S4 l/S4", "filter l/", "filter s/bad",
+                "filter l/S6", "filter l/Sec 4", "filter s/Math, Physics", "filter d/", "filter d/MON",
+                "filter d/MONDAY d/TUESDAY")) {
             assertThrows(ParseException.class, () -> logic.execute(command));
 
             assertEquals(displayedBefore, model.getStudentList());
+            assertSame(predicateBefore, logic.studentListPredicateProperty().get());
             assertEquals(rosterBefore, model.getAddressBook());
             assertArrayEquals(savedBefore, Files.readAllBytes(dataFile));
             assertEquals(0, storage.saveCalls);
@@ -94,9 +101,9 @@ public class FilterIntegrationTest {
         new JsonAddressBookStorage(dataFile).saveAddressBook(model.getAddressBook());
         byte[] savedBefore = Files.readAllBytes(dataFile);
 
-        logic.execute("filter s/CHEMISTRY l/S4");
-        assertEquals(List.of(second), model.getStudentList());
-        logic.execute("filter l/S5");
+        logic.execute("filter s/PHYSICS l/S4 d/MONDAY");
+        assertEquals(List.of(first), model.getStudentList());
+        logic.execute("filter d/SUNDAY");
 
         assertArrayEquals(savedBefore, Files.readAllBytes(dataFile));
         assertEquals(0, storage.saveCalls);
@@ -161,6 +168,7 @@ public class FilterIntegrationTest {
             logic.execute(command);
 
             assertEquals(List.of(first, second, third), model.getStudentList());
+            assertSame(ModelManager.PREDICATE_SHOW_ALL_STUDENTS, logic.studentListPredicateProperty().get());
         }
         logic.execute("filter s/CHEMISTRY");
         logic.execute("search Alice");
@@ -169,7 +177,88 @@ public class FilterIntegrationTest {
         logic.execute("filter s/CHEMISTRY");
         logic.execute("add n/Dan Lee l/S2 s/MATH p/92345678 gn/Mary Lee gp/98765432");
         assertEquals(4, model.getStudentList().size());
+        assertSame(ModelManager.PREDICATE_SHOW_ALL_STUDENTS, logic.studentListPredicateProperty().get());
         assertEquals(1, storage.saveCalls);
+    }
+
+    @Test
+    public void execute_failedAdd_restoresExactFilterCriteriaAndResults() throws Exception {
+        logic.execute("filter s/CHEMISTRY l/S4");
+        Predicate<Student> predicateBefore = logic.studentListPredicateProperty().get();
+        AddressBook rosterBefore = new AddressBook(model.getAddressBook());
+        StorageManager failingStorage = new StorageManager(new JsonAddressBookStorage(dataFile),
+                new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json"))) {
+            @Override
+            public void saveAddressBook(ReadOnlyAddressBook addressBook) throws IOException {
+                throw new IOException("Simulated save failure");
+            }
+        };
+        LogicManager failingLogic = new LogicManager(model, failingStorage);
+
+        assertThrows(CommandException.class, () ->
+                failingLogic.execute("add n/Dan Lee l/S2 s/MATH p/92345678 gn/Mary Lee gp/98765432"));
+
+        assertSame(predicateBefore, failingLogic.studentListPredicateProperty().get());
+        assertEquals(List.of(second), model.getStudentList());
+        assertEquals(rosterBefore, model.getAddressBook());
+        assertFalse(Files.exists(dataFile));
+    }
+
+    @Test
+    public void execute_lessonChanges_rechecksDayMembershipWithoutReplacingCriteria() throws Exception {
+        logic.execute("filter d/TUESDAY");
+        Predicate<Student> predicate = logic.studentListPredicateProperty().get();
+        assertTrue(model.getStudentList().isEmpty());
+
+        logic.execute("lesson edit 1 d/TUESDAY");
+        assertEquals("Alice Tan", model.getStudentList().getFirst().getName().toString());
+        logic.execute("lesson add 1 s/PHYSICS d/WEDNESDAY st/09:00 et/10:00");
+        assertEquals(1, model.getStudentList().size());
+        logic.execute("lesson delete 1");
+
+        assertTrue(model.getStudentList().isEmpty());
+        assertSame(predicate, logic.studentListPredicateProperty().get());
+        assertEquals(1, model.getAddressBook().getStudentList().getFirst().getLessons().size());
+    }
+
+    @Test
+    public void execute_dayFilter_usesDisplayedStudentIndexFromFullRoster() throws Exception {
+        logic.execute("lesson add 2 s/CHEMISTRY d/TUESDAY st/09:00 et/10:00");
+        logic.execute("search Alice");
+        logic.execute("filter d/TUESDAY");
+        assertEquals("Ben Lim", model.getStudentList().getFirst().getName().toString());
+        assertTrue(logic.execute("hw list 1 all").getFeedbackToUser().contains("Homework for Ben Lim:"));
+
+        logic.execute("delete 1");
+
+        assertEquals(List.of(first, third), model.getAddressBook().getStudentList());
+        assertTrue(model.getStudentList().isEmpty());
+    }
+
+    @Test
+    public void execute_failedLessonChanges_restoresDayCriteriaViewAndSavedBytes() throws Exception {
+        new JsonAddressBookStorage(dataFile).saveAddressBook(model.getAddressBook());
+        byte[] savedBefore = Files.readAllBytes(dataFile);
+        logic.execute("filter l/S4 s/PHYSICS d/MONDAY");
+        Predicate<Student> predicate = logic.studentListPredicateProperty().get();
+        AddressBook roster = new AddressBook(model.getAddressBook());
+        StorageManager failingStorage = new StorageManager(new JsonAddressBookStorage(dataFile),
+                new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json"))) {
+            @Override
+            public void saveAddressBook(ReadOnlyAddressBook addressBook) throws IOException {
+                throw new IOException("Simulated save failure");
+            }
+        };
+        LogicManager failingLogic = new LogicManager(model, failingStorage);
+        for (String command : List.of("lesson edit 1 d/TUESDAY", "lesson delete 1",
+                "lesson add 1 s/PHYSICS d/WEDNESDAY st/09:00 et/10:00")) {
+            assertThrows(CommandException.class, () -> failingLogic.execute(command));
+
+            assertSame(predicate, failingLogic.studentListPredicateProperty().get());
+            assertEquals(List.of(first), model.getStudentList());
+            assertEquals(roster, model.getAddressBook());
+            assertArrayEquals(savedBefore, Files.readAllBytes(dataFile));
+        }
     }
 
     private static class RecordingStorage extends StorageManager {

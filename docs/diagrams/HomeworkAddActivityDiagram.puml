@@ -1,0 +1,44 @@
+@startuml
+!include style.puml
+skinparam activityBackgroundColor LOGIC_COLOR
+skinparam activityFontColor #FFFFFF
+skinparam activityDiamondBackgroundColor #FFFFFF
+skinparam activityDiamondFontColor #000000
+skinparam ArrowFontStyle plain
+
+start
+:Parse the student index,
+title, subject and due date;
+note right
+  MM-DD: this year, or
+  next year if it has passed
+end note
+if () then ([valid])
+  :Find the student in
+  the displayed list;
+  if () then ([found])
+    if () then ([takes the subject])
+      if () then ([no same homework])
+        :Add the homework to the end
+        of a copy of the homework list,
+        then replace the student;
+        :Save the data, or restore
+        it if saving fails;
+        stop
+      else ([same homework exists])
+        :Show the error;
+        stop
+      endif
+    else ([subject not taken])
+      :Show the error;
+      stop
+    endif
+  else ([not found])
+    :Show the error;
+    stop
+  endif
+else ([invalid])
+  :Show the error;
+  stop
+endif
+@enduml

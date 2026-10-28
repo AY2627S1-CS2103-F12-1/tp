@@ -3,6 +3,7 @@ package seedu.address.model;
 import java.util.List;
 import java.util.function.Predicate;
 
+import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.collections.ObservableList;
 import seedu.address.commons.core.GuiSettings;
 import seedu.address.model.student.Student;
@@ -59,6 +60,14 @@ public interface Model {
 
     /** Updates the students displayed in the UI without changing the stored roster. */
     void updateFilteredStudentList(Predicate<Student> predicate);
+
+    /** Returns the predicate that selects the displayed students. */
+    Predicate<Student> getFilteredStudentListPredicate();
+
+    /**
+     * Returns a read-only observable of the predicate selecting the displayed students.
+     */
+    ReadOnlyObjectProperty<Predicate<Student>> studentListPredicateProperty();
 
     /**
      * Reorders the displayed occurrences without changing the active predicate or stored roster.

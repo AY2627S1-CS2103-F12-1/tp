@@ -101,7 +101,7 @@ public class SampleDataUtilTest {
             {"hw up due/7"},
             {"hw up due/0"},
             {"hw upcoming due/7"},
-            {"hw e 1 2 t/Complete algebra questions 1-10"},
+            {"hw e 1 2 t/Kinematics practice set B"},
             {"hw e 2 1 due/2026-11-05"},
             {"hw edit 1 2 t/Revise mechanics s/PHYSICS due/2026-11-10"},
             {"hw e 3 1 due/10-5"},

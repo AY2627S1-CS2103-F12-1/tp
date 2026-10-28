@@ -4,6 +4,7 @@ import java.time.LocalDate;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.Region;
 import seedu.address.model.student.Student;
 
@@ -44,6 +45,7 @@ public class StudentCard extends UiPart<Region> {
         subjects.setText(student.getSubjects().toString());
         studentPhone.setText("Student: " + student.getPhone());
         guardianName.setText("Guardian: " + student.getGuardianName());
+        guardianName.setTooltip(new Tooltip(student.getGuardianName().toString()));
         guardianPhone.setText("Guardian phone: " + student.getGuardianPhone());
         upcomingHomeworkCount.setText("Upcoming homework: " + student.getUpcomingHomeworkCount(today));
         overdueHomeworkCount.setText("Overdue homework: " + student.getOverdueHomeworkCount(today));

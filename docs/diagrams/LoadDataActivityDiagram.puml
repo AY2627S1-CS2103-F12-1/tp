@@ -1,0 +1,24 @@
+@startuml
+!include style.puml
+skinparam activityBackgroundColor STORAGE_COLOR
+skinparam activityFontColor #FFFFFF
+skinparam activityDiamondBackgroundColor #FFFFFF
+skinparam activityDiamondFontColor #000000
+skinparam ArrowFontStyle plain
+
+start
+if () then ([data file missing])
+  :Use the sample students\n(not saved until the data changes);
+else ([data file exists])
+  :Read and check the data file;
+  if () then ([invalid])
+    :Show the file path and the reason;
+    :Exit, leaving the file unchanged;
+    stop
+  else ([valid])
+    :Use the saved data;
+  endif
+endif
+:Show the main window;
+stop
+@enduml

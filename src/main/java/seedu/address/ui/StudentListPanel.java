@@ -3,14 +3,18 @@ package seedu.address.ui;
 import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javafx.beans.binding.Bindings;
+import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -23,9 +27,10 @@ import javafx.scene.control.ScrollBar;
 import javafx.scene.layout.Region;
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.model.student.Student;
+import seedu.address.model.student.StudentFilterPredicate;
 
 /**
- * Displays the current student roster and its count.
+ * Displays the current student roster, its count, and any active filter criteria.
  */
 public class StudentListPanel extends UiPart<Region> {
     private static final String FXML = "StudentListPanel.fxml";
@@ -41,6 +46,8 @@ public class StudentListPanel extends UiPart<Region> {
 
     @FXML
     private Label studentCount;
+    @FXML
+    private Label filterDescription;
     @FXML
     private ListView<Student> studentListView;
 
@@ -75,6 +82,9 @@ public class StudentListPanel extends UiPart<Region> {
         requireAllNonNull(students, renderingErrorHandler, cardFactory);
         this.renderingErrorHandler = renderingErrorHandler;
         this.cardFactory = cardFactory;
+        filterDescription.setMinHeight(Region.USE_PREF_SIZE);
+        filterDescription.visibleProperty().bind(filterDescription.textProperty().isNotEmpty());
+        filterDescription.managedProperty().bind(filterDescription.visibleProperty());
         // Register before ListView so independent updates reset diagnostics before rendering starts.
         students.addListener((ListChangeListener<Student>) change -> {
             if (!isExecutingCommand) {
@@ -89,6 +99,29 @@ public class StudentListPanel extends UiPart<Region> {
         studentListView.setCellFactory(unused -> new StudentListViewCell());
         ScrollSupport.enableScrolling(getRoot(), studentListView);
         updateStudentCount(students.size());
+    }
+
+    /**
+     * Observes active criteria independently of whether the displayed student list changes.
+     */
+    void bindStudentListPredicate(ReadOnlyObjectProperty<Predicate<Student>> predicate) {
+        requireAllNonNull(predicate);
+        filterDescription.textProperty().bind(Bindings.createStringBinding(() -> describeFilter(predicate.get()),
+                predicate));
+    }
+
+    /**
+     * Returns the active student criteria description, or empty text for other student views.
+     */
+    private static String describeFilter(Predicate<Student> predicate) {
+        if (!(predicate instanceof StudentFilterPredicate filter)) {
+            return "";
+        }
+        List<String> criteria = new ArrayList<>();
+        filter.getAcademicLevel().ifPresent(level -> criteria.add("level " + level));
+        filter.getSubject().ifPresent(subject -> criteria.add("subject " + subject));
+        filter.getDay().ifPresent(day -> criteria.add("day " + day));
+        return "Filtered: " + String.join("; ", criteria);
     }
 
     private void updateStudentCount(int count) {
@@ -153,17 +186,22 @@ public class StudentListPanel extends UiPart<Region> {
      * Captures the visible state and retains old cards before a sort can notify the list view.
      */
     public ViewState beginSort() {
+        ViewState state = captureViewState();
+        isSorting = true;
+        renderingFailure = null;
+        renderedCards = new HashMap<>();
+        return state;
+    }
+
+    /** Captures navigation and rendered cards before a command can replace the roster. */
+    ViewState captureViewState() {
         Map<Orientation, Double> scrollPositions = new EnumMap<>(Orientation.class);
         for (Node node : studentListView.lookupAll(".scroll-bar")) {
             ScrollBar scrollBar = (ScrollBar) node;
             scrollPositions.put(scrollBar.getOrientation(), scrollBar.getValue());
         }
-        ViewState state = new ViewState(List.copyOf(studentListView.getSelectionModel().getSelectedIndices()),
+        return new ViewState(List.copyOf(studentListView.getSelectionModel().getSelectedIndices()),
                 studentListView.getFocusModel().getFocusedIndex(), scrollPositions, new HashMap<>(renderedCards));
-        isSorting = true;
-        renderingFailure = null;
-        renderedCards = new HashMap<>();
-        return state;
     }
 
     /**

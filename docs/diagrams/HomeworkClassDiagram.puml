@@ -1,0 +1,40 @@
+@startuml
+!include style.puml
+skinparam arrowThickness 1.1
+skinparam arrowColor MODEL_COLOR
+skinparam classBackgroundColor MODEL_COLOR
+skinparam classAttributeFontColor #FFFFFF
+skinparam classAttributeIconSize 0
+hide circle
+show members
+
+Class Student {
+  ...
+  + getHomeworks(): List<Homework>
+  + hasHomework(homework: Homework): boolean
+  + withHomeworks(homeworks: List<Homework>): Student
+}
+
+Class Homework {
+  - title: Title
+  - subject: TuitionSubject
+  - dueDate: DueDate
+  - score: Score [0..1]
+  - status: HomeworkStatus
+  + isSameHomework(other: Homework): boolean
+  + withScore(newScore: Score): Homework
+  + withStatus(newStatus: HomeworkStatus): Homework
+}
+
+Student -down--> "-homeworks  0..*\n{ordered}" Homework
+
+note right of Student
+  HOMEWORK_INDEX is the one-based position
+  of a record in homeworks (insertion order).
+end note
+
+note right of Homework
+  Student and Homework are immutable:
+  a change builds a new object.
+end note
+@enduml

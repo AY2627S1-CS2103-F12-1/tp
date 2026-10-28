@@ -3,6 +3,8 @@ package seedu.address.logic.commands;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.logic.commands.CommandTestUtil.CAUSE_READ_ONLY_FOLDER;
+import static seedu.address.logic.commands.CommandTestUtil.SHOWN_DATA_FILE_NAME;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.testutil.Assert.assertThrows;
@@ -38,7 +40,7 @@ public class LessonDeleteCommandTest {
         LessonDeleteCommand deleteCommand = new LessonDeleteCommand(Index.fromOneBased(2));
 
         String expectedMessage = "Deleted regular lesson:\n"
-                + "Amy Lim; Subject: PHYSICS; Day: TUE; Time: 19:00-20:30";
+                + "Amy Lim (91234567); Subject: PHYSICS; Day: TUE; Time: 19:00-20:30";
         Model expectedModel = getModelWithStudents(List.of(
                 amy.withLessons(List.of(SATURDAY_CHEMISTRY)), ben));
 
@@ -51,7 +53,7 @@ public class LessonDeleteCommandTest {
         Model model = getModelWithStudents(List.of(student));
 
         assertCommandSuccess(new LessonDeleteCommand(Index.fromOneBased(1)), model,
-                "Deleted regular lesson:\nJohn Tan; Subject: MATH; Day: MON; Time: 17:00-18:30",
+                "Deleted regular lesson:\nJohn Tan (91234567); Subject: MATH; Day: MON; Time: 17:00-18:30",
                 getModelWithStudents(List.of(student.withLessons(List.of()))));
     }
 
@@ -64,7 +66,7 @@ public class LessonDeleteCommandTest {
         model.updateFilteredStudentList(student -> student.equals(amy));
 
         assertCommandSuccess(new LessonDeleteCommand(Index.fromOneBased(1)), model,
-                "Deleted regular lesson:\nJohn Tan; Subject: MATH; Day: MON; Time: 17:00-18:30",
+                "Deleted regular lesson:\nJohn Tan (91234567); Subject: MATH; Day: MON; Time: 17:00-18:30",
                 getModelWithStudents(List.of(john.withLessons(List.of()), amy)));
     }
 
@@ -100,11 +102,13 @@ public class LessonDeleteCommandTest {
     }
 
     @Test
-    public void getSaveFailureMessage_returnsLessonMessage() {
+    public void getSaveFailureMessage_cause_namesFileAndCause() {
         LessonDeleteCommand deleteCommand = new LessonDeleteCommand(Index.fromOneBased(1));
+        String expectedMessage = "The lesson could not be deleted because TutorFlow could not save "
+                + SHOWN_DATA_FILE_NAME + ": the data folder is read-only. No lesson data was changed.";
 
-        assertEquals(LessonDeleteCommand.MESSAGE_SAVE_FAILURE,
-                deleteCommand.getSaveFailureMessage("Could not save data"));
+        assertEquals(expectedMessage, deleteCommand.getSaveFailureMessage(SHOWN_DATA_FILE_NAME,
+                CAUSE_READ_ONLY_FOLDER));
     }
 
     @Test

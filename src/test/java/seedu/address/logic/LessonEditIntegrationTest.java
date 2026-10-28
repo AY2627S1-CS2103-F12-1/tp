@@ -78,7 +78,7 @@ public class LessonEditIntegrationTest {
         CommandException exception = assertThrows(CommandException.class, () ->
                 logic.execute("lesson edit 1 et/18:30"));
 
-        assertEquals(LessonAddCommand.MESSAGE_CLASH + "John Tan; PHYSICS; MONDAY; 18:00-19:00",
+        assertEquals(LessonAddCommand.MESSAGE_CLASH + "John Tan (91234567); PHYSICS; MONDAY; 18:00-19:00",
                 exception.getMessage());
         assertEquals(before, model.getAddressBook());
         assertEquals(savesBefore, storage.saveCalls);
@@ -96,7 +96,7 @@ public class LessonEditIntegrationTest {
                 logic.execute("lesson edit 1 et/20:30"));
 
         assertEquals(LessonEditCommand.MESSAGE_MULTIPLE_CLASHES
-                + "John Tan; PHYSICS; MONDAY; 18:00-19:00\nMary Lim; MATH; MONDAY; 20:00-21:00",
+                + "John Tan (91234567); PHYSICS; MONDAY; 18:00-19:00\nMary Lim (91234568); MATH; MONDAY; 20:00-21:00",
                 exception.getMessage());
         assertArrayEquals(savedBefore, Files.readAllBytes(dataFile));
         assertEquals(savesBefore, storage.saveCalls);
@@ -115,7 +115,7 @@ public class LessonEditIntegrationTest {
         assertEquals(model.getAddressBook(), new AddressBook(saved));
         assertEquals(ownerBefore.getHomeworks(), saved.getStudentList().getFirst().getHomeworks());
         assertTrue(logic.execute("lesson list").getFeedbackToUser()
-                .contains("2. John Tan; PHYSICS; MON; 19:00-20:00"));
+                .contains("2. John Tan (91234567); PHYSICS; MON; 19:00-20:00"));
 
         model = new ModelManager(saved, model.getUserPrefs());
         logic = new LogicManager(model, storage);

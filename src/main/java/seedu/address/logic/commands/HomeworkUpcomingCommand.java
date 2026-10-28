@@ -5,13 +5,13 @@ import static java.util.Objects.requireNonNull;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
 import seedu.address.commons.core.LogsCenter;
-import seedu.address.commons.core.index.Index;
 import seedu.address.commons.util.ToStringBuilder;
 import seedu.address.logic.Messages;
 import seedu.address.logic.commands.exceptions.CommandException;
@@ -42,23 +42,29 @@ public class HomeworkUpcomingCommand extends Command {
      *
      * @param today First due date to list.
      * @param days Number of days after {@code today} up to which homework is listed; not negative.
+     * @throws IllegalArgumentException If {@code days} is negative.
      */
     public HomeworkUpcomingCommand(LocalDate today, int days) {
-        this.today = requireNonNull(today);
+        requireNonNull(today);
+        if (days < 0) {
+            throw new IllegalArgumentException("days must not be negative: " + days);
+        }
+        this.today = today;
         this.days = days;
     }
 
     /**
      * {@inheritDoc}
-     * The full roster is displayed first, so that each {@code STUDENT_INDEX} in the result matches the student list.
-     * An unexpected error is logged and reported as an internal error.
+     * The full roster is then displayed, so that each {@code STUDENT_INDEX} in the result matches the student list.
+     * An unexpected error is logged and reported as an internal error, leaving the displayed students unchanged.
      */
     @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
-        model.updateFilteredStudentList(Model.PREDICATE_SHOW_ALL_STUDENTS);
         try {
-            return new CommandResult(listUpcomingHomework(model));
+            String message = listUpcomingHomework(model);
+            model.updateFilteredStudentList(Model.PREDICATE_SHOW_ALL_STUDENTS);
+            return new CommandResult(message);
         } catch (RuntimeException exception) {
             logger.log(Level.SEVERE, "Unexpected error while listing upcoming homework", exception);
             throw new CommandException(MESSAGE_INTERNAL_ERROR, exception);
@@ -75,28 +81,25 @@ public class HomeworkUpcomingCommand extends Command {
         LocalDate lastDay = today.plusDays(days);
         List<Student> students = model.getAddressBook().getStudentList();
 
-        // Each entry maps the zero-based roster position of a student to one homework of that student
         // Stream#sorted is stable, so homework due on the same date stays in roster order, then insertion order
-        List<Map.Entry<Integer, Homework>> dueHomeworks = IntStream.range(0, students.size()).boxed()
+        List<DueHomework> dueHomeworks = IntStream.range(0, students.size()).boxed()
                 .flatMap(position -> students.get(position).getHomeworks().stream()
-                        .map(homework -> Map.entry(position, homework)))
-                .filter(entry -> entry.getValue().isUpcoming(today)
-                        && !entry.getValue().getDueDate().getDate().isAfter(lastDay))
-                .sorted(Comparator.comparing(entry -> entry.getValue().getDueDate().getDate()))
+                        .map(homework -> new DueHomework(position, homework)))
+                .filter(dueHomework -> dueHomework.homework().isUpcoming(today)
+                        && !dueHomework.homework().getDueDate().getDate().isAfter(lastDay))
+                .sorted(Comparator.comparing(dueHomework -> dueHomework.homework().getDueDate().getDate()))
                 .toList();
         if (dueHomeworks.isEmpty()) {
             return String.format(MESSAGE_NO_HOMEWORK, today, lastDay);
         }
 
-        String recordWord = dueHomeworks.size() == 1
-                ? HomeworkListCommand.MESSAGE_RECORD_SINGULAR
-                : HomeworkListCommand.MESSAGE_RECORD_PLURAL;
-        StringBuilder message = new StringBuilder(String.format(MESSAGE_SUCCESS, dueHomeworks.size(), recordWord,
-                today, lastDay));
-        for (Map.Entry<Integer, Homework> entry : dueHomeworks) {
-            int position = entry.getKey();
-            Homework homework = entry.getValue();
-            message.append(String.format(MESSAGE_HOMEWORK_LINE, Index.fromZeroBased(position).getOneBased(),
+        StringBuilder message = new StringBuilder(String.format(MESSAGE_SUCCESS, dueHomeworks.size(),
+                HomeworkListCommand.getRecordWord(dueHomeworks.size()), today, lastDay));
+        for (DueHomework dueHomework : dueHomeworks) {
+            int position = dueHomework.rosterPosition();
+            Homework homework = dueHomework.homework();
+            // Locale.ROOT prints the index in ASCII digits, which the index parsers accept, in every locale
+            message.append(String.format(Locale.ROOT, MESSAGE_HOMEWORK_LINE, position + 1,
                     students.get(position).getName(), homework.getTitle(), homework.getSubject(),
                     homework.getDueDate(), Messages.formatScore(homework), homework.getStatus()));
         }
@@ -119,10 +122,21 @@ public class HomeworkUpcomingCommand extends Command {
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hash(today, days);
+    }
+
+    @Override
     public String toString() {
         return new ToStringBuilder(this)
                 .add("today", today)
                 .add("days", days)
                 .toString();
+    }
+
+    /**
+     * Holds one homework due in the window and the zero-based roster position of its student.
+     */
+    private record DueHomework(int rosterPosition, Homework homework) {
     }
 }

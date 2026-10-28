@@ -18,6 +18,7 @@ import seedu.address.model.lesson.LessonSchedule;
 public class LessonListCommand extends Command {
     public static final String MESSAGE_USAGE = "lesson list";
     public static final String MESSAGE_SUCCESS = "Listed %d regular lessons.";
+    public static final String MESSAGE_SUCCESS_SINGULAR = "Listed 1 regular lesson.";
     public static final String MESSAGE_EMPTY = "No regular lessons found.";
     public static final String MESSAGE_LESSON_LINE = "\n%d. %s";
     public static final String MESSAGE_INTERNAL_ERROR =
@@ -50,7 +51,8 @@ public class LessonListCommand extends Command {
             return new CommandResult(MESSAGE_EMPTY);
         }
 
-        StringBuilder message = new StringBuilder(String.format(MESSAGE_SUCCESS, lessons.size()));
+        StringBuilder message = new StringBuilder(lessons.size() == 1 ? MESSAGE_SUCCESS_SINGULAR
+                : String.format(MESSAGE_SUCCESS, lessons.size()));
         for (int i = 0; i < lessons.size(); i++) {
             LessonSchedule.Entry entry = lessons.get(i);
             message.append(String.format(MESSAGE_LESSON_LINE, i + 1,

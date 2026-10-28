@@ -151,6 +151,7 @@ public class MainWindow extends UiPart<Stage> {
         resultDisplayPlaceholder.getChildren().add(resultDisplay.getRoot());
 
         studentListPanel = createStudentListPanel(logic.getStudentList(), this::handleStudentRenderingError);
+        studentListPanel.bindStudentListPredicate(logic.studentListPredicateProperty());
         studentListPanelPlaceholder.getChildren().add(studentListPanel.getRoot());
 
         upcomingPanel = new UpcomingPanel(logic.getAllStudentList(), clock);
@@ -276,9 +277,11 @@ public class MainWindow extends UiPart<Stage> {
      */
     private CommandResult executeCommand(String commandText) throws CommandException, ParseException {
         refreshDate();
+        StudentListPanel.ViewState previousStudentView = studentListPanel.captureViewState();
+        UpcomingPanel.ViewState previousUpcomingView = upcomingPanel.captureViewState();
+        boolean isSortRequest = commandText.strip().split("\\s+", 2)[0].equals(SortCommand.COMMAND_WORD);
         studentListPanel.beginCommandRendering();
         try {
-            boolean isSortRequest = commandText.strip().split("\\s+", 2)[0].equals(SortCommand.COMMAND_WORD);
             CommandResult commandResult = isSortRequest ? executeStudentSort(commandText) : logic.execute(commandText);
             logger.info("Result: " + commandResult.getFeedbackToUser());
             if (!studentListPanel.hasRenderingError()) {
@@ -299,6 +302,16 @@ public class MainWindow extends UiPart<Stage> {
 
             return commandResult;
         } catch (CommandException | ParseException e) {
+            if (!isSortRequest) {
+                try {
+                    studentListPanel.prepareRestore(previousStudentView);
+                    studentListPanel.restoreViewState(previousStudentView);
+                    upcomingPanel.restoreViewState(previousUpcomingView);
+                } catch (RuntimeException recoveryFailure) {
+                    e.addSuppressed(recoveryFailure);
+                    logger.log(Level.WARNING, "Could not restore navigation after a rejected command", recoveryFailure);
+                }
+            }
             logger.info("An error occurred while executing command: " + commandText);
             resultDisplay.setFeedbackToUser(e.getMessage());
             throw e;

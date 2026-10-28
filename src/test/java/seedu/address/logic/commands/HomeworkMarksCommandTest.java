@@ -3,18 +3,21 @@ package seedu.address.logic.commands;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.logic.commands.CommandTestUtil.CAUSE_READ_ONLY_FOLDER;
+import static seedu.address.logic.commands.CommandTestUtil.SHOWN_DATA_FILE_NAME;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalHomeworks.ATOMIC_STRUCTURE;
+import static seedu.address.testutil.TypicalHomeworks.COMPLETED_MECHANICS;
 import static seedu.address.testutil.TypicalHomeworks.MECHANICS;
 import static seedu.address.testutil.TypicalStudents.ALICE;
 import static seedu.address.testutil.TypicalStudents.BENSON;
 import static seedu.address.testutil.TypicalStudents.CARL;
+import static seedu.address.testutil.TypicalStudents.getModelFailingOnSetStudent;
 import static seedu.address.testutil.TypicalStudents.getModelWithStudents;
 import static seedu.address.testutil.TypicalStudents.getModelWithTypicalStudents;
-import static seedu.address.testutil.TypicalStudents.getTypicalStudents;
 
 import java.util.List;
 
@@ -23,9 +26,7 @@ import org.junit.jupiter.api.Test;
 import seedu.address.commons.core.index.Index;
 import seedu.address.logic.Messages;
 import seedu.address.model.Model;
-import seedu.address.model.ModelManager;
 import seedu.address.model.homework.Score;
-import seedu.address.model.student.Student;
 import seedu.address.testutil.HomeworkBuilder;
 
 public class HomeworkMarksCommandTest {
@@ -151,6 +152,40 @@ public class HomeworkMarksCommandTest {
     }
 
     @Test
+    public void execute_filteredList_recordsForDisplayedStudent() {
+        // CARL is third in the roster but first in the displayed list
+        model.updateFilteredStudentList(CARL::equals);
+        String expectedMessage = "Recorded homework marks:\n"
+                + "Carl Ng; Title: Attempt mechanics questions 1-5; Subject: PHYSICS; Due: 2026-10-20; Score: 5/10";
+        Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON,
+                CARL.withHomeworks(List.of(new HomeworkBuilder(MECHANICS).withScore("5/10").build()))));
+
+        assertCommandSuccess(new HomeworkMarksCommand(FIRST, FIRST, FIVE_OUT_OF_TEN), model, expectedMessage,
+                expectedModel);
+    }
+
+    @Test
+    public void execute_indexBeyondFilteredList_failure() {
+        model.updateFilteredStudentList(CARL::equals);
+
+        assertCommandFailure(new HomeworkMarksCommand(SECOND, FIRST, FIVE_OUT_OF_TEN), model,
+                Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
+    }
+
+    @Test
+    public void execute_completedHomework_keepsStatus() {
+        Model completedModel = getModelWithStudents(List.of(ALICE, BENSON,
+                CARL.withHomeworks(List.of(COMPLETED_MECHANICS))));
+        String expectedMessage = "Recorded homework marks:\n"
+                + "Carl Ng; Title: Attempt mechanics questions 1-5; Subject: PHYSICS; Due: 2026-10-20; Score: 5/10";
+        Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON,
+                CARL.withHomeworks(List.of(new HomeworkBuilder(COMPLETED_MECHANICS).withScore("5/10").build()))));
+
+        assertCommandSuccess(new HomeworkMarksCommand(THIRD, FIRST, FIVE_OUT_OF_TEN), completedModel,
+                expectedMessage, expectedModel);
+    }
+
+    @Test
     public void execute_emptyRoster_failure() {
         assertCommandFailure(new HomeworkMarksCommand(FIRST, FIRST, FIVE_OUT_OF_TEN),
                 getModelWithStudents(List.of()), Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
@@ -191,24 +226,18 @@ public class HomeworkMarksCommandTest {
 
     @Test
     public void execute_unexpectedError_reportsInternalErrorWithoutChangingModel() {
-        Model failingModel = new ModelManager() {
-            @Override
-            public void setStudent(Student target, Student editedStudent) {
-                throw new IllegalStateException("dummy internal error");
-            }
-        };
-        getTypicalStudents().forEach(failingModel::addStudent);
+        Model failingModel = getModelFailingOnSetStudent();
 
         assertCommandFailure(new HomeworkMarksCommand(FIRST, FIRST, FIVE_OUT_OF_TEN), failingModel,
                 HomeworkMarksCommand.MESSAGE_INTERNAL_ERROR);
     }
 
     @Test
-    public void getSaveFailureMessage_anyDefaultMessage_returnsHomeworkMessage() {
-        String expectedMessage = "The homework marks could not be recorded because TutorFlow could not save the "
-                + "updated data. No homework data was changed.";
+    public void getSaveFailureMessage_cause_namesFileAndCause() {
+        String expectedMessage = "The homework marks could not be recorded because TutorFlow could not save "
+                + SHOWN_DATA_FILE_NAME + ": the data folder is read-only. No homework data was changed.";
         assertEquals(expectedMessage, new HomeworkMarksCommand(FIRST, FIRST, FIVE_OUT_OF_TEN)
-                .getSaveFailureMessage("Could not save data"));
+                .getSaveFailureMessage(SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER));
     }
 
     @Test
@@ -219,8 +248,10 @@ public class HomeworkMarksCommandTest {
         assertTrue(marksCommand.equals(marksCommand));
 
         // same values -> returns true
-        assertTrue(marksCommand.equals(new HomeworkMarksCommand(Index.fromOneBased(1), Index.fromOneBased(2),
-                new Score(5, 10))));
+        HomeworkMarksCommand marksCommandCopy = new HomeworkMarksCommand(Index.fromOneBased(1),
+                Index.fromOneBased(2), new Score(5, 10));
+        assertTrue(marksCommand.equals(marksCommandCopy));
+        assertEquals(marksCommand.hashCode(), marksCommandCopy.hashCode());
 
         // null -> returns false
         assertFalse(marksCommand.equals(null));
@@ -246,7 +277,9 @@ public class HomeworkMarksCommandTest {
         assertFalse(clearCommand.equals(marksCommand));
 
         // both clearing the same homework -> returns true
-        assertTrue(clearCommand.equals(new HomeworkMarksCommand(FIRST, SECOND)));
+        HomeworkMarksCommand clearCommandCopy = new HomeworkMarksCommand(Index.fromOneBased(1), Index.fromOneBased(2));
+        assertTrue(clearCommand.equals(clearCommandCopy));
+        assertEquals(clearCommand.hashCode(), clearCommandCopy.hashCode());
     }
 
     @Test

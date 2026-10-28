@@ -76,6 +76,18 @@ public class HomeworkTest {
     }
 
     @Test
+    public void withScore_newScore_changesOnlyScore() {
+        Homework completedHomework = new HomeworkBuilder(ALGEBRA).withStatus("COMPLETED").build();
+        Homework expectedHomework = new HomeworkBuilder(completedHomework).withScore("5/10").build();
+        assertEquals(expectedHomework, completedHomework.withScore(Score.parse("5/10")));
+    }
+
+    @Test
+    public void withScore_null_clearsScore() {
+        assertEquals(new HomeworkBuilder(ATOMIC_STRUCTURE).withoutScore().build(), ATOMIC_STRUCTURE.withScore(null));
+    }
+
+    @Test
     public void isSameHomework() {
         // same object -> returns true
         assertTrue(ALGEBRA.isSameHomework(ALGEBRA));

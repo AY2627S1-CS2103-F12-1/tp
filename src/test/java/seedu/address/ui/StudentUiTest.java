@@ -75,6 +75,17 @@ public class StudentUiTest {
     }
 
     @Test
+    public void studentCard_longGuardianName_tooltipShowsFullName() throws Exception {
+        runOnFxThread(() -> {
+            Student student = new StudentBuilder().withGuardianName(LONG_NAME).build();
+            Parent card = (Parent) new StudentCard(student, 1, TODAY).getRoot();
+            Label guardianName = (Label) card.lookup("#guardianName");
+
+            assertEquals(LONG_NAME, guardianName.getTooltip().getText());
+        });
+    }
+
+    @Test
     public void studentCard_countsUpcomingHomeworkOnly() throws Exception {
         runOnFxThread(() -> {
             // ALGEBRA is overdue; MECHANICS and scored ATOMIC_STRUCTURE are due on or after TODAY.

@@ -31,6 +31,25 @@ public final class StudentPhone {
         value = trimmedPhone;
     }
 
+    /**
+     * Returns whether both values refer to the same phone number after normalizing a valid Singapore {@code +65}
+     * prefix. A {@code null} value is not considered equal.
+     */
+    public boolean isSameNumber(StudentPhone other) {
+        return other != null && normalizedNumber().equals(other.normalizedNumber());
+    }
+
+    /**
+     * Returns this number without its valid Singapore {@code +65} prefix, if present.
+     */
+    private String normalizedNumber() {
+        if (value.startsWith("+65") && value.length() == 11
+                && VALID_PHONE.matcher(value.substring(3)).matches()) {
+            return value.substring(3);
+        }
+        return value;
+    }
+
     @Override
     public String toString() {
         return value;

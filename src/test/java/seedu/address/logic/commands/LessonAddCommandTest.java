@@ -2,6 +2,8 @@ package seedu.address.logic.commands;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static seedu.address.logic.commands.CommandTestUtil.CAUSE_READ_ONLY_FOLDER;
+import static seedu.address.logic.commands.CommandTestUtil.SHOWN_DATA_FILE_NAME;
 
 import java.time.DayOfWeek;
 import java.time.LocalTime;
@@ -28,7 +30,7 @@ public class LessonAddCommandTest {
         ModelManager model = model();
         Student before = model.getStudentList().get(0);
         Student other = model.getStudentList().get(1);
-        assertEquals("New lesson added: John Tan; MATH; MONDAY; 16:00-18:00",
+        assertEquals("New lesson added: John Tan (91234567); MATH; MONDAY; 16:00-18:00",
                 parser.parseCommand(command(1, "16:00", "18:00")).execute(model).getFeedbackToUser());
         Student after = model.getStudentList().get(0);
         assertEquals(2, model.getStudentList().size());
@@ -51,7 +53,7 @@ public class LessonAddCommandTest {
         assertEquals(LessonAddCommand.MESSAGE_DUPLICATE,
                 assertThrows(CommandException.class, () ->
                         parser.parseCommand(command(1, "16:00", "18:00")).execute(model)).getMessage());
-        assertEquals(LessonAddCommand.MESSAGE_CLASH + "John Tan; MATH; MONDAY; 16:00-18:00",
+        assertEquals(LessonAddCommand.MESSAGE_CLASH + "John Tan (91234567); MATH; MONDAY; 16:00-18:00",
                 assertThrows(CommandException.class, () ->
                         parser.parseCommand(command(2, "17:00", "19:00")).execute(model)).getMessage());
         assertEquals(before, model.getAddressBook());
@@ -69,7 +71,7 @@ public class LessonAddCommandTest {
         CommandException exception = assertThrows(CommandException.class, () ->
                 parser.parseCommand(command(1, "15:00", "17:00")).execute(model));
 
-        assertEquals(LessonAddCommand.MESSAGE_CLASH + "John Tan; MATH; MONDAY; 14:00-16:00",
+        assertEquals(LessonAddCommand.MESSAGE_CLASH + "John Tan (91234567); MATH; MONDAY; 14:00-16:00",
                 exception.getMessage());
         assertEquals(before, model.getAddressBook());
     }
@@ -93,8 +95,8 @@ public class LessonAddCommandTest {
                 parser.parseCommand(command(2, "13:00", "18:00")).execute(model));
 
         assertEquals(LessonAddCommand.MESSAGE_MULTIPLE_CLASHES
-                + "John Tan; MATH; MONDAY; 14:00-15:00\n"
-                + "Mary Lim; MATH; MONDAY; 16:00-17:00", exception.getMessage());
+                + "John Tan (91234567); MATH; MONDAY; 14:00-15:00\n"
+                + "Mary Lim (91234568); MATH; MONDAY; 16:00-17:00", exception.getMessage());
         assertEquals(before, model.getAddressBook());
     }
 
@@ -123,6 +125,14 @@ public class LessonAddCommandTest {
                 new RegularLesson(TuitionSubject.MATH, DayOfWeek.MONDAY, LocalTime.NOON, LocalTime.of(13, 0)));
         assertEquals(LessonAddCommand.MESSAGE_INTERNAL,
                 assertThrows(CommandException.class, () -> command.execute(failing)).getMessage());
+    }
+
+    @Test
+    public void getSaveFailureMessage_cause_namesFileAndCause() throws Exception {
+        String expectedMessage = "The lesson could not be added because TutorFlow could not save "
+                + SHOWN_DATA_FILE_NAME + ": the data folder is read-only. No lesson data was changed.";
+        assertEquals(expectedMessage, parser.parseCommand(command(1, "16:00", "18:00"))
+                .getSaveFailureMessage(SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER));
     }
 
     private ModelManager model() {

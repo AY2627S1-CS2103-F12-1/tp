@@ -12,6 +12,8 @@ public class TypicalHomeworks {
             .withSubject("MATH").withDueDate("2026-10-15").build();
     public static final Homework MECHANICS = new HomeworkBuilder().withTitle("Attempt mechanics questions 1-5")
             .withSubject("PHYSICS").withDueDate("2026-10-20").build();
+    /** MECHANICS after the student has completed it. */
+    public static final Homework COMPLETED_MECHANICS = new HomeworkBuilder(MECHANICS).withStatus("COMPLETED").build();
     public static final Homework ATOMIC_STRUCTURE = new HomeworkBuilder().withTitle("Revise atomic structure")
             .withSubject("CHEMISTRY").withDueDate("2026-10-18").withScore("17/20")
             .build();

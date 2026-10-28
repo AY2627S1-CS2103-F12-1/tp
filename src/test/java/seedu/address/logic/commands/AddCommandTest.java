@@ -48,6 +48,20 @@ public class AddCommandTest {
     }
 
     @Test
+    public void execute_sameSingaporePhoneWithCountryCode_isRejected() throws CommandException {
+        Student original = new StudentBuilder().build();
+        Student duplicate = new StudentBuilder().withPhone("+6591234567").build();
+        ModelStub model = new ModelStub();
+        model.addStudent(original);
+
+        CommandException exception = assertThrows(CommandException.class, () ->
+                new AddCommand(duplicate).execute(model));
+
+        assertEquals(AddCommand.MESSAGE_DUPLICATE_STUDENT, exception.getMessage());
+        assertEquals(List.of(original), model.studentsAdded);
+    }
+
+    @Test
     public void equals_comparesStudentValues() {
         Student john = new StudentBuilder().build();
         Student mary = new StudentBuilder().withName("Mary Tan").build();

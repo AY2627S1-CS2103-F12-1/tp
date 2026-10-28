@@ -28,7 +28,7 @@ public class LessonAddCommand extends Command {
     public static final String MESSAGE_MULTIPLE_CLASHES = "This lesson clashes with the following existing lessons:\n";
     public static final String MESSAGE_INTERNAL = "TutorFlow could not add the lesson due to an internal error.";
     public static final String MESSAGE_SAVE_FAILURE = "The lesson could not be added because TutorFlow could not "
-            + "save the updated data. No lesson data was changed.";
+            + "save %s: %s. No lesson data was changed.";
     private static final Logger logger = LogsCenter.getLogger(LessonAddCommand.class);
 
     private final Index studentIndex;
@@ -72,7 +72,7 @@ public class LessonAddCommand extends Command {
         // A search can hide students, but their lessons still occupy the shared weekly schedule.
         List<String> clashingLessons = LessonSchedule.findClashes(model.getAddressBook().getStudentList(), lesson)
                 .stream()
-                .map(entry -> entry.student().getName() + "; " + entry.lesson())
+                .map(entry -> Messages.formatLessonOwner(entry.student()) + "; " + entry.lesson())
                 .toList();
         if (!clashingLessons.isEmpty()) {
             String message = clashingLessons.size() == 1
@@ -83,13 +83,14 @@ public class LessonAddCommand extends Command {
         List<RegularLesson> updated = new ArrayList<>(student.getLessons());
         updated.add(lesson);
         Student updatedStudent = student.withLessons(updated);
-        CommandResult result = new CommandResult("New lesson added: " + student.getName() + "; " + lesson);
+        CommandResult result = new CommandResult("New lesson added: " + Messages.formatLessonOwner(student)
+                + "; " + lesson);
         model.setStudent(student, updatedStudent);
         return result;
     }
 
     @Override
-    public String getSaveFailureMessage(String defaultMessage) {
+    protected String getSaveFailureFormat() {
         return MESSAGE_SAVE_FAILURE;
     }
 

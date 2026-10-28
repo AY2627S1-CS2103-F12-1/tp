@@ -1,21 +1,42 @@
 package seedu.address.logic;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static seedu.address.logic.Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX;
 import static seedu.address.logic.Messages.MESSAGE_UNKNOWN_COMMAND;
+import static seedu.address.logic.commands.CommandTestUtil.CAUSE_READ_ONLY_FOLDER;
+import static seedu.address.logic.commands.CommandTestUtil.SHOWN_DATA_FILE_NAME;
+import static seedu.address.logic.commands.CommandTestUtil.formatHomeworkLine;
+import static seedu.address.logic.parser.CommandParserTestUtil.MESSAGE_TITLE_AND_ALIAS;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
+import static seedu.address.model.homework.DueDateTest.MESSAGE_EMPTY;
+import static seedu.address.model.homework.DueDateTest.MESSAGE_YEAR_OUT_OF_RANGE;
+import static seedu.address.model.homework.DueDateTest.leapDayMessage;
+import static seedu.address.model.homework.DueDateTest.notRealDateMessage;
+import static seedu.address.model.homework.DueDateTest.wrongFormatMessage;
+import static seedu.address.model.util.SampleDataUtil.getSampleAddressBook;
 import static seedu.address.testutil.Assert.assertThrows;
+import static seedu.address.testutil.TestUtil.ARABIC_EGYPT;
+import static seedu.address.testutil.TestUtil.runWithFormatLocale;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalHomeworks.MECHANICS;
 import static seedu.address.testutil.TypicalRegularLessons.MONDAY_MATH;
 import static seedu.address.testutil.TypicalRegularLessons.TUESDAY_PHYSICS;
+import static seedu.address.testutil.TypicalStudents.getModelWithTypicalStudents;
 import static seedu.address.testutil.TypicalStudents.getTypicalAddressBook;
 
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -35,10 +56,7 @@ import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
 import seedu.address.logic.commands.HomeworkEditCommand;
-import seedu.address.logic.commands.HomeworkMarksCommand;
-import seedu.address.logic.commands.HomeworkStatusCommand;
 import seedu.address.logic.commands.LessonAddCommand;
-import seedu.address.logic.commands.LessonEditCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.logic.parser.exceptions.ParseException;
@@ -47,18 +65,37 @@ import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.ReadOnlyAddressBook;
 import seedu.address.model.UserPrefs;
+import seedu.address.model.homework.Homework;
 import seedu.address.model.homework.HomeworkStatus;
 import seedu.address.model.homework.Score;
 import seedu.address.model.student.Student;
+import seedu.address.model.student.TuitionSubject;
+import seedu.address.storage.DataFileConflictException;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
 import seedu.address.storage.StorageManager;
 import seedu.address.testutil.StudentBuilder;
+import seedu.address.ui.HelpContent;
 
 public class LogicManagerTest {
     private static final IOException DUMMY_IO_EXCEPTION = new IOException("dummy IO exception");
+    /** The data file of {@link #setUp()} is {@code tutorflow.json} in the home folder, so only its name is shown. */
+    private static final String SET_UP_DATA_FILE_NAME = "tutorflow.json";
+    private static final String DUMMY_IO_ERROR_MESSAGE =
+            "Could not save tutorflow.json: dummy IO exception. Nothing was changed.";
     private static final IOException DUMMY_AD_EXCEPTION = new AccessDeniedException("dummy access denied exception");
+    private static final String CAUSE_FOLDER = "it is a folder, not a file";
+    private static final String CAUSE_READ_ONLY_FILE = "the file is read-only";
+    private static final String CAUSE_BLOCKED_FOLDER = "a file named data is in the way of the data folder";
+    private static final String CAUSE_READ_ONLY_HOME_FOLDER = "the home folder is read-only";
+    private static final String ADD_SAMPLE_STUDENT_COMMAND =
+            "add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777";
     private static final String ADD_STUDENT_COMMAND = "add n/John Tan l/S3 s/MATH p/91234567 gn/Mary Tan gp/98765432";
+    /** Fixed clock at 2026-10-27, the day the sample students were alpha-tested. */
+    private static final Clock SAMPLE_CLOCK = Clock.fixed(Instant.parse("2026-10-27T00:00:00Z"), ZoneOffset.UTC);
+    /** Fixed clock at 2026-10-28, the day the note about homework left out of the list was alpha-tested. */
+    private static final Clock HIDDEN_NOTE_CLOCK =
+            Clock.fixed(Instant.parse("2026-10-28T00:00:00Z"), ZoneOffset.UTC);
 
     @TempDir
     public Path temporaryFolder;
@@ -74,7 +111,17 @@ public class LogicManagerTest {
         addressBookStorage = new JsonAddressBookStorage(dataFilePath);
         JsonUserPrefsStorage userPrefsStorage = new JsonUserPrefsStorage(temporaryFolder.resolve("userPrefs.json"));
         StorageManager storage = new StorageManager(addressBookStorage, userPrefsStorage);
-        logic = new LogicManager(model, storage);
+        logic = new LogicManager(model, storage, Clock.systemDefaultZone(), temporaryFolder);
+    }
+
+    @Test
+    public void constructor_nullArgument_throwsNullPointerException() {
+        StorageManager storage = new StorageManager(addressBookStorage,
+                new JsonUserPrefsStorage(temporaryFolder.resolve("userPrefs.json")));
+        Clock clock = Clock.systemDefaultZone();
+        assertThrows(NullPointerException.class, () -> new LogicManager(null, storage, clock));
+        assertThrows(NullPointerException.class, () -> new LogicManager(model, null, clock));
+        assertThrows(NullPointerException.class, () -> new LogicManager(model, storage, null));
     }
 
     @Test
@@ -123,7 +170,8 @@ public class LogicManagerTest {
             AddressBook before = new AddressBook(model.getAddressBook());
             String fileBefore = Files.readString(dataFilePath);
             setUpLogic(before, getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
-            assertCommandException("hw status 1 1 status/" + nextStatus, HomeworkStatusCommand.MESSAGE_SAVE_FAILURE);
+            assertCommandException("hw status 1 1 status/" + nextStatus, getCommandSaveFailureMessage(
+                    "homework status could not be updated", SET_UP_DATA_FILE_NAME, DUMMY_IO_EXCEPTION, "homework"));
             assertEquals(before, model.getAddressBook());
             assertEquals(fileBefore, Files.readString(dataFilePath));
             setUpLogic(before, addressBookStorage);
@@ -157,7 +205,8 @@ public class LogicManagerTest {
         AddressBook before = new AddressBook(model.getAddressBook());
         String savedBefore = Files.readString(dataFilePath);
         setUpLogic(before, getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
-        assertCommandException("lesson edit 1 st/17:00", LessonEditCommand.MESSAGE_SAVE_FAILURE);
+        assertCommandException("lesson edit 1 st/17:00", getCommandSaveFailureMessage(
+                "lesson could not be edited", SET_UP_DATA_FILE_NAME, DUMMY_IO_EXCEPTION, "lesson"));
         assertEquals(before, model.getAddressBook());
         assertEquals(savedBefore, Files.readString(dataFilePath));
     }
@@ -194,8 +243,8 @@ public class LogicManagerTest {
         String beforeFile = Files.readString(dataFilePath);
         AddressBook before = new AddressBook(model.getAddressBook());
         setUpLogic(before, getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
-        assertCommandException("lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00",
-                LessonAddCommand.MESSAGE_SAVE_FAILURE);
+        assertCommandException("lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00", getCommandSaveFailureMessage(
+                "lesson could not be added", SET_UP_DATA_FILE_NAME, DUMMY_IO_EXCEPTION, "lesson"));
         assertEquals(before, model.getAddressBook());
         assertEquals(beforeFile, Files.readString(dataFilePath));
     }
@@ -204,6 +253,109 @@ public class LogicManagerTest {
     public void execute_invalidCommandFormat_throwsParseException() {
         String invalidCommand = "uicfhmowqewca";
         assertParseException(invalidCommand, MESSAGE_UNKNOWN_COMMAND);
+    }
+
+    @Test
+    public void execute_unknownPrefixInTitle_namesWordAndKeepsData() {
+        setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
+
+        String usageLine = "\nUsage: " + HomeworkAddCommand.MESSAGE_USAGE;
+        assertParseException("hw add 1 t/Speed in km/h s/PHYSICS due/2026-11-01",
+                notPrefixWithQuoteHint("km/", "t/\"Speed in km/h\"") + usageLine);
+        // the quotes around the title are not doubled in the example
+        assertParseException("hw add 1 t/\"Speed in km/h\"s/PHYSICS due/2026-11-20",
+                notPrefixWithQuoteHint("km/", "t/\"Speed in km/h\"") + usageLine);
+        // the due date before x/ is only digits and dashes, so no example is given
+        assertParseException("hw add 1 t/A s/PHYSICS due/2026-11-01 x/y", notPrefixWithQuoteHint("x/") + usageLine);
+        assertFalse(Files.exists(dataFilePath));
+    }
+
+    @Test
+    public void execute_quotedTitleWithSlashWord_addsAndSaves() throws Exception {
+        setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
+
+        logic.execute("hw add 1 t/\"Speed in km/h\" s/PHYSICS due/2026-11-01");
+
+        Student savedStudent = addressBookStorage.readAddressBook().orElseThrow().getStudentList().getFirst();
+        assertEquals("Speed in km/h", savedStudent.getHomeworks().get(2).getTitle().toString());
+    }
+
+    @Test
+    public void execute_titleAndAliasInEdit_reportsUseEither() {
+        setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
+
+        assertParseException("hw e 1 2 t/A title/B", MESSAGE_TITLE_AND_ALIAS);
+        assertFalse(Files.exists(dataFilePath));
+    }
+
+    @Test
+    public void execute_unknownPrefixInOtherCommands_namesPrefix() {
+        setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
+
+        assertParseException("edit 1 l/S3 x/value", notPrefixWithQuoteHint("x/", "l/\"S3 x/value\"") + "\nUsage: "
+                + EditCommand.MESSAGE_USAGE);
+        // the end time before x/ is only digits and a colon, so no example is given
+        assertParseException("lesson add 1 s/MATH d/FRIDAY st/10:00 et/11:00 x/y", notPrefixWithQuoteHint("x/")
+                + "\nUsage: " + LessonAddCommand.MESSAGE_USAGE);
+        // no value comes before the word, so there is no quote hint
+        assertParseException("hw e 1 2 score/5/10", notPrefix("score/") + "\nUsage: "
+                + HomeworkEditCommand.MESSAGE_USAGE);
+        assertParseException("hw del 1 x/y", notPrefix("x/") + "\nUsage: " + HomeworkDeleteCommand.MESSAGE_USAGE);
+        assertFalse(Files.exists(dataFilePath));
+    }
+
+    @Test
+    public void execute_dueDateErrors_specificMessageAndNothingSaved() {
+        setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
+
+        assertParseException("hw add 1 t/X s/MATH due/", MESSAGE_EMPTY);
+        assertParseException("hw add 1 t/X s/MATH due/30-10-2026", wrongFormatMessage("30-10-2026"));
+        assertParseException("hw add 1 t/X s/MATH due/2026-13-01", notRealDateMessage("2026-13-01"));
+        assertParseException("hw add 1 t/X s/MATH due/2026-02-30", notRealDateMessage("2026-02-30"));
+        // today is 2026-10-27, and neither 2026 nor 2027 is a leap year
+        assertParseException("hw add 1 t/X s/MATH due/2-29", leapDayMessage(2028));
+        assertParseException("hw add 1 t/Typo year s/MATH due/2206-10-30", MESSAGE_YEAR_OUT_OF_RANGE);
+        assertFalse(Files.exists(dataFilePath));
+    }
+
+    @Test
+    public void execute_leapDayArabicDigitsLocale_exampleInAsciiDigitsCanBeTypedBack() {
+        setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
+
+        runWithFormatLocale(ARABIC_EGYPT, () -> {
+            // today is 2026-10-27, so the example is 2028-02-29, which the user may type back in
+            assertParseException("hw add 1 t/X s/MATH due/2-29", leapDayMessage(2028));
+            String feedback = assertDoesNotThrow(() -> logic.execute("hw add 1 t/X s/MATH due/2028-02-29"))
+                    .getFeedbackToUser();
+            assertEquals("New homework added:\nEthan Lim; Title: X; Subject: MATH; Due: 2028-02-29", feedback);
+        });
+    }
+
+    @Test
+    public void execute_pastDueDateInRange_addsAndSaves() throws Exception {
+        setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
+
+        assertEquals("New homework added:\nEthan Lim; Title: X; Subject: MATH; Due: 2001-01-01",
+                logic.execute("hw add 1 t/X s/MATH due/2001-01-01").getFeedbackToUser());
+
+        Student savedStudent = addressBookStorage.readAddressBook().orElseThrow().getStudentList().getFirst();
+        assertTrue(savedStudent.getHomeworks().stream().anyMatch(homework -> homework.getTitle().toString().equals("X")
+                && homework.getDueDate().toString().equals("2001-01-01")));
+    }
+
+    @Test
+    public void execute_helpEditExampleOnSampleData_editsPhysicsRecord() throws Exception {
+        setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
+        String example = HelpContent.getSections().stream().flatMap(section -> section.entries().stream())
+                .filter(entry -> entry.commandWord().equals("homework edit")).findFirst().orElseThrow().example();
+
+        logic.execute(example);
+
+        Homework savedHomework = addressBookStorage.readAddressBook().orElseThrow().getStudentList().getFirst()
+                .getHomeworks().get(1);
+        assertEquals("Kinematics practice set B", savedHomework.getTitle().toString());
+        assertEquals(TuitionSubject.PHYSICS, savedHomework.getSubject());
+        assertEquals("2026-10-28", savedHomework.getDueDate().toString());
     }
 
     @Test
@@ -268,7 +420,7 @@ public class LogicManagerTest {
         logic.execute("search Alex");
 
         assertCommandException("lesson add 1 s/MATH d/MONDAY st/15:00 et/17:00",
-                LessonAddCommand.MESSAGE_CLASH + "John Tan; MATH; MONDAY; 14:00-16:00");
+                LessonAddCommand.MESSAGE_CLASH + "John Tan (91234567); MATH; MONDAY; 14:00-16:00");
 
         assertEquals(1, logic.getStudentList().size());
         assertEquals(rosterBefore, model.getAddressBook());
@@ -316,6 +468,145 @@ public class LogicManagerTest {
         savedData = addressBookStorage.readAddressBook().get();
         assertEquals(0, savedData.getStudentList().get(0).getHomeworks().size());
         assertEquals(model.getAddressBook(), new AddressBook(savedData));
+    }
+
+    @Test
+    public void execute_twoDeletesFromShownNumbers_deletesIntendedRecords() throws Exception {
+        setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
+        logic.execute("hw add 2 t/Vectors revision s/MATH due/2026-11-20");
+
+        // the overdue integration homework (due 2026-10-26) is not listed
+        assertEquals("Deleted homework:\n"
+                + formatHomeworkLine(2, "Organic reaction pathways map", "CHEMISTRY", "2026-11-02", "Not recorded",
+                        "ASSIGNED")
+                + "\nListed 2 upcoming homework records for Priya Nair"
+                + " (1 record due before today not shown; use homework list 2 all to see it).\n"
+                + "Homework for Priya Nair:\n"
+                + formatHomeworkLine(2, "Chemical equilibrium past paper", "CHEMISTRY", "2026-11-09", "Not recorded",
+                        "ASSIGNED") + "\n"
+                + formatHomeworkLine(3, "Vectors revision", "MATH", "2026-11-20", "Not recorded", "ASSIGNED"),
+                logic.execute("hw del 2 2").getFeedbackToUser());
+
+        // 2 is the number just shown for the chemical equilibrium homework
+        logic.execute("hw del 2 2");
+        Student savedStudent = addressBookStorage.readAddressBook().orElseThrow().getStudentList().get(1);
+        assertEquals(List.of("Integration by parts exercise", "Vectors revision"), savedStudent.getHomeworks()
+                .stream().map(homework -> homework.getTitle().toString()).toList());
+    }
+
+    @Test
+    public void execute_editEarlierSampleHomework_hintsHiddenRecord() throws Exception {
+        // Priya Nair's homework 1 is due 2026-10-26, so on 2026-10-28 the list after the edit starts at 2
+        setUpLogic(getSampleAddressBook(), addressBookStorage, HIDDEN_NOTE_CLOCK);
+
+        assertEquals("Edited homework:\n"
+                + "Priya Nair; Title: Research Organic pathways; Subject: MATH; Due: 2026-10-26\n"
+                + "Listed 2 upcoming homework records for Priya Nair"
+                + " (1 record due before today not shown; use homework list 2 all to see it).\n"
+                + "Homework for Priya Nair:\n"
+                + formatHomeworkLine(2, "Organic reaction pathways map", "CHEMISTRY", "2026-11-02", "Not recorded",
+                        "ASSIGNED") + "\n"
+                + formatHomeworkLine(3, "Chemical equilibrium past paper", "CHEMISTRY", "2026-11-09", "Not recorded",
+                        "ASSIGNED"),
+                logic.execute("hw e 2 1 t/Research Organic pathways").getFeedbackToUser());
+    }
+
+    @Test
+    public void execute_hiddenNoteAfterSearch_hintedCommandListsHiddenRecord() throws Exception {
+        // after the search Priya Nair is displayed student 1, so the hint names 1, not her roster position 2
+        setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
+        logic.execute("search Priya");
+        String hintedCommand = "homework list 1 all";
+
+        assertTrue(logic.execute("hw ls 1").getFeedbackToUser().startsWith("Listed 2 upcoming homework records for"
+                + " Priya Nair (1 record due before today not shown; use " + hintedCommand + " to see it).\n"));
+        assertTrue(logic.execute(hintedCommand).getFeedbackToUser().contains("\n"
+                + formatHomeworkLine(1, "Integration by parts exercise", "MATH", "2026-10-26", "Not recorded",
+                        "ASSIGNED")));
+    }
+
+    @Test
+    public void execute_hiddenNoteAfterFilterAndEdit_hintedCommandListsHiddenRecord() throws Exception {
+        // after the filter Priya Nair is displayed student 1, so the hint names 1, not her roster position 2
+        setUpLogic(getSampleAddressBook(), addressBookStorage, HIDDEN_NOTE_CLOCK);
+        logic.execute("filter s/CHEMISTRY");
+        String hintedCommand = "homework list 1 all";
+
+        assertTrue(logic.execute("hw e 1 2 t/Pathways map v2").getFeedbackToUser().startsWith("Edited homework:\n"
+                + "Priya Nair; Title: Pathways map v2; Subject: CHEMISTRY; Due: 2026-11-02\n"
+                + "Listed 2 upcoming homework records for Priya Nair (1 record due before today not shown; use "
+                + hintedCommand + " to see it).\n"));
+        assertTrue(logic.execute(hintedCommand).getFeedbackToUser().contains("\n"
+                + formatHomeworkLine(1, "Integration by parts exercise", "MATH", "2026-10-26", "Not recorded",
+                        "ASSIGNED")));
+    }
+
+    @Test
+    public void execute_hiddenNoteAfterSortAndDelete_hintedCommandListsHiddenRecord() throws Exception {
+        // after the sort Ethan Lim is displayed student 4, so the hint names 4, not his roster position 1
+        setUpLogic(getSampleAddressBook(), addressBookStorage, HIDDEN_NOTE_CLOCK);
+        logic.execute("sort by/level o/desc");
+        String hintedCommand = "homework list 4 all";
+
+        assertEquals("Deleted homework:\n"
+                + formatHomeworkLine(2, "Kinematics practice set", "PHYSICS", "2026-10-28", "Not recorded",
+                        "ASSIGNED")
+                + "\nNo upcoming homework found for Ethan Lim (1 record due before today not shown; use "
+                + hintedCommand + " to see it).",
+                logic.execute("hw del 4 2").getFeedbackToUser());
+        assertTrue(logic.execute(hintedCommand).getFeedbackToUser().contains("\n"
+                + formatHomeworkLine(1, "Quadratic equations worksheet", "MATH", "2026-10-23", "Not recorded",
+                        "ASSIGNED")));
+    }
+
+    @Test
+    public void execute_deleteOnlyEarlierSampleHomework_removesHiddenNote() throws Exception {
+        // Priya Nair's homework 1 (due 2026-10-26) is her only record due before today, so after deleting it
+        // none is hidden
+        setUpLogic(getSampleAddressBook(), addressBookStorage, HIDDEN_NOTE_CLOCK);
+
+        assertEquals("Deleted homework:\n"
+                + formatHomeworkLine(1, "Integration by parts exercise", "MATH", "2026-10-26", "Not recorded",
+                        "ASSIGNED")
+                + "\nListed 2 upcoming homework records for Priya Nair.\nHomework for Priya Nair:\n"
+                + formatHomeworkLine(1, "Organic reaction pathways map", "CHEMISTRY", "2026-11-02", "Not recorded",
+                        "ASSIGNED") + "\n"
+                + formatHomeworkLine(2, "Chemical equilibrium past paper", "CHEMISTRY", "2026-11-09", "Not recorded",
+                        "ASSIGNED"),
+                logic.execute("hw del 2 1").getFeedbackToUser());
+    }
+
+    @Test
+    public void execute_editEarlierSampleDueDateToFuture_removesHiddenNote() throws Exception {
+        // Priya Nair's homework 1 (due 2026-10-26) is her only record due before today until the edit moves it
+        // to December
+        setUpLogic(getSampleAddressBook(), addressBookStorage, HIDDEN_NOTE_CLOCK);
+
+        assertEquals("Edited homework:\n"
+                + "Priya Nair; Title: Integration by parts exercise; Subject: MATH; Due: 2026-12-01\n"
+                + "Listed 3 upcoming homework records for Priya Nair.\nHomework for Priya Nair:\n"
+                + formatHomeworkLine(2, "Organic reaction pathways map", "CHEMISTRY", "2026-11-02", "Not recorded",
+                        "ASSIGNED") + "\n"
+                + formatHomeworkLine(3, "Chemical equilibrium past paper", "CHEMISTRY", "2026-11-09", "Not recorded",
+                        "ASSIGNED") + "\n"
+                + formatHomeworkLine(1, "Integration by parts exercise", "MATH", "2026-12-01", "Not recorded",
+                        "ASSIGNED"),
+                logic.execute("hw e 2 1 due/2026-12-01").getFeedbackToUser());
+    }
+
+    @Test
+    public void execute_deleteScoredHomework_showsScoreAndStatus() throws Exception {
+        setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
+        logic.execute("hw m 2 1 score/5/10");
+
+        assertEquals("Deleted homework:\n"
+                + formatHomeworkLine(1, "Integration by parts exercise", "MATH", "2026-10-26", "5/10", "ASSIGNED")
+                + "\nListed 2 upcoming homework records for Priya Nair.\nHomework for Priya Nair:\n"
+                + formatHomeworkLine(1, "Organic reaction pathways map", "CHEMISTRY", "2026-11-02", "Not recorded",
+                        "ASSIGNED") + "\n"
+                + formatHomeworkLine(2, "Chemical equilibrium past paper", "CHEMISTRY", "2026-11-09", "Not recorded",
+                        "ASSIGNED"),
+                logic.execute("hw del 2 1").getFeedbackToUser());
     }
 
     @Test
@@ -370,8 +661,7 @@ public class LogicManagerTest {
         logic.execute("hw up due/365");
         logic.execute("help");
 
-        assertEquals(new ModelManager(getTypicalAddressBook(), new UserPrefs()), model);
-        assertFalse(Files.exists(dataFilePath));
+        assertEquals(getModelWithTypicalStudents(), model);
     }
 
     @Test
@@ -405,10 +695,46 @@ public class LogicManagerTest {
         initial.setStudent(initial.getStudentList().get(0),
                 initial.getStudentList().get(0).withLessons(List.of(MONDAY_MATH)));
         setUpLogic(initial, getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
-        String expectedMessage = String.format(LogicManager.FILE_OPS_ERROR_FORMAT, DUMMY_IO_EXCEPTION.getMessage());
 
-        assertCommandFailure("delete 1", CommandException.class, expectedMessage,
+        assertCommandFailure("delete 1", CommandException.class, getCommandSaveFailureMessage(
+                "student could not be deleted", SET_UP_DATA_FILE_NAME, DUMMY_IO_EXCEPTION, "student"),
                 new ModelManager(initial, new UserPrefs()));
+    }
+
+    @Test
+    public void execute_deleteStudentSaveFails_preservesSortedDisplayedOrder() throws Exception {
+        AddressBook initial = new AddressBook();
+        initial.addStudent(new StudentBuilder().withName("Secondary Student").withAcademicLevel("S3").build());
+        initial.addStudent(new StudentBuilder().withName("Junior Student").withPhone("92345678")
+                .withAcademicLevel("J1").build());
+        initial.addStudent(new StudentBuilder().withName("Primary Student").withPhone("93456789")
+                .withAcademicLevel("S1").build());
+        setUpLogic(initial, getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+        logic.execute("sort by/level");
+        List<Student> sortedStudents = List.copyOf(logic.getStudentList());
+        assertFalse(sortedStudents.equals(initial.getStudentList()));
+
+        String expectedMessage = getCommandSaveFailureMessage(
+                "student could not be deleted", SET_UP_DATA_FILE_NAME, DUMMY_IO_EXCEPTION, "student");
+        assertCommandException("delete 1", expectedMessage);
+
+        assertEquals(sortedStudents, logic.getStudentList());
+        assertEquals(initial, model.getAddressBook());
+    }
+
+    @Test
+    public void execute_addStudentSaveFailsWithFilteredView_restoresStoredRoster() throws Exception {
+        AddressBook initial = new AddressBook();
+        initial.addStudent(new StudentBuilder().build());
+        initial.addStudent(new StudentBuilder().withName("Jane Tan").withPhone("92345678").build());
+        setUpLogic(initial, getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+        logic.execute("search John");
+        assertEquals(1, logic.getStudentList().size());
+
+        assertCommandException("add n/Olivia Tan l/S2 s/MATH p/93456789 gn/May Tan gp/98765432",
+                DUMMY_IO_ERROR_MESSAGE);
+
+        assertEquals(initial, model.getAddressBook());
     }
 
     @Test
@@ -424,6 +750,18 @@ public class LogicManagerTest {
                 .withGuardianPhone("95554444").withHomeworks(ALGEBRA).withLessons(MONDAY_MATH).build();
         assertEquals(List.of(expected), logic.getStudentList());
         assertEquals(List.of(expected), addressBookStorage.readAddressBook().get().getStudentList());
+    }
+
+    @Test
+    public void execute_editStudentSubjectOrder_persistsNewOrder() throws Exception {
+        AddressBook initial = new AddressBook();
+        initial.addStudent(new StudentBuilder().withSubjects("MATH, PHYSICS").build());
+        setUpLogic(initial, addressBookStorage);
+
+        logic.execute("edit 1 s/PHYSICS, MATH");
+
+        Student saved = addressBookStorage.readAddressBook().orElseThrow().getStudentList().getFirst();
+        assertEquals("PHYSICS, MATH", saved.getSubjects().toString());
     }
 
     @Test
@@ -455,7 +793,8 @@ public class LogicManagerTest {
         AddressBook before = new AddressBook(model.getAddressBook());
         setUpLogic(before, getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
 
-        assertCommandException("edit 1 n/Jane Tan", EditCommand.MESSAGE_SAVE_FAILURE);
+        assertCommandException("edit 1 n/Jane Tan", getCommandSaveFailureMessage(
+                "student could not be edited", SET_UP_DATA_FILE_NAME, DUMMY_IO_EXCEPTION, "student"));
 
         assertEquals(before, model.getAddressBook());
         assertEquals(beforeFile, Files.readString(dataFilePath));
@@ -476,23 +815,221 @@ public class LogicManagerTest {
 
     @Test
     public void execute_storageThrowsIoException_throwsCommandException() {
-        assertCommandFailureForExceptionFromStorage(DUMMY_IO_EXCEPTION, String.format(
-                LogicManager.FILE_OPS_ERROR_FORMAT, DUMMY_IO_EXCEPTION.getMessage()));
+        // no common cause applies, so the system's text is the cause
+        assertCommandFailureForExceptionFromStorage(DUMMY_IO_EXCEPTION, DUMMY_IO_ERROR_MESSAGE);
     }
 
     @Test
     public void execute_storageThrowsAdException_throwsCommandException() {
-        assertCommandFailureForExceptionFromStorage(DUMMY_AD_EXCEPTION, String.format(
-                LogicManager.FILE_OPS_PERMISSION_ERROR_FORMAT, DUMMY_AD_EXCEPTION.getMessage()));
+        // the file and its folder are writable, so the system's text is the cause
+        assertCommandFailureForExceptionFromStorage(DUMMY_AD_EXCEPTION,
+                "Could not save tutorflow.json: dummy access denied exception. Nothing was changed.");
+    }
+
+    @Test
+    public void execute_dataFileConflict_keepsConflictMessage() {
+        setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(
+                new DataFileConflictException(DataFileConflictException.MESSAGE_CHANGED)));
+
+        assertCommandFailure("hw del 1 2", CommandException.class, DataFileConflictException.MESSAGE_CHANGED,
+                getModelWithTypicalStudents());
+    }
+
+    @Test
+    public void execute_dataFileIsFolder_reportsFolderAndRestores() throws Exception {
+        Path dataFile = temporaryFolder.resolve("data").resolve("tutorflow.json");
+        Files.createDirectories(dataFile);
+        setUpLogic(getSampleAddressBook(), new JsonAddressBookStorage(dataFile), SAMPLE_CLOCK);
+        logic.execute("search Priya");
+
+        assertSaveFailureRestores("delete 1", getCommandSaveFailureMessage(
+                "student could not be deleted", SHOWN_DATA_FILE_NAME, CAUSE_FOLDER, "student"));
+        assertTrue(Files.isDirectory(dataFile));
+    }
+
+    @Test
+    public void execute_readOnlyDataFolderNoLock_reportsReadOnlyFolder() throws Exception {
+        Path dataFolder = Files.createDirectories(temporaryFolder.resolve("data"));
+        setUpLogic(getSampleAddressBook(), new JsonAddressBookStorage(dataFolder.resolve("tutorflow.json")),
+                SAMPLE_CLOCK);
+        makeFolderReadOnly(dataFolder);
+        try {
+            // the failure is on the internal lock file, which is never named
+            assertSaveFailureRestores("delete 1", getCommandSaveFailureMessage(
+                    "student could not be deleted", SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER, "student"));
+            assertEquals(List.of(), listFileNames(dataFolder));
+        } finally {
+            makeFolderWritable(dataFolder);
+        }
+    }
+
+    @Test
+    public void execute_readOnlyDataFolderWithLock_reportsReadOnlyFolder() throws Exception {
+        Path dataFile = temporaryFolder.resolve("data").resolve("tutorflow.json");
+        setUpLogic(getSampleAddressBook(), new JsonAddressBookStorage(dataFile), SAMPLE_CLOCK);
+        logic.execute("edit 6 l/S5");
+        byte[] fileBefore = Files.readAllBytes(dataFile);
+        makeFolderReadOnly(dataFile.getParent());
+        try {
+            logic.execute("sort by/level");
+            assertSaveFailureRestores("delete 1", getCommandSaveFailureMessage(
+                    "student could not be deleted", SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER, "student"));
+            assertArrayEquals(fileBefore, Files.readAllBytes(dataFile));
+        } finally {
+            makeFolderWritable(dataFile.getParent());
+        }
+    }
+
+    @Test
+    public void execute_readOnlyHomeFolderNoDataFolder_reportsReadOnlyHomeFolder() throws Exception {
+        Path dataFile = temporaryFolder.resolve("data").resolve("tutorflow.json");
+        setUpLogic(getSampleAddressBook(), new JsonAddressBookStorage(dataFile), SAMPLE_CLOCK);
+        makeFolderReadOnly(temporaryFolder);
+        try {
+            assertSaveFailureRestores(ADD_SAMPLE_STUDENT_COMMAND,
+                    getGeneralSaveFailureMessage(SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_HOME_FOLDER));
+            assertFalse(Files.exists(dataFile.getParent()));
+        } finally {
+            makeFolderWritable(temporaryFolder);
+        }
+    }
+
+    @Test
+    public void execute_readOnlyFolderAboveDataFolder_namesThatFolder() throws Exception {
+        Path readOnlyFolder = Files.createDirectories(temporaryFolder.resolve("store"));
+        Path dataFile = readOnlyFolder.resolve("data").resolve("tutorflow.json");
+        setUpLogic(getSampleAddressBook(), new JsonAddressBookStorage(dataFile), SAMPLE_CLOCK);
+        makeFolderReadOnly(readOnlyFolder);
+        try {
+            assertSaveFailureRestores(ADD_SAMPLE_STUDENT_COMMAND, getGeneralSaveFailureMessage(
+                    Path.of("store", "data", "tutorflow.json").toString(), "the folder store is read-only"));
+        } finally {
+            makeFolderWritable(readOnlyFolder);
+        }
+    }
+
+    @Test
+    public void execute_fileNamedData_reportsBlockedFolder() throws Exception {
+        Path blockingFile = Files.writeString(temporaryFolder.resolve("data"), "x");
+        setUpLogic(getSampleAddressBook(), new JsonAddressBookStorage(blockingFile.resolve("tutorflow.json")),
+                SAMPLE_CLOCK);
+
+        assertSaveFailureRestores(ADD_SAMPLE_STUDENT_COMMAND,
+                getGeneralSaveFailureMessage(SHOWN_DATA_FILE_NAME, CAUSE_BLOCKED_FOLDER));
+        assertEquals(6, model.getAddressBook().getStudentList().size());
+        assertEquals("x", Files.readString(blockingFile));
+    }
+
+    @Test
+    public void execute_fileNamedLikeOtherDataFolder_namesThatFolder() throws Exception {
+        Path blockingFile = Files.writeString(temporaryFolder.resolve("store"), "x");
+        setUpLogic(getSampleAddressBook(), new JsonAddressBookStorage(blockingFile.resolve("tutorflow.json")),
+                SAMPLE_CLOCK);
+
+        assertSaveFailureRestores(ADD_SAMPLE_STUDENT_COMMAND, getGeneralSaveFailureMessage(
+                Path.of("store", "tutorflow.json").toString(), "a file named store is in the way of the data folder"));
+    }
+
+    @Test
+    public void execute_dataFileOutsideHome_namesAbsolutePath() throws Exception {
+        Path dataFile = temporaryFolder.resolve("elsewhere").resolve("tutorflow.json");
+        Files.createDirectories(dataFile);
+        setUpLogic(getSampleAddressBook(), new JsonAddressBookStorage(dataFile), SAMPLE_CLOCK,
+                Files.createDirectories(temporaryFolder.resolve("app")));
+
+        assertSaveFailureRestores("delete 1", getCommandSaveFailureMessage("student could not be deleted",
+                dataFile.toAbsolutePath().normalize().toString(), CAUSE_FOLDER, "student"));
+    }
+
+    @Test
+    public void execute_readOnlyDataFile_homeworkCommandsReportReadOnlyFile() throws Exception {
+        Path dataFile = temporaryFolder.resolve("data").resolve("tutorflow.json");
+        setUpLogic(getSampleAddressBook(), new JsonAddressBookStorage(dataFile), SAMPLE_CLOCK);
+        logic.execute("edit 6 l/S5");
+        Homework homeworkBefore = model.getAddressBook().getStudentList().getFirst().getHomeworks().get(1);
+        assertTrue(dataFile.toFile().setWritable(false));
+        try {
+            assumeFalse(Files.isWritable(dataFile), "the file is still writable, e.g. when running as root");
+            assertSaveFailureRestores("hw e 1 2 t/X", getCommandSaveFailureMessage(
+                    "homework could not be edited", CAUSE_READ_ONLY_FILE, "homework"));
+            assertSaveFailureRestores("hw m 1 2 score/5/10", getCommandSaveFailureMessage(
+                    "homework marks could not be recorded", CAUSE_READ_ONLY_FILE, "homework"));
+            assertSaveFailureRestores("hw del 1 2", getCommandSaveFailureMessage(
+                    "homework could not be deleted", CAUSE_READ_ONLY_FILE, "homework"));
+            assertEquals(homeworkBefore, model.getAddressBook().getStudentList().getFirst().getHomeworks().get(1));
+        } finally {
+            dataFile.toFile().setWritable(true);
+        }
+    }
+
+    @Test
+    public void execute_readOnlyDataFolder_otherCommandsReportReadOnlyFolder() throws Exception {
+        Path dataFile = temporaryFolder.resolve("data").resolve("tutorflow.json");
+        setUpLogic(getSampleAddressBook(), new JsonAddressBookStorage(dataFile), SAMPLE_CLOCK);
+        logic.execute("edit 6 l/S5");
+        byte[] fileBefore = Files.readAllBytes(dataFile);
+        makeFolderReadOnly(dataFile.getParent());
+        try {
+            assertSaveFailureRestores("hw add 1 t/Test s/MATH due/2026-12-01", getCommandSaveFailureMessage(
+                    "homework could not be added", CAUSE_READ_ONLY_FOLDER, "homework"));
+            assertSaveFailureRestores("hw status 1 2 status/COMPLETED", getCommandSaveFailureMessage(
+                    "homework status could not be updated", CAUSE_READ_ONLY_FOLDER, "homework"));
+            assertSaveFailureRestores("lesson add 1 s/MATH d/FRIDAY st/10:00 et/11:00", getCommandSaveFailureMessage(
+                    "lesson could not be added", CAUSE_READ_ONLY_FOLDER, "lesson"));
+            assertSaveFailureRestores("lesson edit 1 st/16:00", getCommandSaveFailureMessage(
+                    "lesson could not be edited", CAUSE_READ_ONLY_FOLDER, "lesson"));
+            assertSaveFailureRestores("lesson delete 1", getCommandSaveFailureMessage(
+                    "lesson could not be deleted", CAUSE_READ_ONLY_FOLDER, "lesson"));
+            assertSaveFailureRestores("edit 1 p/91234568", getCommandSaveFailureMessage(
+                    "student could not be edited", CAUSE_READ_ONLY_FOLDER, "student"));
+            assertArrayEquals(fileBefore, Files.readAllBytes(dataFile));
+        } finally {
+            makeFolderWritable(dataFile.getParent());
+        }
     }
 
     @Test
     public void execute_clearSaveFails_restoresStudents() {
         setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
-        String expectedMessage = String.format(LogicManager.FILE_OPS_ERROR_FORMAT, DUMMY_IO_EXCEPTION.getMessage());
 
-        assertCommandFailure(ClearCommand.COMMAND_WORD, CommandException.class, expectedMessage,
-                new ModelManager(getTypicalAddressBook(), new UserPrefs()));
+        assertCommandFailure(ClearCommand.COMMAND_WORD, CommandException.class, DUMMY_IO_ERROR_MESSAGE,
+                getModelWithTypicalStudents());
+    }
+
+    @Test
+    public void execute_deleteSaveFailsAfterSort_keepsDisplayedOrder() throws Exception {
+        setUpLogic(getSampleAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+        logic.execute("sort by/level o/desc");
+        List<Student> displayedBefore = List.copyOf(logic.getStudentList());
+
+        assertCommandException("delete 1", getCommandSaveFailureMessage(
+                "student could not be deleted", SET_UP_DATA_FILE_NAME, DUMMY_IO_EXCEPTION, "student"));
+
+        assertEquals(displayedBefore, logic.getStudentList());
+    }
+
+    @Test
+    public void execute_clearSaveFailsAfterSort_keepsDisplayedOrder() throws Exception {
+        setUpLogic(getSampleAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+        logic.execute("sort by/level o/desc");
+        List<Student> displayedBefore = List.copyOf(logic.getStudentList());
+
+        assertCommandException(ClearCommand.COMMAND_WORD, DUMMY_IO_ERROR_MESSAGE);
+
+        assertEquals(displayedBefore, logic.getStudentList());
+    }
+
+    @Test
+    public void execute_addSaveFailsAfterFilter_keepsDisplayedStudents() throws Exception {
+        setUpLogic(getSampleAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
+        logic.execute("filter s/MATH");
+        logic.execute("sort by/level o/desc");
+        List<Student> displayedBefore = List.copyOf(logic.getStudentList());
+
+        // Adding a student shows all students, so a failed save must bring back the filter
+        assertCommandException(ADD_STUDENT_COMMAND, DUMMY_IO_ERROR_MESSAGE);
+
+        assertEquals(displayedBefore, logic.getStudentList());
     }
 
     @Test
@@ -500,15 +1037,17 @@ public class LogicManagerTest {
         setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
 
         assertCommandFailure("hw add 2 t/Trigonometry practice s/MATH due/2026-11-01", CommandException.class,
-                HomeworkAddCommand.MESSAGE_SAVE_FAILURE, new ModelManager(getTypicalAddressBook(), new UserPrefs()));
+                getCommandSaveFailureMessage("homework could not be added", SET_UP_DATA_FILE_NAME,
+                        DUMMY_IO_EXCEPTION, "homework"), getModelWithTypicalStudents());
     }
 
     @Test
     public void execute_homeworkDeleteSaveFails_rollsBackDeletion() {
         setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_AD_EXCEPTION));
 
-        assertCommandFailure("hw del 1 2", CommandException.class, HomeworkDeleteCommand.MESSAGE_SAVE_FAILURE,
-                new ModelManager(getTypicalAddressBook(), new UserPrefs()));
+        assertCommandFailure("hw del 1 2", CommandException.class, getCommandSaveFailureMessage(
+                "homework could not be deleted", SET_UP_DATA_FILE_NAME, DUMMY_AD_EXCEPTION, "homework"),
+                getModelWithTypicalStudents());
     }
 
     @Test
@@ -516,8 +1055,8 @@ public class LogicManagerTest {
         setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_IO_EXCEPTION));
 
         assertCommandFailure("hw edit 1 2 t/Revise mechanics s/PHYSICS due/2026-11-10", CommandException.class,
-                HomeworkEditCommand.MESSAGE_SAVE_FAILURE, new ModelManager(getTypicalAddressBook(), new UserPrefs()));
-        assertFalse(Files.exists(dataFilePath));
+                getCommandSaveFailureMessage("homework could not be edited", SET_UP_DATA_FILE_NAME,
+                        DUMMY_IO_EXCEPTION, "homework"), getModelWithTypicalStudents());
     }
 
     @Test
@@ -525,8 +1064,8 @@ public class LogicManagerTest {
         setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_AD_EXCEPTION));
 
         assertCommandFailure("hw marks 1 3 score/0/10", CommandException.class,
-                HomeworkMarksCommand.MESSAGE_SAVE_FAILURE, new ModelManager(getTypicalAddressBook(), new UserPrefs()));
-        assertFalse(Files.exists(dataFilePath));
+                getCommandSaveFailureMessage("homework marks could not be recorded", SET_UP_DATA_FILE_NAME,
+                        DUMMY_AD_EXCEPTION, "homework"), getModelWithTypicalStudents());
     }
 
     @Test
@@ -534,8 +1073,8 @@ public class LogicManagerTest {
         setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_AD_EXCEPTION));
 
         assertCommandFailure("hw m 1 3 score/", CommandException.class,
-                HomeworkMarksCommand.MESSAGE_SAVE_FAILURE, new ModelManager(getTypicalAddressBook(), new UserPrefs()));
-        assertFalse(Files.exists(dataFilePath));
+                getCommandSaveFailureMessage("homework marks could not be recorded", SET_UP_DATA_FILE_NAME,
+                        DUMMY_AD_EXCEPTION, "homework"), getModelWithTypicalStudents());
     }
 
     @Test
@@ -622,9 +1161,89 @@ public class LogicManagerTest {
      * taking today's date from {@code clock}.
      */
     private void setUpLogic(ReadOnlyAddressBook data, JsonAddressBookStorage storage, Clock clock) {
+        setUpLogic(data, storage, clock, temporaryFolder);
+    }
+
+    /**
+     * Replaces {@code model} with one holding {@code data}, and {@code logic} with one using {@code storage},
+     * taking today's date from {@code clock} and naming the data file relative to {@code homeFolder}.
+     */
+    private void setUpLogic(ReadOnlyAddressBook data, JsonAddressBookStorage storage, Clock clock,
+            Path homeFolder) {
         model = new ModelManager(data, new UserPrefs());
         JsonUserPrefsStorage userPrefsStorage = new JsonUserPrefsStorage(temporaryFolder.resolve("userPrefs.json"));
-        logic = new LogicManager(model, new StorageManager(storage, userPrefsStorage), clock);
+        logic = new LogicManager(model, new StorageManager(storage, userPrefsStorage), clock, homeFolder);
+    }
+
+    /**
+     * Executes {@code inputCommand}, whose save fails, and confirms that the message is {@code expectedMessage}
+     * and that the data, the displayed students and their order are what they were before.
+     */
+    private void assertSaveFailureRestores(String inputCommand, String expectedMessage) {
+        AddressBook dataBefore = new AddressBook(model.getAddressBook());
+        List<Student> displayedBefore = List.copyOf(model.getStudentList());
+
+        assertThrows(CommandException.class, expectedMessage, () -> logic.execute(inputCommand));
+        assertEquals(dataBefore, model.getAddressBook());
+        assertEquals(displayedBefore, model.getStudentList());
+    }
+
+    /**
+     * Returns the message of a command without its own save-failure message, for a data file shown as
+     * {@code shownName} that could not be saved because of {@code cause}.
+     */
+    private static String getGeneralSaveFailureMessage(String shownName, String cause) {
+        return "Could not save " + shownName + ": " + cause + ". Nothing was changed.";
+    }
+
+    /**
+     * Returns a command's own save-failure message, e.g. "The {@code failure} because TutorFlow could not save
+     * data/tutorflow.json: {@code cause}. No {@code dataKind} data was changed."
+     */
+    private static String getCommandSaveFailureMessage(String failure, String cause, String dataKind) {
+        return getCommandSaveFailureMessage(failure, SHOWN_DATA_FILE_NAME, cause, dataKind);
+    }
+
+    /**
+     * Returns a command's own save-failure message for a save that failed with {@code exception}, which matches no
+     * common cause, so its text is the cause.
+     */
+    private static String getCommandSaveFailureMessage(String failure, String shownName, IOException exception,
+            String dataKind) {
+        return getCommandSaveFailureMessage(failure, shownName, exception.getMessage(), dataKind);
+    }
+
+    private static String getCommandSaveFailureMessage(String failure, String shownName, String cause,
+            String dataKind) {
+        return "The " + failure + " because TutorFlow could not save " + shownName + ": " + cause + ". No "
+                + dataKind + " data was changed.";
+    }
+
+    /**
+     * Removes write permission from {@code folder}, skipping the test where that does not stop writes into it:
+     * on file systems without POSIX permissions, or when running as root.
+     */
+    private static void makeFolderReadOnly(Path folder) throws IOException {
+        assumeTrue(FileSystems.getDefault().supportedFileAttributeViews().contains("posix"),
+                "folder permissions only block writes on POSIX file systems");
+        Files.setPosixFilePermissions(folder, PosixFilePermissions.fromString("r-xr-xr-x"));
+        if (Files.isWritable(folder)) {
+            makeFolderWritable(folder);
+            assumeFalse(true, "the folder is still writable, e.g. when running as root");
+        }
+    }
+
+    /**
+     * Gives the owner write permission on {@code folder} again, so the temporary folder can be deleted.
+     */
+    private static void makeFolderWritable(Path folder) throws IOException {
+        Files.setPosixFilePermissions(folder, PosixFilePermissions.fromString("rwxr-xr-x"));
+    }
+
+    private static List<String> listFileNames(Path folder) throws IOException {
+        try (var files = Files.list(folder)) {
+            return files.map(file -> file.getFileName().toString()).toList();
+        }
     }
 
     /**

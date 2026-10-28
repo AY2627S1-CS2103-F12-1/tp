@@ -13,6 +13,7 @@ public class Messages {
     public static final String MESSAGE_UNKNOWN_COMMAND = "Unknown command.";
     public static final String MESSAGE_INVALID_COMMAND_FORMAT = "Invalid command format!\n%1$s";
     public static final String MESSAGE_INVALID_FORMAT_WITH_USAGE = "Invalid command format.\nUsage: %s";
+    public static final String MESSAGE_MISSING_PREFIXES_WITH_USAGE = "Missing required prefix(es): %s\nUsage: %s";
     public static final String MESSAGE_INVALID_STUDENT_INDEX_SYNTAX =
             "STUDENT_INDEX must be a positive whole number without leading zeroes.";
     public static final String MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX =
@@ -23,6 +24,13 @@ public class Messages {
     public static final String MESSAGE_INVALID_HOMEWORK_DISPLAYED_INDEX = "The homework index provided is invalid.";
     public static final String MESSAGE_INVALID_LESSON_DISPLAYED_INDEX = "The lesson index provided is invalid.";
     public static final String MESSAGE_SCORE_NOT_RECORDED = "Not recorded";
+    public static final String MESSAGE_SAVE_FAILURE = "Could not save %s: %s. Nothing was changed.";
+    public static final String MESSAGE_SAVE_CAUSE_FOLDER = "it is a folder, not a file";
+    public static final String MESSAGE_SAVE_CAUSE_READ_ONLY_FILE = "the file is read-only";
+    public static final String MESSAGE_SAVE_CAUSE_READ_ONLY_FOLDER = "the data folder is read-only";
+    public static final String MESSAGE_SAVE_CAUSE_READ_ONLY_HOME_FOLDER = "the home folder is read-only";
+    public static final String MESSAGE_SAVE_CAUSE_READ_ONLY_OTHER_FOLDER = "the folder %s is read-only";
+    public static final String MESSAGE_SAVE_CAUSE_BLOCKED_FOLDER = "a file named %s is in the way of the data folder";
 
     /** Returns all six student fields in the Add Student success-message format. */
     public static String format(Student student) {
@@ -43,13 +51,18 @@ public class Messages {
     }
 
     /**
-     * Returns the owner's name and the regular lesson's subject, weekday and time range.
+     * Returns the owner's name and phone, and the regular lesson's subject, weekday and time range.
      */
     public static String format(Student student, RegularLesson lesson) {
-        return student.getName()
+        return formatLessonOwner(student)
                 + "; " + lesson.getSubject()
                 + "; " + lesson.getDayOfWeek().name().substring(0, 3)
                 + "; " + lesson.getStartTime() + "-" + lesson.getEndTime();
+    }
+
+    /** Returns an unambiguous lesson owner, including the phone that distinguishes same-name students. */
+    public static String formatLessonOwner(Student student) {
+        return student.getName() + " (" + student.getPhone() + ")";
     }
 
     /**
@@ -69,7 +82,7 @@ public class Messages {
      * Returns the deleted lesson in the detailed deletion-result format.
      */
     public static String formatDeletedLesson(Student student, RegularLesson lesson) {
-        return student.getName()
+        return formatLessonOwner(student)
                 + "; Subject: " + lesson.getSubject()
                 + "; Day: " + lesson.getDayOfWeek().name().substring(0, 3)
                 + "; Time: " + lesson.getStartTime() + "-" + lesson.getEndTime();

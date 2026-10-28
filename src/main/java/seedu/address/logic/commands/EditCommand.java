@@ -20,7 +20,9 @@ import seedu.address.model.student.StudentName;
 import seedu.address.model.student.StudentPhone;
 import seedu.address.model.student.TuitionSubjects;
 
-/** Edits the profile of a student identified by its displayed index. */
+/**
+ * Edits the profile of a student identified by its displayed index.
+ */
 public class EditCommand extends Command {
     public static final String COMMAND_WORD = "edit";
     public static final String MESSAGE_USAGE = "edit INDEX [n/STUDENT_NAME] [l/ACADEMIC_LEVEL] [s/SUBJECTS] "
@@ -29,20 +31,22 @@ public class EditCommand extends Command {
     public static final String MESSAGE_NO_FIELDS = "Specify at least one field to edit.\nUsage: " + MESSAGE_USAGE;
     public static final String MESSAGE_SUCCESS = "Edited student: %s";
     public static final String MESSAGE_NO_CHANGES = "No changes made; the student details are unchanged.";
-    public static final String MESSAGE_DUPLICATE = "This student already exists.";
+    public static final String MESSAGE_DUPLICATE = "A student with this name and phone already exists: %s (%s).";
     public static final String MESSAGE_SUBJECT_IN_USE =
             "Cannot remove a subject used by this student's homework or lessons.";
     public static final String MESSAGE_INTERNAL_ERROR =
             "TutorFlow could not edit the student due to an internal error.";
     public static final String MESSAGE_SAVE_FAILURE = "The student could not be edited because TutorFlow could not "
-            + "save the updated data. No student data was changed.";
+            + "save %s: %s. No student data was changed.";
 
     private static final Logger logger = LogsCenter.getLogger(EditCommand.class);
 
     private final Index index;
     private final EditStudentDescriptor descriptor;
 
-    /** Creates an edit command for the student at {@code index} in the displayed list. */
+    /**
+     * Creates an edit command for the student at {@code index} in the displayed list.
+     */
     public EditCommand(Index index, EditStudentDescriptor descriptor) {
         requireAllNonNull(index, descriptor);
         this.index = index;
@@ -60,7 +64,9 @@ public class EditCommand extends Command {
         }
     }
 
-    /** Validates a replacement before changing the model. */
+    /**
+     * Validates a replacement before changing the model.
+     */
     private CommandResult editStudent(Model model) throws CommandException {
         List<Student> displayedStudents = model.getStudentList();
         if (index.getZeroBased() >= displayedStudents.size()) {
@@ -72,8 +78,11 @@ public class EditCommand extends Command {
         if (editedStudent.equals(student)) {
             throw new CommandException(MESSAGE_NO_CHANGES);
         }
-        if (!student.isSameStudent(editedStudent) && model.hasStudent(editedStudent)) {
-            throw new CommandException(MESSAGE_DUPLICATE);
+        Student duplicate = model.getAddressBook().getStudentList().stream()
+                .filter(existing -> existing != student && existing.isSameStudent(editedStudent))
+                .findFirst().orElse(null);
+        if (duplicate != null) {
+            throw new CommandException(String.format(MESSAGE_DUPLICATE, duplicate.getName(), duplicate.getPhone()));
         }
         if (editedStudent.getHomeworks().stream()
                 .anyMatch(homework -> !editedStudent.getSubjects().getSubjects().contains(homework.getSubject()))
@@ -88,7 +97,7 @@ public class EditCommand extends Command {
     }
 
     @Override
-    public String getSaveFailureMessage(String defaultMessage) {
+    protected String getSaveFailureFormat() {
         return MESSAGE_SAVE_FAILURE;
     }
 
@@ -99,14 +108,23 @@ public class EditCommand extends Command {
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hash(index.getZeroBased(), descriptor);
+    }
+
+    @Override
     public String toString() {
         return new ToStringBuilder(this).add("index", index).add("descriptor", descriptor).toString();
     }
 
-    /** Holds replacement profile fields; null means the existing value is kept. */
+    /**
+     * Holds replacement profile fields; null means the existing value is kept.
+     */
     public record EditStudentDescriptor(StudentName name, AcademicLevel level, TuitionSubjects subjects,
             StudentPhone phone, StudentName guardianName, StudentPhone guardianPhone) {
-        /** Returns a copy with the supplied fields changed and all homework and lessons preserved. */
+        /**
+         * Returns a copy with the supplied fields changed and all homework and lessons preserved.
+         */
         public Student applyTo(Student student) {
             requireNonNull(student);
             return new Student(Objects.requireNonNullElse(name, student.getName()),

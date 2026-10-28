@@ -2,6 +2,12 @@ package seedu.address.logic.parser;
 
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 
 import org.junit.jupiter.api.Test;
 
@@ -13,17 +19,28 @@ public class HomeworkDeleteCommandParserTest {
     private static final String MESSAGE_INVALID_FORMAT = "Invalid command format.\n"
             + "Usage: homework|hw delete|del STUDENT_INDEX HOMEWORK_INDEX";
 
-    private final HomeworkDeleteCommandParser parser = new HomeworkDeleteCommandParser();
+    private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-05T00:00:00Z"), ZoneOffset.UTC);
+    private static final LocalDate TODAY = LocalDate.of(2026, 10, 5);
+
+    private final HomeworkDeleteCommandParser parser = new HomeworkDeleteCommandParser(CLOCK);
 
     @Test
     public void parse_validIndices_success() {
-        assertParseSuccess(parser, "1 2", new HomeworkDeleteCommand(Index.fromOneBased(1), Index.fromOneBased(2)));
+        assertParseSuccess(parser, "1 2",
+                new HomeworkDeleteCommand(Index.fromOneBased(1), Index.fromOneBased(2), TODAY));
     }
 
     @Test
     public void parse_validIndicesWithWhitespace_success() {
         assertParseSuccess(parser, "  13   10  ",
-                new HomeworkDeleteCommand(Index.fromOneBased(13), Index.fromOneBased(10)));
+                new HomeworkDeleteCommand(Index.fromOneBased(13), Index.fromOneBased(10), TODAY));
+    }
+
+    @Test
+    public void parse_largestIndices_success() {
+        Index largestIndex = Index.fromOneBased(Integer.MAX_VALUE);
+        assertParseSuccess(parser, "2147483647 2147483647",
+                new HomeworkDeleteCommand(largestIndex, largestIndex, TODAY));
     }
 
     @Test
@@ -43,7 +60,9 @@ public class HomeworkDeleteCommandParserTest {
 
     @Test
     public void parse_prefixSupplied_failure() {
-        assertParseFailure(parser, "1 s/2", MESSAGE_INVALID_FORMAT);
+        String usageLine = "\nUsage: " + HomeworkDeleteCommand.MESSAGE_USAGE;
+        assertParseFailure(parser, "1 s/2", notPrefix("s/") + usageLine);
+        assertParseFailure(parser, "1 x/2", notPrefix("x/") + usageLine);
     }
 
     @Test

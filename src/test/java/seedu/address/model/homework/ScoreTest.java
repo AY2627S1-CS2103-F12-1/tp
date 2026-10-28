@@ -104,9 +104,6 @@ public class ScoreTest {
         assertInvalidScore("-1/10"); // negative marks obtained
         assertInvalidScore("+5/10"); // plus sign
         assertInvalidScore("5/-10"); // negative total
-        assertInvalidScore("05/10"); // leading zero in marks obtained
-        assertInvalidScore("5/010"); // leading zero in total
-        assertInvalidScore("00/10"); // zero written with two digits
         assertInvalidScore("5/10/20"); // two slashes
         assertInvalidScore("five/ten"); // words
         assertInvalidScore("5:10"); // wrong separator
@@ -115,8 +112,6 @@ public class ScoreTest {
 
     @Test
     public void parse_invalidBareScore_throwsIllegalArgumentException() {
-        assertInvalidScore("017"); // leading zero
-        assertInvalidScore("00"); // zero written with two digits
         assertInvalidScore("+17"); // plus sign
         assertInvalidScore("-1"); // negative
         assertInvalidScore("17.5"); // decimal
@@ -124,6 +119,39 @@ public class ScoreTest {
         assertInvalidScore("1 7"); // space inside
         assertInvalidScore("seventeen"); // word
         assertInvalidScore("17%"); // percentage
+    }
+
+    @Test
+    public void parse_leadingZeroes_throwsIllegalArgumentException() {
+        assertLeadingZeroes("017"); // bare score
+        assertLeadingZeroes("07"); // bare single digit
+        assertLeadingZeroes("00"); // zero written with two digits
+        assertLeadingZeroes(" 07 "); // surrounding whitespace ignored
+        assertLeadingZeroes("05/10"); // leading zero in marks obtained
+        assertLeadingZeroes("5/010"); // leading zero in total
+        assertLeadingZeroes("00/10"); // zero marks obtained written with two digits
+        assertLeadingZeroes("05/010"); // leading zeroes in both numbers
+
+        // leading zero reported before the other rules
+        assertLeadingZeroes("011/10"); // marks obtained above the total
+        assertLeadingZeroes("5/00"); // zero total
+        assertLeadingZeroes("02147483648"); // larger than the largest int
+        assertLeadingZeroes("5/02147483648"); // total larger than the largest int
+    }
+
+    @Test
+    public void parse_leadingZeroesAndOtherFormatError_throwsIllegalArgumentException() {
+        assertInvalidScore("-05"); // sign
+        assertInvalidScore("05.5/10"); // decimal
+        assertInvalidScore("05/"); // empty total
+        assertInvalidScore("05 / 10"); // spaces inside
+    }
+
+    @Test
+    public void parse_zeroWithoutLeadingZeroes_returnsScore() {
+        assertEquals(new Score(0), Score.parse("0"));
+        assertEquals(new Score(0, 5), Score.parse("0/5"));
+        assertEquals(new Score(10, 100), Score.parse("10/100")); // zeroes inside a number are not leading
     }
 
     @Test
@@ -201,5 +229,9 @@ public class ScoreTest {
 
     private static void assertInvalidScore(String rawScore) {
         assertThrows(IllegalArgumentException.class, Score.MESSAGE_CONSTRAINTS, () -> Score.parse(rawScore));
+    }
+
+    private static void assertLeadingZeroes(String rawScore) {
+        assertThrows(IllegalArgumentException.class, Score.MESSAGE_LEADING_ZEROES, () -> Score.parse(rawScore));
     }
 }

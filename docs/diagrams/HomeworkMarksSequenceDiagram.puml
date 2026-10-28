@@ -1,0 +1,79 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+
+box Logic LOGIC_COLOR_T1
+participant ":LogicManager" as LogicManager LOGIC_COLOR
+participant "marksCommand:HomeworkMarksCommand" as HomeworkMarksCommand LOGIC_COLOR
+participant "HomeworkCommandUtil" as HomeworkCommandUtil LOGIC_COLOR
+end box
+
+box Model MODEL_COLOR_T1
+participant "model:Model" as Model MODEL_COLOR
+participant "homework:Homework" as Homework MODEL_COLOR
+end box
+
+[-> LogicManager : execute("hw m 2 1 score/8/10")
+activate LogicManager
+
+note right of LogicManager
+  Parsing works as for hw del 1 2 and is not shown.
+  It creates marksCommand, which holds the score 8/10.
+end note
+
+LogicManager -> HomeworkMarksCommand : execute(model)
+activate HomeworkMarksCommand
+
+HomeworkMarksCommand -> HomeworkCommandUtil : getDisplayedStudent(model, 2)
+activate HomeworkCommandUtil
+
+HomeworkCommandUtil -> Model : getStudentList()
+activate Model
+
+Model --> HomeworkCommandUtil : students
+deactivate Model
+
+HomeworkCommandUtil --> HomeworkMarksCommand : student
+deactivate HomeworkCommandUtil
+
+HomeworkMarksCommand -> HomeworkCommandUtil : getHomework(student, 1, ...)
+activate HomeworkCommandUtil
+
+HomeworkCommandUtil --> HomeworkMarksCommand : homework
+deactivate HomeworkCommandUtil
+
+note right of HomeworkMarksCommand
+  If homework already has the score 8/10,
+  marksCommand reports "No changes made"
+  and stops here.
+end note
+
+HomeworkMarksCommand -> Homework : withScore(8/10)
+activate Homework
+
+Homework --> HomeworkMarksCommand : scored
+deactivate Homework
+
+note right of HomeworkMarksCommand
+  scored is a copy of homework with the score 8/10
+  and the same status. updatedStudent is a copy of
+  student with scored in place of homework.
+end note
+
+HomeworkMarksCommand -> Model : setStudent(student, updatedStudent)
+activate Model
+
+Model --> HomeworkMarksCommand
+deactivate Model
+
+HomeworkMarksCommand --> LogicManager : result
+deactivate HomeworkMarksCommand
+
+ref over LogicManager, Homework
+  Save the data, or restore it if saving fails
+  (see Saving after a command)
+end ref
+
+[<-- LogicManager : result
+deactivate LogicManager
+@enduml

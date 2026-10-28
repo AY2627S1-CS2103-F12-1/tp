@@ -2,6 +2,8 @@ package seedu.address.logic.commands;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static seedu.address.logic.commands.CommandTestUtil.CAUSE_READ_ONLY_FOLDER;
+import static seedu.address.logic.commands.CommandTestUtil.SHOWN_DATA_FILE_NAME;
 
 import java.time.DayOfWeek;
 import java.time.LocalTime;
@@ -67,7 +69,7 @@ public class LessonEditCommandTest {
         parser.parseCommand("search John").execute(model);
         AddressBook before = new AddressBook(model.getAddressBook());
 
-        assertEquals(LessonAddCommand.MESSAGE_CLASH + "Mary Lim; MATH; MONDAY; 18:00-19:00",
+        assertEquals(LessonAddCommand.MESSAGE_CLASH + "Mary Lim (91234568); MATH; MONDAY; 18:00-19:00",
                 assertThrows(CommandException.class, () -> parser.parseCommand("lesson edit 1 et/18:30")
                         .execute(model)).getMessage());
         assertEquals(before, model.getAddressBook());
@@ -81,7 +83,7 @@ public class LessonEditCommandTest {
         parser.parseCommand("lesson add 2 s/MATH d/MONDAY st/20:00 et/21:00").execute(model);
         AddressBook before = new AddressBook(model.getAddressBook());
         assertEquals(LessonEditCommand.MESSAGE_MULTIPLE_CLASHES
-                + "Mary Lim; MATH; MONDAY; 18:00-19:00\nMary Lim; MATH; MONDAY; 20:00-21:00",
+                + "Mary Lim (91234568); MATH; MONDAY; 18:00-19:00\nMary Lim (91234568); MATH; MONDAY; 20:00-21:00",
                 assertThrows(CommandException.class, () -> parser.parseCommand("lesson edit 1 et/20:30")
                         .execute(model)).getMessage());
         assertEquals(before, model.getAddressBook());
@@ -126,6 +128,14 @@ public class LessonEditCommandTest {
         assertEquals(LessonEditCommand.MESSAGE_NO_LESSONS,
                 assertThrows(CommandException.class, () -> parser.parseCommand("lesson edit 1 d/SUNDAY")
                         .execute(new ModelManager())).getMessage());
+    }
+
+    @Test
+    public void getSaveFailureMessage_cause_namesFileAndCause() throws Exception {
+        String expectedMessage = "The lesson could not be edited because TutorFlow could not save "
+                + SHOWN_DATA_FILE_NAME + ": the data folder is read-only. No lesson data was changed.";
+        assertEquals(expectedMessage, parser.parseCommand("lesson edit 1 st/17:00")
+                .getSaveFailureMessage(SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER));
     }
 
     private ModelManager model() {

@@ -32,7 +32,7 @@ public class LessonEditCommand extends Command {
     public static final String MESSAGE_MULTIPLE_CLASHES = "This lesson clashes with the following existing lessons:\n";
     public static final String MESSAGE_INTERNAL = "TutorFlow could not edit the lesson due to an internal error.";
     public static final String MESSAGE_SAVE_FAILURE = "The lesson could not be edited because TutorFlow could not "
-            + "save the updated data. No lesson data was changed.";
+            + "save %s: %s. No lesson data was changed.";
     private static final Logger logger = LogsCenter.getLogger(LessonEditCommand.class);
 
     private final Index lessonIndex;
@@ -89,7 +89,7 @@ public class LessonEditCommand extends Command {
             throw new CommandException(LessonAddCommand.MESSAGE_DUPLICATE);
         }
         List<String> clashes = LessonSchedule.findClashes(students, replacement, original).stream()
-                .map(entry -> entry.student().getName() + "; " + entry.lesson()).toList();
+                .map(entry -> Messages.formatLessonOwner(entry.student()) + "; " + entry.lesson()).toList();
         if (!clashes.isEmpty()) {
             throw new CommandException(clashes.size() == 1 ? LessonAddCommand.MESSAGE_CLASH + clashes.get(0)
                     : MESSAGE_MULTIPLE_CLASHES + String.join("\n", clashes));
@@ -97,11 +97,11 @@ public class LessonEditCommand extends Command {
         List<RegularLesson> updated = new ArrayList<>(owner.getLessons());
         updated.set(updated.indexOf(original.lesson()), replacement);
         model.setStudent(owner, owner.withLessons(updated));
-        return new CommandResult(String.format(MESSAGE_SUCCESS, owner.getName(), replacement));
+        return new CommandResult(String.format(MESSAGE_SUCCESS, Messages.formatLessonOwner(owner), replacement));
     }
 
     @Override
-    public String getSaveFailureMessage(String defaultMessage) {
+    protected String getSaveFailureFormat() {
         return MESSAGE_SAVE_FAILURE;
     }
 

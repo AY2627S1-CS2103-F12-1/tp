@@ -76,11 +76,75 @@ public class JsonUtilTest {
     }
 
     @Test
+    public void readJsonFile_bomBeforeInvalidJson_stillRejectsInvalidContent() throws IOException {
+        Path file = testFolder.resolve("invalid.json");
+        Files.writeString(file, "\ufeffnot JSON");
+
+        assertThrows(DataLoadingException.class, () -> JsonUtil.readJsonFile(file, SerializableTestClass.class));
+    }
+
+    @Test
     public void readJsonFile_nullRoot_throwsDataLoadingException() throws IOException {
         Path file = testFolder.resolve("serialize.json");
         Files.writeString(file, "null");
 
         assertThrows(DataLoadingException.class, () -> JsonUtil.readJsonFile(file, SerializableTestClass.class));
+    }
+
+    @Test
+    public void readJsonFile_trailingJsonObject_throwsDataLoadingException() throws IOException {
+        Path file = testFolder.resolve("serialize.json");
+        Files.writeString(file, SerializableTestClass.JSON_STRING_REPRESENTATION + "{\"name\" : \"Second\"}");
+
+        assertThrows(DataLoadingException.class, () -> JsonUtil.readJsonFile(file, SerializableTestClass.class));
+    }
+
+    @Test
+    public void readJsonFile_trailingText_throwsDataLoadingException() throws IOException {
+        Path file = testFolder.resolve("serialize.json");
+        Files.writeString(file, SerializableTestClass.JSON_STRING_REPRESENTATION + "\nextra");
+
+        assertThrows(DataLoadingException.class, () -> JsonUtil.readJsonFile(file, SerializableTestClass.class));
+    }
+
+    @Test
+    public void readJsonFile_trailingCloseBrace_throwsDataLoadingException() throws IOException {
+        Path file = testFolder.resolve("serialize.json");
+        Files.writeString(file, SerializableTestClass.JSON_STRING_REPRESENTATION + "}");
+
+        assertThrows(DataLoadingException.class, () -> JsonUtil.readJsonFile(file, SerializableTestClass.class));
+    }
+
+    @Test
+    public void readJsonFile_bomAndTrailingWhitespace_success() throws Exception {
+        Path file = testFolder.resolve("serialize.json");
+        Files.writeString(file, "\ufeff" + SerializableTestClass.JSON_STRING_REPRESENTATION + " \t\r\n\n");
+
+        SerializableTestClass serializableTestClass = JsonUtil.readJsonFile(file, SerializableTestClass.class)
+                .orElseThrow();
+
+        assertEquals(SerializableTestClass.getNameTestValue(), serializableTestClass.getName());
+    }
+
+    @Test
+    public void readJsonFile_duplicateKey_throwsDataLoadingException() throws IOException {
+        Path file = testFolder.resolve("serialize.json");
+        Files.writeString(file, "{\"name\" : \"First\", \"name\" : \"Second\"}");
+
+        assertThrows(DataLoadingException.class, () -> JsonUtil.readJsonFile(file, SerializableTestClass.class));
+    }
+
+    @Test
+    public void readJsonFile_duplicateNestedKey_throwsDataLoadingException() throws IOException {
+        Path file = testFolder.resolve("serialize.json");
+        Files.writeString(file, "{\"mapOfIntegerToString\" : {\"1\" : \"One\", \"1\" : \"Uno\"}}");
+
+        assertThrows(DataLoadingException.class, () -> JsonUtil.readJsonFile(file, SerializableTestClass.class));
+    }
+
+    @Test
+    public void fromJsonString_trailingJsonObject_throwsIoException() {
+        assertThrows(IOException.class, () -> JsonUtil.fromJsonString("{} {}", SerializableTestClass.class));
     }
 
     //TODO: @Test jsonUtil_readJsonStringToObjectInstance_correctObject()

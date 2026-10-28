@@ -2,11 +2,11 @@ package seedu.address.logic.parser;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
 
 import org.junit.jupiter.api.Test;
 
 import seedu.address.commons.core.index.Index;
-import seedu.address.logic.Messages;
 import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.EditCommand.EditStudentDescriptor;
 import seedu.address.logic.parser.exceptions.ParseException;
@@ -47,6 +47,12 @@ public class EditCommandParserTest {
     }
 
     @Test
+    public void parse_relationshipWordsInNames_preservesNames() throws ParseException {
+        assertEquals(command(new StudentName("Ahmad b/o Ali"), null, null, null,
+                new StudentName("Lim w/o Tan"), null), parser.parse("1 n/Ahmad b/o Ali gn/Lim w/o Tan"));
+    }
+
+    @Test
     public void parse_quotedNameContainingAllowedPrefix_preservesName() throws ParseException {
         assertEquals(command(new StudentName("Ravi p/ Kumar"), null, null, null, null, null),
                 parser.parse("1 n/\"Ravi p/ Kumar\""));
@@ -56,20 +62,33 @@ public class EditCommandParserTest {
     public void parse_missingFields_reportsUsage() {
         assertParseFailure("1", EditCommand.MESSAGE_NO_FIELDS);
         assertParseFailure(" 1   ", EditCommand.MESSAGE_NO_FIELDS);
+        assertParseFailure("", EditCommand.MESSAGE_INVALID_FORMAT);
     }
 
     @Test
     public void parse_invalidIndex_reportsSyntax() {
-        String[] invalidArguments = {"n/Jane", "0 n/Jane", "01 n/Jane", "-1 n/Jane",
-            "1.0 n/Jane", "abc n/Jane", "2147483648 n/Jane", "1 2 n/Jane"};
+        String[] invalidArguments = {"0 n/Jane", "01 n/Jane", "-1 n/Jane",
+            "1.0 n/Jane", "abc n/Jane", "2147483648 n/Jane"};
         for (String arguments : invalidArguments) {
-            assertParseFailure(arguments, Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
+            assertParseFailure(arguments, EditCommandParser.MESSAGE_INVALID_INDEX_SYNTAX);
         }
+        assertParseFailure("n/Jane", EditCommand.MESSAGE_INVALID_FORMAT);
+        assertParseFailure("1 2 n/Jane", EditCommand.MESSAGE_INVALID_FORMAT);
     }
 
     @Test
     public void parse_unknownOrRepeatedPrefix_reportsError() {
-        assertParseFailure("1 l/S3 x/value", EditCommand.MESSAGE_INVALID_FORMAT);
+        assertParseFailure("1 l/S3 x/value", notPrefixWithQuoteHint("x/", "l/\"S3 x/value\"") + "\nUsage: "
+                + EditCommand.MESSAGE_USAGE);
+        assertParseFailure("1 n/Jane ph/92345678",
+                notPrefixWithQuoteHint("ph/", "n/\"Jane ph/92345678\"") + "\nUsage: "
+                        + EditCommand.MESSAGE_USAGE);
+        assertParseFailure("1 gn/Mary gph/98765432",
+                notPrefixWithQuoteHint("gph/", "gn/\"Mary gph/98765432\"") + "\nUsage: "
+                        + EditCommand.MESSAGE_USAGE);
+        assertParseFailure("1 n/Jane km/h",
+                notPrefixWithQuoteHint("km/", "n/\"Jane km/h\"") + "\nUsage: " + EditCommand.MESSAGE_USAGE);
+        assertParseFailure("1 P/92345678", EditCommand.MESSAGE_INVALID_FORMAT);
         assertParseFailure("1 n/Jane n/Mary",
                 String.format(StrictArgumentTokenizer.MESSAGE_REPEATED_PREFIX, "n/"));
         assertParseFailure("1 gn/Mary gn/Jane",

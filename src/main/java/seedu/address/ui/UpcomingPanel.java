@@ -81,6 +81,32 @@ public class UpcomingPanel extends UiPart<Region> {
         updateHomeworkEntries(students, today);
     }
 
+    /** Captures selections and keyboard navigation before a command rebuilds the reports. */
+    ViewState captureViewState() {
+        return new ViewState(lessonListView.getSelectionModel().getSelectedIndex(),
+                lessonListView.getFocusModel().getFocusedIndex(),
+                homeworkListView.getSelectionModel().getSelectedIndex(),
+                homeworkListView.getFocusModel().getFocusedIndex());
+    }
+
+    /** Restores report navigation after a rejected command has restored the original data. */
+    void restoreViewState(ViewState state) {
+        restoreSelection(lessonListView, state.lessonSelection(), state.lessonFocus());
+        restoreSelection(homeworkListView, state.homeworkSelection(), state.homeworkFocus());
+    }
+
+    private static void restoreSelection(ListView<?> list, int selection, int focus) {
+        list.getSelectionModel().clearSelection();
+        if (selection >= 0) {
+            list.getSelectionModel().select(selection);
+        }
+        list.getFocusModel().focus(focus);
+    }
+
+    /** Holds navigation indices in the unchanged reports restored after a failure. */
+    record ViewState(int lessonSelection, int lessonFocus, int homeworkSelection, int homeworkFocus) {
+    }
+
     /**
      * Rebuilds both reports and their counts from the full roster, highlighting homework overdue on the given date.
      */

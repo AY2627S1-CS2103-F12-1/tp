@@ -50,4 +50,19 @@ public class TypicalStudents {
     public static Model getModelWithTypicalStudents() {
         return getModelWithStudents(getTypicalStudents());
     }
+
+    /**
+     * Returns a new model holding the typical students whose {@code setStudent} throws an unexpected
+     * {@code IllegalStateException}, to test how a command handles an internal error.
+     */
+    public static Model getModelFailingOnSetStudent() {
+        Model model = new ModelManager() {
+            @Override
+            public void setStudent(Student target, Student editedStudent) {
+                throw new IllegalStateException("dummy internal error");
+            }
+        };
+        getTypicalStudents().forEach(model::addStudent);
+        return model;
+    }
 }

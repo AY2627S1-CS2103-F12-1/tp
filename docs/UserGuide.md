@@ -24,7 +24,7 @@ TutorFlow is a **desktop application for private tutors to manage their students
    ![Ui](images/Ui.png)
 
 1. Type a command in the command box and press Enter to execute it. For example, type **`help`** and press Enter to open the help window.<br>
-   Press **Up** and **Down** in the command box to recall commands entered during the current session. Pressing Up replaces any text currently in the box.
+   Press **Up** and **Down** in the command box to recall commands entered during the current session. Pressing Up replaces any text currently in the box.<br>
    Some example commands you can try:
 
    * `add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777` : Adds a student named `Aaron Koh` to the student list.
@@ -109,12 +109,12 @@ Drag the dividers to resize the command box, result display, student list and si
 
 ### Viewing help: `help`
 
-Opens the help window, which lists the commands `add`, `edit`, `list`, `search`, `filter`, `sort`, `delete`, `homework add`, `homework list`, `homework upcoming`, `homework edit`, `homework marks`, `homework delete`, `homework filter`, `homework status`, `lesson add`, `lesson list`, `lesson delete`, `lesson edit`, `help`, `clear` and `exit`, grouped into Students, Homework, Lessons and General. Each command is shown with its format, what it does and an example.
+Opens a searchable help window with commands grouped into Students, Homework, Lessons and General. Each collapsed row gives the command name and a short description. Select a row to see its full description, format and example. Search by command name, format or description.
 
 Format: `help`
 
 * Pressing `F1` or choosing **Help** in the menu bar also opens the help window.
-* Use the arrow keys, `Page Up` and `Page Down` to scroll the help window.
+* Use `Up`, `Down`, `Page Up` and `Page Down` to scroll the command list. The search field stays focused while you browse.
 * Press `Esc` to close the help window. The cursor goes back to the command box, so you can type your next command straight away.
 
 

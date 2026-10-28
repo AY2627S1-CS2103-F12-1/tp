@@ -1,3 +1,21 @@
+.help-root {
+    -fx-background-color: derive(#1d1d1d, 20%);
+}
+
+.help-search-field {
+    -fx-font-size: 12pt;
+}
+
+.help-root .help-note {
+    -fx-font-style: italic;
+    -fx-text-fill: #c8c8c8;
+}
+
+.help-root .help-no-results {
+    -fx-text-fill: #c8c8c8;
+    -fx-padding: 12 0 12 0;
+}
+
 .help-scroll-pane, .help-scroll-pane > .viewport, .help-content {
     -fx-background-color: derive(#1d1d1d, 20%);
 }
@@ -24,7 +42,31 @@
 .help-content .help-section-title {
     -fx-font-size: 15pt;
     -fx-font-weight: bold;
-    -fx-padding: 10 0 2 0;
+    -fx-padding: 8 0 2 0;
+}
+
+.help-content .help-entry {
+    -fx-text-fill: white;
+}
+
+.help-content .help-entry > .title {
+    -fx-background-color: derive(#1d1d1d, 34%);
+    -fx-padding: 7 10 7 10;
+}
+
+.help-content .help-entry > .content {
+    -fx-background-color: derive(#1d1d1d, 24%);
+    -fx-border-color: derive(#1d1d1d, 42%);
+    -fx-padding: 4 10 8 10;
+}
+
+.help-content .help-command-word {
+    -fx-font-weight: bold;
+    -fx-text-fill: #8fd3ff;
+}
+
+.help-content .help-command-summary {
+    -fx-text-fill: #dedede;
 }
 
 .help-content .help-format {

@@ -19,9 +19,13 @@ import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextField;
+import javafx.scene.control.TitledPane;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 public class HelpWindowTest {
@@ -37,40 +41,71 @@ public class HelpWindowTest {
     }
 
     @Test
-    public void constructor_showsEveryHelpEntry() throws Exception {
+    public void constructor_showsGroupedCommandsWithDetailsCollapsed() throws Exception {
+        List<String> expectedCommandWords = HelpContent.getSections().stream()
+                .flatMap(section -> section.entries().stream()).map(HelpContent.Entry::commandWord).toList();
         runOnFxThread(() -> {
             Parent root = new HelpWindow().getRoot().getScene().getRoot();
             root.applyCss();
-            List<String> labelTexts = root.lookupAll(".label").stream()
-                    .map(node -> ((Label) node).getText()).toList();
+            List<TitledPane> entries = getEntryPanes(root);
+            Label formatNote = (Label) root.lookup("#formatNoteLabel");
+            Label historyNote = (Label) root.lookup("#historyNoteLabel");
+            TextField searchField = (TextField) root.lookup("#searchTextField");
 
-            assertTrue(labelTexts.contains(HelpContent.FORMAT_NOTE));
-            assertTrue(labelTexts.contains(HelpContent.HISTORY_NOTE));
-            assertTrue(labelTexts.contains(HelpContent.HISTORY_NOTE));
-            for (HelpContent.Section section : HelpContent.getSections()) {
-                assertTrue(labelTexts.contains(section.title()), section.title());
-                for (HelpContent.Entry entry : section.entries()) {
-                    assertTrue(labelTexts.contains(entry.format()), entry.format());
-                    assertTrue(labelTexts.contains(entry.description()), entry.description());
-                    assertTrue(labelTexts.contains(HelpWindow.EXAMPLE_PREFIX + entry.example()), entry.example());
-                }
-            }
+            assertEquals(expectedCommandWords, entries.stream().map(HelpWindowTest::commandWord).toList());
+            assertTrue(entries.stream().noneMatch(TitledPane::isExpanded));
+            assertEquals(HelpContent.FORMAT_NOTE, formatNote.getText());
+            assertEquals(HelpContent.HISTORY_NOTE, historyNote.getText());
+            assertEquals("Search commands or descriptions...", searchField.getPromptText());
             assertTrue(root.lookupAll(".button").stream().noneMatch(node -> node instanceof Button));
         });
     }
 
     @Test
-    public void constructor_entriesShownInContentOrder() throws Exception {
-        List<String> formats = HelpContent.getSections().stream()
-                .flatMap(section -> section.entries().stream()).map(HelpContent.Entry::format).toList();
+    public void search_filtersByCommandAndDescription_caseInsensitively() throws Exception {
         runOnFxThread(() -> {
             Parent root = new HelpWindow().getRoot().getScene().getRoot();
             root.applyCss();
-            List<String> shownFormats = root.lookupAll(".label").stream()
-                    .map(node -> ((Label) node).getText()).filter(formats::contains).toList();
+            TextField searchField = (TextField) root.lookup("#searchTextField");
+            searchField.setText("HOMEWORK MARKS");
+            assertEquals(List.of("homework marks"), getEntryPanes(root).stream()
+                    .map(HelpWindowTest::commandWord).toList());
 
-            assertEquals(formats, shownFormats);
-            assertTrue(shownFormats.contains("list|ls"));
+            searchField.setText("weekly chronological");
+            assertEquals(List.of("lesson list"), getEntryPanes(root).stream()
+                    .map(HelpWindowTest::commandWord).toList());
+
+            searchField.setText("not a command");
+            assertTrue(getEntryPanes(root).isEmpty());
+            assertTrue(root.lookup("#noResultsLabel").isVisible());
+
+            searchField.clear();
+            assertEquals(HelpContent.getSections().stream().mapToInt(section -> section.entries().size()).sum(),
+                    getEntryPanes(root).size());
+            assertFalse(root.lookup("#noResultsLabel").isVisible());
+        });
+    }
+
+    @Test
+    public void selectingCommand_expandsSyntaxDescriptionAndExample() throws Exception {
+        runOnFxThread(() -> {
+            Parent root = new HelpWindow().getRoot().getScene().getRoot();
+            root.applyCss();
+            TitledPane entryPane = getEntryPanes(root).stream()
+                    .filter(pane -> pane.getAccessibleText().equals("homework add"))
+                    .findFirst().orElseThrow();
+            HelpContent.Entry entry = HelpContent.getSections().stream()
+                    .flatMap(section -> section.entries().stream())
+                    .filter(candidate -> candidate.commandWord().equals("homework add"))
+                    .findFirst().orElseThrow();
+
+            entryPane.setExpanded(true);
+            List<String> details = ((VBox) entryPane.getContent()).getChildren().stream()
+                    .map(Label.class::cast).map(Label::getText).toList();
+
+            assertTrue(details.contains(entry.format()));
+            assertTrue(details.contains(entry.description()));
+            assertTrue(details.contains(HelpWindow.EXAMPLE_PREFIX + entry.example()));
         });
     }
 
@@ -80,11 +115,12 @@ public class HelpWindowTest {
             HelpWindow helpWindow = new HelpWindow();
             Stage stage = helpWindow.getRoot();
             ScrollPane scrollPane = (ScrollPane) stage.getScene().lookup("#helpScrollPane");
+            TextField searchField = (TextField) stage.getScene().lookup("#searchTextField");
 
             helpWindow.show();
             try {
                 assertTrue(helpWindow.isShowing());
-                assertSame(scrollPane, stage.getScene().getFocusOwner());
+                assertSame(searchField, stage.getScene().getFocusOwner());
 
                 // Page Down scrolls by one viewport height, not by ScrollPane's small default step
                 double viewportHeight = scrollPane.getViewportBounds().getHeight();
@@ -92,6 +128,10 @@ public class HelpWindowTest {
                 pressKey(scrollPane, KeyCode.PAGE_DOWN);
                 assertEquals(Math.min(1, viewportHeight / scrollableHeight), scrollPane.getVvalue(), 1e-9);
                 pressKey(scrollPane, KeyCode.PAGE_UP);
+                assertEquals(0, scrollPane.getVvalue());
+                pressKey(searchField, KeyCode.DOWN);
+                assertTrue(scrollPane.getVvalue() > 0);
+                pressKey(searchField, KeyCode.UP);
                 assertEquals(0, scrollPane.getVvalue());
 
                 pressKey(scrollPane, KeyCode.ESCAPE);
@@ -121,6 +161,15 @@ public class HelpWindowTest {
 
     private static void pressKey(Node target, KeyCode code) {
         Event.fireEvent(target, new KeyEvent(KeyEvent.KEY_PRESSED, "", "", code, false, false, false, false));
+    }
+
+    private static List<TitledPane> getEntryPanes(Parent root) {
+        return root.lookupAll(".help-entry").stream().map(TitledPane.class::cast).toList();
+    }
+
+    private static String commandWord(TitledPane pane) {
+        HBox title = (HBox) pane.getGraphic();
+        return ((Label) title.getChildren().getFirst()).getText();
     }
 
     private static void runOnFxThread(Runnable action) throws Exception {

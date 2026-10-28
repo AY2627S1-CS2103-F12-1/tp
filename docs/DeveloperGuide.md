@@ -715,7 +715,9 @@ Pressing `Up` in the command box shows the previous command entered in this sess
 `CommandBox` owns a `CommandHistory`, which keeps the entered commands in a list, oldest first, and a position in that list. The position equals the number of commands when no earlier command is shown.
 
 * `CommandBox#handleCommandEntered` calls `CommandHistory#add` on every `Enter`, before running the command, so a command is recorded whether it succeeds or fails. `add` skips blank commands and a command identical to the newest entry, and moves the position to after the newest entry. It is called even when the box is empty, so `Enter` always ends browsing and the next `Up` starts again from the newest command.
-* A `KEY_PRESSED` event filter on the text field calls `CommandHistory#previous` for `Up` and `CommandHistory#next` for `Down` when no modifier key (Shift, Ctrl, Alt or Meta) is held, puts the returned text in the box with the caret at its end, and consumes the key so the text field does not also move the caret. `previous` stops at the oldest command. `next` returns an empty string when it moves past the newest command, so the box is cleared. Both return an empty `Optional` when there is nothing to move to (no commands, or `Down` with no earlier command shown), and the box keeps its text. With a modifier key held, the filter leaves the key to the text field, so e.g. `Shift`+`Up` still selects the text before the caret.
+* A `KEY_PRESSED` event filter on the text field calls `CommandHistory#previous` for `Up` and `CommandHistory#next` for `Down`, puts the returned text in the box in the normal style (not the red error style) with the caret at its end, and consumes the key so the text field does not also move the caret. `previous` stops at the oldest command. `next` returns an empty string when it moves past the newest command, so the box is cleared. Both return an empty `Optional` when there is nothing to move to (no commands, or `Down` with no earlier command shown), and the box keeps its text.
+* If `previous` returns exactly the text already in the box, `CommandBox` calls it once more. A rejected command stays in the box and is also the newest entry, so without this the first `Up` after it would show the same text and seem to do nothing. Two adjacent entries are never identical, so one more call is enough.
+* With a modifier key (Shift, Ctrl, Alt or Meta) held, the filter ignores `Up` and `Down` and the text field handles them as usual, e.g. `Shift`+`Up` selects the text before the caret.
 
 #### Design considerations:
 
@@ -738,6 +740,16 @@ Pressing `Up` in the command box shows the previous command entered in this sess
 * **Alternative 2:** Only successful commands.
   * Pros: Every recalled command is valid.
   * Cons: A rejected command stays in the box until the next command is typed, and is lost after that.
+
+**Aspect: What the first `Up` shows after a rejected command:**
+
+* **Alternative 1 (current choice):** The command before it, skipping the rejected command that is still in the box.
+  * Pros: Every `Up` visibly changes the box.
+  * Cons: `Up` also skips an entry when the user has typed exactly that entry.
+
+* **Alternative 2:** The rejected command itself.
+  * Pros: Each `Up` moves exactly one entry.
+  * Cons: The first `Up` shows the same text, so it seems to do nothing.
 
 --------------------------------------------------------------------------------------------------------------------
 

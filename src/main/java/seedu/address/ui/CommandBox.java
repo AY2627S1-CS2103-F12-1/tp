@@ -1,5 +1,7 @@
 package seedu.address.ui;
 
+import java.util.Optional;
+
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.TextField;
@@ -66,7 +68,7 @@ public class CommandBox extends UiPart<Region> {
         }
 
         if (event.getCode() == KeyCode.UP) {
-            commandHistory.previous().ifPresent(this::showRecalledCommand);
+            showPreviousCommand();
             event.consume();
         } else if (event.getCode() == KeyCode.DOWN) {
             commandHistory.next().ifPresent(this::showRecalledCommand);
@@ -75,11 +77,25 @@ public class CommandBox extends UiPart<Region> {
     }
 
     /**
-     * Replaces the command box text with {@code commandText} and puts the caret at its end.
+     * Shows the command before the one being shown. Skips an entry that is the same as the text in the box,
+     * such as a rejected command still in the box, so that Up always shows a different command when there is one.
+     */
+    private void showPreviousCommand() {
+        Optional<String> previousCommand = commandHistory.previous();
+        if (previousCommand.equals(Optional.of(commandTextField.getText()))) {
+            previousCommand = commandHistory.previous();
+        }
+        previousCommand.ifPresent(this::showRecalledCommand);
+    }
+
+    /**
+     * Replaces the command box text with {@code commandText} in the default style and puts the caret at its end.
      */
     private void showRecalledCommand(String commandText) {
         commandTextField.setText(commandText);
         commandTextField.end();
+        // Setting the same text again does not trigger the text listener, so reset the style here too
+        setStyleToDefault();
     }
 
     /**

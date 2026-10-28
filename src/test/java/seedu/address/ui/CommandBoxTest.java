@@ -1,6 +1,7 @@
 package seedu.address.ui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.FxTestUtil.runOnFxThread;
 
@@ -101,6 +102,69 @@ public class CommandBoxTest {
 
             pressKey(KeyCode.UP);
             assertRecalled(FAILING_COMMAND);
+        });
+    }
+
+    @Test
+    public void pressUp_afterFailedCommand_skipsToEarlierCommand() throws Exception {
+        runOnFxThread(() -> {
+            enter("list");
+            enter("hw ls 2");
+            enter(FAILING_COMMAND);
+
+            pressKey(KeyCode.UP);
+            assertRecalled("hw ls 2");
+            assertFalse(isErrorStyle());
+        });
+    }
+
+    @Test
+    public void pressUp_failedCommandIsOnlyEntry_showsItInDefaultStyle() throws Exception {
+        runOnFxThread(() -> {
+            enter(FAILING_COMMAND);
+
+            pressKey(KeyCode.UP);
+            assertRecalled(FAILING_COMMAND);
+            assertFalse(isErrorStyle());
+        });
+    }
+
+    @Test
+    public void pressDown_afterSkippingFailedCommand_recallsIt() throws Exception {
+        runOnFxThread(() -> {
+            enter("list");
+            enter("hw ls 2");
+            enter(FAILING_COMMAND);
+            pressKey(KeyCode.UP);
+
+            pressKey(KeyCode.DOWN);
+            assertRecalled(FAILING_COMMAND);
+        });
+    }
+
+    @Test
+    public void pressUp_typedTextSameAsNewest_skipsToEarlierCommand() throws Exception {
+        runOnFxThread(() -> {
+            enter("list");
+            enter("hw ls 2");
+            commandTextField.setText("hw ls 2");
+
+            pressKey(KeyCode.UP);
+            assertRecalled("list");
+        });
+    }
+
+    @Test
+    public void pressUp_typedTextSameAsEarlierEntry_skipsThatEntry() throws Exception {
+        runOnFxThread(() -> {
+            enter("list");
+            enter("hw ls 2");
+            enter("hw ls 3");
+            pressKey(KeyCode.UP);
+            commandTextField.setText("hw ls 2");
+
+            pressKey(KeyCode.UP);
+            assertRecalled("list");
         });
     }
 

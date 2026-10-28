@@ -16,8 +16,12 @@ public class CommandHistoryTest {
     }
 
     @Test
-    public void previousAndNext_emptyHistory_returnEmpty() {
+    public void previous_emptyHistory_returnsEmpty() {
         assertEquals(Optional.empty(), history.previous());
+    }
+
+    @Test
+    public void next_emptyHistory_returnsEmpty() {
         assertEquals(Optional.empty(), history.next());
     }
 

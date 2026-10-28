@@ -1,7 +1,6 @@
 package seedu.address.ui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.FxTestUtil.runOnFxThread;
 
@@ -84,19 +83,24 @@ public class CommandBoxTest {
     }
 
     @Test
-    public void pressUp_afterFailedCommand_recallsFailedCommand() throws Exception {
+    public void enter_failedCommand_keepsTextInErrorStyle() throws Exception {
+        runOnFxThread(() -> {
+            enter(FAILING_COMMAND);
+
+            assertEquals(FAILING_COMMAND, commandTextField.getText());
+            assertTrue(isErrorStyle());
+        });
+    }
+
+    @Test
+    public void pressUp_afterFailedCommandAndNewText_recallsFailedCommand() throws Exception {
         runOnFxThread(() -> {
             enter("hw ls 2");
             enter(FAILING_COMMAND);
-            assertEquals(FAILING_COMMAND, commandTextField.getText());
-            assertTrue(commandTextField.getStyleClass().contains(CommandBox.ERROR_STYLE_CLASS));
-
             commandTextField.setText("hw ls 3");
+
             pressKey(KeyCode.UP);
             assertRecalled(FAILING_COMMAND);
-            pressKey(KeyCode.UP);
-            assertRecalled("hw ls 2");
-            assertFalse(commandTextField.getStyleClass().contains(CommandBox.ERROR_STYLE_CLASS));
         });
     }
 
@@ -263,5 +267,9 @@ public class CommandBoxTest {
     private void assertRecalled(String expectedText) {
         assertEquals(expectedText, commandTextField.getText());
         assertEquals(expectedText.length(), commandTextField.getCaretPosition());
+    }
+
+    private boolean isErrorStyle() {
+        return commandTextField.getStyleClass().contains(CommandBox.ERROR_STYLE_CLASS);
     }
 }

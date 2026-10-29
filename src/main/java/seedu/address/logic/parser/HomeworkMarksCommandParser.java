@@ -46,8 +46,10 @@ public class HomeworkMarksCommandParser implements Parser<HomeworkMarksCommand> 
                     HomeworkMarksCommand.MESSAGE_USAGE));
         }
 
-        Index studentIndex = ParserUtil.parseStrictIndex(indices[0], Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
-        Index homeworkIndex = ParserUtil.parseStrictIndex(indices[1], Messages.MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX);
+        Index studentIndex = ParserUtil.parseStrictIndex(indices[0], Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX,
+                Messages.MESSAGE_STUDENT_INDEX_TOO_LARGE);
+        Index homeworkIndex = ParserUtil.parseStrictIndex(indices[1], Messages.MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX,
+                Messages.MESSAGE_HOMEWORK_INDEX_TOO_LARGE);
         if (values.get(PREFIX_SCORE).isBlank()) {
             return new HomeworkMarksCommand(studentIndex, homeworkIndex);
         }

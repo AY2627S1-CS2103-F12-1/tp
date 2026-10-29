@@ -98,7 +98,8 @@ public class HomeworkListCommandParserTest {
         assertParseFailure(parser, "one", Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
 
         // larger than the largest int
-        assertParseFailure(parser, "2147483648", Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
+        assertParseFailure(parser, "2147483648", Messages.MESSAGE_STUDENT_INDEX_TOO_LARGE);
+        assertParseFailure(parser, "9999999999", Messages.MESSAGE_STUDENT_INDEX_TOO_LARGE);
 
         // invalid index followed by all
         assertParseFailure(parser, "0 all", Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);

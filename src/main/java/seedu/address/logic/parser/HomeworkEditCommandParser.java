@@ -59,8 +59,10 @@ public class HomeworkEditCommandParser implements Parser<HomeworkEditCommand> {
             throw new ParseException(MESSAGE_INVALID_FORMAT);
         }
 
-        Index studentIndex = ParserUtil.parseStrictIndex(indices[0], Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
-        Index homeworkIndex = ParserUtil.parseStrictIndex(indices[1], Messages.MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX);
+        Index studentIndex = ParserUtil.parseStrictIndex(indices[0], Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX,
+                Messages.MESSAGE_STUDENT_INDEX_TOO_LARGE);
+        Index homeworkIndex = ParserUtil.parseStrictIndex(indices[1], Messages.MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX,
+                Messages.MESSAGE_HOMEWORK_INDEX_TOO_LARGE);
         String rawTitle = values.getOrDefault(PREFIX_TITLE, values.get(PREFIX_TITLE_ALIAS));
         String rawSubject = values.get(PREFIX_SUBJECT);
         String rawDueDate = values.get(PREFIX_DUE_DATE);

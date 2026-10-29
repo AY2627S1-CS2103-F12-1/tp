@@ -68,7 +68,8 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
         String rawTitle = values.getOrDefault(PREFIX_TITLE, values.get(PREFIX_TITLE_ALIAS));
         validateRequiredPrefixes(values, rawTitle);
 
-        Index studentIndex = ParserUtil.parseStrictIndex(preamble, Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
+        Index studentIndex = ParserUtil.parseStrictIndex(preamble, Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX,
+                Messages.MESSAGE_STUDENT_INDEX_TOO_LARGE);
         String rawDueDate = values.get(PREFIX_DUE_DATE);
         try {
             Homework homework = new Homework(new Title(rawTitle), TuitionSubject.parse(values.get(PREFIX_SUBJECT)),

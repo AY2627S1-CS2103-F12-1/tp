@@ -324,7 +324,8 @@ public class HomeworkAddCommandParserTest {
         assertParseFailure(parser, "one" + VALID_FIELDS, Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
 
         // larger than the largest int
-        assertParseFailure(parser, "2147483648" + VALID_FIELDS, Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
+        assertParseFailure(parser, "2147483648" + VALID_FIELDS, Messages.MESSAGE_STUDENT_INDEX_TOO_LARGE);
+        assertParseFailure(parser, "9999999999" + VALID_FIELDS, Messages.MESSAGE_STUDENT_INDEX_TOO_LARGE);
     }
 
     @Test

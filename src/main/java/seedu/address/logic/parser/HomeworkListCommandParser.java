@@ -47,7 +47,8 @@ public class HomeworkListCommandParser implements Parser<HomeworkListCommand> {
             throw new ParseException(MESSAGE_INVALID_FORMAT);
         }
 
-        Index studentIndex = ParserUtil.parseStrictIndex(words[0], Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
+        Index studentIndex = ParserUtil.parseStrictIndex(words[0], Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX,
+                Messages.MESSAGE_STUDENT_INDEX_TOO_LARGE);
         return new HomeworkListCommand(studentIndex, LocalDate.now(clock), isAllShown);
     }
 }

@@ -171,7 +171,7 @@ public class HomeworkMarksCommandParserTest {
         assertParseFailure(parser, "one 1 score/5/10", Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
 
         // larger than the largest int
-        assertParseFailure(parser, "2147483648 1 score/5/10", Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
+        assertParseFailure(parser, "2147483648 1 score/5/10", Messages.MESSAGE_STUDENT_INDEX_TOO_LARGE);
     }
 
     @Test
@@ -195,7 +195,8 @@ public class HomeworkMarksCommandParserTest {
         assertParseFailure(parser, "1 one score/5/10", Messages.MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX);
 
         // larger than the largest int
-        assertParseFailure(parser, "1 2147483648 score/5/10", Messages.MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX);
+        assertParseFailure(parser, "1 2147483648 score/5/10", Messages.MESSAGE_HOMEWORK_INDEX_TOO_LARGE);
+        assertParseFailure(parser, "1 9999999999 score/5/10", Messages.MESSAGE_HOMEWORK_INDEX_TOO_LARGE);
     }
 
     @Test

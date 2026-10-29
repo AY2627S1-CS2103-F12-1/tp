@@ -184,7 +184,7 @@ public class HomeworkEditCommandParserTest {
         assertParseFailure(parser, "one 1 t/A", Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
 
         // larger than the largest int
-        assertParseFailure(parser, "2147483648 1 t/A", Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
+        assertParseFailure(parser, "2147483648 1 t/X", Messages.MESSAGE_STUDENT_INDEX_TOO_LARGE);
     }
 
     @Test
@@ -215,7 +215,7 @@ public class HomeworkEditCommandParserTest {
         assertParseFailure(parser, "1 one t/A", Messages.MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX);
 
         // larger than the largest int
-        assertParseFailure(parser, "1 2147483648 t/A", Messages.MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX);
+        assertParseFailure(parser, "1 2147483648 t/A", Messages.MESSAGE_HOMEWORK_INDEX_TOO_LARGE);
     }
 
     @Test

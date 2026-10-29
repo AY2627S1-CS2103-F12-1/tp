@@ -20,6 +20,10 @@ public class Messages {
             "HOMEWORK_INDEX must be a positive whole number without leading zeroes.";
     public static final String MESSAGE_INVALID_LESSON_INDEX_SYNTAX =
             "LESSON_INDEX must be a positive whole number without leading zeroes.";
+    public static final String MESSAGE_STUDENT_INDEX_TOO_LARGE =
+            "STUDENT_INDEX must be no greater than " + Integer.MAX_VALUE + ".";
+    public static final String MESSAGE_HOMEWORK_INDEX_TOO_LARGE =
+            "HOMEWORK_INDEX must be no greater than " + Integer.MAX_VALUE + ".";
     public static final String MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX = "The student index provided is invalid.";
     public static final String MESSAGE_INVALID_HOMEWORK_DISPLAYED_INDEX = "The homework index provided is invalid.";
     public static final String MESSAGE_INVALID_LESSON_DISPLAYED_INDEX = "The lesson index provided is invalid.";

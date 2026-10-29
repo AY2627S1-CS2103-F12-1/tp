@@ -553,7 +553,7 @@ Alternatives considered:
 * A denylist of invisible characters (the previous design): rejected, as it needed several lists of special characters and still accepted invisible characters inside a title.
 * Printable ASCII only: rejected, as accented titles such as `Café` would be rejected, titles would be stricter than student names, and data files with such titles would no longer load.
 
-**Due date.** `DueDate#parse` accepts `YYYY-MM-DD` or the short form `MM-DD`. For `MM-DD`, it picks this year, or next year if the date has already passed this year. For example, on 2026-10-28, `11-20` means 2026-11-20 and `10-01` means 2027-10-01. `02-29` is rejected, with a hint to type the full date, when no 29 February falls in the next 12 months. The error says what is wrong: an empty date, input in neither format, a year outside 2000 to 2099, or a date that does not exist (e.g. `2026-02-30 is not a real calendar date.`). `homework add`, `homework edit` and `homework filter` show these messages unchanged. The data file is read with `DueDate#parseFullDate`, which accepts only `YYYY-MM-DD`, so the year of a saved date is never guessed.
+**Due date.** `DueDate#parse` accepts `YYYY-MM-DD` or the short form `MM-DD`. For `MM-DD`, it picks this year, or next year if the date has already passed this year. For example, on 2026-10-28, `11-20` means 2026-11-20 and `10-01` means 2027-10-01. `02-29` follows the same rule, so it is rejected, with a hint to type the full date, when this year has no 29 February still to come and next year is not a leap year. For example, on 2027-01-01, `02-29` means 2028-02-29. The error says what is wrong: an empty date, input in neither format, a year outside 2000 to 2099, or a date that does not exist (e.g. `2026-02-30 is not a real calendar date.`). `homework add`, `homework edit` and `homework filter` show these messages unchanged. The data file is read with `DueDate#parseFullDate`, which accepts only `YYYY-MM-DD`, so the year of a saved date is never guessed.
 
 The year range is fixed (2000 to 2099) to catch typos such as `2206` or `0001`. A range based on today (e.g. 10 years either way) was rejected: a data file that loads today would stop loading a few years later.
 
@@ -1084,16 +1084,20 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
 
 * **Academic level**: The student's current secondary or junior-college year, such as `S3` or `J1`.
 * **Command-line interface (CLI)**: A text-based interface in which the user performs operations by entering commands.
+* **Completion status**: Whether a homework record is `ASSIGNED` (still to be done) or `COMPLETED`, set with `homework status` independently of its score.
+* **Data file**: The file `data/tutorflow.json` in the home folder, where TutorFlow saves all students, homework and regular lessons after every command that changes them.
 * **Displayed index**: A temporary one-based number assigned to an item in the currently displayed list. It is not a permanent identifier.
 * **Guardian**: The person recorded as the primary guardian or contact for a student.
+* **Home folder**: The folder that contains the TutorFlow JAR file. TutorFlow keeps its data file, preferences and logs there.
 * **Homework**: Work assigned to a student and recorded in TutorFlow for follow-up.
-* **Homework index**: The one-based position of a homework record in its student's homework list, in the order the homework was added. `homework list` shows it next to each record, and `homework edit`, `homework marks` and `homework delete` use it to identify the record.
+* **Homework index**: The one-based position of a homework record in its student's homework list, in the order the homework was added. `homework list` shows it next to each record, `homework edit`, `homework marks`, `homework status` and `homework delete` use it to identify the record, and `homework filter` shows it.
 * **Lesson clash**: Two regular lessons on the same weekday whose time intervals overlap.
+* **Overdue homework**: Homework whose completion status is `ASSIGNED` and whose due date is before today, regardless of its score.
 * **Regular lesson**: A tuition lesson that repeats weekly for a student at a specified weekday and time.
 * **Score**: The marks a student obtained for a homework record, written on their own, such as `17`, or together with the total marks as `MARKS_OBTAINED/TOTAL_MARKS`, such as `5/10`.
-* **Student profile**: The record containing a student's identity, contact information, academic information, guardian information, and associated regular lessons.
+* **Student profile**: The record containing a student's identity, contact information, academic information, guardian information, homework records and regular lessons.
 * **Student roster**: The collection of student profiles managed by TutorFlow.
-* **Tuition subject**: A subject that the tutor teaches to a student, such as Mathematics, Physics, or Chemistry.
+* **Tuition subject**: One of the three subjects TutorFlow supports, `MATH`, `PHYSICS` or `CHEMISTRY`, that a student takes.
 * **Upcoming homework**: Homework that is due today or later.
 
 --------------------------------------------------------------------------------------------------------------------

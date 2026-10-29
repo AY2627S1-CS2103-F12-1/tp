@@ -394,9 +394,10 @@ Format: `homework|hw upcoming|up [due/DAYS]`
 * `homework` can be shortened to `hw`, and `upcoming` can be shortened to `up`.
 * `DAYS` is a **number of days, not a date**: the homework shown is due from today to `DAYS` days after today, both days included. For example, on 2026-10-27, `due/3` shows homework due from 2026-10-27 to 2026-10-30, and `due/0` shows homework due today only.
 * `DAYS` must be a whole number from 0 to 365 without signs, decimals, spaces or leading zeroes (`0` itself is accepted). If `due/` is left out, `DAYS` is 7.
-* Homework due before today is left out. Homework is shown whether or not it has marks, including completed homework. Upcoming lists and student-card counts are based on due dates; use `homework filter status/ASSIGNED` to find unfinished work.
+* Homework due before today is left out. Homework is shown whether or not it has marks, including completed homework. Upcoming lists and the student card's upcoming count are based on due dates only; use `homework filter status/ASSIGNED` to find unfinished work.
+* Unlike the **At a glance** panel, which shows every `ASSIGNED` homework of every student, including overdue homework, this command shows homework of any status due within the period and leaves out homework due before today.
 * The homework of every student is searched, not only the students shown in the student list.
-* Like [`list`](#listing-all-students-list), this command shows all students in the student list again, even when no homework is due. So after a search or filter, `Student N` still matches the student list.
+* Like [`list`](#listing-all-students-list), this command shows all students again in stored roster order, even when no homework is due. It clears any `search` or `filter` and undoes any `sort` of the student list, so `Student N` always matches the student list shown afterwards. Run `sort` again if you want the sorted order back.
 * Homework is sorted by due date, earliest first. Homework due on the same date is shown in the order of the students in the student list, and then in the order it was added.
 * The result starts with `Found N homework records due from START to END.` (`record` when there is only one), followed by one line per homework with the student's `STUDENT_INDEX` and name, title, subject, due date, score and status, e.g. `Student 1: Ethan Lim; Quadratic equations worksheet; MATH; Due: 2026-10-23; Score: 5/10; Status: ASSIGNED`. Homework without marks shows `Score: Not recorded`.
 * `Student N` is the index of the student in the displayed student list, the `STUDENT_INDEX` that other commands take. It tells apart students with the same name. Like the numbers in `homework list`, it is always written with the digits 0 to 9.
@@ -485,6 +486,7 @@ Format: `homework|hw marks|m STUDENT_INDEX HOMEWORK_INDEX score/[SCORE]`
 * On success, the result shows the homework with its new score, e.g. `Recorded homework marks:` followed by `Ethan Lim; Title: Kinematics practice set; Subject: PHYSICS; Due: 2026-10-28; Score: 5/10`.
 * Leaving `SCORE` empty (nothing or only spaces after `score/`) clears the recorded marks, so the homework shows `Not recorded` again. The result is `Cleared homework marks:` followed by the homework, e.g. `Ethan Lim; Title: Kinematics practice set; Subject: PHYSICS; Due: 2026-10-28; Score: Not recorded`. Clearing homework that has no marks is rejected with `No changes made; the homework has no recorded marks.`
 * The `score/` prefix is required even when clearing: `hw m 1 2` without it is rejected.
+* Recording or clearing marks does not change the homework's completion status. Use [`homework status`](#updating-homework-completion-homework-status) to mark it completed.
 
 Examples:
 * `hw m 1 2 score/5/10`

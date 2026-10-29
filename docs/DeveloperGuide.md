@@ -1375,7 +1375,7 @@ testers are expected to do more *exploratory* testing.
       Expected: `S/ is not a prefix of this command; prefixes are lowercase (s/). To use it inside a value, wrap the whole value in straight double quotes, e.g. t/"Algebra drill S/MATH".`, then the usage, and no homework is added.
 
    1. Other incorrect commands to try: `hw add 1 extra t/A s/MATH due/12-02`, `hw add 2147483648 t/A s/MATH due/12-02`<br>
-      Expected: `Expected STUDENT_INDEX before the first prefix, but found 2 words (1 extra).` followed by the usage, and `STUDENT_INDEX must be no greater than 2147483647.`. No homework is added.
+      Expected: `Expected STUDENT_INDEX before the first prefix, but found 2 words (1 extra).` followed by the usage, and `STUDENT_INDEX must be no greater than 2147483647.` No homework is added.
 
 1. Adding homework with special characters in the title
 

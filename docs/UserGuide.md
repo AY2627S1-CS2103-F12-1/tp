@@ -346,7 +346,7 @@ Adds a homework record to the end of a student's homework list.
 
 Format: `homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD`
 
-* `homework` can be shortened to `hw`, and `title/` can be shortened to `t/`. Use either `title/` or `t/`, not both; giving both is rejected with `Use either title/ or t/, not both.`.
+* `homework` can be shortened to `hw`, and `title/` can be shortened to `t/`. Use either `title/` or `t/`, not both; giving both is rejected with `Use either title/ or t/, not both.`
 * `STUDENT_INDEX` refers to the index number shown in the displayed student list. It **must be a positive whole number without leading zeroes**, such as 1, 2, 3, …​ A number above 2147483647 is rejected with `STUDENT_INDEX must be no greater than 2147483647.`
 * `TITLE` must be 1 to 100 characters long and may contain only letters, numbers, punctuation, symbols and spaces, such as `Café`, `x² + π ≈ 3.14`, `😀 quiz` or `Ch 3 Q1-10 (pg. 45)`. Extra spaces are removed, and capitalization is kept. A longer title is rejected with a message that gives its length, e.g. `Homework title must be at most 100 characters, but has 101.`
 * Invisible characters, such as a zero-width space (U+200B) or the variation selector U+FE0F at the end of some emoji, are rejected wherever they are in the title. So emoji that contain an invisible character, such as ❤️ (U+2764 followed by U+FE0F) or 👨‍👩‍👧 (joined by U+200D), are rejected. The error names the first such character by its code and name, e.g. `t/Love ❤️` gives `Homework title has an unsupported character: U+FE0F (VARIATION SELECTOR-16). Titles may contain only letters, numbers, punctuation, symbols and spaces.`

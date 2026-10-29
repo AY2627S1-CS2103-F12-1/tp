@@ -538,7 +538,7 @@ Homework is managed with eight subcommands of `homework` (short form `hw`): `add
 
 ### Adding homework
 
-`homework add STUDENT_INDEX t/TITLE s/SUBJECT due/DATE` adds a record to the end of the student's list, so it gets the next homework index. The activity diagram below shows its checks in order. `HomeworkAddCommandParser` checks the input, `HomeworkAddCommand` checks the student, the subject and duplicates, and `LogicManager` saves. If a check fails, the error is shown and nothing is changed.
+`homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD` adds a record to the end of the student's list, so it gets the next homework index. The activity diagram below shows its checks in order. `HomeworkAddCommandParser` checks the input, `HomeworkAddCommand` checks the student, the subject and duplicates, and `LogicManager` saves. If a check fails, the error is shown and nothing is changed.
 
 <img src="images/HomeworkAddActivityDiagram.png" width="800" alt="The checks of homework add, in order" />
 

@@ -5,16 +5,22 @@ import static java.util.Objects.requireNonNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Logger;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonLocation;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -30,8 +36,11 @@ public class JsonUtil {
     public static final String MESSAGE_INVALID_JSON = "The file is not valid JSON near line %d, column %d.";
     public static final String MESSAGE_WRONG_VALUE_TYPE =
             "The file has a value of the wrong type near line %d, column %d.";
+    public static final String MESSAGE_REPEATED_KEY = "The key \"%s\" is repeated near line %d, column %d.";
 
     private static final Logger logger = LogsCenter.getLogger(JsonUtil.class);
+    /** Start of Jackson's message for a key repeated in one object, which gives no position. */
+    private static final String JACKSON_REPEATED_KEY_PREFIX = "Duplicate field '";
 
     private static ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules()
             .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
@@ -64,12 +73,18 @@ public class JsonUtil {
     }
 
     /**
-     * Returns an exception whose message says whether {@code json} breaks the JSON syntax or has a value of the
-     * wrong type, and gives the line and column near which {@code exception} found it, or {@code exception} itself
-     * if Jackson gives no position.
+     * Returns an exception whose message says whether {@code json} repeats a key in one object, breaks the JSON
+     * syntax or has a value of the wrong type, and gives the line and column near which {@code exception} found it,
+     * or {@code exception} itself if no position is known.
      */
     private static IOException describeJsonError(String json, JsonProcessingException exception) {
         JsonParseException syntaxError = findSyntaxError(exception);
+        if (syntaxError != null && syntaxError.getOriginalMessage().startsWith(JACKSON_REPEATED_KEY_PREFIX)) {
+            IOException repeatedKeyError = findRepeatedKey(json, exception);
+            if (repeatedKeyError != null) {
+                return repeatedKeyError;
+            }
+        }
         JsonLocation location = syntaxError == null ? exception.getLocation() : syntaxError.getLocation();
         if (location == null || location.getCharOffset() < 0) {
             return exception;
@@ -87,6 +102,33 @@ public class JsonUtil {
         int column = offset - lineStart + 1;
         // Locale.ROOT prints the position in ASCII digits, which editors use for line and column numbers
         return new IOException(String.format(Locale.ROOT, format, line, column), exception);
+    }
+
+    /**
+     * Returns an exception naming the first key in {@code json} that is repeated in one object and the line and
+     * column where it is repeated, caused by {@code exception}, or null if no such key is found.
+     * Jackson reports such a key without its position, so {@code json} is read again here, up to that key.
+     */
+    private static IOException findRepeatedKey(String json, JsonProcessingException exception) {
+        // A new factory does not reject repeated keys, so the reading reaches the repeated key
+        try (JsonParser parser = new JsonFactory().createParser(json)) {
+            Deque<Set<String>> keysOfOpenObjects = new ArrayDeque<>();
+            for (JsonToken token = parser.nextToken(); token != null; token = parser.nextToken()) {
+                if (token == JsonToken.START_OBJECT) {
+                    keysOfOpenObjects.push(new HashSet<>());
+                } else if (token == JsonToken.END_OBJECT) {
+                    keysOfOpenObjects.pop();
+                } else if (token == JsonToken.FIELD_NAME && !keysOfOpenObjects.peek().add(parser.getCurrentName())) {
+                    JsonLocation location = parser.getTokenLocation();
+                    return new IOException(String.format(Locale.ROOT, MESSAGE_REPEATED_KEY, parser.getCurrentName(),
+                            location.getLineNr(), location.getColumnNr()), exception);
+                }
+            }
+        } catch (IOException e) {
+            // Content after the repeated key that is not valid JSON is never reached, so this is not expected
+            logger.warning("Could not find the repeated key: " + e);
+        }
+        return null;
     }
 
     /**

@@ -127,24 +127,41 @@ public class JsonUtilTest {
     }
 
     @Test
-    public void readJsonFile_duplicateKey_throwsDataLoadingException() throws IOException {
-        Path file = testFolder.resolve("serialize.json");
-        Files.writeString(file, "{\"name\" : \"First\", \"name\" : \"Second\"}");
-
-        assertThrows(DataLoadingException.class, () -> JsonUtil.readJsonFile(file, SerializableTestClass.class));
+    public void readJsonFile_duplicateKey_reasonNamesKeyAndSecondPosition() throws IOException {
+        assertEquals("The key \"name\" is repeated near line 1, column 20.",
+                getLoadingReason("{\"name\" : \"First\", \"name\" : \"Second\"}"));
     }
 
     @Test
-    public void readJsonFile_duplicateNestedKey_throwsDataLoadingException() throws IOException {
-        Path file = testFolder.resolve("serialize.json");
-        Files.writeString(file, "{\"mapOfIntegerToString\" : {\"1\" : \"One\", \"1\" : \"Uno\"}}");
+    public void readJsonFile_duplicateNestedKey_reasonNamesKeyAndSecondPosition() throws IOException {
+        assertEquals("The key \"1\" is repeated near line 1, column 41.",
+                getLoadingReason("{\"mapOfIntegerToString\" : {\"1\" : \"One\", \"1\" : \"Uno\"}}"));
+    }
 
-        assertThrows(DataLoadingException.class, () -> JsonUtil.readJsonFile(file, SerializableTestClass.class));
+    @Test
+    public void readJsonFile_keyAlsoInOuterObject_reasonPointsAtRepeatInSameObject() throws IOException {
+        // the first "1" in the inner object only repeats a key of the outer object, which is allowed
+        assertEquals("The key \"1\" is repeated near line 1, column 52.",
+                getLoadingReason("{\"1\" : \"x\", \"mapOfIntegerToString\" : {\"1\" : \"One\", \"1\" : \"Uno\"}}"));
     }
 
     @Test
     public void fromJsonString_trailingJsonObject_throwsIoException() {
         assertThrows(IOException.class, () -> JsonUtil.fromJsonString("{} {}", SerializableTestClass.class));
+    }
+
+    /**
+     * Returns the reason the user is shown when a file holding {@code content} cannot be read as a
+     * {@code SerializableTestClass}: the message of the {@code DataLoadingException}'s cause.
+     */
+    private String getLoadingReason(String content) throws IOException {
+        Path file = Files.writeString(testFolder.resolve("serialize.json"), content);
+        try {
+            JsonUtil.readJsonFile(file, SerializableTestClass.class);
+        } catch (DataLoadingException e) {
+            return e.getCause().getMessage();
+        }
+        throw new AssertionError("The file was read: " + content);
     }
 
     //TODO: @Test jsonUtil_readJsonStringToObjectInstance_correctObject()

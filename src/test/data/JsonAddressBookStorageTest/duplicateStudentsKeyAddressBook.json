@@ -1,0 +1,121 @@
+{
+  "students" : [ {
+    "name" : "Ethan Lim",
+    "academicLevel" : "S3",
+    "subjects" : [ "MATH", "PHYSICS" ],
+    "phone" : "91234567",
+    "guardianName" : "Grace Lim",
+    "guardianPhone" : "98765432",
+    "homeworks" : [ {
+      "title" : "Quadratic equations worksheet",
+      "subject" : "MATH",
+      "dueDate" : "2026-10-23",
+      "score" : null,
+      "status" : "ASSIGNED"
+    }, {
+      "title" : "Kinematics practice set B",
+      "subject" : "PHYSICS",
+      "dueDate" : "2026-10-28",
+      "score" : null,
+      "status" : "ASSIGNED"
+    } ],
+    "lessons" : [ {
+      "subject" : "MATH",
+      "dayOfWeek" : "MONDAY",
+      "startTime" : "17:00",
+      "endTime" : "18:30"
+    } ]
+  }, {
+    "name" : "Priya Nair",
+    "academicLevel" : "J1",
+    "subjects" : [ "MATH", "CHEMISTRY" ],
+    "phone" : "82345671",
+    "guardianName" : "Ravi Nair",
+    "guardianPhone" : "96543218",
+    "homeworks" : [ {
+      "title" : "Integration by parts exercise",
+      "subject" : "MATH",
+      "dueDate" : "2026-10-26",
+      "score" : null,
+      "status" : "ASSIGNED"
+    }, {
+      "title" : "Organic reaction pathways map",
+      "subject" : "CHEMISTRY",
+      "dueDate" : "2026-11-02",
+      "score" : null,
+      "status" : "ASSIGNED"
+    }, {
+      "title" : "Chemical equilibrium past paper",
+      "subject" : "CHEMISTRY",
+      "dueDate" : "2026-11-09",
+      "score" : null,
+      "status" : "ASSIGNED"
+    } ],
+    "lessons" : [ {
+      "subject" : "CHEMISTRY",
+      "dayOfWeek" : "SATURDAY",
+      "startTime" : "15:00",
+      "endTime" : "16:30"
+    } ]
+  }, {
+    "name" : "Marcus Tan",
+    "academicLevel" : "S1",
+    "subjects" : [ "MATH" ],
+    "phone" : "87654329",
+    "guardianName" : "Tan Mei Ling",
+    "guardianPhone" : "91827364",
+    "homeworks" : [ {
+      "title" : "Algebraic expansion worksheet",
+      "subject" : "MATH",
+      "dueDate" : "2026-10-30",
+      "score" : null,
+      "status" : "ASSIGNED"
+    } ],
+    "lessons" : [ ]
+  }, {
+    "name" : "Nurul Aisyah",
+    "academicLevel" : "S4",
+    "subjects" : [ "PHYSICS", "CHEMISTRY" ],
+    "phone" : "93456782",
+    "guardianName" : "Rahman bin Ismail",
+    "guardianPhone" : "81234569",
+    "homeworks" : [ {
+      "title" : "Electromagnetism practice questions",
+      "subject" : "PHYSICS",
+      "dueDate" : "2026-11-04",
+      "score" : null,
+      "status" : "ASSIGNED"
+    }, {
+      "title" : "Mole concept worksheet",
+      "subject" : "CHEMISTRY",
+      "dueDate" : "2026-11-11",
+      "score" : null,
+      "status" : "ASSIGNED"
+    } ],
+    "lessons" : [ ]
+  }, {
+    "name" : "Daniel Wong",
+    "academicLevel" : "J2",
+    "subjects" : [ "MATH", "PHYSICS", "CHEMISTRY" ],
+    "phone" : "96781234",
+    "guardianName" : "Wong Siew Lan",
+    "guardianPhone" : "62345678",
+    "homeworks" : [ ],
+    "lessons" : [ ]
+  }, {
+    "name" : "Chloe Chua",
+    "academicLevel" : "S5",
+    "subjects" : [ "MATH" ],
+    "phone" : "88812345",
+    "guardianName" : "Chua Boon Huat",
+    "guardianPhone" : "97771234",
+    "homeworks" : [ {
+      "title" : "Linear graphs practice",
+      "subject" : "MATH",
+      "dueDate" : "2026-11-16",
+      "score" : null,
+      "status" : "ASSIGNED"
+    } ],
+    "lessons" : [ ]
+  } ]
+, "students" : [ ]}

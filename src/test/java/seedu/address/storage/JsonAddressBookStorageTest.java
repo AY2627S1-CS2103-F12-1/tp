@@ -131,6 +131,20 @@ public class JsonAddressBookStorageTest {
     }
 
     @Test
+    public void readAddressBook_repeatedPhoneKeyInSampleData_reasonNamesKeyAndPosition() throws Exception {
+        // the second student's "phone" key repeated on its line, as found in PE testing
+        String content = Files.readString(TEST_DATA_FOLDER.resolve("duplicatePhoneKeyAddressBook.json"));
+        assertEquals("The key \"phone\" is repeated near line 32, column 27.", getLoadingReason(content));
+    }
+
+    @Test
+    public void readAddressBook_repeatedStudentsKeyInSampleData_reasonNamesKeyAndPosition() throws Exception {
+        // a second, empty student list after the sample data, as in the developer guide's manual test
+        String content = Files.readString(TEST_DATA_FOLDER.resolve("duplicateStudentsKeyAddressBook.json"));
+        assertEquals("The key \"students\" is repeated near line 121, column 3.", getLoadingReason(content));
+    }
+
+    @Test
     public void readAddressBook_arabicDigitsLocale_reasonGivesPositionInAsciiDigits() {
         runWithFormatLocale(ARABIC_EGYPT, () -> {
             assertEquals("The file is not valid JSON near line 2, column 18.", assertDoesNotThrow(() ->

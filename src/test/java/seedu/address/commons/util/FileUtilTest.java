@@ -190,13 +190,15 @@ public class FileUtilTest {
     }
 
     @Test
-    public void writeToFile_newFile_onlyOwnerCanReadAndWrite() throws IOException {
+    public void writeToFile_newFile_getsPermissionsOfAnyNewFile() throws IOException {
+        // PE round 3: a new data file could be read and written only by its owner (600), unlike other new files
         assumeTrue(isPosix(), "file permissions are POSIX only");
         Path file = testFolder.resolve("tutorflow.json");
+        Path otherNewFile = Files.createFile(testFolder.resolve("other.json"));
 
         FileUtil.writeToFile(file, CONTENT);
 
-        assertEquals(PosixFilePermissions.fromString("rw-------"), Files.getPosixFilePermissions(file));
+        assertEquals(Files.getPosixFilePermissions(otherNewFile), Files.getPosixFilePermissions(file));
     }
 
     @Test

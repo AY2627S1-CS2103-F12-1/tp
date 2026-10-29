@@ -337,6 +337,19 @@ public class JsonAddressBookStorageTest {
     }
 
     @Test
+    public void saveAddressBook_newFile_getsPermissionsOfLockFile() throws Exception {
+        // PE round 3: the first save made data/tutorflow.json 600, while the lock file next to it got 644
+        assumeTrue(FileSystems.getDefault().supportedFileAttributeViews().contains("posix"),
+                "file permissions are POSIX only");
+        Path file = testFolder.resolve("data").resolve("tutorflow.json");
+
+        new JsonAddressBookStorage(file).saveAddressBook(getTypicalAddressBook());
+
+        assertEquals(Files.getPosixFilePermissions(file.resolveSibling("tutorflow.json.lock")),
+                Files.getPosixFilePermissions(file));
+    }
+
+    @Test
     public void saveAddressBook_typicalAddressBook_writesHumanEditableJson() throws Exception {
         Path filePath = testFolder.resolve("TempAddressBook.json");
         new JsonAddressBookStorage(filePath).saveAddressBook(getTypicalAddressBook());

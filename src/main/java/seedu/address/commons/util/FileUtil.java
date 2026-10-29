@@ -8,6 +8,7 @@ import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,6 +18,7 @@ import java.nio.file.attribute.AclFileAttributeView;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Writes and reads files
@@ -73,8 +75,8 @@ public class FileUtil {
      * previous content. Other files in the folder are never changed. If {@code file} is a symbolic link to an existing
      * file, that file is replaced in the same way and the link is kept.
      * An existing {@code file} keeps its POSIX file permissions or its access control list (on Windows), whichever
-     * the file system supports. Where the file system supports POSIX file permissions, a new {@code file} can be
-     * read and written only by its owner.
+     * the file system supports. A new {@code file} gets the permissions that any new file gets, e.g. from the
+     * user's umask on POSIX file systems.
      *
      * @throws AccessDeniedException If {@code file} exists but is read-only, or its folder cannot be written to.
      * @throws IOException If the content cannot be written. An error about the temporary file names {@code file}.
@@ -91,7 +93,7 @@ public class FileUtil {
         Path folder = target.toAbsolutePath().getParent();
         Path tempFile = null;
         try {
-            tempFile = Files.createTempFile(folder, target.getFileName().toString(), TEMP_FILE_SUFFIX);
+            tempFile = createTempFile(folder, target.getFileName().toString());
             // Give the temporary file the data file's permissions before it holds the user's data
             copyPermissions(target, tempFile);
             Files.write(tempFile, content.getBytes(CHARSET));
@@ -102,6 +104,23 @@ public class FileUtil {
         } catch (RuntimeException e) {
             deleteAfterFailure(tempFile, e);
             throw e;
+        }
+    }
+
+    /**
+     * Returns a new empty file in {@code folder} with a unique name that starts with {@code prefix}. Unlike
+     * {@link Files#createTempFile}, which lets only its owner read and write it, it gets the permissions that any new
+     * file gets.
+     */
+    private static Path createTempFile(Path folder, String prefix) throws IOException {
+        while (true) {
+            Path tempFile = folder.resolve(prefix + Long.toUnsignedString(ThreadLocalRandom.current().nextLong())
+                    + TEMP_FILE_SUFFIX);
+            try {
+                return Files.createFile(tempFile);
+            } catch (FileAlreadyExistsException e) {
+                // Another file has this name, so another name is tried
+            }
         }
     }
 

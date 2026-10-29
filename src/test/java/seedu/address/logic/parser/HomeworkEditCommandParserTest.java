@@ -5,6 +5,7 @@ import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailur
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
+import static seedu.address.logic.parser.CommandParserTestUtil.unexpectedWords;
 import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefix;
 import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefixWithQuoteHint;
 import static seedu.address.model.homework.DueDateTest.MESSAGE_EMPTY;
@@ -32,9 +33,7 @@ public class HomeworkEditCommandParserTest {
     /** Fixed clock at 2026-10-05, so short-form due dates always infer the same year and today never changes. */
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-05T00:00:00Z"), ZoneOffset.UTC);
     private static final String USAGE_LINE = "\nUsage: " + HomeworkEditCommand.MESSAGE_USAGE;
-    private static final String MESSAGE_INVALID_FORMAT = "Invalid command format.\n"
-            + "Usage: homework|hw edit|e STUDENT_INDEX HOMEWORK_INDEX [title/|t/TITLE] [s/SUBJECT] "
-            + "[due/YYYY-MM-DD|MM-DD]";
+    private static final String EXPECTED_WORDS = "STUDENT_INDEX HOMEWORK_INDEX before the first prefix";
     private static final Index FIRST = Index.fromOneBased(1);
     private static final Index SECOND = Index.fromOneBased(2);
     private static final LocalDate TODAY = LocalDate.of(2026, 10, 5);
@@ -103,23 +102,33 @@ public class HomeworkEditCommandParserTest {
 
     @Test
     public void parse_noIndices_failure() {
-        assertParseFailure(parser, "", MESSAGE_INVALID_FORMAT);
-        assertParseFailure(parser, "t/Algebra", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "", unexpectedWords(EXPECTED_WORDS, "none", HomeworkEditCommand.MESSAGE_USAGE));
+        assertParseFailure(parser, "t/Algebra", unexpectedWords(EXPECTED_WORDS, "none",
+                HomeworkEditCommand.MESSAGE_USAGE));
+        assertParseFailure(parser, "t/X", unexpectedWords(EXPECTED_WORDS, "none", HomeworkEditCommand.MESSAGE_USAGE));
     }
 
     @Test
     public void parse_oneIndex_failure() {
-        assertParseFailure(parser, "1 t/Algebra", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 t/Algebra", unexpectedWords(EXPECTED_WORDS, "1 word (1)",
+                HomeworkEditCommand.MESSAGE_USAGE));
     }
 
     @Test
     public void parse_threeIndices_failure() {
-        assertParseFailure(parser, "1 2 3 t/Algebra", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 2 3 t/Algebra", unexpectedWords(EXPECTED_WORDS, "3 words (1 2 3)",
+                HomeworkEditCommand.MESSAGE_USAGE));
+        assertParseFailure(parser, "1 2 3 t/X", unexpectedWords(EXPECTED_WORDS, "3 words (1 2 3)",
+                HomeworkEditCommand.MESSAGE_USAGE));
+        assertParseFailure(parser, "1 2 extra t/X", unexpectedWords(EXPECTED_WORDS, "3 words (1 2 extra)",
+                HomeworkEditCommand.MESSAGE_USAGE));
     }
 
     @Test
     public void parse_noEditableField_failure() {
-        assertParseFailure(parser, "1 2", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 2", HomeworkEditCommandParser.MESSAGE_NO_FIELDS);
+        assertParseFailure(parser, "1 2", "Specify at least one field to edit: title/ (or t/), s/ or due/."
+                + USAGE_LINE);
     }
 
     @Test

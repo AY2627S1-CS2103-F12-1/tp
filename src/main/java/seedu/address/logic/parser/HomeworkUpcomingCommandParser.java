@@ -19,6 +19,8 @@ public class HomeworkUpcomingCommandParser implements Parser<HomeworkUpcomingCom
     public static final String PREFIX_DAYS = "due/";
     public static final int DEFAULT_DAYS = 7;
     public static final int MAX_DAYS = 365;
+    /** What the command expects, named when other words are found. */
+    public static final String EXPECTED_WORDS = "no words other than " + PREFIX_DAYS + "DAYS";
     public static final String MESSAGE_INVALID_DAYS =
             "Days must be a whole number from 0 to " + MAX_DAYS + " without leading zeroes.";
 
@@ -50,7 +52,8 @@ public class HomeworkUpcomingCommandParser implements Parser<HomeworkUpcomingCom
                 StrictArgumentTokenizer.tokenizeWithPreambleRejectingWrongCase(args, List.of(PREFIX_DAYS),
                         MESSAGE_INVALID_FORMAT);
         if (!tokenizedArguments.preamble().isEmpty()) {
-            throw new ParseException(MESSAGE_INVALID_FORMAT);
+            throw new ParseException(ParserUtil.formatUnexpectedWords(EXPECTED_WORDS,
+                    ParserUtil.splitWords(tokenizedArguments.preamble()), HomeworkUpcomingCommand.MESSAGE_USAGE));
         }
         Map<String, String> values = tokenizedArguments.values();
         int days = values.containsKey(PREFIX_DAYS) ? parseDays(values.get(PREFIX_DAYS)) : DEFAULT_DAYS;

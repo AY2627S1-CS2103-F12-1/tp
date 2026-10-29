@@ -2,9 +2,11 @@ package seedu.address.logic.parser;
 
 import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 import seedu.address.commons.core.index.Index;
+import seedu.address.logic.Messages;
 import seedu.address.logic.parser.exceptions.ParseException;
 
 /**
@@ -43,5 +45,32 @@ public class ParserUtil {
         } catch (NumberFormatException exception) {
             throw new ParseException(outOfRangeMessage, exception);
         }
+    }
+
+    /**
+     * Returns the words of {@code text}, separated by whitespace, or no words if it is blank.
+     */
+    public static String[] splitWords(String text) {
+        return text.isBlank() ? new String[0] : text.strip().split("\\s+");
+    }
+
+    /**
+     * Returns the error for a command given {@code words} where it expects {@code expected}, saying how many words
+     * were found and what they are, followed by {@code usage}.
+     *
+     * @param expected What the command expects, e.g. {@code STUDENT_INDEX HOMEWORK_INDEX}.
+     * @param words Words found instead.
+     * @param usage Usage text of the command.
+     * @return The error message.
+     */
+    public static String formatUnexpectedWords(String expected, String[] words, String usage) {
+        String joinedWords = String.join(" ", words);
+        // Locale.ROOT prints the count in ASCII digits in every locale
+        String foundWords = switch (words.length) {
+            case 0 -> Messages.MESSAGE_NO_WORDS;
+            case 1 -> String.format(Messages.MESSAGE_ONE_WORD, joinedWords);
+            default -> String.format(Locale.ROOT, Messages.MESSAGE_WORDS, words.length, joinedWords);
+        };
+        return String.format(Messages.MESSAGE_UNEXPECTED_WORDS_WITH_USAGE, expected, foundWords, usage);
     }
 }

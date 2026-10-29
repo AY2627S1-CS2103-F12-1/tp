@@ -6,6 +6,7 @@ import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailur
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
+import static seedu.address.logic.parser.CommandParserTestUtil.unexpectedWords;
 import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefix;
 import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefixWithQuoteHint;
 import static seedu.address.model.homework.DueDateTest.MESSAGE_EMPTY;
@@ -36,8 +37,7 @@ public class HomeworkAddCommandParserTest {
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-05T00:00:00Z"), ZoneOffset.UTC);
     private static final String VALID_FIELDS = " title/Complete algebra worksheet s/MATH due/2026-10-15";
     private static final String USAGE_LINE = "\nUsage: " + HomeworkAddCommand.MESSAGE_USAGE;
-    private static final String MESSAGE_INVALID_FORMAT = "Invalid command format.\n"
-            + "Usage: homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD";
+    private static final String EXPECTED_WORDS = "STUDENT_INDEX before the first prefix";
     private static final String MESSAGE_MISSING_PREFIXES = "Missing required prefix(es): %s\n"
             + "Usage: homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD";
 
@@ -232,17 +232,21 @@ public class HomeworkAddCommandParserTest {
 
     @Test
     public void parse_emptyArguments_failure() {
-        assertParseFailure(parser, "", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "", unexpectedWords(EXPECTED_WORDS, "none", HomeworkAddCommand.MESSAGE_USAGE));
     }
 
     @Test
     public void parse_missingStudentIndex_failure() {
-        assertParseFailure(parser, VALID_FIELDS, MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, VALID_FIELDS, unexpectedWords(EXPECTED_WORDS, "none",
+                HomeworkAddCommand.MESSAGE_USAGE));
     }
 
     @Test
     public void parse_extraPreambleWord_failure() {
-        assertParseFailure(parser, "1 2" + VALID_FIELDS, MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 2" + VALID_FIELDS, unexpectedWords(EXPECTED_WORDS, "2 words (1 2)",
+                HomeworkAddCommand.MESSAGE_USAGE));
+        assertParseFailure(parser, "1 extra t/A s/MATH due/2026-11-01", unexpectedWords(EXPECTED_WORDS,
+                "2 words (1 extra)", HomeworkAddCommand.MESSAGE_USAGE));
     }
 
     @Test
@@ -462,7 +466,8 @@ public class HomeworkAddCommandParserTest {
 
     @Test
     public void parse_extraPreambleWordAndMissingPrefixes_reportsInvalidFormat() {
-        assertParseFailure(parser, "1 2 title/Complete algebra worksheet", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 2 title/Complete algebra worksheet", unexpectedWords(EXPECTED_WORDS,
+                "2 words (1 2)", HomeworkAddCommand.MESSAGE_USAGE));
     }
 
     @Test

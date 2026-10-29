@@ -14,6 +14,10 @@ public class Messages {
     public static final String MESSAGE_INVALID_COMMAND_FORMAT = "Invalid command format!\n%1$s";
     public static final String MESSAGE_INVALID_FORMAT_WITH_USAGE = "Invalid command format.\nUsage: %s";
     public static final String MESSAGE_MISSING_PREFIXES_WITH_USAGE = "Missing required prefix(es): %s\nUsage: %s";
+    public static final String MESSAGE_UNEXPECTED_WORDS_WITH_USAGE = "Expected %s, but found %s.\nUsage: %s";
+    public static final String MESSAGE_NO_WORDS = "none";
+    public static final String MESSAGE_ONE_WORD = "1 word (%s)";
+    public static final String MESSAGE_WORDS = "%d words (%s)";
     public static final String MESSAGE_INVALID_STUDENT_INDEX_SYNTAX =
             "STUDENT_INDEX must be a positive whole number without leading zeroes.";
     public static final String MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX =

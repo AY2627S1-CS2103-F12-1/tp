@@ -57,6 +57,15 @@ public class CommandParserTestUtil {
     }
 
     /**
+     * Returns the error for a homework command whose words before the first prefix are not the {@code expected}
+     * ones, where {@code found} describes them (e.g. {@code 3 words (1 1 extra)} or {@code none}), followed by the
+     * usage line of {@code usage}.
+     */
+    public static String unexpectedWords(String expected, String found, String usage) {
+        return "Expected " + expected + ", but found " + found + ".\nUsage: " + usage;
+    }
+
+    /**
      * Asserts that the parsing of {@code userInput} by {@code parser} is successful and the command created
      * is equal to {@code expectedCommand}.
      */

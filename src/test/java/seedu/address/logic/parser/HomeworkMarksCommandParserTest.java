@@ -4,6 +4,7 @@ import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailur
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
+import static seedu.address.logic.parser.CommandParserTestUtil.unexpectedWords;
 import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefix;
 
 import org.junit.jupiter.api.Test;
@@ -14,8 +15,7 @@ import seedu.address.logic.commands.HomeworkMarksCommand;
 import seedu.address.model.homework.Score;
 
 public class HomeworkMarksCommandParserTest {
-    private static final String MESSAGE_INVALID_FORMAT = "Invalid command format.\n"
-            + "Usage: homework|hw marks|m STUDENT_INDEX HOMEWORK_INDEX score/[SCORE]";
+    private static final String EXPECTED_WORDS = "STUDENT_INDEX HOMEWORK_INDEX before the first prefix";
     private static final String MESSAGE_MISSING_SCORE = "Missing required prefix(es): score/\n"
             + "Usage: homework|hw marks|m STUDENT_INDEX HOMEWORK_INDEX score/[SCORE]";
 
@@ -103,7 +103,8 @@ public class HomeworkMarksCommandParserTest {
     public void parse_emptyScoreInvalidIndex_failure() {
         assertParseFailure(parser, "0 2 score/", Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
         assertParseFailure(parser, "1 01 score/", Messages.MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX);
-        assertParseFailure(parser, "1 score/", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 score/", unexpectedWords(EXPECTED_WORDS, "1 word (1)",
+                HomeworkMarksCommand.MESSAGE_USAGE));
     }
 
     @Test
@@ -115,14 +116,21 @@ public class HomeworkMarksCommandParserTest {
     @Test
     public void parse_wrongNumberOfIndices_failure() {
         // no index
-        assertParseFailure(parser, "", MESSAGE_INVALID_FORMAT);
-        assertParseFailure(parser, "score/5/10", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "", unexpectedWords(EXPECTED_WORDS, "none", HomeworkMarksCommand.MESSAGE_USAGE));
+        assertParseFailure(parser, "score/5/10", unexpectedWords(EXPECTED_WORDS, "none",
+                HomeworkMarksCommand.MESSAGE_USAGE));
 
         // one index
-        assertParseFailure(parser, "1 score/5/10", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 score/5/10", unexpectedWords(EXPECTED_WORDS, "1 word (1)",
+                HomeworkMarksCommand.MESSAGE_USAGE));
+        assertParseFailure(parser, "1 score/5", unexpectedWords(EXPECTED_WORDS, "1 word (1)",
+                HomeworkMarksCommand.MESSAGE_USAGE));
 
         // three indices
-        assertParseFailure(parser, "1 2 3 score/5/10", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 2 3 score/5/10", unexpectedWords(EXPECTED_WORDS, "3 words (1 2 3)",
+                HomeworkMarksCommand.MESSAGE_USAGE));
+        assertParseFailure(parser, "1 2 3 score/5", unexpectedWords(EXPECTED_WORDS, "3 words (1 2 3)",
+                HomeworkMarksCommand.MESSAGE_USAGE));
     }
 
     @Test

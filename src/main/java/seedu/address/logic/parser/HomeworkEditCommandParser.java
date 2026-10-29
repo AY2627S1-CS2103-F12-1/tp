@@ -28,6 +28,11 @@ import seedu.address.model.student.TuitionSubject;
  * title, subject, and due date.
  */
 public class HomeworkEditCommandParser implements Parser<HomeworkEditCommand> {
+    /** What the command expects before its prefixes, named when other words are found. */
+    public static final String EXPECTED_WORDS = "STUDENT_INDEX HOMEWORK_INDEX before the first prefix";
+    public static final String MESSAGE_NO_FIELDS = "Specify at least one field to edit: title/ (or t/), s/ or due/."
+            + "\nUsage: " + HomeworkEditCommand.MESSAGE_USAGE;
+
     private static final String MESSAGE_INVALID_FORMAT = String.format(Messages.MESSAGE_INVALID_FORMAT_WITH_USAGE,
             HomeworkEditCommand.MESSAGE_USAGE);
 
@@ -55,9 +60,13 @@ public class HomeworkEditCommandParser implements Parser<HomeworkEditCommand> {
         Map<String, String> values = tokenizedArguments.values();
         HomeworkAddCommandParser.validateTitlePrefixes(values);
 
-        String[] indices = tokenizedArguments.preamble().split("\\s+");
-        if (indices.length != 2 || values.isEmpty()) {
-            throw new ParseException(MESSAGE_INVALID_FORMAT);
+        String[] indices = ParserUtil.splitWords(tokenizedArguments.preamble());
+        if (indices.length != 2) {
+            throw new ParseException(ParserUtil.formatUnexpectedWords(EXPECTED_WORDS, indices,
+                    HomeworkEditCommand.MESSAGE_USAGE));
+        }
+        if (values.isEmpty()) {
+            throw new ParseException(MESSAGE_NO_FIELDS);
         }
 
         Index studentIndex = ParserUtil.parseStrictIndex(indices[0], Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX,

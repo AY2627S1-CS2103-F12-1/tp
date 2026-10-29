@@ -5,6 +5,7 @@ import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailur
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
+import static seedu.address.logic.parser.CommandParserTestUtil.unexpectedWords;
 import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefix;
 import static seedu.address.logic.parser.HomeworkUpcomingCommandParser.MESSAGE_INVALID_DAYS;
 
@@ -22,8 +23,8 @@ public class HomeworkUpcomingCommandParserTest {
     /** Fixed clock at 2026-10-17, so today never changes. */
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-17T00:00:00Z"), ZoneOffset.UTC);
     private static final LocalDate TODAY = LocalDate.of(2026, 10, 17);
-    private static final String MESSAGE_INVALID_FORMAT = "Invalid command format.\n"
-            + "Usage: homework|hw upcoming|up [due/DAYS]";
+    private static final String USAGE = "homework|hw upcoming|up [due/DAYS]";
+    private static final String EXPECTED_WORDS = "no words other than due/DAYS";
 
     private final HomeworkUpcomingCommandParser parser = new HomeworkUpcomingCommandParser(CLOCK);
 
@@ -145,10 +146,11 @@ public class HomeworkUpcomingCommandParserTest {
     @Test
     public void parse_extraPreamble_failure() {
         // days without the prefix
-        assertParseFailure(parser, "3", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "3", unexpectedWords(EXPECTED_WORDS, "1 word (3)", USAGE));
 
         // text before the prefix
-        assertParseFailure(parser, "1 due/3", MESSAGE_INVALID_FORMAT);
-        assertParseFailure(parser, "all", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 due/3", unexpectedWords(EXPECTED_WORDS, "1 word (1)", USAGE));
+        assertParseFailure(parser, "all", unexpectedWords(EXPECTED_WORDS, "1 word (all)", USAGE));
+        assertParseFailure(parser, "extra", unexpectedWords(EXPECTED_WORDS, "1 word (extra)", USAGE));
     }
 }

@@ -18,6 +18,10 @@ import seedu.address.logic.parser.exceptions.ParseException;
  */
 public class HomeworkListCommandParser implements Parser<HomeworkListCommand> {
     public static final String KEYWORD_ALL = "all";
+    /** What the command expects, named when other words are found. */
+    public static final String EXPECTED_WORDS = "STUDENT_INDEX, optionally followed by " + KEYWORD_ALL;
+    public static final String MESSAGE_ALL_NOT_LOWERCASE = "The word all is lowercase: type all, not %s.\nUsage: "
+            + HomeworkListCommand.MESSAGE_USAGE;
 
     private static final String MESSAGE_INVALID_FORMAT = String.format(Messages.MESSAGE_INVALID_FORMAT_WITH_USAGE,
             HomeworkListCommand.MESSAGE_USAGE);
@@ -41,10 +45,14 @@ public class HomeworkListCommandParser implements Parser<HomeworkListCommand> {
         requireNonNull(args);
         String preamble = StrictArgumentTokenizer.tokenizeWithPreamble(args, List.of(), MESSAGE_INVALID_FORMAT)
                 .preamble();
-        String[] words = preamble.split("\\s+");
+        String[] words = ParserUtil.splitWords(preamble);
         boolean isAllShown = words.length == 2 && words[1].equals(KEYWORD_ALL);
-        if (preamble.isEmpty() || words.length > 2 || (words.length == 2 && !isAllShown)) {
-            throw new ParseException(MESSAGE_INVALID_FORMAT);
+        if (words.length == 2 && !isAllShown && words[1].equalsIgnoreCase(KEYWORD_ALL)) {
+            throw new ParseException(String.format(MESSAGE_ALL_NOT_LOWERCASE, words[1]));
+        }
+        if (words.length == 0 || words.length > 2 || (words.length == 2 && !isAllShown)) {
+            throw new ParseException(ParserUtil.formatUnexpectedWords(EXPECTED_WORDS, words,
+                    HomeworkListCommand.MESSAGE_USAGE));
         }
 
         Index studentIndex = ParserUtil.parseStrictIndex(words[0], Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX,

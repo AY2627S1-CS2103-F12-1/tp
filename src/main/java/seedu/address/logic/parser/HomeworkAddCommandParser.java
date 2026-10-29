@@ -32,6 +32,8 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
     public static final String PREFIX_SUBJECT = "s/";
     public static final String PREFIX_DUE_DATE = "due/";
     public static final String MESSAGE_TITLE_AND_ALIAS = "Use either title/ or t/, not both.";
+    /** What the command expects before its prefixes, named when other words are found. */
+    public static final String EXPECTED_WORDS = "STUDENT_INDEX before the first prefix";
 
     /** Prefixes accepted by both {@code homework add} and {@code homework edit}. */
     static final List<String> ALLOWED_PREFIXES = List.of(PREFIX_TITLE, PREFIX_TITLE_ALIAS, PREFIX_SUBJECT,
@@ -96,11 +98,13 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
     /**
      * Checks that {@code preamble} contains exactly one word for the student index.
      *
-     * @throws ParseException If the index is missing or the preamble contains extra words.
+     * @throws ParseException If the index is missing or the preamble contains extra words, naming the words found.
      */
     private static void validateStudentIndexStructure(String preamble) throws ParseException {
-        if (preamble.isEmpty() || preamble.split("\\s+").length != 1) {
-            throw new ParseException(MESSAGE_INVALID_FORMAT);
+        String[] words = ParserUtil.splitWords(preamble);
+        if (words.length != 1) {
+            throw new ParseException(ParserUtil.formatUnexpectedWords(EXPECTED_WORDS, words,
+                    HomeworkAddCommand.MESSAGE_USAGE));
         }
     }
 

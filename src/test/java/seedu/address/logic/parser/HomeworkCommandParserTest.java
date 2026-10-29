@@ -2,6 +2,7 @@ package seedu.address.logic.parser;
 
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
+import static seedu.address.logic.parser.CommandParserTestUtil.unexpectedWords;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 
 import java.time.Clock;
@@ -119,7 +120,16 @@ public class HomeworkCommandParserTest {
 
     @Test
     public void parse_uppercaseSubcommand_failure() {
-        assertParseFailure(parser, " LIST 1", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, " LIST 1", "Homework subcommands are lowercase: type list, not LIST.\n"
+                + "Usage: " + HomeworkListCommand.MESSAGE_USAGE);
+        assertParseFailure(parser, " LS 1", "Homework subcommands are lowercase: type ls, not LS.\n"
+                + "Usage: " + HomeworkListCommand.MESSAGE_USAGE);
+        assertParseFailure(parser, " E 1 2 t/X", "Homework subcommands are lowercase: type e, not E.\n"
+                + "Usage: " + HomeworkEditCommand.MESSAGE_USAGE);
+        assertParseFailure(parser, " DEL 1 1", "Homework subcommands are lowercase: type del, not DEL.\n"
+                + "Usage: " + HomeworkDeleteCommand.MESSAGE_USAGE);
+        assertParseFailure(parser, " Upcoming", "Homework subcommands are lowercase: type upcoming, not Upcoming.\n"
+                + "Usage: " + HomeworkUpcomingCommand.MESSAGE_USAGE);
     }
 
     @Test
@@ -129,13 +139,15 @@ public class HomeworkCommandParserTest {
 
     @Test
     public void parse_invalidSubcommandArguments_reportsSubcommandError() {
-        assertParseFailure(parser, " list",
-                "Invalid command format.\nUsage: homework|hw list|ls STUDENT_INDEX [all]");
+        assertParseFailure(parser, " list", unexpectedWords("STUDENT_INDEX, optionally followed by all", "none",
+                HomeworkListCommand.MESSAGE_USAGE));
     }
 
     @Test
     public void parse_invalidUpcomingArguments_reportsSubcommandError() {
-        assertParseFailure(parser, " up 3",
-                "Invalid command format.\nUsage: homework|hw upcoming|up [due/DAYS]");
+        assertParseFailure(parser, " up 3", unexpectedWords("no words other than due/DAYS", "1 word (3)",
+                HomeworkUpcomingCommand.MESSAGE_USAGE));
+        assertParseFailure(parser, " up extra", unexpectedWords("no words other than due/DAYS", "1 word (extra)",
+                HomeworkUpcomingCommand.MESSAGE_USAGE));
     }
 }

@@ -3,6 +3,7 @@ package seedu.address.logic;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.logic.parser.CommandParserTestUtil.unexpectedWords;
 import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefix;
 import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefixWithQuoteHint;
 import static seedu.address.testutil.Assert.assertThrows;
@@ -18,7 +19,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import seedu.address.logic.commands.HomeworkAddCommand;
+import seedu.address.logic.commands.HomeworkDeleteCommand;
 import seedu.address.logic.commands.HomeworkEditCommand;
+import seedu.address.logic.commands.HomeworkListCommand;
 import seedu.address.logic.commands.HomeworkMarksCommand;
 import seedu.address.logic.commands.HomeworkUpcomingCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
@@ -73,6 +76,28 @@ public class HomeworkMessagesIntegrationTest {
                 + HomeworkMarksCommand.MESSAGE_USAGE);
         assertParseFailure("hw up Due/3", wrongCasePrefix("Due/", "due/") + "\nUsage: "
                 + HomeworkUpcomingCommand.MESSAGE_USAGE);
+    }
+
+    @Test
+    public void execute_wrongWordsOrCase_specificMessage() throws Exception {
+        assertParseFailure("hw e 1 2", "Specify at least one field to edit: title/ (or t/), s/ or due/.\nUsage: "
+                + HomeworkEditCommand.MESSAGE_USAGE);
+        assertParseFailure("hw del 1 1 1", unexpectedWords("STUDENT_INDEX HOMEWORK_INDEX", "3 words (1 1 1)",
+                HomeworkDeleteCommand.MESSAGE_USAGE));
+        assertParseFailure("hw e 1 2 extra t/X", unexpectedWords("STUDENT_INDEX HOMEWORK_INDEX before the first "
+                + "prefix", "3 words (1 2 extra)", HomeworkEditCommand.MESSAGE_USAGE));
+        assertParseFailure("hw m 1 score/5", unexpectedWords("STUDENT_INDEX HOMEWORK_INDEX before the first prefix",
+                "1 word (1)", HomeworkMarksCommand.MESSAGE_USAGE));
+        assertParseFailure("hw ls 1 2", unexpectedWords("STUDENT_INDEX, optionally followed by all",
+                "2 words (1 2)", HomeworkListCommand.MESSAGE_USAGE));
+        assertParseFailure("hw add 1 extra t/A s/MATH due/2026-11-01", unexpectedWords("STUDENT_INDEX before the "
+                + "first prefix", "2 words (1 extra)", HomeworkAddCommand.MESSAGE_USAGE));
+        assertParseFailure("hw up 3", unexpectedWords("no words other than due/DAYS", "1 word (3)",
+                HomeworkUpcomingCommand.MESSAGE_USAGE));
+        assertParseFailure("hw E 1 2 t/X", "Homework subcommands are lowercase: type e, not E.\nUsage: "
+                + HomeworkEditCommand.MESSAGE_USAGE);
+        assertParseFailure("hw ls 1 ALL", "The word all is lowercase: type all, not ALL.\nUsage: "
+                + HomeworkListCommand.MESSAGE_USAGE);
     }
 
     @Test

@@ -20,6 +20,8 @@ import seedu.address.model.homework.Score;
  */
 public class HomeworkMarksCommandParser implements Parser<HomeworkMarksCommand> {
     public static final String PREFIX_SCORE = "score/";
+    /** What the command expects before its prefix, named when other words are found. */
+    public static final String EXPECTED_WORDS = "STUDENT_INDEX HOMEWORK_INDEX before the first prefix";
 
     private static final String MESSAGE_INVALID_FORMAT = String.format(Messages.MESSAGE_INVALID_FORMAT_WITH_USAGE,
             HomeworkMarksCommand.MESSAGE_USAGE);
@@ -36,9 +38,10 @@ public class HomeworkMarksCommandParser implements Parser<HomeworkMarksCommand> 
         StrictArgumentTokenizer.TokenizedArguments tokenizedArguments =
                 StrictArgumentTokenizer.tokenizeWithPreambleRejectingWrongCase(args, List.of(PREFIX_SCORE),
                         MESSAGE_INVALID_FORMAT);
-        String[] indices = tokenizedArguments.preamble().split("\\s+");
+        String[] indices = ParserUtil.splitWords(tokenizedArguments.preamble());
         if (indices.length != 2) {
-            throw new ParseException(MESSAGE_INVALID_FORMAT);
+            throw new ParseException(ParserUtil.formatUnexpectedWords(EXPECTED_WORDS, indices,
+                    HomeworkMarksCommand.MESSAGE_USAGE));
         }
 
         Map<String, String> values = tokenizedArguments.values();

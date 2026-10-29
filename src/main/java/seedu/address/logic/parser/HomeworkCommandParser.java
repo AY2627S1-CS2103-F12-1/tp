@@ -3,6 +3,7 @@ package seedu.address.logic.parser;
 import static java.util.Objects.requireNonNull;
 
 import java.time.Clock;
+import java.util.Locale;
 
 import seedu.address.logic.Messages;
 import seedu.address.logic.commands.Command;
@@ -41,6 +42,8 @@ public class HomeworkCommandParser implements Parser<Command> {
                     HomeworkUpcomingCommand.MESSAGE_USAGE, HomeworkEditCommand.MESSAGE_USAGE,
                     HomeworkMarksCommand.MESSAGE_USAGE, HomeworkDeleteCommand.MESSAGE_USAGE,
                     HomeworkFilterCommand.MESSAGE_USAGE, HomeworkStatusCommand.MESSAGE_USAGE));
+    public static final String MESSAGE_SUBCOMMAND_NOT_LOWERCASE =
+            "Homework subcommands are lowercase: type %s, not %s.\nUsage: %s";
 
     private final Clock clock;
 
@@ -73,7 +76,28 @@ public class HomeworkCommandParser implements Parser<Command> {
                 new HomeworkMarksCommandParser().parse(subcommandArguments);
             case SUBCOMMAND_DELETE, SUBCOMMAND_DELETE_ALIAS ->
                 new HomeworkDeleteCommandParser(clock).parse(subcommandArguments);
-            default -> throw new ParseException(MESSAGE_INVALID_FORMAT);
+            default -> throw new ParseException(buildUnknownSubcommandMessage(subcommandAndArguments[0]));
         };
+    }
+
+    /**
+     * Returns the error for {@code subcommand}, which is not a subcommand: if it is one in another case, a hint to
+     * type it in lowercase and the usage of that subcommand, otherwise the usage of every subcommand.
+     */
+    private static String buildUnknownSubcommandMessage(String subcommand) {
+        String lowercaseSubcommand = subcommand.toLowerCase(Locale.ROOT);
+        String usage = switch (lowercaseSubcommand) {
+            case SUBCOMMAND_STATUS -> HomeworkStatusCommand.MESSAGE_USAGE;
+            case SUBCOMMAND_FILTER -> HomeworkFilterCommand.MESSAGE_USAGE;
+            case SUBCOMMAND_ADD -> HomeworkAddCommand.MESSAGE_USAGE;
+            case SUBCOMMAND_LIST, SUBCOMMAND_LIST_ALIAS -> HomeworkListCommand.MESSAGE_USAGE;
+            case SUBCOMMAND_UPCOMING, SUBCOMMAND_UPCOMING_ALIAS -> HomeworkUpcomingCommand.MESSAGE_USAGE;
+            case SUBCOMMAND_EDIT, SUBCOMMAND_EDIT_ALIAS -> HomeworkEditCommand.MESSAGE_USAGE;
+            case SUBCOMMAND_MARKS, SUBCOMMAND_MARKS_ALIAS -> HomeworkMarksCommand.MESSAGE_USAGE;
+            case SUBCOMMAND_DELETE, SUBCOMMAND_DELETE_ALIAS -> HomeworkDeleteCommand.MESSAGE_USAGE;
+            default -> null;
+        };
+        return usage == null ? MESSAGE_INVALID_FORMAT
+                : String.format(MESSAGE_SUBCOMMAND_NOT_LOWERCASE, lowercaseSubcommand, subcommand, usage);
     }
 }

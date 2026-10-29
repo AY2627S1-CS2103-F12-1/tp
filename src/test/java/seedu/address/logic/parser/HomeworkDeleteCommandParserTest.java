@@ -3,6 +3,7 @@ package seedu.address.logic.parser;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
+import static seedu.address.logic.parser.CommandParserTestUtil.unexpectedWords;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -16,8 +17,7 @@ import seedu.address.logic.Messages;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
 
 public class HomeworkDeleteCommandParserTest {
-    private static final String MESSAGE_INVALID_FORMAT = "Invalid command format.\n"
-            + "Usage: homework|hw delete|del STUDENT_INDEX HOMEWORK_INDEX";
+    private static final String EXPECTED_WORDS = "STUDENT_INDEX HOMEWORK_INDEX";
 
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-05T00:00:00Z"), ZoneOffset.UTC);
     private static final LocalDate TODAY = LocalDate.of(2026, 10, 5);
@@ -45,17 +45,23 @@ public class HomeworkDeleteCommandParserTest {
 
     @Test
     public void parse_noIndex_failure() {
-        assertParseFailure(parser, "", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "", unexpectedWords(EXPECTED_WORDS, "none", HomeworkDeleteCommand.MESSAGE_USAGE));
     }
 
     @Test
     public void parse_oneIndex_failure() {
-        assertParseFailure(parser, "1", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1", unexpectedWords(EXPECTED_WORDS, "1 word (1)",
+                HomeworkDeleteCommand.MESSAGE_USAGE));
     }
 
     @Test
     public void parse_threeIndices_failure() {
-        assertParseFailure(parser, "1 2 3", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 2 3", unexpectedWords(EXPECTED_WORDS, "3 words (1 2 3)",
+                HomeworkDeleteCommand.MESSAGE_USAGE));
+        assertParseFailure(parser, "1 1 1", unexpectedWords(EXPECTED_WORDS, "3 words (1 1 1)",
+                HomeworkDeleteCommand.MESSAGE_USAGE));
+        assertParseFailure(parser, "1 1 extra", unexpectedWords(EXPECTED_WORDS, "3 words (1 1 extra)",
+                HomeworkDeleteCommand.MESSAGE_USAGE));
     }
 
     @Test

@@ -17,6 +17,9 @@ import seedu.address.logic.parser.exceptions.ParseException;
  * homework index syntax.
  */
 public class HomeworkDeleteCommandParser implements Parser<HomeworkDeleteCommand> {
+    /** What the command expects, named when other words are found. */
+    public static final String EXPECTED_WORDS = "STUDENT_INDEX HOMEWORK_INDEX";
+
     private static final String MESSAGE_INVALID_FORMAT = String.format(Messages.MESSAGE_INVALID_FORMAT_WITH_USAGE,
             HomeworkDeleteCommand.MESSAGE_USAGE);
 
@@ -40,9 +43,10 @@ public class HomeworkDeleteCommandParser implements Parser<HomeworkDeleteCommand
         requireNonNull(args);
         String preamble = StrictArgumentTokenizer.tokenizeWithPreamble(args, List.of(), MESSAGE_INVALID_FORMAT)
                 .preamble();
-        String[] indices = preamble.split("\\s+");
+        String[] indices = ParserUtil.splitWords(preamble);
         if (indices.length != 2) {
-            throw new ParseException(MESSAGE_INVALID_FORMAT);
+            throw new ParseException(ParserUtil.formatUnexpectedWords(EXPECTED_WORDS, indices,
+                    HomeworkDeleteCommand.MESSAGE_USAGE));
         }
 
         Index studentIndex = ParserUtil.parseStrictIndex(indices[0], Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX,

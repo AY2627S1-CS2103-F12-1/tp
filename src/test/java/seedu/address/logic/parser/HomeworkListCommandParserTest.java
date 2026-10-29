@@ -3,6 +3,7 @@ package seedu.address.logic.parser;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
+import static seedu.address.logic.parser.CommandParserTestUtil.unexpectedWords;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -20,8 +21,7 @@ public class HomeworkListCommandParserTest {
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-05T00:00:00Z"), ZoneOffset.UTC);
     private static final LocalDate TODAY = LocalDate.of(2026, 10, 5);
     private static final String USAGE_LINE = "\nUsage: " + HomeworkListCommand.MESSAGE_USAGE;
-    private static final String MESSAGE_INVALID_FORMAT = "Invalid command format.\n"
-            + "Usage: homework|hw list|ls STUDENT_INDEX [all]";
+    private static final String EXPECTED_WORDS = "STUDENT_INDEX, optionally followed by all";
 
     private final HomeworkListCommandParser parser = new HomeworkListCommandParser(CLOCK);
 
@@ -43,7 +43,7 @@ public class HomeworkListCommandParserTest {
 
     @Test
     public void parse_missingIndex_failure() {
-        assertParseFailure(parser, "  ", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "  ", unexpectedWords(EXPECTED_WORDS, "none", HomeworkListCommand.MESSAGE_USAGE));
     }
 
     @Test
@@ -54,15 +54,20 @@ public class HomeworkListCommandParserTest {
 
     @Test
     public void parse_extraArgument_failure() {
-        assertParseFailure(parser, "1 2", MESSAGE_INVALID_FORMAT);
-        assertParseFailure(parser, "1 all all", MESSAGE_INVALID_FORMAT);
-        assertParseFailure(parser, "all 1", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 2", unexpectedWords(EXPECTED_WORDS, "2 words (1 2)",
+                HomeworkListCommand.MESSAGE_USAGE));
+        assertParseFailure(parser, "1 all all", unexpectedWords(EXPECTED_WORDS, "3 words (1 all all)",
+                HomeworkListCommand.MESSAGE_USAGE));
+        assertParseFailure(parser, "1 all extra", unexpectedWords(EXPECTED_WORDS, "3 words (1 all extra)",
+                HomeworkListCommand.MESSAGE_USAGE));
+        assertParseFailure(parser, "all 1", unexpectedWords(EXPECTED_WORDS, "2 words (all 1)",
+                HomeworkListCommand.MESSAGE_USAGE));
     }
 
     @Test
     public void parse_allInOtherCase_failure() {
-        assertParseFailure(parser, "1 ALL", MESSAGE_INVALID_FORMAT);
-        assertParseFailure(parser, "1 All", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 ALL", "The word all is lowercase: type all, not ALL." + USAGE_LINE);
+        assertParseFailure(parser, "1 All", "The word all is lowercase: type all, not All." + USAGE_LINE);
     }
 
     @Test

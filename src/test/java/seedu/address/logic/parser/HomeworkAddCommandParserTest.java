@@ -1,6 +1,7 @@
 package seedu.address.logic.parser;
 
 import static seedu.address.logic.parser.CommandParserTestUtil.MESSAGE_CURLY_QUOTES;
+import static seedu.address.logic.parser.CommandParserTestUtil.MESSAGE_SUBJECT_EMPTY;
 import static seedu.address.logic.parser.CommandParserTestUtil.MESSAGE_TITLE_AND_ALIAS;
 import static seedu.address.logic.parser.CommandParserTestUtil.TITLE_EXAMPLE_OTHER_PREFIX;
 import static seedu.address.logic.parser.CommandParserTestUtil.TITLE_EXAMPLE_SUBJECT_PREFIX;
@@ -9,6 +10,7 @@ import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailur
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
 import static seedu.address.logic.parser.CommandParserTestUtil.givenOnce;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
+import static seedu.address.logic.parser.CommandParserTestUtil.notSubject;
 import static seedu.address.logic.parser.CommandParserTestUtil.titleQuoteHint;
 import static seedu.address.logic.parser.CommandParserTestUtil.unexpectedWords;
 import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefix;
@@ -447,20 +449,32 @@ public class HomeworkAddCommandParserTest {
 
     @Test
     public void parse_emptySubject_failure() {
-        assertParseFailure(parser, "1 title/Complete algebra worksheet s/ due/2026-10-15",
-                TuitionSubject.MESSAGE_CONSTRAINTS);
+        // no hint, as a title is unlikely to end with s/
+        assertParseFailure(parser, "1 title/Complete algebra worksheet s/ due/2026-10-15", MESSAGE_SUBJECT_EMPTY);
+        assertParseFailure(parser, "1 s/   t/Essay due/2026-10-15", MESSAGE_SUBJECT_EMPTY);
     }
 
     @Test
     public void parse_unsupportedSubject_failure() {
+        // s/ follows the title, so it may be part of it
         assertParseFailure(parser, "1 title/Complete algebra worksheet s/BIOLOGY due/2026-10-15",
-                TuitionSubject.MESSAGE_CONSTRAINTS);
+                notSubject("BIOLOGY") + titleQuoteHint("s/", TITLE_EXAMPLE_SUBJECT_PREFIX));
+        // s/ does not follow the title
+        assertParseFailure(parser, "1 s/BIOLOGY t/Essay due/2026-10-15", notSubject("BIOLOGY"));
+        assertParseFailure(parser, "1 t/\"Essay\" s/biology due/2026-10-15", notSubject("biology"));
+    }
+
+    @Test
+    public void parse_subjectPrefixWordInTitle_namesValueAndHintsToQuoteTitle() {
+        // r3-emu-03: without another s/, the rest of the title is read as the subject
+        assertParseFailure(parser, "1 t/Read s/o notes due/2026-12-01", notSubject("o notes")
+                + titleQuoteHint("s/", TITLE_EXAMPLE_SUBJECT_PREFIX));
     }
 
     @Test
     public void parse_multipleSubjects_failure() {
         assertParseFailure(parser, "1 title/Complete algebra worksheet s/MATH, PHYSICS due/2026-10-15",
-                TuitionSubject.MESSAGE_CONSTRAINTS);
+                notSubject("MATH, PHYSICS") + titleQuoteHint("s/", TITLE_EXAMPLE_SUBJECT_PREFIX));
     }
 
     @Test
@@ -563,6 +577,6 @@ public class HomeworkAddCommandParserTest {
     @Test
     public void parse_invalidSubjectAndInvalidDueDate_reportsSubject() {
         assertParseFailure(parser, "1 title/Complete algebra worksheet s/BIOLOGY due/2026-02-30",
-                TuitionSubject.MESSAGE_CONSTRAINTS);
+                notSubject("BIOLOGY") + titleQuoteHint("s/", TITLE_EXAMPLE_SUBJECT_PREFIX));
     }
 }

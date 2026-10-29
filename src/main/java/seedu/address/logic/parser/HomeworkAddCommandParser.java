@@ -38,6 +38,8 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
     /** Hint to quote a title that holds the given prefix-shaped word, with an example title holding such a word. */
     public static final String MESSAGE_TITLE_QUOTE_HINT = " If %s is part of the title, put the whole title in "
             + "straight double quotes, e.g. %s.";
+    public static final String MESSAGE_SUBJECT_EMPTY = "The subject is empty. " + TuitionSubject.MESSAGE_CONSTRAINTS;
+    public static final String MESSAGE_NOT_SUBJECT = "%s is not a subject. " + TuitionSubject.MESSAGE_CONSTRAINTS;
     /** What the command expects before its prefixes, named when other words are found. */
     public static final String EXPECTED_WORDS = "STUDENT_INDEX before the first prefix";
 
@@ -90,10 +92,11 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
         Index studentIndex = ParserUtil.parseStrictIndex(preamble, Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX,
                 Messages.MESSAGE_STUDENT_INDEX_TOO_LARGE);
         String rawDueDate = values.get(PREFIX_DUE_DATE);
+        boolean isSubjectInTitle = tokenizedArguments.prefixesInText().contains(PREFIX_SUBJECT);
         try {
             LocalDate today = LocalDate.now(clock);
-            Homework homework = new Homework(new Title(rawTitle), TuitionSubject.parse(values.get(PREFIX_SUBJECT)),
-                    DueDate.parse(rawDueDate, today));
+            Homework homework = new Homework(new Title(rawTitle),
+                    parseSubject(values.get(PREFIX_SUBJECT), isSubjectInTitle), DueDate.parse(rawDueDate, today));
             return new HomeworkAddCommand(studentIndex, homework, DueDate.isShortForm(rawDueDate), today);
         } catch (IllegalArgumentException exception) {
             throw new ParseException(exception.getMessage(), exception);
@@ -111,6 +114,27 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
             default -> EXAMPLE_TITLE_WITH_OTHER_PREFIX;
         };
         return String.format(MESSAGE_TITLE_QUOTE_HINT, word, example);
+    }
+
+    /**
+     * Returns the subject in {@code rawSubject}, ignoring surrounding whitespace and case.
+     *
+     * @param isInTitle Whether {@code s/} directly follows an unquoted title, so may be part of it.
+     * @throws ParseException If {@code rawSubject} is empty, or names no subject, naming it and, if
+     *     {@code isInTitle}, with a hint to quote the title.
+     */
+    static TuitionSubject parseSubject(String rawSubject, boolean isInTitle) throws ParseException {
+        String trimmedSubject = rawSubject.strip();
+        if (trimmedSubject.isEmpty()) {
+            // a title ending with s/ is unlikely, so there is no hint to quote it
+            throw new ParseException(MESSAGE_SUBJECT_EMPTY);
+        }
+        try {
+            return TuitionSubject.parse(trimmedSubject);
+        } catch (IllegalArgumentException exception) {
+            String quoteHint = isInTitle ? buildTitleQuoteHint(PREFIX_SUBJECT) : "";
+            throw new ParseException(String.format(MESSAGE_NOT_SUBJECT, trimmedSubject) + quoteHint, exception);
+        }
     }
 
     /**

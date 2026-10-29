@@ -10,6 +10,7 @@ import static seedu.address.logic.parser.CommandParserTestUtil.TITLE_EXAMPLE_SUB
 import static seedu.address.logic.parser.CommandParserTestUtil.TITLE_EXAMPLE_TITLE_PREFIX;
 import static seedu.address.logic.parser.CommandParserTestUtil.givenOnce;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
+import static seedu.address.logic.parser.CommandParserTestUtil.notSubject;
 import static seedu.address.logic.parser.CommandParserTestUtil.titleQuoteHint;
 import static seedu.address.logic.parser.CommandParserTestUtil.unexpectedWords;
 import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefix;
@@ -119,6 +120,16 @@ public class HomeworkMessagesIntegrationTest {
         // r3-emu-04
         assertParseFailure("hw m 1 2 score/5 t/X", notPrefix("t/") + "\nUsage: " + HomeworkMarksCommand.MESSAGE_USAGE);
         assertParseFailure("hw up due/7 x/y", notPrefix("x/") + "\nUsage: " + HomeworkUpcomingCommand.MESSAGE_USAGE);
+    }
+
+    @Test
+    public void execute_subjectPrefixWordInTitle_namesValueAndHintsToQuoteTitle() throws Exception {
+        // r3-emu-03
+        String expectedMessage = notSubject("o notes") + titleQuoteHint("s/", TITLE_EXAMPLE_SUBJECT_PREFIX);
+        assertParseFailure("hw e 1 2 t/Read s/o notes", expectedMessage);
+        assertParseFailure("hw add 1 t/Read s/o notes due/2026-12-01", expectedMessage);
+        assertParseFailure("hw e 1 2 t/Physics s/w set", notSubject("w set")
+                + titleQuoteHint("s/", TITLE_EXAMPLE_SUBJECT_PREFIX));
     }
 
     @Test

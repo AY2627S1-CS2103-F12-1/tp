@@ -16,6 +16,9 @@ public class CommandParserTestUtil {
      * The usage line follows it on the next line, or a hint to quote the title if the later one is in a title.
      */
     public static final String MESSAGE_TITLE_AND_ALIAS = "Use either title/ or t/, not both.";
+    /** Error for an empty homework subject. */
+    public static final String MESSAGE_SUBJECT_EMPTY = "The subject is empty. Subject must be one of: MATH, PHYSICS, "
+            + "CHEMISTRY.";
     /** Example in the hint to quote a homework title that holds {@code t/} or {@code title/}. */
     public static final String TITLE_EXAMPLE_TITLE_PREFIX = "t/\"True t/f quiz\"";
     /** Example in the hint to quote a homework title that holds {@code s/}. */
@@ -62,6 +65,13 @@ public class CommandParserTestUtil {
      */
     public static String givenOnce(String prefix) {
         return "Prefix " + prefix + " can be given only once.";
+    }
+
+    /**
+     * Returns the error for {@code value}, given as a homework subject that is not one.
+     */
+    public static String notSubject(String value) {
+        return value + " is not a subject. Subject must be one of: MATH, PHYSICS, CHEMISTRY.";
     }
 
     /**

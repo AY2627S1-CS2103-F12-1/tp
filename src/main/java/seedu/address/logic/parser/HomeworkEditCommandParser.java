@@ -19,7 +19,6 @@ import seedu.address.logic.commands.HomeworkEditCommand.EditHomeworkDescriptor;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.homework.DueDate;
 import seedu.address.model.homework.Title;
-import seedu.address.model.student.TuitionSubject;
 
 /**
  * Parses the arguments of {@code homework edit} into a {@link HomeworkEditCommand}.
@@ -76,11 +75,12 @@ public class HomeworkEditCommandParser implements Parser<HomeworkEditCommand> {
         String rawTitle = values.getOrDefault(PREFIX_TITLE, values.get(PREFIX_TITLE_ALIAS));
         String rawSubject = values.get(PREFIX_SUBJECT);
         String rawDueDate = values.get(PREFIX_DUE_DATE);
+        boolean isSubjectInTitle = tokenizedArguments.prefixesInText().contains(PREFIX_SUBJECT);
         LocalDate today = LocalDate.now(clock);
         try {
             EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(
                     rawTitle == null ? null : new Title(rawTitle),
-                    rawSubject == null ? null : TuitionSubject.parse(rawSubject),
+                    rawSubject == null ? null : HomeworkAddCommandParser.parseSubject(rawSubject, isSubjectInTitle),
                     rawDueDate == null ? null : DueDate.parse(rawDueDate, today));
             return new HomeworkEditCommand(studentIndex, homeworkIndex, descriptor,
                     rawDueDate != null && DueDate.isShortForm(rawDueDate), today);

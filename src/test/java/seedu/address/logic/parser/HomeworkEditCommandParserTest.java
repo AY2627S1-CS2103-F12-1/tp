@@ -1,12 +1,15 @@
 package seedu.address.logic.parser;
 
+import static seedu.address.logic.parser.CommandParserTestUtil.MESSAGE_SUBJECT_EMPTY;
 import static seedu.address.logic.parser.CommandParserTestUtil.MESSAGE_TITLE_AND_ALIAS;
 import static seedu.address.logic.parser.CommandParserTestUtil.TITLE_EXAMPLE_OTHER_PREFIX;
+import static seedu.address.logic.parser.CommandParserTestUtil.TITLE_EXAMPLE_SUBJECT_PREFIX;
 import static seedu.address.logic.parser.CommandParserTestUtil.TITLE_EXAMPLE_TITLE_PREFIX;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
 import static seedu.address.logic.parser.CommandParserTestUtil.givenOnce;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
+import static seedu.address.logic.parser.CommandParserTestUtil.notSubject;
 import static seedu.address.logic.parser.CommandParserTestUtil.titleQuoteHint;
 import static seedu.address.logic.parser.CommandParserTestUtil.unexpectedWords;
 import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefix;
@@ -300,13 +303,21 @@ public class HomeworkEditCommandParserTest {
     @Test
     public void parse_invalidSubject_failure() {
         // empty
-        assertParseFailure(parser, "1 2 s/", TuitionSubject.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 2 s/", MESSAGE_SUBJECT_EMPTY);
 
         // unsupported subject
-        assertParseFailure(parser, "1 2 s/BIOLOGY", TuitionSubject.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 2 s/BIOLOGY", notSubject("BIOLOGY"));
 
         // two subjects
-        assertParseFailure(parser, "1 2 s/MATH, PHYSICS", TuitionSubject.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 2 s/MATH, PHYSICS", notSubject("MATH, PHYSICS"));
+    }
+
+    @Test
+    public void parse_subjectPrefixWordInTitle_namesValueAndHintsToQuoteTitle() {
+        // r3-emu-03: s/ is optional in edit, so the rest of the title is read as the subject
+        String quoteHint = titleQuoteHint("s/", TITLE_EXAMPLE_SUBJECT_PREFIX);
+        assertParseFailure(parser, "1 2 t/Read s/o notes", notSubject("o notes") + quoteHint);
+        assertParseFailure(parser, "1 2 t/Physics s/w set", notSubject("w set") + quoteHint);
     }
 
     @Test
@@ -338,7 +349,7 @@ public class HomeworkEditCommandParserTest {
 
     @Test
     public void parse_invalidSubjectAndDueDate_reportsSubject() {
-        assertParseFailure(parser, "1 2 due/2026-02-30 s/BIOLOGY", TuitionSubject.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 2 due/2026-02-30 s/BIOLOGY", notSubject("BIOLOGY"));
     }
 
     /**

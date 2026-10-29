@@ -250,6 +250,14 @@ public class HomeworkMarksCommandTest {
     }
 
     @Test
+    public void getSaveFailureMessage_clearingMarks_saysCleared() {
+        String expectedMessage = "The homework marks could not be cleared because TutorFlow could not save "
+                + SHOWN_DATA_FILE_NAME + ": the data folder is read-only. No homework data was changed.";
+        assertEquals(expectedMessage, new HomeworkMarksCommand(FIRST, FIRST)
+                .getSaveFailureMessage(SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER));
+    }
+
+    @Test
     public void equals() {
         HomeworkMarksCommand marksCommand = new HomeworkMarksCommand(FIRST, SECOND, FIVE_OUT_OF_TEN);
 

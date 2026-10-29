@@ -1078,7 +1078,7 @@ public class LogicManagerTest {
         setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(DUMMY_AD_EXCEPTION));
 
         assertCommandFailure("hw m 1 3 score/", CommandException.class,
-                getCommandSaveFailureMessage("homework marks could not be recorded", SET_UP_DATA_FILE_NAME,
+                getCommandSaveFailureMessage("homework marks could not be cleared", SET_UP_DATA_FILE_NAME,
                         DUMMY_AD_EXCEPTION, "homework"), getModelWithTypicalStudents());
     }
 

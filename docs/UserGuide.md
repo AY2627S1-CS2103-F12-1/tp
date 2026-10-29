@@ -69,7 +69,7 @@ TutorFlow is a **desktop application for private tutors to manage their students
 * Items followed by `…`​ can appear zero or more times.<br>
   For example, `[t/TAG]…​` may be omitted, or written as `t/friend` or `t/friend t/family`.
 
-* Parameters can be in any order.<br>
+* Parameters with a prefix can be in any order. Indices such as `STUDENT_INDEX` and `HOMEWORK_INDEX` have no prefix and must come first, right after the command word.<br>
   For example, if the command specifies `n/NAME p/PHONE_NUMBER`, `p/PHONE_NUMBER n/NAME` is also acceptable.
 
 * A lowercase word directly followed by `/` after a space (such as `km/h` or `and/or`) is read as a prefix. To use such a word in a value, wrap the whole value in double quotes (`"`). The outer quotes are removed before the value is checked. This works for every value that follows a prefix.<br>
@@ -340,10 +340,10 @@ Adds a homework record to the end of a student's homework list.
 
 Format: `homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD`
 
-* `homework` can be shortened to `hw`, and `title/` can be shortened to `t/`. Give only one of them (`Use either title/ or t/, not both.`).
-* `STUDENT_INDEX` refers to the index number shown in the displayed student list. It **must be a positive whole number without leading zeroes**, such as 1, 2, 3, …​
+* `homework` can be shortened to `hw`, and `title/` can be shortened to `t/`. Use either `title/` or `t/`, not both; giving both is rejected with `Use either title/ or t/, not both.`.
+* `STUDENT_INDEX` refers to the index number shown in the displayed student list. It **must be a positive whole number without leading zeroes**, such as 1, 2, 3, …​ The largest accepted value is 2147483647.
 * `TITLE` must be 1 to 100 characters long and may contain only letters, numbers, punctuation, symbols and spaces, such as `Café`, `x² + π ≈ 3.14`, `😀 quiz` or `Ch 3 Q1-10 (pg. 45)`. Extra spaces are removed, and capitalization is kept.
-* Invisible characters, such as a zero-width space (U+200B) or the variation selector U+FE0F at the end of some emoji, are rejected wherever they are in the title. So emoji made of several characters joined by invisible ones, such as ❤️ (U+2764 U+FE0F) or 👨‍👩‍👧, are rejected.
+* Invisible characters, such as a zero-width space (U+200B) or the variation selector U+FE0F at the end of some emoji, are rejected wherever they are in the title. So emoji that contain an invisible character, such as ❤️ (U+2764 followed by U+FE0F) or 👨‍👩‍👧 (joined by U+200D), are rejected.
 * Scripts that use combining vowel signs, such as Tamil, Hindi or Thai, are not supported, the same as in student names: a title that contains such a sign, e.g. `தமிழ்`, is rejected.
 * A lowercase word directly followed by `/` in `TITLE` (such as `km/h` or `and/or`) is read as a prefix, so the command is rejected. Wrap the title in double quotes to keep such words, e.g. `t/"Speed in km/h"` (see the [notes about the command format](#features)).
 * `SUBJECT` must be `MATH`, `PHYSICS` or `CHEMISTRY` (in any case), and the student must take that subject.
@@ -504,6 +504,7 @@ Format: `homework|hw delete|del STUDENT_INDEX HOMEWORK_INDEX`
 * `homework` can be shortened to `hw`, and `delete` can be shortened to `del`.
 * `STUDENT_INDEX` follows the same rules as in `homework add`.
 * `HOMEWORK_INDEX` refers to the number shown by `homework list STUDENT_INDEX` (or by `homework list STUDENT_INDEX all` for homework due before today). It **must be a positive whole number without leading zeroes**.
+* If the student has no homework, the result is `The selected student has no homework to delete.` If `HOMEWORK_INDEX` is larger than the student's number of homework records, it is `The homework index provided is invalid.`
 * The remaining homework keeps its order and is renumbered.
 * The result shows the deleted record as `homework list` shows it, with the number it had, its score and its status. Below it is the student's upcoming homework with the new numbers, in the format of `homework list STUDENT_INDEX`. Use these numbers for the next command, as the numbers shown before the deletion may now point to different homework.
 * Deletion cannot be undone.

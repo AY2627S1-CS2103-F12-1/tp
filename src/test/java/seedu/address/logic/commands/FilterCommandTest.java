@@ -44,7 +44,7 @@ public class FilterCommandTest {
 
         assertEquals(List.of(first, second), model.getStudentList());
         assertEquals("Found 2 students.", result.getFeedbackToUser());
-        assertTrue(result.isShowStudentList());
+        assertTrue(result.shouldShowStudentList());
         assertEquals(before, model.getAddressBook());
     }
 

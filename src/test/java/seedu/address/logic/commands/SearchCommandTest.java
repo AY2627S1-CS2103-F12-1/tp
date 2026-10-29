@@ -42,7 +42,7 @@ public class SearchCommandTest {
         assertEquals("Found 1 student for \"jOhN\".\nType list to show all students.",
                 result.getFeedbackToUser());
         assertEquals(List.of(first), model.getStudentList());
-        assertTrue(result.isShowStudentList());
+        assertTrue(result.shouldShowStudentList());
         assertEquals(before, model.getAddressBook());
     }
 

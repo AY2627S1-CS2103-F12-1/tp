@@ -121,11 +121,58 @@ public class HomeworkMessagesIntegrationTest {
     }
 
     @Test
+    public void execute_nameEndingInPeriod_noDoublePeriod() throws Exception {
+        assertEquals("Listed 2 homework records for Tan Ah Kow Jr. (91234567).\n"
+                + "Homework for Tan Ah Kow Jr. (91234567):\n"
+                + "1. Algebra (MATH) - due 2026-11-02 - score Not recorded - status ASSIGNED\n"
+                + "2. Optics (PHYSICS) - due 2026-11-05 - score Not recorded - status ASSIGNED", execute("hw "
+                + "ls 1 all"));
+        assertEquals("Edited homework:\n"
+                + "Tan Ah Kow Jr. (91234567); Title: Algebra drill; Subject: MATH; Due: 2026-11-02\n"
+                + "Listed 2 upcoming homework records for Tan Ah Kow Jr. (91234567).\n"
+                + "Homework for Tan Ah Kow Jr. (91234567):\n"
+                + "1. Algebra drill (MATH) - due 2026-11-02 - score Not recorded - status ASSIGNED\n"
+                + "2. Optics (PHYSICS) - due 2026-11-05 - score Not recorded - status ASSIGNED",
+                execute("hw e 1 1 t/Algebra drill"));
+        execute("hw del 1 1");
+        assertEquals("Deleted homework:\n"
+                + "1. Optics (PHYSICS) - due 2026-11-05 - score Not recorded - status ASSIGNED\n"
+                + "No homework found for Tan Ah Kow Jr. (91234567).", execute("hw del 1 1"));
+    }
+
+    @Test
+    public void execute_sameNameStudents_toldApartByPhone() throws Exception {
+        execute("add n/Ethan Lim l/S1 s/MATH p/81234567 gn/Lim Mei gp/81234568");
+        execute("add n/Ethan Lim l/S1 s/MATH p/81234569 gn/Lim Mei gp/81234568");
+
+        assertEquals("New homework added:\nEthan Lim (81234569); Title: Algebra drill; Subject: MATH; Due: 2026-11-20",
+                execute("hw add 3 t/Algebra drill s/MATH due/2026-11-20"));
+        assertEquals("No homework found for Ethan Lim (81234567).", execute("hw ls 2"));
+        assertEquals("Recorded homework marks:\n"
+                + "Ethan Lim (81234569); Title: Algebra drill; Subject: MATH; Due: 2026-11-20; Score: 5/10",
+                execute("hw m 3 1 score/5/10"));
+        assertEquals("Found 3 homework records due from 2026-10-29 to 2026-11-28.\n"
+                + "Student 1: Tan Ah Kow Jr. (91234567); Algebra; MATH; Due: 2026-11-02; Score: Not recorded; "
+                + "Status: ASSIGNED\n"
+                + "Student 1: Tan Ah Kow Jr. (91234567); Optics; PHYSICS; Due: 2026-11-05; Score: Not recorded; "
+                + "Status: ASSIGNED\n"
+                + "Student 3: Ethan Lim (81234569); Algebra drill; MATH; Due: 2026-11-20; Score: 5/10; "
+                + "Status: ASSIGNED", execute("hw up due/30"));
+    }
+
+    @Test
     public void execute_wrongCasePrefixInStudentName_keptInName() throws Exception {
         logic.execute("add n/Ravi S/O Kumar l/S3 s/MATH p/91234568 gn/Kumar Devi gp/98765433");
 
         assertEquals("Ravi S/O Kumar", model.getStudentList().get(1).getName().toString());
         assertTrue(Files.readString(dataFilePath).contains("Ravi S/O Kumar"));
+    }
+
+    /**
+     * Returns the message shown after executing {@code commandText}.
+     */
+    private String execute(String commandText) throws Exception {
+        return logic.execute(commandText).getFeedbackToUser();
     }
 
     /**

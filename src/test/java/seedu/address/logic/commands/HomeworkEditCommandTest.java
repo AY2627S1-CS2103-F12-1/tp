@@ -62,9 +62,9 @@ public class HomeworkEditCommandTest {
     public void execute_titleOnly_editsTitleAndShowsList() {
         Homework editedAlgebra = new HomeworkBuilder(ALGEBRA).withTitle("Complete algebra questions 1-10").build();
         String expectedMessage = "Edited homework:\n"
-                + "Alice Tan; Title: Complete algebra questions 1-10; Subject: MATH; Due: 2026-10-15\n"
-                + "Listed 3 upcoming homework records for Alice Tan.\n"
-                + "Homework for Alice Tan:\n"
+                + "Alice Tan (91111111); Title: Complete algebra questions 1-10; Subject: MATH; Due: 2026-10-15\n"
+                + "Listed 3 upcoming homework records for Alice Tan (91111111).\n"
+                + "Homework for Alice Tan (91111111):\n"
                 + "1. Complete algebra questions 1-10 (MATH) - due 2026-10-15 - score Not recorded - status ASSIGNED\n"
                 + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20 - status ASSIGNED\n"
                 + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded"
@@ -83,9 +83,9 @@ public class HomeworkEditCommandTest {
         Homework editedMechanics = new HomeworkBuilder().withTitle("Revise mechanics").withSubject("CHEMISTRY")
                 .withDueDate("2026-11-10").build();
         String expectedMessage = "Edited homework:\n"
-                + "Alice Tan; Title: Revise mechanics; Subject: CHEMISTRY; Due: 2026-11-10\n"
-                + "Listed 3 upcoming homework records for Alice Tan.\n"
-                + "Homework for Alice Tan:\n"
+                + "Alice Tan (91111111); Title: Revise mechanics; Subject: CHEMISTRY; Due: 2026-11-10\n"
+                + "Listed 3 upcoming homework records for Alice Tan (91111111).\n"
+                + "Homework for Alice Tan (91111111):\n"
                 + "1. Complete algebra worksheet (MATH) - due 2026-10-15 - score Not recorded - status ASSIGNED\n"
                 + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20 - status ASSIGNED\n"
                 + "2. Revise mechanics (CHEMISTRY) - due 2026-11-10 - score Not recorded - status ASSIGNED";
@@ -102,9 +102,9 @@ public class HomeworkEditCommandTest {
                 DueDate.parseFullDate("2026-11-05"));
         Homework editedAtomicStructure = new HomeworkBuilder(ATOMIC_STRUCTURE).withDueDate("2026-11-05").build();
         String expectedMessage = "Edited homework:\n"
-                + "Alice Tan; Title: Revise atomic structure; Subject: CHEMISTRY; Due: 2026-11-05\n"
-                + "Listed 3 upcoming homework records for Alice Tan.\n"
-                + "Homework for Alice Tan:\n"
+                + "Alice Tan (91111111); Title: Revise atomic structure; Subject: CHEMISTRY; Due: 2026-11-05\n"
+                + "Listed 3 upcoming homework records for Alice Tan (91111111).\n"
+                + "Homework for Alice Tan (91111111):\n"
                 + "1. Complete algebra worksheet (MATH) - due 2026-10-15 - score Not recorded - status ASSIGNED\n"
                 + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded"
                 + " - status ASSIGNED\n"
@@ -122,10 +122,10 @@ public class HomeworkEditCommandTest {
                 DueDate.parseFullDate("2027-01-05"));
         Homework editedMechanics = new HomeworkBuilder(MECHANICS).withDueDate("2027-01-05").build();
         String expectedMessage = "Edited homework:\n"
-                + "Carl Ng; Title: Attempt mechanics questions 1-5; Subject: PHYSICS; Due: 2027-01-05\n"
+                + "Carl Ng (93333333); Title: Attempt mechanics questions 1-5; Subject: PHYSICS; Due: 2027-01-05\n"
                 + "Inferred year: 2027\n"
-                + "Listed 1 upcoming homework record for Carl Ng.\n"
-                + "Homework for Carl Ng:\n"
+                + "Listed 1 upcoming homework record for Carl Ng (93333333).\n"
+                + "Homework for Carl Ng (93333333):\n"
                 + "1. Attempt mechanics questions 1-5 (PHYSICS) - due 2027-01-05 - score Not recorded"
                 + " - status ASSIGNED";
         Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON,
@@ -158,9 +158,9 @@ public class HomeworkEditCommandTest {
         Model expectedModel = getModelWithStudents(List.of(
                 ALICE.withHomeworks(List.of(editedAlgebra, MECHANICS, ATOMIC_STRUCTURE)), BENSON, CARL));
         String expectedMessage = "Edited homework:\n"
-                + "Alice Tan; Title: COMPLETE algebra worksheet; Subject: MATH; Due: 2026-10-15\n"
-                + "Listed 3 upcoming homework records for Alice Tan.\n"
-                + "Homework for Alice Tan:\n"
+                + "Alice Tan (91111111); Title: COMPLETE algebra worksheet; Subject: MATH; Due: 2026-10-15\n"
+                + "Listed 3 upcoming homework records for Alice Tan (91111111).\n"
+                + "Homework for Alice Tan (91111111):\n"
                 + "1. COMPLETE algebra worksheet (MATH) - due 2026-10-15 - score Not recorded - status ASSIGNED\n"
                 + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20 - status ASSIGNED\n"
                 + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded"
@@ -175,10 +175,10 @@ public class HomeworkEditCommandTest {
         // on 2026-10-16 ALGEBRA (due 2026-10-15) is overdue, so the list after the edit leaves it out and says so
         Homework editedAlgebra = new HomeworkBuilder(ALGEBRA).withTitle("Complete algebra questions 1-10").build();
         String expectedMessage = "Edited homework:\n"
-                + "Alice Tan; Title: Complete algebra questions 1-10; Subject: MATH; Due: 2026-10-15\n"
-                + "Listed 2 upcoming homework records for Alice Tan"
+                + "Alice Tan (91111111); Title: Complete algebra questions 1-10; Subject: MATH; Due: 2026-10-15\n"
+                + "Listed 2 upcoming homework records for Alice Tan (91111111)"
                 + " (1 record due before today not shown; use homework list 1 all to see it).\n"
-                + "Homework for Alice Tan:\n"
+                + "Homework for Alice Tan (91111111):\n"
                 + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20 - status ASSIGNED\n"
                 + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded"
                 + " - status ASSIGNED";
@@ -201,10 +201,10 @@ public class HomeworkEditCommandTest {
         expectedModel.setStudent(priya, priya.withHomeworks(List.of(editedHomework, homeworks.get(1),
                 homeworks.get(2))));
         String expectedMessage = "Edited homework:\n"
-                + "Priya Nair; Title: Research Organic pathways; Subject: MATH; Due: 2026-10-26\n"
-                + "Listed 2 upcoming homework records for Priya Nair"
+                + "Priya Nair (82345671); Title: Research Organic pathways; Subject: MATH; Due: 2026-10-26\n"
+                + "Listed 2 upcoming homework records for Priya Nair (82345671)"
                 + " (1 record due before today not shown; use homework list 2 all to see it).\n"
-                + "Homework for Priya Nair:\n"
+                + "Homework for Priya Nair (82345671):\n"
                 + "2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-02 - score Not recorded"
                 + " - status ASSIGNED\n"
                 + "3. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-09 - score Not recorded"
@@ -222,8 +222,8 @@ public class HomeworkEditCommandTest {
                 DueDate.parseFullDate("2026-10-01"));
         Homework editedMechanics = new HomeworkBuilder(MECHANICS).withDueDate("2026-10-01").build();
         String expectedMessage = "Edited homework:\n"
-                + "Carl Ng; Title: Attempt mechanics questions 1-5; Subject: PHYSICS; Due: 2026-10-01\n"
-                + "No upcoming homework found for Carl Ng"
+                + "Carl Ng (93333333); Title: Attempt mechanics questions 1-5; Subject: PHYSICS; Due: 2026-10-01\n"
+                + "No upcoming homework found for Carl Ng (93333333)"
                 + " (1 record due before today not shown; use homework list 3 all to see it).";
         Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON,
                 CARL.withHomeworks(List.of(editedMechanics))));
@@ -239,9 +239,9 @@ public class HomeworkEditCommandTest {
                 DueDate.parseFullDate("2026-10-30"));
         Homework editedAlgebra = new HomeworkBuilder(ALGEBRA).withDueDate("2026-10-30").build();
         String expectedMessage = "Edited homework:\n"
-                + "Alice Tan; Title: Complete algebra worksheet; Subject: MATH; Due: 2026-10-30\n"
-                + "Listed 3 upcoming homework records for Alice Tan.\n"
-                + "Homework for Alice Tan:\n"
+                + "Alice Tan (91111111); Title: Complete algebra worksheet; Subject: MATH; Due: 2026-10-30\n"
+                + "Listed 3 upcoming homework records for Alice Tan (91111111).\n"
+                + "Homework for Alice Tan (91111111):\n"
                 + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20 - status ASSIGNED\n"
                 + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded"
                 + " - status ASSIGNED\n"
@@ -260,10 +260,10 @@ public class HomeworkEditCommandTest {
                 DueDate.parseFullDate("2026-10-30"));
         Homework editedAlgebra = new HomeworkBuilder(ALGEBRA).withDueDate("2026-10-30").build();
         String expectedMessage = "Edited homework:\n"
-                + "Alice Tan; Title: Complete algebra worksheet; Subject: MATH; Due: 2026-10-30\n"
-                + "Listed 2 upcoming homework records for Alice Tan"
+                + "Alice Tan (91111111); Title: Complete algebra worksheet; Subject: MATH; Due: 2026-10-30\n"
+                + "Listed 2 upcoming homework records for Alice Tan (91111111)"
                 + " (1 record due before today not shown; use homework list 1 all to see it).\n"
-                + "Homework for Alice Tan:\n"
+                + "Homework for Alice Tan (91111111):\n"
                 + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded"
                 + " - status ASSIGNED\n"
                 + "1. Complete algebra worksheet (MATH) - due 2026-10-30 - score Not recorded - status ASSIGNED";
@@ -287,9 +287,9 @@ public class HomeworkEditCommandTest {
         EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(new Title("Revise mechanics"), null, null);
         Homework editedMechanics = new HomeworkBuilder(MECHANICS).withTitle("Revise mechanics").build();
         String expectedMessage = "Edited homework:\n"
-                + "Carl Ng; Title: Revise mechanics; Subject: PHYSICS; Due: 2026-10-20\n"
-                + "Listed 1 upcoming homework record for Carl Ng.\n"
-                + "Homework for Carl Ng:\n"
+                + "Carl Ng (93333333); Title: Revise mechanics; Subject: PHYSICS; Due: 2026-10-20\n"
+                + "Listed 1 upcoming homework record for Carl Ng (93333333).\n"
+                + "Homework for Carl Ng (93333333):\n"
                 + "1. Revise mechanics (PHYSICS) - due 2026-10-20 - score Not recorded - status ASSIGNED";
         Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON,
                 CARL.withHomeworks(List.of(editedMechanics))));
@@ -305,8 +305,8 @@ public class HomeworkEditCommandTest {
         EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(new Title("Revise mechanics"), null, null);
         Homework editedMechanics = new HomeworkBuilder(MECHANICS).withTitle("Revise mechanics").build();
         String expectedMessage = "Edited homework:\n"
-                + "Carl Ng; Title: Revise mechanics; Subject: PHYSICS; Due: 2026-10-20\n"
-                + "No upcoming homework found for Carl Ng"
+                + "Carl Ng (93333333); Title: Revise mechanics; Subject: PHYSICS; Due: 2026-10-20\n"
+                + "No upcoming homework found for Carl Ng (93333333)"
                 + " (1 record due before today not shown; use homework list 1 all to see it).";
         Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON,
                 CARL.withHomeworks(List.of(editedMechanics))));
@@ -330,9 +330,9 @@ public class HomeworkEditCommandTest {
         EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(new Title("Revise mechanics"), null, null);
         Homework editedMechanics = new HomeworkBuilder(COMPLETED_MECHANICS).withTitle("Revise mechanics").build();
         String expectedMessage = "Edited homework:\n"
-                + "Carl Ng; Title: Revise mechanics; Subject: PHYSICS; Due: 2026-10-20\n"
-                + "Listed 1 upcoming homework record for Carl Ng.\n"
-                + "Homework for Carl Ng:\n"
+                + "Carl Ng (93333333); Title: Revise mechanics; Subject: PHYSICS; Due: 2026-10-20\n"
+                + "Listed 1 upcoming homework record for Carl Ng (93333333).\n"
+                + "Homework for Carl Ng (93333333):\n"
                 + "1. Revise mechanics (PHYSICS) - due 2026-10-20 - score Not recorded - status COMPLETED";
         Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON,
                 CARL.withHomeworks(List.of(editedMechanics))));

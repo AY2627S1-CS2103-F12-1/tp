@@ -74,8 +74,8 @@ public class HomeworkUpcomingCommand extends Command {
     /**
      * Returns the summary line and one line per homework due in the window, or a message saying there is none.
      * Every student in the roster is searched, not only the students that are displayed. Each line starts with the
-     * student's position in the roster, which is the student's {@code STUDENT_INDEX}, so that students with the
-     * same name can be told apart.
+     * student's position in the roster, which is the student's {@code STUDENT_INDEX}, and the student's name and
+     * phone, as in the other homework messages.
      */
     private String listUpcomingHomework(Model model) {
         LocalDate lastDay = today.plusDays(days);
@@ -100,7 +100,7 @@ public class HomeworkUpcomingCommand extends Command {
             Homework homework = dueHomework.homework();
             // Locale.ROOT prints the index in ASCII digits, which the index parsers accept, in every locale
             message.append(String.format(Locale.ROOT, MESSAGE_HOMEWORK_LINE, position + 1,
-                    students.get(position).getName(), homework.getTitle(), homework.getSubject(),
+                    Messages.formatLessonOwner(students.get(position)), homework.getTitle(), homework.getSubject(),
                     homework.getDueDate(), Messages.formatScore(homework), homework.getStatus()));
         }
         return message.toString();

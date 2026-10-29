@@ -50,9 +50,12 @@ public class Messages {
                 + "; Guardian phone: " + student.getGuardianPhone();
     }
 
-    /** Returns the owner's name and the homework's title, subject and due date in the homework message format. */
+    /**
+     * Returns the owner's name and phone, and the homework's title, subject and due date in the homework message
+     * format.
+     */
     public static String format(Student student, Homework homework) {
-        return student.getName()
+        return formatLessonOwner(student)
                 + "; Title: " + homework.getTitle()
                 + "; Subject: " + homework.getSubject()
                 + "; Due: " + homework.getDueDate();
@@ -68,7 +71,9 @@ public class Messages {
                 + "; " + lesson.getStartTime() + "-" + lesson.getEndTime();
     }
 
-    /** Returns an unambiguous lesson owner, including the phone that distinguishes same-name students. */
+    /**
+     * Returns an unambiguous lesson or homework owner, including the phone that distinguishes same-name students.
+     */
     public static String formatLessonOwner(Student student) {
         return student.getName() + " (" + student.getPhone() + ")";
     }

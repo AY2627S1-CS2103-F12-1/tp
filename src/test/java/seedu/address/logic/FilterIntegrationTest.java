@@ -112,7 +112,8 @@ public class FilterIntegrationTest {
     @Test
     public void execute_homeworkCommandsAfterFilter_useDisplayedStudentIndex() throws Exception {
         logic.execute("filter s/CHEMISTRY");
-        assertTrue(logic.execute("homework list 1 all").getFeedbackToUser().contains("Homework for Ben Lim:"));
+        assertTrue(logic.execute("homework list 1 all").getFeedbackToUser().contains("Homework for Ben Lim "
+                + "(91234567):"));
 
         logic.execute("homework edit 1 1 t/Corrected task");
         assertEquals("Corrected task", model.getStudentList().getFirst().getHomeworks().getFirst()
@@ -227,7 +228,7 @@ public class FilterIntegrationTest {
         logic.execute("search Alice");
         logic.execute("filter d/TUESDAY");
         assertEquals("Ben Lim", model.getStudentList().getFirst().getName().toString());
-        assertTrue(logic.execute("hw list 1 all").getFeedbackToUser().contains("Homework for Ben Lim:"));
+        assertTrue(logic.execute("hw list 1 all").getFeedbackToUser().contains("Homework for Ben Lim (91234567):"));
 
         logic.execute("delete 1");
 

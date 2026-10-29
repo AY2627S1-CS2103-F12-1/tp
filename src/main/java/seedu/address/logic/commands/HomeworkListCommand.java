@@ -103,8 +103,10 @@ public class HomeworkListCommand extends Command {
      */
     static String formatHomeworkList(Student student, Index studentIndex, LocalDate today, boolean isAllShown) {
         List<Homework> homeworks = student.getHomeworks();
+        // the phone tells students with the same name apart, and keeps a name ending in "." off the sentence end
+        String owner = Messages.formatLessonOwner(student);
         if (homeworks.isEmpty()) {
-            return String.format(MESSAGE_NO_HOMEWORK, student.getName());
+            return String.format(MESSAGE_NO_HOMEWORK, owner);
         }
 
         // Stream#sorted is stable, so homework due on the same date stays in insertion order
@@ -115,15 +117,13 @@ public class HomeworkListCommand extends Command {
                 .toList();
         String hiddenNote = formatHiddenNote(homeworks.size() - listedIndices.size(), studentIndex);
         if (listedIndices.isEmpty()) {
-            return String.format(MESSAGE_NO_UPCOMING_HOMEWORK, student.getName(), hiddenNote);
+            return String.format(MESSAGE_NO_UPCOMING_HOMEWORK, owner, hiddenNote);
         }
 
         String recordWord = getRecordWord(listedIndices.size());
         StringBuilder message = new StringBuilder(isAllShown
-                ? String.format(MESSAGE_SUCCESS_ALL, listedIndices.size(), recordWord, student.getName(),
-                        student.getName())
-                : String.format(MESSAGE_SUCCESS, listedIndices.size(), recordWord, student.getName(), hiddenNote,
-                        student.getName()));
+                ? String.format(MESSAGE_SUCCESS_ALL, listedIndices.size(), recordWord, owner, owner)
+                : String.format(MESSAGE_SUCCESS, listedIndices.size(), recordWord, owner, hiddenNote, owner));
         for (int zeroBasedIndex : listedIndices) {
             message.append(formatHomeworkLine(zeroBasedIndex + 1, homeworks.get(zeroBasedIndex)));
         }

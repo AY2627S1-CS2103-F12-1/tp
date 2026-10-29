@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TestUtil.ARABIC_EGYPT;
+import static seedu.address.testutil.TestUtil.createSymbolicLinkOrSkip;
 import static seedu.address.testutil.TestUtil.runWithFormatLocale;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalRegularLessons.MONDAY_MATH;
@@ -308,6 +309,31 @@ public class JsonAddressBookStorageTest {
         assertThrows(DataFileConflictException.class, DataFileConflictException.MESSAGE_CHANGED, () ->
                 storage.saveAddressBook(getTypicalAddressBook()));
         assertArrayEquals(fileBefore, Files.readAllBytes(filePath));
+    }
+
+    @Test
+    public void saveAddressBook_dataFileIsSymbolicLink_savesThroughLink() throws Exception {
+        // PE round 2: data/tutorflow.json as a link to a file elsewhere, e.g. in a synced folder
+        Path target = Files.createDirectories(testFolder.resolve("synced")).resolve("tutorflow.json");
+        new JsonAddressBookStorage(target).saveAddressBook(getTypicalAddressBook());
+        Path link = Files.createDirectories(testFolder.resolve("data")).resolve("tutorflow.json");
+        createSymbolicLinkOrSkip(link, target);
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(link);
+        assertEquals(getTypicalAddressBook(), storage.readAddressBook().orElseThrow());
+
+        // saved twice, so the second save checks the data the first one wrote through the link
+        AddressBook withoutBenson = new AddressBook(getTypicalAddressBook());
+        withoutBenson.deleteStudent(BENSON);
+        storage.saveAddressBook(withoutBenson);
+        storage.saveAddressBook(new AddressBook());
+
+        assertTrue(Files.isSymbolicLink(link));
+        assertEquals(new AddressBook(), new JsonAddressBookStorage(target).readAddressBook().orElseThrow());
+
+        // a change to the file the link points to is still found
+        new JsonAddressBookStorage(target).saveAddressBook(getTypicalAddressBook());
+        assertThrows(DataFileConflictException.class, () -> storage.saveAddressBook(new AddressBook()));
+        assertEquals(getTypicalAddressBook(), new JsonAddressBookStorage(target).readAddressBook().orElseThrow());
     }
 
     @Test

@@ -1,5 +1,7 @@
 package seedu.address.testutil;
 
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,6 +32,18 @@ public class TestUtil {
             throw new RuntimeException(e);
         }
         return SANDBOX_FOLDER.resolve(fileName);
+    }
+
+    /**
+     * Creates a symbolic link at {@code link} to {@code target}, skipping the test where symbolic links cannot be
+     * created, e.g. on Windows without the privilege to create them.
+     */
+    public static void createSymbolicLinkOrSkip(Path link, Path target) {
+        try {
+            Files.createSymbolicLink(link, target);
+        } catch (UnsupportedOperationException | IOException e) {
+            assumeTrue(false, "symbolic links cannot be created here: " + e);
+        }
     }
 
     /**

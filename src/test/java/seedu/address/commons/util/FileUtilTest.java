@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static seedu.address.testutil.Assert.assertThrows;
+import static seedu.address.testutil.TestUtil.createSymbolicLinkOrSkip;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -74,6 +75,22 @@ public class FileUtilTest {
     private static void assertInvalidUtf8(Path file, int line, int column) {
         assertThrows(IOException.class, String.format(FileUtil.MESSAGE_INVALID_UTF8, line, column), () ->
                 FileUtil.readFromFile(file));
+    }
+
+    @Test
+    public void writeToFile_symbolicLink_writesTargetAndKeepsLink() throws IOException {
+        // PE round 2: the temporary file replaced the link, so the file it points to silently kept the old data
+        Path target = Files.createDirectories(testFolder.resolve("real")).resolve("tutorflow.json");
+        Files.writeString(target, OLD_CONTENT);
+        Path link = Files.createDirectories(testFolder.resolve("data")).resolve("tutorflow.json");
+        createSymbolicLinkOrSkip(link, Path.of("..", "real", "tutorflow.json"));
+
+        FileUtil.writeToFile(link, CONTENT);
+
+        assertTrue(Files.isSymbolicLink(link));
+        assertEquals(CONTENT, Files.readString(target));
+        assertEquals(List.of(link), listFiles(link.getParent()));
+        assertEquals(List.of(target), listFiles(target.getParent()));
     }
 
     @Test

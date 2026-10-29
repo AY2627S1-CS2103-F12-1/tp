@@ -70,7 +70,8 @@ public class FileUtil {
      * Writes given string to a file, creating the file and its missing parent directories if needed.
      * The content is first written to a new temporary file with a unique name next to {@code file}, which then
      * replaces {@code file}, so {@code file} is never left partially written: if writing fails, it keeps its
-     * previous content. Other files in the folder are never changed.
+     * previous content. Other files in the folder are never changed. If {@code file} is a symbolic link to an existing
+     * file, that file is replaced in the same way and the link is kept.
      * An existing {@code file} keeps its POSIX file permissions or its access control list (on Windows), whichever
      * the file system supports. Where the file system supports POSIX file permissions, a new {@code file} can be
      * read and written only by its owner.
@@ -85,14 +86,16 @@ public class FileUtil {
         }
 
         createParentDirsOfFile(file);
-        Path folder = file.toAbsolutePath().getParent();
+        // Replacing a symbolic link would leave the file it points to with the old content, so that file is replaced
+        Path target = Files.isSymbolicLink(file) && Files.exists(file) ? file.toRealPath() : file;
+        Path folder = target.toAbsolutePath().getParent();
         Path tempFile = null;
         try {
-            tempFile = Files.createTempFile(folder, file.getFileName().toString(), TEMP_FILE_SUFFIX);
+            tempFile = Files.createTempFile(folder, target.getFileName().toString(), TEMP_FILE_SUFFIX);
             // Give the temporary file the data file's permissions before it holds the user's data
-            copyPermissions(file, tempFile);
+            copyPermissions(target, tempFile);
             Files.write(tempFile, content.getBytes(CHARSET));
-            replaceFile(tempFile, file);
+            replaceFile(tempFile, target);
         } catch (IOException e) {
             deleteAfterFailure(tempFile, e);
             throw toErrorAboutFile(e, file);

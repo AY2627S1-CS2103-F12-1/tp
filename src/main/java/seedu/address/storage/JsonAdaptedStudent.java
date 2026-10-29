@@ -25,7 +25,11 @@ class JsonAdaptedStudent {
     public static final String MISSING_FIELD_MESSAGE_FORMAT = "Student's %s field is missing!";
     public static final String MESSAGE_EMPTY_HOMEWORK_ENTRY = "Student's homeworks list contains an empty entry.";
     public static final String MESSAGE_SUBJECT_NOT_TAKEN = "Homework subject must be one of the student's subjects.";
-    public static final String MESSAGE_DUPLICATE_HOMEWORK = "Student's homeworks list contains duplicate homework.";
+    /** Message for a duplicate homework, e.g. "Homework 2 (Essay)", and the position of the earlier homework. */
+    public static final String MESSAGE_DUPLICATE_HOMEWORK =
+            "%s has the same title, subject and due date as homework %d.";
+    /** Prefix naming the entry that an error is about, e.g. "Homework 2 (Essay): ". */
+    public static final String ENTRY_PREFIX_FORMAT = "%s: ";
 
     private final String name;
     private final String academicLevel;
@@ -130,24 +134,68 @@ class JsonAdaptedStudent {
      * Returns the homework in the {@code homeworks} list, in order. Each homework must be for one of
      * {@code modelSubjects}, and no two homework records may be the same by {@link Homework#isSameHomework(Homework)}.
      *
-     * @throws IllegalValueException If an entry is empty or invalid, is for another subject, or is a duplicate.
+     * @throws IllegalValueException If an entry is empty or invalid, is for another subject, or is a duplicate. The
+     *         message names the homework by its position and title, e.g. "Homework 2 (Essay)".
      */
     private List<Homework> toModelHomeworks(TuitionSubjects modelSubjects) throws IllegalValueException {
         List<Homework> modelHomeworks = new ArrayList<>();
-        for (JsonAdaptedHomework jsonAdaptedHomework : homeworks) {
+        for (int i = 0; i < homeworks.size(); i++) {
+            JsonAdaptedHomework jsonAdaptedHomework = homeworks.get(i);
             if (jsonAdaptedHomework == null) {
                 throw new IllegalValueException(MESSAGE_EMPTY_HOMEWORK_ENTRY);
             }
-            Homework homework = jsonAdaptedHomework.toModelType();
+            String shownHomework = describeEntry("Homework", i + 1, jsonAdaptedHomework.getTitle());
+            Homework homework = toModelEntry(jsonAdaptedHomework::toModelType, shownHomework);
             if (!modelSubjects.getSubjects().contains(homework.getSubject())) {
-                throw new IllegalValueException(MESSAGE_SUBJECT_NOT_TAKEN);
+                throw new IllegalValueException(String.format(ENTRY_PREFIX_FORMAT, shownHomework)
+                        + MESSAGE_SUBJECT_NOT_TAKEN);
             }
-            if (modelHomeworks.stream().anyMatch(homework::isSameHomework)) {
-                throw new IllegalValueException(MESSAGE_DUPLICATE_HOMEWORK);
+            for (int j = 0; j < modelHomeworks.size(); j++) {
+                if (modelHomeworks.get(j).isSameHomework(homework)) {
+                    throw new IllegalValueException(String.format(MESSAGE_DUPLICATE_HOMEWORK, shownHomework, j + 1));
+                }
             }
             modelHomeworks.add(homework);
         }
         return modelHomeworks;
+    }
+
+    /**
+     * Returns the name of an entry of a list in the data file as the user can find it: its {@code kind}, its
+     * {@code position} counting from 1, and its {@code name} as written in the file, if any, e.g.
+     * "Student 2 (Priya Nair)".
+     */
+    static String describeEntry(String kind, int position, String name) {
+        String entry = kind + " " + position;
+        return name == null || name.isBlank() ? entry : entry + " (" + name.strip() + ")";
+    }
+
+    /**
+     * Returns the model object that {@code converter} makes from an entry of a list in the data file, adding the
+     * entry's {@code shownName} in front of the message of any error.
+     *
+     * @throws IllegalValueException If {@code converter} fails.
+     */
+    static <T> T toModelEntry(ModelConverter<T> converter, String shownName) throws IllegalValueException {
+        try {
+            return converter.convert();
+        } catch (IllegalValueException exception) {
+            throw new IllegalValueException(String.format(ENTRY_PREFIX_FORMAT, shownName) + exception.getMessage(),
+                    exception);
+        }
+    }
+
+    /** Returns the name of the student, as written in the data file. */
+    String getName() {
+        return name;
+    }
+
+    /**
+     * Converts an entry of the data file into a model object.
+     */
+    @FunctionalInterface
+    interface ModelConverter<T> {
+        T convert() throws IllegalValueException;
     }
 
     /**

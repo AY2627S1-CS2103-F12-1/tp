@@ -95,7 +95,8 @@ public class MainAppTest {
 
         DataLoadingException exception = assertThrows(DataLoadingException.class, () ->
                 MainApp.readInitialData(storage));
-        assertEquals(MESSAGE_YEAR_OUT_OF_RANGE, exception.getCause().getMessage());
+        assertEquals("Student 1 (Alice Tan): Homework 1 (Complete algebra worksheet): " + MESSAGE_YEAR_OUT_OF_RANGE,
+                exception.getCause().getMessage());
         assertEquals(invalidData, Files.readString(dataFilePath));
     }
 

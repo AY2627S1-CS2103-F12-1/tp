@@ -73,6 +73,11 @@ class JsonAdaptedHomework {
         status = source.getStatus().name();
     }
 
+    /** Returns the title of the homework, as written in the data file. */
+    String getTitle() {
+        return title;
+    }
+
     /**
      * Converts this Jackson-friendly adapted homework object into the model's {@code Homework} object.
      * The due date must be a full {@code YYYY-MM-DD} date; its year is never inferred.

@@ -21,7 +21,8 @@ class JsonSerializableAddressBook {
 
     public static final String MESSAGE_MISSING_STUDENTS = "The students field is missing!";
     public static final String MESSAGE_EMPTY_STUDENT_ENTRY = "Students list contains an empty entry.";
-    public static final String MESSAGE_DUPLICATE_STUDENT = "Students list contains duplicate student(s).";
+    /** Message for a duplicate student, e.g. "Student 3 (Alex Yeoh)", and the position of the earlier student. */
+    public static final String MESSAGE_DUPLICATE_STUDENT = "%s has the same name and phone number as student %d.";
 
     private final List<JsonAdaptedStudent> students;
 
@@ -47,7 +48,8 @@ class JsonSerializableAddressBook {
     /**
      * Converts this address book into the model's {@code AddressBook} object.
      *
-     * @throws IllegalValueException if there were any data constraints violated.
+     * @throws IllegalValueException if there were any data constraints violated. The message names the student by
+     *         their position and name, e.g. "Student 2 (Priya Nair)".
      */
     public AddressBook toModelType() throws IllegalValueException {
         // A missing or misspelled key is reported as invalid data rather than read as having no students
@@ -55,20 +57,26 @@ class JsonSerializableAddressBook {
             throw new IllegalValueException(MESSAGE_MISSING_STUDENTS);
         }
         AddressBook addressBook = new AddressBook();
-        for (JsonAdaptedStudent jsonAdaptedStudent : students) {
+        for (int i = 0; i < students.size(); i++) {
+            JsonAdaptedStudent jsonAdaptedStudent = students.get(i);
             if (jsonAdaptedStudent == null) {
                 throw new IllegalValueException(MESSAGE_EMPTY_STUDENT_ENTRY);
             }
-            Student student = jsonAdaptedStudent.toModelType();
-            if (addressBook.hasStudent(student)) {
-                throw new IllegalValueException(MESSAGE_DUPLICATE_STUDENT);
+            String shownStudent = JsonAdaptedStudent.describeEntry("Student", i + 1, jsonAdaptedStudent.getName());
+            Student student = JsonAdaptedStudent.toModelEntry(jsonAdaptedStudent::toModelType, shownStudent);
+            // Every earlier student was added, so a student's place in the list is their place in the file
+            List<Student> earlierStudents = addressBook.getStudentList();
+            for (int j = 0; j < earlierStudents.size(); j++) {
+                if (earlierStudents.get(j).isSameStudent(student)) {
+                    throw new IllegalValueException(String.format(MESSAGE_DUPLICATE_STUDENT, shownStudent, j + 1));
+                }
             }
             for (var lesson : student.getLessons()) {
                 long overlaps = student.getLessons().stream().filter(lesson::clashesWith).count();
                 boolean clashesWithOthers = addressBook.getStudentList().stream()
                         .flatMap(existing -> existing.getLessons().stream()).anyMatch(lesson::clashesWith);
                 if (overlaps > 1 || clashesWithOthers) {
-                    throw new IllegalValueException("The data file contains overlapping lessons.");
+                    throw new IllegalValueException(shownStudent + ": The data file contains overlapping lessons.");
                 }
             }
             addressBook.addStudent(student);

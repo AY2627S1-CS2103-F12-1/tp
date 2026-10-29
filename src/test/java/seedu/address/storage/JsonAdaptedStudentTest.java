@@ -161,7 +161,8 @@ public class JsonAdaptedStudentTest {
         List<JsonAdaptedHomework> homeworks = List.of(new JsonAdaptedHomework("Algebra", "MATH", "10-15", null));
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
                 VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, homeworks);
-        assertThrows(IllegalValueException.class, fullDateFormatMessage("10-15"), student::toModelType);
+        assertThrows(IllegalValueException.class, "Homework 1 (Algebra): " + fullDateFormatMessage("10-15"),
+                student::toModelType);
     }
 
     @Test
@@ -176,12 +177,12 @@ public class JsonAdaptedStudentTest {
 
     @Test
     public void toModelType_homeworkSubjectNotTaken_throwsIllegalValueException() {
-        List<JsonAdaptedHomework> homeworks = List.of(new JsonAdaptedHomework(
-                new HomeworkBuilder().withSubject("PHYSICS").build()));
+        List<JsonAdaptedHomework> homeworks = List.of(new JsonAdaptedHomework(ALGEBRA), new JsonAdaptedHomework(
+                new HomeworkBuilder().withTitle("Kinematics").withSubject("PHYSICS").build()));
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
                 VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, homeworks);
-        assertThrows(IllegalValueException.class, JsonAdaptedStudent.MESSAGE_SUBJECT_NOT_TAKEN,
-                student::toModelType);
+        assertThrows(IllegalValueException.class,
+                "Homework 2 (Kinematics): " + JsonAdaptedStudent.MESSAGE_SUBJECT_NOT_TAKEN, student::toModelType);
     }
 
     @Test
@@ -192,8 +193,8 @@ public class JsonAdaptedStudentTest {
         List<JsonAdaptedHomework> homeworks = List.of(new JsonAdaptedHomework(ALGEBRA), duplicate);
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
                 VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, homeworks);
-        assertThrows(IllegalValueException.class, JsonAdaptedStudent.MESSAGE_DUPLICATE_HOMEWORK,
-                student::toModelType);
+        assertThrows(IllegalValueException.class, "Homework 2 (COMPLETE ALGEBRA WORKSHEET) has the same title,"
+                + " subject and due date as homework 1.", student::toModelType);
     }
 
     @Test
@@ -204,8 +205,8 @@ public class JsonAdaptedStudentTest {
                 new JsonAdaptedHomework("Cafe\u0301", "MATH", "2026-11-20", null));
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
                 VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, homeworks);
-        assertThrows(IllegalValueException.class, JsonAdaptedStudent.MESSAGE_DUPLICATE_HOMEWORK,
-                student::toModelType);
+        assertThrows(IllegalValueException.class, "Homework 2 (Cafe\u0301) has the same title, subject and due"
+                + " date as homework 1.", student::toModelType);
     }
 
     @Test

@@ -52,6 +52,14 @@ public class HomeworkDeleteCommandParserTest {
     public void parse_oneIndex_failure() {
         assertParseFailure(parser, "1", unexpectedWords(EXPECTED_WORDS, "1 word (1)",
                 HomeworkDeleteCommand.MESSAGE_USAGE));
+
+        // indices joined by a comma
+        assertParseFailure(parser, "1,1", unexpectedWords(EXPECTED_WORDS, "1 word (1,1)",
+                HomeworkDeleteCommand.MESSAGE_USAGE));
+
+        // indices joined without a space
+        assertParseFailure(parser, "31", unexpectedWords(EXPECTED_WORDS, "1 word (31)",
+                HomeworkDeleteCommand.MESSAGE_USAGE));
     }
 
     @Test

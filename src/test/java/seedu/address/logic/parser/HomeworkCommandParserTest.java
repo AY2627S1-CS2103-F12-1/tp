@@ -135,6 +135,8 @@ public class HomeworkCommandParserTest {
     @Test
     public void parse_subcommandJoinedToArgument_failure() {
         assertParseFailure(parser, " list1", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, " ls3", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, " del3 1", MESSAGE_INVALID_FORMAT);
     }
 
     @Test

@@ -146,6 +146,8 @@ public class HomeworkEditCommandParserTest {
     public void parse_uppercasePrefix_failure() {
         assertParseFailure(parser, "1 2 T/Algebra", wrongCasePrefix("T/", "t/") + USAGE_LINE);
         assertParseFailure(parser, "1 2 Title/Algebra", wrongCasePrefix("Title/", "title/") + USAGE_LINE);
+        // not inside any value, so no quote hint
+        assertParseFailure(parser, "1 2 Due/2026-11-11", wrongCasePrefix("Due/", "due/") + USAGE_LINE);
         // not saved into the title, leaving the intended field unchanged
         assertParseFailure(parser, "1 2 t/X Due/2026-11-11",
                 wrongCasePrefixWithQuoteHint("Due/", "due/", "t/\"X Due/2026-11-11\"") + USAGE_LINE);
@@ -159,6 +161,15 @@ public class HomeworkEditCommandParserTest {
     public void parse_quotedWrongCasePrefixInTitle_keptInTitle() {
         assertParseSuccess(parser, "1 2 t/\"X Due/2026-11-11\"",
                 editCommand(new EditHomeworkDescriptor(new Title("X Due/2026-11-11"), null, null), false));
+    }
+
+    @Test
+    public void parse_prefixGluedToTitle_keptInTitle() {
+        // a prefix only counts after a space
+        assertParseSuccess(parser, "1 2 t/Xs/MATH",
+                editCommand(new EditHomeworkDescriptor(new Title("Xs/MATH"), null, null), false));
+        assertParseSuccess(parser, "1 2 t/X,s/MATH",
+                editCommand(new EditHomeworkDescriptor(new Title("X,s/MATH"), null, null), false));
     }
 
     @Test

@@ -62,6 +62,9 @@ public class HomeworkListCommandParserTest {
                 HomeworkListCommand.MESSAGE_USAGE));
         assertParseFailure(parser, "all 1", unexpectedWords(EXPECTED_WORDS, "2 words (all 1)",
                 HomeworkListCommand.MESSAGE_USAGE));
+        // misspelled all
+        assertParseFailure(parser, "1 alll", unexpectedWords(EXPECTED_WORDS, "2 words (1 alll)",
+                HomeworkListCommand.MESSAGE_USAGE));
     }
 
     @Test

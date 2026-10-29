@@ -90,12 +90,14 @@ public class HomeworkUpcomingCommandParserTest {
     public void parse_invalidDays_failure() {
         // one above the largest number of days
         assertParseFailure(parser, "due/366", MESSAGE_INVALID_DAYS);
+        assertParseFailure(parser, "due/400", MESSAGE_INVALID_DAYS);
 
         // larger than the largest int
         assertParseFailure(parser, "due/2147483648", MESSAGE_INVALID_DAYS);
 
         // leading zeroes
         assertParseFailure(parser, "due/007", MESSAGE_INVALID_DAYS);
+        assertParseFailure(parser, "due/07", MESSAGE_INVALID_DAYS);
         assertParseFailure(parser, "due/00", MESSAGE_INVALID_DAYS);
 
         // negative
@@ -112,6 +114,7 @@ public class HomeworkUpcomingCommandParserTest {
 
         // date instead of days
         assertParseFailure(parser, "due/2026-10-20", MESSAGE_INVALID_DAYS);
+        assertParseFailure(parser, "due/2026-11-01", MESSAGE_INVALID_DAYS);
 
         // internal space
         assertParseFailure(parser, "due/1 0", MESSAGE_INVALID_DAYS);

@@ -246,6 +246,15 @@ public class HomeworkAddCommandParserTest {
     }
 
     @Test
+    public void parse_indexAfterPrefixes_reportsMissingIndex() {
+        // the index is read as part of the due date, so the message names the missing index, not the date
+        assertParseFailure(parser, "t/Essay s/MATH due/2026-11-20 1", unexpectedWords(EXPECTED_WORDS, "none",
+                HomeworkAddCommand.MESSAGE_USAGE));
+        assertParseFailure(parser, "t/Algebra s/MATH due/2026-12-01 1", unexpectedWords(EXPECTED_WORDS, "none",
+                HomeworkAddCommand.MESSAGE_USAGE));
+    }
+
+    @Test
     public void parse_extraPreambleWord_failure() {
         assertParseFailure(parser, "1 2" + VALID_FIELDS, unexpectedWords(EXPECTED_WORDS, "2 words (1 2)",
                 HomeworkAddCommand.MESSAGE_USAGE));
@@ -263,6 +272,7 @@ public class HomeworkAddCommandParserTest {
     public void parse_uppercasePrefix_failure() {
         assertParseFailure(parser, "1 TITLE/Complete algebra worksheet s/MATH due/2026-10-15",
                 wrongCasePrefix("TITLE/", "title/") + USAGE_LINE);
+        assertParseFailure(parser, "1 T/A s/MATH due/2026-11-01", wrongCasePrefix("T/", "t/") + USAGE_LINE);
         // S/MATH is not kept in the title, which would leave s/ missing
         assertParseFailure(parser, "1 t/A S/MATH due/2026-11-01",
                 wrongCasePrefixWithQuoteHint("S/", "s/", "t/\"A S/MATH\"") + USAGE_LINE);
@@ -276,6 +286,12 @@ public class HomeworkAddCommandParserTest {
                 DueDate.parseFullDate("2026-11-01"));
         assertParseSuccess(parser, "1 t/\"Notes S/MATH\" s/MATH due/2026-11-01",
                 new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, false, TODAY));
+    }
+
+    @Test
+    public void parse_prefixGluedToTitle_reportsMissingSubject() {
+        // a prefix only counts after a space, so s/MATH stays in the title
+        assertParseFailure(parser, "1 t/Xs/MATH due/2026-11-11", String.format(MESSAGE_MISSING_PREFIXES, "s/"));
     }
 
     @Test

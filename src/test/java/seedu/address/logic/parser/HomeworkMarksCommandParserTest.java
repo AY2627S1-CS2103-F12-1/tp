@@ -139,6 +139,12 @@ public class HomeworkMarksCommandParserTest {
     }
 
     @Test
+    public void parse_prefixGluedToIndex_reportsMissingScore() {
+        // a prefix only counts after a space, so 2score/5 is not read as the score
+        assertParseFailure(parser, "1 2score/5", MESSAGE_MISSING_SCORE);
+    }
+
+    @Test
     public void parse_unknownPrefix_failure() {
         String usageLine = "\nUsage: " + HomeworkMarksCommand.MESSAGE_USAGE;
         // the score before x/ is only digits and a slash, so no example is given
@@ -227,9 +233,11 @@ public class HomeworkMarksCommandParserTest {
 
         // decimal
         assertParseFailure(parser, "1 2 score/5.5/10", Score.MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 2 score/7.5/10", Score.MESSAGE_INVALID_FORMAT);
 
         // spaces inside
         assertParseFailure(parser, "1 2 score/5 / 10", Score.MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 2 score/5 /10", Score.MESSAGE_INVALID_FORMAT);
 
         // sign
         assertParseFailure(parser, "1 2 score/-1/10", Score.MESSAGE_INVALID_FORMAT);

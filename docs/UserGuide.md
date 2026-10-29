@@ -109,7 +109,7 @@ TutorFlow is a **desktop application for private tutors to manage their students
 
 * `homework` or `hw` must be followed by a space and one of the homework subcommands. `hw` on its own gives `Missing homework subcommand. Use add, list|ls, upcoming|up, edit|e, marks|m, delete|del, filter or status.`, and a word that is not a subcommand is named, e.g. `hw rm 1 1` gives `rm is not a homework subcommand. Use add, list|ls, upcoming|up, edit|e, marks|m, delete|del, filter or status.` The subcommand must be followed by a space too, so `hw ls1` is rejected in the same way, naming `ls1`.
 
-* In homework commands, a missing index or an extra word before the first prefix is rejected with what was expected and what was found. For example, `hw del 1 1 1` gives `Expected STUDENT_INDEX HOMEWORK_INDEX, but found 3 words (1 1 1).`, and `hw add 1 extra t/X s/MATH due/2026-12-01` gives `Expected STUDENT_INDEX before the first prefix, but found 2 words (1 extra).` These errors, like the ones above, show the command's usage on the next line.
+* In homework commands, a missing index or an extra word before the first prefix is rejected with what was expected and what was found. For example, `hw del 1 1 1` gives `Expected STUDENT_INDEX HOMEWORK_INDEX, but found 3 words (1 1 1).`, and `hw add 1 extra t/X s/MATH due/2026-12-01` gives `Expected STUDENT_INDEX before the first prefix, but found 2 words (1 extra).` These errors show the command's usage on the next line.
 
 * Extraneous parameters for commands that take no parameters, such as `help`, `exit`, and `clear`, are ignored. The `list` command rejects extra parameters.<br>
   For example, `help 123` is interpreted as `help`.

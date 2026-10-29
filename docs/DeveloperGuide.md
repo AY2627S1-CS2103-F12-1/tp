@@ -1300,29 +1300,29 @@ testers are expected to do more *exploratory* testing.
 
 1. Listing upcoming and overdue homework
 
-   1. Prerequisites: Start with the sample students (delete `data/tutorflow.json` first). Run `hw add 5 t/Old worksheet s/MATH due/2026-10-01`, which gives Daniel Wong (student 5) homework that is already overdue.
+   1. Prerequisites: Start with the sample students (delete `data/tutorflow.json` first). Run `hw add 5 t/Old worksheet s/MATH due/2026-10-01`, which gives Daniel Wong (student 5) homework that is already overdue. The result ends with `Note: this homework is due before today, so homework list 5 shows it only with all.`
 
    1. Test case: `hw ls 5`<br>
-      Expected: `No upcoming homework found for Daniel Wong (1 record due before today not shown; use homework list 5 all to see it).` Daniel Wong's card shows `Upcoming homework: 0`.
+      Expected: `No upcoming homework found for Daniel Wong (96781234) (1 record due before today not shown; use homework list 5 all to see it).` Daniel Wong's card shows `Upcoming homework: 0`.
 
    1. Test case: `hw ls 5 all`<br>
       Expected:
 
       ```
-      Listed 1 homework record for Daniel Wong.
-      Homework for Daniel Wong:
+      Listed 1 homework record for Daniel Wong (96781234).
+      Homework for Daniel Wong (96781234):
       1. Old worksheet (MATH) - due 2026-10-01 - score Not recorded - status ASSIGNED
       ```
 
    1. Test case: `hw ls 5 ALL`<br>
-      Expected: An invalid command format error, as `all` must be in lowercase.
+      Expected: `The word all is lowercase: type all, not ALL.`, followed by the usage `Usage: homework|hw list|ls STUDENT_INDEX [all]`.
 
 1. Listing upcoming homework of all students
 
    1. Prerequisites: In a disposable test folder, run `clear`, then `add n/Ethan Lim l/S3 s/MATH,PHYSICS p/91234567 gn/Grace Lim gp/98765432` and `add n/Marcus Tan l/S1 s/MATH p/87654329 gn/Tan Mei Ling gp/91827364`. This gives two students without sample homework. Run `hw add 2 t/Today drill s/MATH due/TODAY`, then `hw add 1 t/Today forces s/PHYSICS due/TODAY` and `hw add 1 t/Old worksheet s/MATH due/PAST`, replacing `TODAY` with today's full date and `PAST` with yesterday's full date in `YYYY-MM-DD` form.
 
    1. Test case: `hw up due/0`<br>
-      Expected: `Found 2 homework records due from TODAY to TODAY.`, then `Student 1: Ethan Lim; Today forces; PHYSICS; Due: TODAY; Score: Not recorded; Status: ASSIGNED` before `Student 2: Marcus Tan; Today drill; MATH; Due: TODAY; Score: Not recorded; Status: ASSIGNED` (roster order, not the order they were added). `Old worksheet` is not shown, as it is overdue.
+      Expected: `Found 2 homework records due from TODAY to TODAY.`, then `Student 1: Ethan Lim (91234567); Today forces; PHYSICS; Due: TODAY; Score: Not recorded; Status: ASSIGNED` before `Student 2: Marcus Tan (87654329); Today drill; MATH; Due: TODAY; Score: Not recorded; Status: ASSIGNED` (roster order, not the order they were added). `Old worksheet` is not shown, as it is overdue.
 
    1. Test case: `hw up`<br>
       Expected: The summary ends with the date 7 days after today, and the lines are sorted by due date. The data file is not modified.
@@ -1332,15 +1332,15 @@ testers are expected to do more *exploratory* testing.
 
       ```
       Found 3 homework records due from TODAY to END.
-      Student 1: Ethan Lim; Today forces; PHYSICS; Due: TODAY; Score: Not recorded; Status: COMPLETED
-      Student 2: Marcus Tan; Today drill; MATH; Due: TODAY; Score: Not recorded; Status: ASSIGNED
-      Student 1: Ethan Lim; Vectors drill; MATH; Due: SOON; Score: Not recorded; Status: ASSIGNED
+      Student 1: Ethan Lim (91234567); Today forces; PHYSICS; Due: TODAY; Score: Not recorded; Status: COMPLETED
+      Student 2: Marcus Tan (87654329); Today drill; MATH; Due: TODAY; Score: Not recorded; Status: ASSIGNED
+      Student 1: Ethan Lim (91234567); Vectors drill; MATH; Due: SOON; Score: Not recorded; Status: ASSIGNED
       ```
 
       `hw ls 1 all` lists Ethan Lim's homework as 2 (`Old worksheet`), 1 (`Today forces`), 3 (`Vectors drill`) and 4 (`Exam revision`), so the order in `hw up` is not the numbering in `hw ls 1 all`.
 
    1. Test case: `add n/Ethan Lim l/S1 s/MATH p/81234567 gn/Lim Mei gp/81234568` (a second Ethan Lim, with another phone number, who becomes student 3), then `hw add 3 t/Today algebra s/MATH due/TODAY` and `hw up due/0`<br>
-      Expected: The new line starts with `Student 3: Ethan Lim`, while the first Ethan Lim's line starts with `Student 1: Ethan Lim`.
+      Expected: The new line starts with `Student 3: Ethan Lim (81234567)`, while the first Ethan Lim's line starts with `Student 1: Ethan Lim (91234567)`.
 
    1. Test case: `search Marcus`, then `hw up due/0`, then `hw ls 2`<br>
       Expected: After `hw up due/0`, all three students are shown again and Marcus Tan's line starts with `Student 2`. `hw ls 2` lists Marcus Tan's homework.
@@ -1349,14 +1349,14 @@ testers are expected to do more *exploratory* testing.
       Expected: `Days must be a whole number from 0 to 365 without leading zeroes.`
 
    1. Other incorrect commands to try: `hw up 3`, `hw up x/3`, `hw up due/3 due/7`<br>
-      Expected: An invalid command format error with the usage `homework|hw upcoming|up [due/DAYS]` for `hw up 3`, `x/ is not a prefix of this command.` followed by that usage for `hw up x/3`, and `Prefix due/ must be specified exactly once.` for the last one.
+      Expected: `Expected no words other than due/DAYS, but found 1 word (3).` followed by the usage `Usage: homework|hw upcoming|up [due/DAYS]` for `hw up 3`, `x/ is not a prefix of this command.` followed by that usage for `hw up x/3`, and `Prefix due/ must be specified exactly once.` for the last one.
 
 1. Adding homework
 
    1. Prerequisites: Start with the sample students.
 
    1. Test case: `hw add 1 t/Algebra drill s/MATH due/12-01`<br>
-      Expected: `New homework added:`, then `Ethan Lim; Title: Algebra drill; Subject: MATH; Due: YEAR-12-01` and `Inferred year: YEAR`, where `YEAR` is this year, or next year from 2 December on. For example, on 2026-10-27 it is `2026`.
+      Expected: `New homework added for Ethan Lim (91234567):`, then `3. Algebra drill (MATH) - due YEAR-12-01 - score Not recorded - status ASSIGNED` and `Inferred year: YEAR`, where `YEAR` is this year, or next year from 2 December on. For example, on 2026-11-06 it is `2026`.
 
    1. Test case: `hw add 1 t/ALGEBRA DRILL s/MATH due/12-01`<br>
       Expected: `This homework already exists for the selected student.`, as titles are compared ignoring case.
@@ -1370,33 +1370,39 @@ testers are expected to do more *exploratory* testing.
    1. Test case: `hw add 1 t/A s/MATH`<br>
       Expected: `Missing required prefix(es): due/`, then the usage `Usage: homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD`. No homework is added by these four commands; `hw ls 1 all` shows only `Algebra drill` in addition to the sample homework.
 
+   1. Test case: `hw add 1 t/Algebra drill S/MATH due/12-02`<br>
+      Expected: `S/ is not a prefix of this command; prefixes are lowercase (s/). To use it inside a value, wrap the whole value in straight double quotes, e.g. t/"Algebra drill S/MATH".`, then the usage, and no homework is added.
+
+   1. Other incorrect commands to try: `hw add 1 extra t/A s/MATH due/12-02`, `hw add 2147483648 t/A s/MATH due/12-02`<br>
+      Expected: `Expected STUDENT_INDEX before the first prefix, but found 2 words (1 extra).` followed by the usage, and `STUDENT_INDEX must be no greater than 2147483647.`. No homework is added.
+
 1. Adding homework with special characters in the title
 
    1. Prerequisites: Start with the sample students. To type a zero-width space (U+200B), copy it from a character viewer, e.g. Character Viewer on macOS or Character Map on Windows, and paste it into the command box.
 
    1. Test case: `hw add 3 t/ZWSP s/MATH due/2026-12-01`, where `ZWSP` is one zero-width space, followed by an ordinary space before `s/`<br>
-      Expected: `Homework title must be 1 to 100 characters and may contain only letters, numbers, punctuation, symbols and spaces.`, and no homework is added.
+      Expected: `Homework title has an unsupported character: U+200B (ZERO WIDTH SPACE). Titles may contain only letters, numbers, punctuation, symbols and spaces.`, and no homework is added.
 
    1. Test case: `hw add 3 t/AlgeZWSPbra drill s/MATH due/2026-12-02`<br>
       Expected: The same title error, and no homework is added.
 
    1. Test case: `hw add 3 t/x² + π ≈ 3.14 s/MATH due/2026-12-03`<br>
-      Expected: `New homework added:` followed by `Marcus Tan; Title: x² + π ≈ 3.14; Subject: MATH; Due: 2026-12-03`.
+      Expected: `New homework added for Marcus Tan (87654329):` followed by `2. x² + π ≈ 3.14 (MATH) - due 2026-12-03 - score Not recorded - status ASSIGNED`.
 
 1. Editing homework
 
    1. Prerequisites: Start with the sample students.
 
-   1. Test case: `hw e 2 1 due/2026-11-05`<br>
-      Expected: The result shows the edited homework. Run `hw ls 2 all`: Priya Nair's homework is listed in the order 2, 1, 3, as homework 1 is now due after homework 2, even after the sample due dates have passed.
+   1. Test case: `hw e 2 1 due/2026-12-05`<br>
+      Expected: The result shows the edited homework. Run `hw ls 2 all`: Priya Nair's homework is listed in the order 2, 3, 1, as homework 1 is now due last, even after the sample due dates have passed.
 
    1. Test case: `hw e 1 1 t/Quadratic equations worksheet`<br>
       Expected: `No changes made; the supplied values are identical to the existing homework details.`
 
-   1. Test case: `hw e 1 2 t/quadratic EQUATIONS worksheet s/MATH due/2026-10-23`<br>
+   1. Test case: `hw e 1 2 t/quadratic EQUATIONS worksheet s/MATH due/2026-11-03`<br>
       Expected: `This edit would make the homework a duplicate of an existing homework record.`
 
-   1. Other incorrect edit commands to try: `hw e 1 2` (no field), `hw e 1 1 t/A title/B`, `hw e 6 1 s/PHYSICS` (subject not taken), `hw e 1 1 score/5/10`<br>
+   1. Other incorrect edit commands to try: `hw e 1 2` (no field, `Specify at least one field to edit: title/ (or t/), s/ or due/.`), `hw e 1 1 t/A title/B`, `hw e 6 1 s/PHYSICS` (subject not taken), `hw e 1 1 score/5/10`<br>
       Expected: An error message each time; `hw ls 1 all` and `hw ls 2` are unchanged.
 
 1. Recording homework marks
@@ -1404,16 +1410,16 @@ testers are expected to do more *exploratory* testing.
    1. Prerequisites: Start with the sample students.
 
    1. Test case: `hw m 1 2 score/5/10`, then `hw ls 1 all`<br>
-      Expected: The result shows `Score: 5/10`, and the list shows `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score 5/10 - status ASSIGNED`. Restart the app: `hw ls 1 all` still shows the score.
+      Expected: The result shows `Score: 5/10`, and the list shows `2. Kinematics practice set (PHYSICS) - due 2026-11-11 - score 5/10 - status ASSIGNED`. Restart the app: `hw ls 1 all` still shows the score.
 
    1. Test case: `hw m 1 2 score/5/10` again<br>
       Expected: `No changes made; the homework already has this score.`
 
    1. Test case: `hw m 1 2 score/17`, then `hw ls 1 all`<br>
-      Expected: `Recorded homework marks:` followed by `Ethan Lim; Title: Kinematics practice set; Subject: PHYSICS; Due: 2026-10-28; Score: 17`, and the list shows `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score 17 - status ASSIGNED`. Running `hw m 1 2 score/17` again gives `No changes made; the homework already has this score.`, while `hw m 1 2 score/17/20` records `Score: 17/20`.
+      Expected: `Recorded homework marks:` followed by `Ethan Lim (91234567); Title: Kinematics practice set; Subject: PHYSICS; Due: 2026-11-11; Score: 17`, and the list shows `2. Kinematics practice set (PHYSICS) - due 2026-11-11 - score 17 - status ASSIGNED`. Running `hw m 1 2 score/17` again gives `No changes made; the homework already has this score.`, while `hw m 1 2 score/17/20` records `Score: 17/20`.
 
    1. Test case: `hw m 1 2 score/`, then `hw ls 1 all`<br>
-      Expected: `Cleared homework marks:` followed by `Ethan Lim; Title: Kinematics practice set; Subject: PHYSICS; Due: 2026-10-28; Score: Not recorded`, and the list shows `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score Not recorded - status ASSIGNED`. Restart the app: `hw ls 1 all` still shows `score Not recorded`.
+      Expected: `Cleared homework marks:` followed by `Ethan Lim (91234567); Title: Kinematics practice set; Subject: PHYSICS; Due: 2026-11-11; Score: Not recorded`, and the list shows `2. Kinematics practice set (PHYSICS) - due 2026-11-11 - score Not recorded - status ASSIGNED`. Restart the app: `hw ls 1 all` still shows `score Not recorded`.
 
    1. Test case: `hw m 1 2 score/` again, and `hw m 1 1 score/   ` (only spaces)<br>
       Expected: `No changes made; the homework has no recorded marks.` each time.
@@ -1422,7 +1428,7 @@ testers are expected to do more *exploratory* testing.
       Expected: `Marks must not have leading zeroes. Enter whole numbers such as 5/10, not 05/10.` each time, and the score is unchanged.
 
    1. Other incorrect commands to try: `hw m 1 2 score/11/10`, `hw m 1 2 score/5/0`, `hw m 1 2 score/5.5/10`, `hw m 1 2 score/17.5`, `hw m 1 2 score/2147483648/10`, `hw m 1 2 score/2147483648`, `hw m 1 2`<br>
-      Expected: An error message each time, and the score is unchanged.
+      Expected: The score is unchanged, and the error names the rule that failed: `Marks obtained (11) must not be more than the total marks (10).`, `Total marks must be at least 1.`, `Score must be whole marks such as 17, or marks out of a total such as 5/10, with no signs, decimals, spaces or other characters.` for `5.5/10` and `17.5`, `Marks are too large. Enter whole numbers no greater than 2147483647.` for the two large numbers, and `Missing required prefix(es): score/` followed by the usage for `hw m 1 2`.
 
 1. Saving fails
 
@@ -1437,26 +1443,26 @@ testers are expected to do more *exploratory* testing.
 
    1. Prerequisites: Start with the sample students.
 
-   1. Test case: `hw add 1 t/"Speed in km/h" s/PHYSICS due/2026-11-01`<br>
-      Expected: `New homework added:` followed by `Ethan Lim; Title: Speed in km/h; Subject: PHYSICS; Due: 2026-11-01`.
+   1. Test case: `hw add 1 t/"Speed in km/h" s/PHYSICS due/2026-12-01`<br>
+      Expected: `New homework added for Ethan Lim (91234567):` followed by `3. Speed in km/h (PHYSICS) - due 2026-12-01 - score Not recorded - status ASSIGNED`.
 
-   1. Test case: `hw add 1 t/"Read "Hamlet" km/h" s/MATH due/2026-11-02`<br>
+   1. Test case: `hw add 1 t/"Read "Hamlet" km/h" s/MATH due/2026-12-02`<br>
       Expected: The title is `Read "Hamlet" km/h`: the outer quotes are removed and the inner ones kept.
 
-   1. Test case: `hw add 1 t/"Speed" extra s/PHYSICS due/2026-11-03`<br>
+   1. Test case: `hw add 1 t/"Speed" extra s/PHYSICS due/2026-12-03`<br>
       Expected: The title is `"Speed" extra`, as typed, because the value does not end with a quote.
 
-   1. Test case: `hw add 1 t/"Speed in km/h s/PHYSICS due/2026-11-04`, then `hw add 1 t/Speed in km/h s/PHYSICS due/2026-11-04`<br>
+   1. Test case: `hw add 1 t/"Speed in km/h s/PHYSICS due/2026-12-04`, then `hw add 1 t/Speed in km/h s/PHYSICS due/2026-12-04`<br>
       Expected: `km/ is not a prefix of this command. To use it inside a value, wrap the whole value in straight double quotes, e.g. t/"Speed in km/h".` followed by the `hw add` usage each time, and no homework is added.
 
-   1. Test case: `hw add 1 t/“Speed in km/h” s/PHYSICS due/2026-11-04` (curly quotes)<br>
+   1. Test case: `hw add 1 t/“Speed in km/h” s/PHYSICS due/2026-12-04` (curly quotes)<br>
       Expected: The same error with `Use straight quotes ("), not curly quotes (“ ”).` on its own line before the usage, and no homework is added.
 
-   1. Test case: `hw add 1 t/"  Speed in km/h  " s/PHYSICS due/2026-11-05`<br>
+   1. Test case: `hw add 1 t/"  Speed in km/h  " s/PHYSICS due/2026-12-05`<br>
       Expected: The title is `Speed in km/h`: the spaces at both ends inside the quotes are removed.
 
-   1. Test case: `hw add 1 t/"" s/PHYSICS due/2026-11-06`, then `hw add 1 t/" " s/PHYSICS due/2026-11-06`<br>
-      Expected: The same title error as for `hw add 1 t/ s/PHYSICS due/2026-11-06`, and no homework is added.
+   1. Test case: `hw add 1 t/"" s/PHYSICS due/2026-12-06`, then `hw add 1 t/" " s/PHYSICS due/2026-12-06`<br>
+      Expected: The same title error as for `hw add 1 t/ s/PHYSICS due/2026-12-06`, and no homework is added.
 
    1. Test case: `hw up due/" 3 "`<br>
       Expected: The same result as `hw up due/3`.
@@ -1474,12 +1480,12 @@ testers are expected to do more *exploratory* testing.
    1. Prerequisites: The 1st student has at least 2 homework records. Check with `homework list 1 all`, which also lists homework due before today.
 
    1. Test case: `homework delete 1 2`<br>
-      Expected: The 2nd homework of the 1st student is deleted. The result display shows `Deleted homework:` and the deleted homework in the `homework list` layout, e.g. `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score Not recorded - status ASSIGNED`, followed by the student's upcoming homework with its new numbers (or `No upcoming homework found for Ethan Lim (1 record due before today not shown; use homework list 1 all to see it).`). The student card shows the new number of upcoming homework. For example, with the sample students on 2026-10-27, the result is:
+      Expected: The 2nd homework of the 1st student is deleted. The result display shows `Deleted homework:` and the deleted homework in the `homework list` layout, e.g. `2. Kinematics practice set (PHYSICS) - due 2026-11-11 - score Not recorded - status ASSIGNED`, followed by the student's upcoming homework with its new numbers (or `No upcoming homework found for Ethan Lim (91234567) (1 record due before today not shown; use homework list 1 all to see it).`). The student card shows the new number of upcoming homework. For example, with the sample students on 2026-11-06, the result is:
 
       ```
       Deleted homework:
-      2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score Not recorded - status ASSIGNED
-      No upcoming homework found for Ethan Lim (1 record due before today not shown; use homework list 1 all to see it).
+      2. Kinematics practice set (PHYSICS) - due 2026-11-11 - score Not recorded - status ASSIGNED
+      No upcoming homework found for Ethan Lim (91234567) (1 record due before today not shown; use homework list 1 all to see it).
       ```
 
    1. Test case: `homework delete 1 0`<br>

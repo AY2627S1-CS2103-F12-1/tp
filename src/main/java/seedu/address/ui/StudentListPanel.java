@@ -214,9 +214,7 @@ public class StudentListPanel extends UiPart<Region> {
         studentListView.refresh();
         getRoot().applyCss();
         getRoot().layout();
-        if (renderingFailure != null) {
-            throw renderingFailure;
-        }
+        throwIfRenderingFailed();
     }
 
     /**
@@ -246,9 +244,23 @@ public class StudentListPanel extends UiPart<Region> {
                 scrollBar.setValue(position);
             }
         }
+        throwIfRenderingFailed();
+    }
+
+    /**
+     * Propagates the first cell callback failure at a rendering or restoration boundary.
+     */
+    private void throwIfRenderingFailed() {
         if (renderingFailure != null) {
             throw renderingFailure;
         }
+    }
+
+    /**
+     * Returns whether a cell has a student and a valid display index to render.
+     */
+    static boolean canRenderStudent(boolean isEmpty, Student student, int index) {
+        return !isEmpty && student != null && index >= 0;
     }
 
     /**
@@ -317,8 +329,8 @@ public class StudentListPanel extends UiPart<Region> {
         private void updateCard() {
             setText(null);
             try {
-                setGraphic(isEmpty() || getItem() == null || getIndex() < 0
-                        ? null : renderCard(getItem(), getIndex()));
+                setGraphic(canRenderStudent(isEmpty(), getItem(), getIndex())
+                        ? renderCard(getItem(), getIndex()) : null);
             } catch (RuntimeException exception) {
                 setGraphic(null);
                 if (isSorting) {

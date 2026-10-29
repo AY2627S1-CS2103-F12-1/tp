@@ -109,6 +109,32 @@ public class StudentSortRenderingTest {
         });
     }
 
+    @Test
+    public void restoreViewState_newScrollbar_preservesItsUnsavedPosition() throws Exception {
+        runOnFxThread(() -> {
+            ObservableList<Student> students = FXCollections.observableArrayList();
+            for (int i = 0; i < 20; i++) {
+                students.add(new StudentBuilder().withName("Student " + (char) ('A' + i)).build());
+            }
+            StudentListPanel panel = new StudentListPanel(students);
+            StudentListPanel.ViewState state = panel.captureViewState();
+            Region root = panel.getRoot();
+            new Scene(root, 500, 250);
+            root.applyCss();
+            root.layout();
+            ScrollBar scrollBar = (ScrollBar) getListView(root).lookupAll(".scroll-bar").stream()
+                    .filter(node -> ((ScrollBar) node).getOrientation() == Orientation.VERTICAL).findFirst()
+                    .orElseThrow();
+            scrollBar.setValue(0.4);
+            double position = scrollBar.getValue();
+
+            panel.restoreViewState(state);
+
+            assertEquals(position, scrollBar.getValue(), 1e-9);
+            assertEquals(-1, getListView(root).getSelectionModel().getSelectedIndex());
+        });
+    }
+
     @SuppressWarnings("unchecked")
     private static ListView<Student> getListView(Parent root) {
         return (ListView<Student>) root.lookup("#studentListView");

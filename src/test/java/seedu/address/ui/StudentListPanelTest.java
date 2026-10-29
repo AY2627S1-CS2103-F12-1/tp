@@ -1,6 +1,7 @@
 package seedu.address.ui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -11,6 +12,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -24,6 +26,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.layout.Region;
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.model.student.Student;
 import seedu.address.testutil.FxTestUtil;
@@ -82,6 +85,76 @@ public class StudentListPanelTest {
             ListCell<Student> cell = createCell(panel);
 
             assertSame(failure, assertThrows(AssertionError.class, () -> cell.updateIndex(0)));
+        });
+    }
+
+    @Test
+    public void canRenderStudent_checksEachCellPrecondition() {
+        Student student = new StudentBuilder().build();
+
+        assertFalse(StudentListPanel.canRenderStudent(true, student, 0));
+        assertFalse(StudentListPanel.canRenderStudent(false, null, 0));
+        assertFalse(StudentListPanel.canRenderStudent(false, student, -1));
+        assertTrue(StudentListPanel.canRenderStudent(false, student, 0));
+    }
+
+    @Test
+    public void renderCard_equalReplacement_rebuildsCardByIdentity() throws Exception {
+        runOnFxThread(() -> {
+            Student original = new StudentBuilder().build();
+            Student replacement = new StudentBuilder().build();
+            ObservableList<Student> students = FXCollections.observableArrayList(original);
+            List<Student> renderedStudents = new ArrayList<>();
+            StudentListPanel panel = new StudentListPanel(students, (student, index) -> {
+                renderedStudents.add(student);
+                return new Region();
+            });
+            panel.beginSort();
+            ListCell<Student> cell = createCell(panel);
+            cell.updateIndex(0);
+            Region firstCard = (Region) cell.getGraphic();
+            cell.updateIndex(0);
+            assertSame(firstCard, cell.getGraphic());
+            assertEquals(1, renderedStudents.size());
+
+            students.set(0, replacement);
+            cell.updateIndex(0);
+
+            assertEquals(original, replacement);
+            assertEquals(2, renderedStudents.size());
+            assertSame(replacement, renderedStudents.getLast());
+            panel.endSort();
+        });
+    }
+
+    @Test
+    public void rendering_multipleCellFailures_preservesFirstUntilSortEnds() throws Exception {
+        runOnFxThread(() -> {
+            ObservableList<Student> students = FXCollections.observableArrayList(
+                    new StudentBuilder().withName("First Student").build(),
+                    new StudentBuilder().withName("Second Student").build());
+            RuntimeException firstFailure = new IllegalStateException("First failure");
+            RuntimeException secondFailure = new IllegalStateException("Second failure");
+            AtomicBoolean shouldFail = new AtomicBoolean(true);
+            StudentListPanel panel = new StudentListPanel(students, (student, index) -> {
+                if (shouldFail.get()) {
+                    throw index == 1 ? firstFailure : secondFailure;
+                }
+                return new Region();
+            });
+            StudentListPanel.ViewState state = panel.beginSort();
+            ListCell<Student> cell = createCell(panel);
+            cell.updateIndex(0);
+            cell.updateIndex(1);
+            shouldFail.set(false);
+
+            assertSame(firstFailure, assertThrows(RuntimeException.class, panel::verifySortRendering));
+            assertSame(firstFailure, assertThrows(RuntimeException.class, () -> panel.restoreViewState(state)));
+
+            panel.endSort();
+            panel.verifySortRendering();
+            panel.restoreViewState(state);
+            assertEquals(2, students.size());
         });
     }
 

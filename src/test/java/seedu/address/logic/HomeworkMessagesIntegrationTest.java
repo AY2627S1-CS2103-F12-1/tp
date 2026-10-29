@@ -112,6 +112,15 @@ public class HomeworkMessagesIntegrationTest {
     }
 
     @Test
+    public void execute_invalidTitle_namesLengthOrCharacter() throws Exception {
+        assertParseFailure("hw add 1 t/Love \u2764\uFE0F s/MATH due/2026-11-20", "Homework title has an unsupported "
+                + "character: U+FE0F (VARIATION SELECTOR-16). Titles may contain only letters, numbers, punctuation, "
+                + "symbols and spaces.");
+        assertParseFailure("hw add 1 t/" + "a".repeat(101) + " s/MATH due/2026-11-20",
+                "Homework title must be at most 100 characters, but has 101.");
+    }
+
+    @Test
     public void execute_wrongCasePrefixInStudentName_keptInName() throws Exception {
         logic.execute("add n/Ravi S/O Kumar l/S3 s/MATH p/91234568 gn/Kumar Devi gp/98765433");
 

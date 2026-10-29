@@ -260,7 +260,8 @@ public class HomeworkEditCommandParserTest {
         assertParseFailure(parser, "1 2 title/   s/MATH", Title.MESSAGE_CONSTRAINTS);
 
         // 101 characters
-        assertParseFailure(parser, "1 2 t/" + "a".repeat(101), Title.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 2 t/" + "a".repeat(101),
+                "Homework title must be at most 100 characters, but has 101.");
     }
 
     @Test

@@ -38,6 +38,8 @@ public class HomeworkAddCommandParserTest {
     private static final String VALID_FIELDS = " title/Complete algebra worksheet s/MATH due/2026-10-15";
     private static final String USAGE_LINE = "\nUsage: " + HomeworkAddCommand.MESSAGE_USAGE;
     private static final String EXPECTED_WORDS = "STUDENT_INDEX before the first prefix";
+    private static final String MESSAGE_ZERO_WIDTH_SPACE = "Homework title has an unsupported character: U+200B "
+            + "(ZERO WIDTH SPACE). Titles may contain only letters, numbers, punctuation, symbols and spaces.";
     private static final String MESSAGE_MISSING_PREFIXES = "Missing required prefix(es): %s\n"
             + "Usage: homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD";
 
@@ -359,16 +361,16 @@ public class HomeworkAddCommandParserTest {
     @Test
     public void parse_zeroWidthSpaceTitle_failure() {
         // a zero-width space (U+200B) followed by an ordinary space
-        assertParseFailure(parser, "3 t/\u200B s/MATH due/2026-12-01", Title.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "3 t/\u200B s/MATH due/2026-12-01", MESSAGE_ZERO_WIDTH_SPACE);
 
         // a zero-width space inside the title
-        assertParseFailure(parser, "3 t/Alge\u200Bbra drill s/MATH due/2026-12-02", Title.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "3 t/Alge\u200Bbra drill s/MATH due/2026-12-02", MESSAGE_ZERO_WIDTH_SPACE);
     }
 
     @Test
     public void parse_titleTooLong_failure() {
         assertParseFailure(parser, "1 title/" + "a".repeat(101) + " s/MATH due/2026-10-15",
-                Title.MESSAGE_CONSTRAINTS);
+                "Homework title must be at most 100 characters, but has 101.");
     }
 
     @Test

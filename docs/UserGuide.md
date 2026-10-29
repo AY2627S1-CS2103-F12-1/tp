@@ -33,6 +33,10 @@ TutorFlow is a **desktop application for private tutors to manage their students
 
    * `search Tan` : Shows students whose name, phone, guardian name or guardian phone contains `Tan`.
 
+   * `filter d/MONDAY` : Shows students with a regular lesson on Monday.
+
+   * `sort by/level o/desc` : Orders the currently displayed students by academic level, from J2 down to S1.
+
    * `list` : Lists all students.
 
    * `homework list 1` : Lists the upcoming homework of the 1st student shown in the student list.
@@ -127,6 +131,11 @@ The **At a glance** panel on the right shows every student's regular lessons in 
 
 The headings show the total number of lessons and outstanding homework tasks. Empty sections show `No regular lessons` or `No outstanding homework`. The panel updates when roster data changes and always covers all students, even while `search`, `filter` or `sort` changes the displayed student cards. Marking homework `COMPLETED` removes it from the sidebar and overdue count; recording a score alone does not. Date-sensitive entries and card counts refresh at midnight, when the window becomes active again, and before a command is run.
 
+Each student card shows **Upcoming homework**, counting all of that student's homework due today or later,
+including completed records, and **Overdue homework**, counting only assigned records due before today.
+Recording or clearing a score does not change either count. The upcoming count can therefore differ from the
+number of that student's outstanding tasks in the sidebar.
+
 Drag the dividers to resize the command box, result display, student list and sidebar. You can scroll over a section's heading or padding as well as its entries while keeping the cursor in the command box.
 
 ### Viewing help: `help`
@@ -147,12 +156,13 @@ Adds a student to the end of the student list.
 Format: `add n/STUDENT_NAME l/ACADEMIC_LEVEL s/SUBJECTS p/STUDENT_PHONE gn/GUARDIAN_NAME gp/GUARDIAN_PHONE`
 
 * All six fields are required, and each prefix must appear exactly once.
-* `STUDENT_NAME` and `GUARDIAN_NAME` must be 1 to 70 characters long and may contain letters, numbers, spaces, apostrophes, hyphens, periods, parentheses and `/`. Extra spaces are removed, and capitalization is kept.
+* `STUDENT_NAME` and `GUARDIAN_NAME` must be 1 to 70 characters long and may contain letters, numbers, spaces, apostrophes, hyphens, periods, parentheses and `/`. Letters and numbers from non-English languages are accepted. Spaces at both ends are removed, and repeated whitespace between words becomes one space before the length is checked. Capitalization is kept.
 * A name may contain words such as `s/o` and `d/o`, but not this command's other prefixes (such as `p/` or `gn/`) after a space, unless the whole name is wrapped in double quotes (see the [notes about the command format](#features)).
 * `ACADEMIC_LEVEL` must be one of `S1`, `S2`, `S3`, `S4`, `S5`, `J1` or `J2` (in any case).
 * `SUBJECTS` is one or more of `MATH`, `PHYSICS` and `CHEMISTRY` (in any case), separated by commas, with no subject repeated. The student card shows the subjects in the order you type them.
-* `STUDENT_PHONE` and `GUARDIAN_PHONE` must each be an 8-digit Singapore number starting with 6, 8 or 9, or an international number written as `+` followed by 8 to 15 digits, without spaces.
-* A student cannot be added if a student with the same name (ignoring case) and the same student phone number is already in the list.
+* `STUDENT_PHONE` and `GUARDIAN_PHONE` must each be an 8-digit Singapore number starting with 6, 8 or 9, or an international number written as `+` followed by 8 to 15 digits, without spaces within the number. Spaces at both ends are removed.
+* A student cannot be added if a student with the same name (ignoring case and extra whitespace) and the same student phone number is already in the roster, including students hidden by a search or filter. A local number and the same number prefixed by `+65` count as the same phone: `91234567` and `+6591234567` are equivalent. Academic details and guardian contacts do not affect this duplicate check.
+* A successful addition shows the full roster in stored order, clearing any earlier search, filter or sort.
 
 Examples:
 * `add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777`
@@ -179,7 +189,8 @@ Format: `edit INDEX [n/STUDENT_NAME] [l/ACADEMIC_LEVEL] [s/SUBJECTS] [p/STUDENT_
 * `INDEX` is a positive whole number without leading zeroes, as shown beside the student. At least one field prefix
   must be supplied; fields you omit stay unchanged. Prefixes may be in any order, but must not be repeated.
 * Edited values follow the same rules as in `add`. The new name and student phone must not duplicate another
-  student's name and phone; changes to other fields do not affect identity.
+  student's name and phone, including the local/`+65` equivalence described above. Changes to other fields do not
+  affect identity.
 * A subject cannot be removed if any of this student's homework or lessons uses it. You can add subjects while
   retaining all used subjects.
 * If all supplied values are identical to the existing details, or the index is invalid, nothing is changed. If
@@ -214,7 +225,7 @@ Shows students matching any combination of academic level, tuition subject, and 
 
 Format: `filter [l/LEVEL] [s/SUBJECT] [d/DAY]`
 
-* Supply at least one filter. Each prefix may appear only once, in either order.
+* Supply at least one filter. Each prefix may appear only once, in any order.
 * `LEVEL` must be `S1`, `S2`, `S3`, `S4`, `S5`, `J1` or `J2`.
 * `SUBJECT` must be one of `MATH`, `PHYSICS` or `CHEMISTRY`. A student taking several subjects matches if one
   of them is the selected subject. Supply only one subject to the filter command.
@@ -224,8 +235,9 @@ Format: `filter [l/LEVEL] [s/SUBJECT] [d/DAY]`
 * Values ignore letter case and surrounding whitespace, so `s/Math` matches `MATH`.
 * A student must match **every supplied criterion**. Subject checks registration independently of the lesson
   that matches the day: a student taking MATH with a PHYSICS lesson on Monday matches `s/MATH d/MONDAY`.
-  Matches retain roster order and receive displayed indexes
-  starting at 1. Subsequent student-index commands use these displayed indexes.
+  Matches return to stored roster order, discarding an earlier sort, and receive displayed indexes starting at 1.
+  Subsequent student-index commands use these displayed indexes. A successful filter clears the selection and scrolls
+  the student list to the top.
 * Each filter examines the full roster and replaces any previous search or filter. To show all students again,
   run `list` or `ls`. Adding a student or running `homework upcoming` also restores the full roster.
 * Filtering changes only the displayed students. It does not change records or write to the data file.
@@ -237,7 +249,7 @@ of displayed students. Long descriptions wrap to fit the panel.
 
 A new filter replaces the description. `list`, `ls`, a successful student addition, or `homework upcoming`
 removes it by restoring the full roster. A new search also removes the filter description because it
-replaces that filter. Editing or deleting students retains the criteria; `clear` retains them on an empty roster.
+replaces that filter. The criteria stay active after sorting, editing or deleting students; `clear` retains them on an empty roster.
 Invalid commands leave the description unchanged. If saving fails, the previous filter and description are restored.
 Lesson additions, edits and deletions re-evaluate day matches immediately while retaining the selected criteria.
 
@@ -276,6 +288,10 @@ Other invalid commands report:
 | Comma-separated subjects | `Filter accepts only one subject. Use s/SUBJECT.` |
 | Empty day | `Day must be a non-empty value` |
 | Unsupported day or multiple days | `Day must be one of: MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY.` |
+
+After checking the prefixes, TutorFlow checks values in the order you write them and reports the first invalid
+value. For example, `filter s/ l/` reports `Subject must be a non-empty value`, while `filter d/ s/` reports
+`Day must be a non-empty value`.
 
 Invalid commands leave the displayed students, selection, scroll position and data file unchanged.
 If an internal problem prevents rendering, TutorFlow shows
@@ -318,7 +334,7 @@ Sorting does not edit student records, change the data file or trigger a save.
 
 Sorting is applied once. If a student's academic level, subjects or regular meetings change, the student keeps
 their displayed position while they still match the active search or filter. Students who no longer match disappear
-from the view. Run `sort` again to order the updated values. For example, after `sort by/day`, deleting the first
+from the view. Run `sort` again to order the updated values. For example, after `list` and then `sort by/day`, deleting the first
 student's only meeting leaves them first. Running `sort by/day` again moves them behind students with meetings.
 
 Invalid input leaves the current roster, order, selection and scroll position unchanged:
@@ -332,8 +348,10 @@ Repeated prefix | `Each sort parameter may only be specified once`
 Empty or invalid key | `Sort key must be one of: level, subject, day.`
 Empty or invalid order | `Sort order must be either asc or desc.`
 
-If sorting or rendering fails unexpectedly, TutorFlow restores the previous displayed view and shows
-`TutorFlow could not sort the students due to an internal error.` Technical details are recorded in the logs.
+If sorting or rendering fails unexpectedly, TutorFlow attempts to restore the previous displayed order,
+selection and scroll position, and shows `TutorFlow could not sort the students due to an internal error.`
+Student records and the saved roster remain unchanged. If the previous view cannot be fully restored, try `list`
+to reset the view to the full roster in stored order. Technical details of the failure and recovery are recorded in the logs.
 
 ### Deleting a student: `delete`
 
@@ -726,7 +744,7 @@ Format: `exit`
 
 TutorFlow saves your students, homework and regular lessons automatically after every command that changes them. You do not need to save manually.
 
-* Commands that do not change the data, such as `filter`, `search`, `list`, `homework list`, `homework upcoming`, `lesson list`, `help` and `exit`, do not write to the data file.
+* Commands that do not change the data, such as `filter`, `sort`, `search`, `list`, `homework list`, `homework upcoming`, `lesson list`, `help` and `exit`, do not write to the data file.
 * If TutorFlow cannot save the data, the command is cancelled: its changes are undone and the error names the data file and the likely cause, e.g. `Could not save data/tutorflow.json: the data folder is read-only. Nothing was changed.` The homework and lesson commands, `edit` and `delete` say which data was not changed, e.g. `The homework could not be added because TutorFlow could not save data/tutorflow.json: the data folder is read-only. No homework data was changed.`
 * The causes TutorFlow recognizes are: `it is a folder, not a file` (a folder named `tutorflow.json` was put in the `data` folder while TutorFlow is open; if the folder is already there when TutorFlow starts, TutorFlow cannot load the data and shows an error instead), `the file is read-only`, `the file cannot be read (no permission)` (the data file may be written but not read), `the data folder is read-only`, `the home folder is read-only` (the folder containing the JAR, when it has no `data` folder yet), `the folder FOLDER is read-only` (`data/tutorflow.json` is a symbolic link to a file in the read-only folder `FOLDER`, or the home folder was moved or deleted while TutorFlow is open and `FOLDER`, the folder that held it, is read-only; `FOLDER` is shown from the home folder if it is inside it, e.g. `the folder synced is read-only`, and as its full path otherwise), `the folder FOLDER does not exist` (`data/tutorflow.json` is a symbolic link to a file in the folder `FOLDER`, which does not exist), `data links to a folder that does not exist` (the `data` folder is a symbolic link to a folder that was moved or deleted), `a file named data is in the way of the data folder` (a file, not a folder, named `data` is next to the JAR), and `the lock file data/tutorflow.json.lock is read-only` or `the lock file data/tutorflow.json.lock is a folder, not a file` (see [Editing the data file](#editing-the-data-file) for the lock file). Fix the cause, e.g. make the file or folder writable again, and repeat the command. For any other problem, the error shows the system's description of it. On Windows, the file is shown as `data\tutorflow.json`.
 * If another copy of TutorFlow or an editor changes the data file, a stale session refuses to overwrite it. Restart TutorFlow to load the latest data before making more changes. If another copy is saving at the same moment, wait for it to finish and try again.
@@ -776,7 +794,7 @@ The data file holds a list of `students`. Each student can hold `homeworks` and 
 
 When editing the file, follow these rules:
 
-* Students are shown in the app in the order they appear in the file.
+* Students initially appear in file order. Search and filter show matching students in that order; `sort` temporarily reorders the displayed students without changing the file. Use `list` to return to the full roster in file order.
 * Each student needs `name`, `academicLevel`, `subjects`, `phone`, `guardianName` and `guardianPhone`, with the same rules as in [`add`](#adding-a-student-add). `subjects` is a list with one subject per entry. No two students may have the same name (ignoring case) and the same `phone`; a local number and the same number with `+65` count as the same phone.
 * `homeworks` may be left out, or written as `[ ]`, for a student with no homework.
 * `lessons` may be left out, or written as `[ ]`, for a student with no regular lessons. Each lesson has `subject`, `dayOfWeek`, `startTime` and `endTime`, for example `{"subject":"MATH","dayOfWeek":"MONDAY","startTime":"16:00","endTime":"18:00"}`. The same subject, weekday, time and overlap rules as `lesson add` apply. Older files without `lessons` continue to work.

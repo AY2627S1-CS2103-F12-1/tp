@@ -66,7 +66,7 @@ TutorFlow is a **desktop application for private tutors to manage their students
 * Items separated by `|` are alternatives; type any one of them.<br>
   For example, `homework|hw list|ls STUDENT_INDEX` can be used as `homework list 1` or as `hw ls 1`.
 
-* Parameters with a prefix can be in any order. Indices such as `STUDENT_INDEX` and `HOMEWORK_INDEX` have no prefix and must come first, right after the command word.<br>
+* Parameters with a prefix can be in any order. Indices such as `STUDENT_INDEX` and `HOMEWORK_INDEX` have no prefix and must come first, right after the command word, or right after the subcommand in `homework` and `lesson` commands, e.g. `hw del 1 2`.<br>
   For example, if the command specifies `n/STUDENT_NAME p/STUDENT_PHONE`, `p/STUDENT_PHONE n/STUDENT_NAME` is also acceptable.
 
 * A prefix counts only when it comes right after a space. Text glued to the end of a word stays in the value, even if it looks like a prefix.<br>

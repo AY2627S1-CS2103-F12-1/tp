@@ -511,7 +511,7 @@ recovery path. See the [logging guide](Logging.md) for diagnostic conventions.
 
 Homework is managed with eight subcommands of `homework` (short form `hw`): `add`, `list`, `upcoming`, `edit`, `marks`, `delete`, `filter` and `status`. This section covers what they share. `filter` and `status` are described in [Filtering homework](#filtering-homework) and [Updating homework completion](#updating-homework-completion).
 
-**Parsing.** `AddressBookParser` passes everything after `homework` or `hw` to `HomeworkCommandParser`. It reads the next word as the subcommand and passes the rest to that subcommand's parser: for `hw del 1 2`, `HomeworkDeleteCommandParser` gets `1 2`. A missing subcommand gives `HomeworkCommandParser#MESSAGE_MISSING_SUBCOMMAND`, and any other word gives `MESSAGE_UNKNOWN_SUBCOMMAND`, which names the word and lists the subcommands, e.g. `rm is not a homework subcommand. Use add, list|ls, upcoming|up, edit|e, marks|m, delete|del, filter or status.` A subcommand in capitals gets a hint to type it in lowercase instead. Command words are case-sensitive, so `HW` reaches the default branch of `AddressBookParser#parseCommand`; there, `HomeworkCommandParser#checkCommandWordCase` turns `Unknown command.` into `Command words are lowercase: type hw, not HW.` for `homework` or `hw` in any other case. Other unknown words, such as `LIST`, still give `Unknown command.` So `AddressBookParser` needs only one case for all homework commands, and a new subcommand only needs a new case in `HomeworkCommandParser`. The subcommand parsers split their arguments with `StrictArgumentTokenizer` (see [Splitting arguments at prefixes](#splitting-arguments-at-prefixes)), which rejects unknown and repeated prefixes. Parsers that need today's date get it from a `java.time.Clock` passed down from `AddressBookParser`, so tests can fix the date.
+**Parsing.** `AddressBookParser` passes everything after `homework` or `hw` to `HomeworkCommandParser`. It reads the next word as the subcommand and passes the rest to that subcommand's parser: for `hw del 1 2`, `HomeworkDeleteCommandParser` gets `1 2`. For every subcommand except `filter` and `status`, it first replaces each Unicode space separator (`\p{Zs}`, such as the no-break space U+00A0) in the rest with an ordinary space, so that text copied from a web page splits into words as typed; the subcommand must still be followed by an ordinary space. A missing subcommand gives `HomeworkCommandParser#MESSAGE_MISSING_SUBCOMMAND`, and any other word gives `MESSAGE_UNKNOWN_SUBCOMMAND`, which names the word and lists the subcommands, e.g. `rm is not a homework subcommand. Use add, list|ls, upcoming|up, edit|e, marks|m, delete|del, filter or status.` A subcommand in capitals gets a hint to type it in lowercase instead. Command words are case-sensitive, so `HW` reaches the default branch of `AddressBookParser#parseCommand`; there, `HomeworkCommandParser#checkCommandWordCase` turns `Unknown command.` into `Command words are lowercase: type hw, not HW.` for `homework` or `hw` in any other case. Other unknown words, such as `LIST`, still give `Unknown command.` So `AddressBookParser` needs only one case for all homework commands, and a new subcommand only needs a new case in `HomeworkCommandParser`. The subcommand parsers split their arguments with `StrictArgumentTokenizer` (see [Splitting arguments at prefixes](#splitting-arguments-at-prefixes)), which rejects unknown and repeated prefixes. Parsers that need today's date get it from a `java.time.Clock` passed down from `AddressBookParser`, so tests can fix the date.
 
 **How homework is stored.** Each `Student` keeps its own homework records in a list, in the order they were added. The class diagram below shows the fields of a `Homework` and the methods that commands use to change homework. `Title`, `DueDate` and `Score` are small classes that each check their own value, and `TuitionSubject` and `HomeworkStatus` are enums. A record has at most one score.
 
@@ -539,6 +539,8 @@ Homework is managed with eight subcommands of `homework` (short form `hw`): `add
 
 `homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD` adds a record to the end of the student's list, so it gets the next homework index. The activity diagram below shows its checks in order. `HomeworkAddCommandParser` checks the input, `HomeworkAddCommand` checks the student, the subject and duplicates, and `LogicManager` saves. If a check fails, the error is shown and nothing is changed.
 
+`HomeworkAddCommandParser#parseSubject`, which `homework edit` also uses, names a value that is not a subject (`MESSAGE_NOT_SUBJECT`, e.g. `BIOLOGY is not a subject. Subject must be one of: MATH, PHYSICS, CHEMISTRY.`) and says when the value is empty (`MESSAGE_SUBJECT_EMPTY`). If `s/` directly follows an unquoted title (it is in `TokenizedArguments#prefixesInText`) and the value has more than one word, the rest of a title such as `t/Read s/o notes` was probably read as the subject, so it adds the quote hint `If s/ is part of the title, put the whole title in straight double quotes, e.g. t/"Read s/o notes".` A one-word value such as `BIOLOGY` is more likely a mistyped subject, and gets no hint.
+
 <img src="images/HomeworkAddActivityDiagram.png" width="800" alt="The checks of homework add, in order" />
 
 Two records are the same (`Homework#isSameHomework`) if they have the same title ignoring case, the same subject and the same due date. Score and status do not count. For example, on 2026-11-06 with the sample students:
@@ -551,7 +553,7 @@ hw add 2 t/rates of REACTION s/CHEMISTRY due/2026-11-20    → This homework alr
 
 `HomeworkCommandUtil#requireSubjectTaken` and `HomeworkCommandUtil#requireNoSameHomework` make these checks for both `homework add` and `homework edit`. The errors name the student, and the subjects the student takes (e.g. `Priya Nair (82345671) does not take PHYSICS. They take MATH, CHEMISTRY.`) or the existing record with its homework index, so the tutor can see what to change without listing the homework first.
 
-**Title.** `Title` tidies the text before checking it. It converts the text to Unicode NFC, turns each run of whitespace into one space and trims both ends. NFC stores characters that look the same in one way: `é` can be typed as one character or as `e` plus an accent, and NFC makes both the same. So the duplicate check treats them as one title, and the title is saved in NFC. The title must then have 1 to 100 characters, each a letter, number, punctuation mark, symbol or space. The error names the rule that failed: `Title#MESSAGE_TOO_LONG` gives the length, and `Title#MESSAGE_UNSUPPORTED_CHARACTER` names the first unsupported character by its code and Unicode name, e.g. `U+FE0F (VARIATION SELECTOR-16)`, as an invisible character cannot be seen. An empty title, and an invalid title in the data file, get `Title#MESSAGE_CONSTRAINTS`.
+**Title.** `Title` tidies the text before checking it. It converts the text to Unicode NFC, turns each run of whitespace into one space and trims both ends. NFC stores characters that look the same in one way: `é` can be typed as one character or as `e` plus an accent, and NFC makes both the same. So the duplicate check treats them as one title, and the title is saved in NFC. The title must then have 1 to 100 characters, each a letter, number, punctuation mark, symbol or space. The error names the rule that failed: `Title#MESSAGE_TOO_LONG` gives the length, and `Title#MESSAGE_UNSUPPORTED_CHARACTER` names the first unsupported character by its code and Unicode name, e.g. `U+FE0F (VARIATION SELECTOR-16)`, as an invisible character cannot be seen. An empty title gets `Title#MESSAGE_EMPTY` (`The homework title is empty. Enter 1 to 100 characters.`). The data file gives the same messages, except that an empty title there gets `Title#MESSAGE_CONSTRAINTS` (see [Storage component](#storage-component)).
 
 This allowlist works like the one in `StudentName`. It rejects invisible characters such as the zero-width space wherever they are. So a title made only of them is rejected (Issue #139), and `Alge<zero-width space>bra drill` is rejected instead of being saved next to `Algebra drill` as a different title. As a result, emoji built with invisible joining characters (e.g. ❤️ and 👨‍👩‍👧) and letters that need a separate combining mark (e.g. many Tamil and Hindi letters) are rejected, as in student names. Single emoji such as 😀 are accepted. A data file with a title that breaks the rule does not load.
 
@@ -567,7 +569,7 @@ The year range is fixed (2000 to 2099) to catch typos such as `2206` or `0001`. 
 
 ### Listing a student's homework
 
-`homework list STUDENT_INDEX [all]` shows one student's homework. Without `all`, it shows only the records due today or later; with `all`, it also shows the records due before today. It sorts the records by due date, keeping records due on the same date in the order they were added, and shows each with its homework index. It only reads data, so nothing is saved.
+`homework list STUDENT_INDEX [all]` shows one student's homework. Without `all`, it shows only the records due today or later; with `all`, it also shows the records due before today. It sorts the records by due date, keeping records due on the same date in the order they were added, and shows each with its homework index. It only reads data, so nothing is saved. A second word other than `all` gives `HomeworkListCommandParser#MESSAGE_SECOND_WORD_NOT_ALL`, e.g. `The word after STUDENT_INDEX can only be all, but found alll.`, or `MESSAGE_ALL_NOT_LOWERCASE` for `all` in another case, each followed by the usage.
 
 Because the numbers are homework indices, not row numbers, they can start above 1 or have gaps. For example, on 2026-11-06 Priya Nair's first record is due before today, so `hw ls 2` shows these records:
 
@@ -1360,6 +1362,9 @@ testers are expected to do more *exploratory* testing.
    1. Test case: `hw ls 5 ALL`<br>
       Expected: `The word all is lowercase: type all, not ALL.`, followed by the usage `Usage: homework|hw list|ls STUDENT_INDEX [all]`.
 
+   1. Test case: `hw ls 5 alll`<br>
+      Expected: `The word after STUDENT_INDEX can only be all, but found alll.`, followed by the same usage.
+
 1. Listing upcoming homework of all students
 
    1. Prerequisites: In a disposable test folder, run `clear`, then `add n/Ethan Lim l/S3 s/MATH,PHYSICS p/91234567 gn/Grace Lim gp/98765432` and `add n/Marcus Tan l/S1 s/MATH p/87654329 gn/Tan Mei Ling gp/91827364`. This gives two students without sample homework. Run `hw add 2 t/Today drill s/MATH due/TODAY`, then `hw add 1 t/Today forces s/PHYSICS due/TODAY` and `hw add 1 t/Old worksheet s/MATH due/PAST`, replacing `TODAY` with today's full date and `PAST` with yesterday's full date in `YYYY-MM-DD` form.
@@ -1424,6 +1429,12 @@ testers are expected to do more *exploratory* testing.
 
    1. Test case: `hw add 1 t/Algebra drill S/MATH due/12-02`<br>
       Expected: `S/ is not a prefix of this command; prefixes are lowercase (s/). If S/ is part of the title, put the whole title in straight double quotes, e.g. t/"Pg 5 w/ answers".`, then the usage, and no homework is added.
+
+   1. Test case: `hw add 1 t/Algebra drill s/BIOLOGY due/12-02`, then `hw add 1 t/Algebra drill s/ due/12-02`, then `hw add 1 t/Read s/o notes due/12-02`<br>
+      Expected: `BIOLOGY is not a subject. Subject must be one of: MATH, PHYSICS, CHEMISTRY.`, then `The subject is empty. Subject must be one of: MATH, PHYSICS, CHEMISTRY.`, then `o notes is not a subject. Subject must be one of: MATH, PHYSICS, CHEMISTRY. If s/ is part of the title, put the whole title in straight double quotes, e.g. t/"Read s/o notes".`, and no homework is added.
+
+   1. Test case: `hw add 1 t/ s/MATH due/12-02`, then `hw add 1 t/"" s/MATH due/12-02`<br>
+      Expected: `The homework title is empty. Enter 1 to 100 characters.` each time, and no homework is added.
 
    1. Other incorrect commands to try: `hw add 1 extra t/A s/MATH due/12-02`, `hw add 2147483648 t/A s/MATH due/12-02`<br>
       Expected: `Expected STUDENT_INDEX before the first prefix, but found 2 words (1 extra).` followed by the usage, and `STUDENT_INDEX must be no greater than 2147483647.` No homework is added.
@@ -1560,6 +1571,9 @@ testers are expected to do more *exploratory* testing.
 
    1. Other incorrect delete commands to try: `homework delete`, `homework delete 1`, `homework delete 1 x` (where x is larger than the number of homework of the student)<br>
       Expected: Similar to previous.
+
+   1. Test case: Start again with the sample students and run `hw del 1 2` with a no-break space (U+00A0, e.g. pasted from a web page) instead of the space between `1` and `2`.<br>
+      Expected: The same result as `homework delete 1 2` above, as the no-break space is read as an ordinary space.
 
 ### Adding a regular lesson
 

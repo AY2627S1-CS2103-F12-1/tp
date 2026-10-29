@@ -10,6 +10,7 @@ import static seedu.address.testutil.TypicalRegularLessons.TUESDAY_PHYSICS;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 
@@ -25,6 +26,7 @@ import javafx.geometry.Orientation;
 import javafx.geometry.Point2D;
 import javafx.scene.Node;
 import javafx.scene.control.ListView;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
@@ -251,10 +253,14 @@ public class MainWindowTest {
                 new JsonUserPrefsStorage(temporaryFolder.resolve("userPrefs.json")));
         Logic logic = new LogicManager(model, storage);
 
-        runOnFxThread(() -> {
-            Stage stage = new Stage();
-            new MainWindow(stage, logic, Path.of("data", "tutorflow.json")).fillInnerParts();
-            try {
+        Stage[] stages = new Stage[1];
+        CompletableFuture<Void> layoutReady = new CompletableFuture<>();
+        Runnable signalLayout = () -> layoutReady.complete(null);
+        try {
+            runOnFxThread(() -> {
+                Stage stage = new Stage();
+                stages[0] = stage;
+                new MainWindow(stage, logic, Path.of("data", "tutorflow.json")).fillInnerParts();
                 stage.show();
                 Region root = (Region) stage.getScene().getRoot();
                 root.applyCss();
@@ -262,9 +268,23 @@ public class MainWindowTest {
                 TextField commandBox = (TextField) root.lookup("#commandTextField");
                 TextArea resultDisplay = (TextArea) root.lookup("#resultDisplay");
                 resultDisplay.setText("A command result with enough lines to scroll.\n".repeat(100));
-                root.layout();
-                commandBox.requestFocus();
                 commandBox.setText("homework ");
+
+                // TextArea's skin can defer its content size until a pulse, even after root.layout().
+                stage.getScene().addPostLayoutPulseListener(signalLayout);
+                Platform.requestNextPulse();
+            });
+            layoutReady.get(10, TimeUnit.SECONDS);
+            runOnFxThread(() -> {
+                Stage stage = stages[0];
+                Region root = (Region) stage.getScene().getRoot();
+                TextField commandBox = (TextField) root.lookup("#commandTextField");
+                TextArea resultDisplay = (TextArea) root.lookup("#resultDisplay");
+                ScrollPane resultScrollPane = (ScrollPane) resultDisplay.lookup(".scroll-pane");
+                assertTrue(resultScrollPane.getContent().getLayoutBounds().getHeight()
+                        > resultScrollPane.getViewportBounds().getHeight(),
+                        "result text must overflow before scrolling");
+                commandBox.requestFocus();
 
                 String[][] sections = {
                     {"studentListView", ".student-roster-title"},
@@ -300,10 +320,17 @@ public class MainWindowTest {
                     scroll(root.lookup(section[1]), -80, ScrollEvent.VerticalTextScrollUnits.LINES, -3);
                 }
                 assertSame(commandBox, stage.getScene().getFocusOwner());
-            } finally {
-                stage.close();
-            }
-        });
+            });
+        } finally {
+            runOnFxThread(() -> {
+                if (stages[0] != null) {
+                    if (stages[0].getScene() != null) {
+                        stages[0].getScene().removePostLayoutPulseListener(signalLayout);
+                    }
+                    stages[0].close();
+                }
+            });
+        }
     }
 
     @Test

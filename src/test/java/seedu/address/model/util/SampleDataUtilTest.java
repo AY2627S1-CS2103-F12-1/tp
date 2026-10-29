@@ -126,6 +126,19 @@ public class SampleDataUtilTest {
     }
 
     @Test
+    public void getSampleStudents_userGuideAddExample_showsDocumentedResult() throws Exception {
+        String expectedMessage = "New homework added for Ethan Lim (91234567):\n"
+                + "3. Complete algebra worksheet (MATH) - due 2026-10-15 - score Not recorded - status ASSIGNED\n"
+                + "Note: this homework is due before today, so homework list 1 shows it only with all.";
+        for (Clock clock : List.of(EXAMPLE_CLOCK, NEXT_DAY_CLOCK)) {
+            Model model = getModelWithStudents(List.of(sampleStudents));
+            assertEquals(expectedMessage, new AddressBookParser(clock)
+                    .parseCommand("homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15")
+                    .execute(model).getFeedbackToUser());
+        }
+    }
+
+    @Test
     public void getSampleStudents_userGuideEditExample_showsDocumentedResult() throws Exception {
         String expectedMessage = "Edited homework:\n"
                 + "Priya Nair (82345671); Title: Integration by parts exercise; Subject: MATH; Due: 2026-12-05\n"

@@ -353,7 +353,7 @@ Format: `homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|M
 * Scripts that use combining vowel signs, such as Tamil, Hindi or Thai, are not supported, the same as in student names: a title that contains such a sign, e.g. `தமிழ்`, is rejected with `Homework title has an unsupported character: U+0BBF (TAMIL VOWEL SIGN I). Titles may contain only letters, numbers, punctuation, symbols and spaces.`
 * A lowercase word directly followed by `/` in `TITLE` (such as `km/h` or `and/or`) is read as a prefix, so the command is rejected. Wrap the title in double quotes to keep such words, e.g. `t/"Speed in km/h"` (see the [notes about the command format](#features)).
 * `SUBJECT` must be `MATH`, `PHYSICS` or `CHEMISTRY` (in any case), and the student must take that subject.
-* The due date must be a real calendar date in `YYYY-MM-DD` format, with a year from 2000 to 2099. Past dates are accepted, so you can record homework that was assigned earlier.
+* The due date must be a real calendar date in `YYYY-MM-DD` format, with a year from 2000 to 2099. Past dates are accepted, so you can record homework that was assigned earlier. If the due date is before today, the result ends with a note that `homework list` shows the homework only with `all`.
 * The due date can also be given as `MM-DD`. The year is then this year, or next year if that date has already passed this year, and the result shows the year used.
 * For 29 February (`02-29` or `2-29`), the year is this year only if this year is a leap year and 29 February has not passed yet. Otherwise it is next year, and if next year is not a leap year, the date is rejected with a message that names the next leap year. For example, `due/2-29` gives `2028-02-29` throughout 2027, and throughout 2026 it is rejected with `29 February does not occur in the next 12 months. Enter the full date, e.g. 2028-02-29.`
 * In both formats, the month and day may have 1 or 2 digits, so `2026-2-5` means 5 February 2026 and `10-5` means 5 October. The year must have 4 digits.
@@ -364,9 +364,16 @@ Format: `homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|M
 * A student cannot have two homework records with the same title (ignoring case), subject and due date. The same homework can be added to different students. New homework starts as `ASSIGNED` with no recorded score.
 * An accented letter counts as the same whether it is typed as one character (`é`) or as a letter followed by a combining accent. Letters that only look alike, such as a Cyrillic `а` and a Latin `a`, are different.
 * Each student card shows `Upcoming homework: N`, the number of the student's homework records due today or later (including scored or completed homework), and `Overdue homework: N`, the number of `ASSIGNED` homework records due before today, regardless of score.
+* On success, the result names the student and shows the new homework as `homework list` shows it, with its number. Use this number as `HOMEWORK_INDEX` in `homework edit`, `homework marks` and `homework delete`. For a due date in `MM-DD` form, a line such as `Inferred year: 2026` follows.
 
 Examples:
-* `homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15`
+* `homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15` adds homework due before today. With the sample students, the result is:
+
+  ```text
+  New homework added for Ethan Lim (91234567):
+  3. Complete algebra worksheet (MATH) - due 2026-10-15 - score Not recorded - status ASSIGNED
+  Note: this homework is due before today, so homework list 1 shows it only with all.
+  ```
 * `hw add 1 t/Attempt mechanics questions 1-5 s/PHYSICS due/2026-10-20`
 * `homework add 2 due/10-18 s/chemistry title/Revise atomic structure` adds homework due on 18 October of this year, or of next year if 18 October has passed.
 * `hw add 1 t/Read chapter 3 s/physics due/10-5` adds homework due on 5 October of this year, or of next year if 5 October has passed.

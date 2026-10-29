@@ -605,7 +605,7 @@ The sequence diagram below shows how `hw up due/3` builds this result.
 
 After `hw del 2 1`, the map is homework 1 and the past paper is homework 2. If the tutor then types `hw del 2 2` to delete the map, reading from the old list, the past paper is deleted instead.
 
-To make this easy to notice, the result shows the deleted record with the number it had, its score and its status, in the `homework list` layout (`HomeworkListCommand#formatHomeworkLine`). It then shows the student's upcoming homework with the new numbers (`HomeworkListCommand#formatHomeworkList`), as `homework edit` does. `HomeworkDeleteCommand` gets today's date for that list from its parser's `Clock`. `homework add`, `homework edit` and `homework marks` show the changed record in their own layouts.
+To make this easy to notice, the result shows the deleted record with the number it had, its score and its status, in the `homework list` layout (`HomeworkListCommand#formatHomeworkLine`). It then shows the student's upcoming homework with the new numbers (`HomeworkListCommand#formatHomeworkList`), as `homework edit` does. `HomeworkDeleteCommand` gets today's date for that list from its parser's `Clock`. `homework add` shows the new record in the same layout, so the user sees its homework index, and `homework edit` and `homework marks` show the changed record in their own layouts.
 
 The object diagram below shows the same `hw del 2 1`. As `Student` is immutable, a new `Student` object replaces the old one, while the two remaining `Homework` objects are the same objects, now at positions 1 and 2.
 
@@ -958,7 +958,7 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
 1. Tutor requests to list students.
 2. TutorFlow displays the students with their displayed indices.
 3. Tutor requests to add homework to one displayed student, specifying the title, subject and due date.
-4. TutorFlow adds the homework to the end of the student's homework list and confirms its details.
+4. TutorFlow adds the homework to the end of the student's homework list and confirms its details and its homework index.
 5. Use case ends.
 
 **Extensions**
@@ -985,6 +985,9 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
   * 4a1. TutorFlow leaves the student's homework unchanged.
   * 4a2. TutorFlow informs the tutor that no homework data was changed, naming the data file and the likely cause.
   * 4a3. Use case ends.
+* 4b. The due date is before today.
+  * 4b1. TutorFlow also notes that the student's homework list shows this homework only when all of the student's homework is listed.
+  * 4b2. Use case ends.
 
 #### Use case: UC07 - Delete a homework record
 

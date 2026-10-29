@@ -214,6 +214,26 @@ public class HomeworkMessagesIntegrationTest {
     }
 
     @Test
+    public void execute_editDueBeforeToday_notesHowToListIt() throws Exception {
+        assertEquals("Edited homework:\n"
+                + "Tan Ah Kow Jr. (91234567); Title: Optics; Subject: PHYSICS; Due: 2026-10-28\n"
+                + "Listed 1 upcoming homework record for Tan Ah Kow Jr. (91234567) (1 record due before today not "
+                + "shown; use homework list 1 all to see it).\n"
+                + "Homework for Tan Ah Kow Jr. (91234567):\n"
+                + "1. Algebra (MATH) - due 2026-11-02 - score Not recorded - status ASSIGNED\n"
+                + "Note: this homework is due before today, so homework list 1 shows it only with all.",
+                execute("hw e 1 2 due/2026-10-28"));
+        // the edit does not set the due date, so the note is not repeated
+        assertEquals("Edited homework:\n"
+                + "Tan Ah Kow Jr. (91234567); Title: Optics 2; Subject: PHYSICS; Due: 2026-10-28\n"
+                + "Listed 1 upcoming homework record for Tan Ah Kow Jr. (91234567) (1 record due before today not "
+                + "shown; use homework list 1 all to see it).\n"
+                + "Homework for Tan Ah Kow Jr. (91234567):\n"
+                + "1. Algebra (MATH) - due 2026-11-02 - score Not recorded - status ASSIGNED",
+                execute("hw e 1 2 t/Optics 2"));
+    }
+
+    @Test
     public void execute_nearDuplicateTitles_bothAdded() throws Exception {
         // titles that differ by a space or a period are different homework
         assertEquals("New homework added for Tan Ah Kow Jr. (91234567):\n"

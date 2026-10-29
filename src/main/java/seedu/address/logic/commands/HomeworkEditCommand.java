@@ -113,7 +113,8 @@ public class HomeworkEditCommand extends Command {
 
     /**
      * Returns the success message for {@code editedHomework}, with the inferred year if any, followed by the
-     * upcoming homework of {@code editedStudent}.
+     * upcoming homework of {@code editedStudent}, and a note on how to list the homework if the edit sets its due
+     * date before today.
      */
     private String buildSuccessMessage(Student editedStudent, Homework editedHomework) {
         String message = String.format(Locale.ROOT, MESSAGE_SUCCESS,
@@ -123,7 +124,13 @@ public class HomeworkEditCommand extends Command {
             message += String.format(Locale.ROOT, HomeworkAddCommand.MESSAGE_INFERRED_YEAR,
                     editedHomework.getDueDate().getDate().getYear());
         }
-        return message + "\n" + HomeworkListCommand.formatHomeworkList(editedStudent, studentIndex, today, false);
+        message += "\n" + HomeworkListCommand.formatHomeworkList(editedStudent, studentIndex, today, false);
+        if (descriptor.dueDate() != null && !editedHomework.isUpcoming(today)) {
+            // Locale.ROOT prints the student index in ASCII digits, which the index parsers accept, in every locale
+            message += String.format(Locale.ROOT, HomeworkAddCommand.MESSAGE_DUE_BEFORE_TODAY,
+                    studentIndex.getOneBased());
+        }
+        return message;
     }
 
     /**

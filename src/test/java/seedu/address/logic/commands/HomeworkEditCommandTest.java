@@ -217,14 +217,32 @@ public class HomeworkEditCommandTest {
     }
 
     @Test
-    public void execute_dueDateMovedToPast_showsNoUpcomingHomework() {
+    public void execute_dueDateMovedToPast_notesHowToListIt() {
         EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(null, null,
                 DueDate.parseFullDate("2026-10-01"));
         Homework editedMechanics = new HomeworkBuilder(MECHANICS).withDueDate("2026-10-01").build();
         String expectedMessage = "Edited homework:\n"
                 + "Carl Ng (93333333); Title: Attempt mechanics questions 1-5; Subject: PHYSICS; Due: 2026-10-01\n"
                 + "No upcoming homework found for Carl Ng (93333333)"
-                + " (1 record due before today not shown; use homework list 3 all to see it).";
+                + " (1 record due before today not shown; use homework list 3 all to see it).\n"
+                + "Note: this homework is due before today, so homework list 3 shows it only with all.";
+        Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON,
+                CARL.withHomeworks(List.of(editedMechanics))));
+
+        assertCommandSuccess(new HomeworkEditCommand(THIRD, FIRST, descriptor, false, TODAY), model,
+                expectedMessage, expectedModel);
+    }
+
+    @Test
+    public void execute_dueDateMovedToToday_noNote() {
+        EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(null, null, DueDate.parseFullDate("2026-10-05"));
+        Homework editedMechanics = new HomeworkBuilder(MECHANICS).withDueDate("2026-10-05").build();
+        String expectedMessage = "Edited homework:\n"
+                + "Carl Ng (93333333); Title: Attempt mechanics questions 1-5; Subject: PHYSICS; Due: 2026-10-05\n"
+                + "Listed 1 upcoming homework record for Carl Ng (93333333).\n"
+                + "Homework for Carl Ng (93333333):\n"
+                + "1. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-05 - score Not recorded"
+                + " - status ASSIGNED";
         Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON,
                 CARL.withHomeworks(List.of(editedMechanics))));
 

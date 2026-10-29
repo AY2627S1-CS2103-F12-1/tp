@@ -2,6 +2,7 @@ package seedu.address.logic.commands;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.commands.CommandTestUtil.CAUSE_READ_ONLY_FOLDER;
@@ -182,6 +183,25 @@ public class EditCommandTest {
         Student original = new StudentBuilder().build();
         ModelManager model = modelWith(original);
         assertFailure("2 n/Jane", model, Messages.MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX);
+        assertEquals(List.of(original), model.getStudentList());
+    }
+
+    @Test
+    public void execute_unexpectedModelError_reportsInternalErrorAndKeepsRoster() throws ParseException {
+        IllegalStateException failure = new IllegalStateException("dummy internal error");
+        ModelManager model = new ModelManager() {
+            @Override
+            public void setStudent(Student target, Student editedStudent) {
+                throw failure;
+            }
+        };
+        Student original = new StudentBuilder().build();
+        model.addStudent(original);
+
+        CommandException exception = assertThrows(CommandException.class, () -> execute("1 n/Jane", model));
+
+        assertEquals(EditCommand.MESSAGE_INTERNAL_ERROR, exception.getMessage());
+        assertSame(failure, exception.getCause());
         assertEquals(List.of(original), model.getStudentList());
     }
 

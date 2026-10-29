@@ -87,6 +87,20 @@ public class HelpWindowTest {
     }
 
     @Test
+    public void search_formatOnlyMatch_showsMatchingCommand() throws Exception {
+        runOnFxThread(() -> {
+            Parent root = new HelpWindow().getRoot().getScene().getRoot();
+            root.applyCss();
+            TextField searchField = (TextField) root.lookup("#searchTextField");
+
+            searchField.setText("HOMEWORK|HW EDIT|E");
+
+            assertEquals(List.of("homework edit"), getEntryPanes(root).stream()
+                    .map(HelpWindowTest::commandWord).toList());
+        });
+    }
+
+    @Test
     public void selectingCommand_expandsSyntaxDescriptionAndExample() throws Exception {
         runOnFxThread(() -> {
             Parent root = new HelpWindow().getRoot().getScene().getRoot();
@@ -110,7 +124,7 @@ public class HelpWindowTest {
     }
 
     @Test
-    public void show_focusesScrollPane_keysScrollAndHide() throws Exception {
+    public void show_focusesSearchField_keysScrollAndHide() throws Exception {
         runOnFxThread(() -> {
             HelpWindow helpWindow = new HelpWindow();
             Stage stage = helpWindow.getRoot();
@@ -164,7 +178,13 @@ public class HelpWindowTest {
     }
 
     private static List<TitledPane> getEntryPanes(Parent root) {
-        return root.lookupAll(".help-entry").stream().map(TitledPane.class::cast).toList();
+        VBox content = (VBox) root.lookup("#helpContentBox");
+        return content.getChildren().stream()
+                .filter(VBox.class::isInstance)
+                .map(VBox.class::cast)
+                .flatMap(section -> section.getChildren().stream())
+                .map(TitledPane.class::cast)
+                .toList();
     }
 
     private static String commandWord(TitledPane pane) {

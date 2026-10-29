@@ -23,7 +23,7 @@ public class ListCommandTest {
         CommandResult result = new ListCommand().execute(model);
 
         assertEquals(ListCommand.MESSAGE_EMPTY, result.getFeedbackToUser());
-        assertTrue(result.isShowStudentList());
+        assertTrue(result.shouldShowStudentList());
         assertTrue(model.getStudentList().isEmpty());
     }
 
@@ -37,7 +37,7 @@ public class ListCommandTest {
 
         assertEquals(ListCommand.MESSAGE_SUCCESS_SINGULAR, result.getFeedbackToUser());
         assertEquals(student, model.getStudentList().get(0));
-        assertTrue(result.isShowStudentList());
+        assertTrue(result.shouldShowStudentList());
     }
 
     @Test
@@ -53,7 +53,7 @@ public class ListCommandTest {
         assertEquals("Listed 2 students.", result.getFeedbackToUser());
         assertEquals(first, model.getStudentList().get(0));
         assertEquals(second, model.getStudentList().get(1));
-        assertTrue(result.isShowStudentList());
+        assertTrue(result.shouldShowStudentList());
     }
 
     @Test

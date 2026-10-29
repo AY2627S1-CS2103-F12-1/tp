@@ -58,19 +58,16 @@ TutorFlow is a **desktop application for private tutors to manage their students
 **:information_source: Notes about the command format:**<br>
 
 * Words in `UPPER_CASE` are the parameters to be supplied by the user.<br>
-  For example, in `add n/NAME`, replace `NAME` with a value such as `John Doe`.
+  For example, in `search KEYWORD`, replace `KEYWORD` with a value such as `Tan`.
 
 * Items in square brackets are optional.<br>
-  For example, `n/NAME [t/TAG]` can be used as `n/John Doe t/friend` or as `n/John Doe`.
+  For example, `[s/SUBJECT]` in `homework edit` may be left out, so both `hw e 1 2 t/Kinematics practice set B s/PHYSICS` and `hw e 1 2 t/Kinematics practice set B` are accepted.
 
 * Items separated by `|` are alternatives; type any one of them.<br>
   For example, `homework|hw list|ls STUDENT_INDEX` can be used as `homework list 1` or as `hw ls 1`.
 
-* Items followed by `…`​ can appear zero or more times.<br>
-  For example, `[t/TAG]…​` may be omitted, or written as `t/friend` or `t/friend t/family`.
-
 * Parameters with a prefix can be in any order. Indices such as `STUDENT_INDEX` and `HOMEWORK_INDEX` have no prefix and must come first, right after the command word.<br>
-  For example, if the command specifies `n/NAME p/PHONE_NUMBER`, `p/PHONE_NUMBER n/NAME` is also acceptable.
+  For example, if the command specifies `n/STUDENT_NAME p/STUDENT_PHONE`, `p/STUDENT_PHONE n/STUDENT_NAME` is also acceptable.
 
 * A prefix counts only when it comes right after a space. Text glued to the end of a word stays in the value, even if it looks like a prefix.<br>
   For example, `hw add 1 t/Xs/MATH s/MATH due/2026-12-01` adds homework titled `Xs/MATH`, as the first `s/` follows `X` without a space.

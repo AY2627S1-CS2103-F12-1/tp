@@ -255,7 +255,7 @@ This section describes some noteworthy details on how certain features are imple
 `StrictArgumentTokenizer` splits the arguments of `add`, `edit`, `filter`, `sort`, `lesson add`, `lesson edit`,
 `lesson delete` and every homework subcommand (`add`, `list`, `upcoming`, `edit`, `marks`, `delete`, `filter` and
 `status`) into a preamble (the text before the first prefix, such as the indices in `hw e 1 2 t/Algebra`) and the
-value of each prefix. Any lowercase word followed by `/` at the start of the arguments or after whitespace is
+value of each prefix. Any word of lowercase English letters `a` to `z` (not `p1` or `é`) followed by `/` at the start of the arguments or after whitespace is
 a prefix, so a `/` inside a word such as `3/4` does not start one.
 
 `homework add`, `homework edit`, `homework marks` and `homework upcoming` use `StrictArgumentTokenizer#tokenizeWithPreambleRejectingWrongCase`, which also rejects one of the command's prefixes typed in another case, such as `Due/` or `S/`, with `MESSAGE_WRONG_CASE_PREFIX` (e.g. `Due/ is not a prefix of this command; prefixes are lowercase (due/).`) and the same quote hint and usage as an unknown prefix. Otherwise `hw e 1 2 t/X Due/2026-11-11` would save the title `X Due/2026-11-11` without any error. Other words that are not lowercase stay in the value, and student commands keep every such word, so names such as `Ravi S/O Kumar` still work.

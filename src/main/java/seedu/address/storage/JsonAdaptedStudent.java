@@ -27,6 +27,10 @@ class JsonAdaptedStudent {
     public static final String MISSING_FIELD_MESSAGE_FORMAT = "Student's %s field is missing!";
     public static final String MESSAGE_EMPTY_HOMEWORK_ENTRY = "Student's homeworks list contains an empty entry.";
     public static final String MESSAGE_SUBJECT_NOT_TAKEN = "Homework subject must be one of the student's subjects.";
+    public static final String MESSAGE_LESSON_SUBJECT_NOT_TAKEN =
+            "Lesson subject must be one of the student's subjects.";
+    /** Message for a duplicate lesson, e.g. "Lesson 2 (MONDAY 17:00-18:30)", and the position of the earlier one. */
+    public static final String MESSAGE_DUPLICATE_LESSON = "%s is the same as lesson %d.";
     /** Message for a duplicate homework, e.g. "Homework 2 (Essay)", and the position of the earlier homework. */
     public static final String MESSAGE_DUPLICATE_HOMEWORK =
             "%s has the same title, subject and due date as homework %d.";
@@ -127,16 +131,20 @@ class JsonAdaptedStudent {
         final List<Homework> modelHomeworks = toModelHomeworks(modelSubjects);
 
         List<RegularLesson> modelLessons = new ArrayList<>();
-        for (JsonAdaptedLesson adapted : lessons) {
+        for (int i = 0; i < lessons.size(); i++) {
+            JsonAdaptedLesson adapted = lessons.get(i);
             if (adapted == null) {
                 throw new IllegalValueException("Student's lessons list contains an empty entry.");
             }
-            RegularLesson lesson = adapted.toModelType();
+            String shownLesson = describeEntry("Lesson", i + 1, adapted.getTimeSlot());
+            RegularLesson lesson = toModelEntry(adapted::toModelType, shownLesson);
             if (!modelSubjects.getSubjects().contains(lesson.getSubject())) {
-                throw new IllegalValueException("Lesson subject must be one of the student's subjects.");
+                throw new IllegalValueException(String.format(ENTRY_PREFIX_FORMAT, shownLesson)
+                        + MESSAGE_LESSON_SUBJECT_NOT_TAKEN);
             }
             if (modelLessons.contains(lesson)) {
-                throw new IllegalValueException("Student's lessons list contains duplicate lessons.");
+                throw new IllegalValueException(String.format(MESSAGE_DUPLICATE_LESSON, shownLesson,
+                        modelLessons.indexOf(lesson) + 1));
             }
             modelLessons.add(lesson);
         }

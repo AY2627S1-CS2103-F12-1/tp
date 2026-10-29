@@ -30,6 +30,17 @@ class JsonAdaptedLesson {
                 lesson.getEndTime().toString());
     }
 
+    /**
+     * Returns the weekday and times of the lesson, as written in the data file, e.g. "MONDAY 17:00-18:30", or null if
+     * any of them is missing.
+     */
+    String getTimeSlot() {
+        if (dayOfWeek == null || startTime == null || endTime == null) {
+            return null;
+        }
+        return dayOfWeek.strip() + " " + startTime.strip() + "-" + endTime.strip();
+    }
+
     /** Returns the validated lesson, rejecting missing fields or invalid values. */
     public RegularLesson toModelType() throws IllegalValueException {
         if (subject == null || dayOfWeek == null || startTime == null || endTime == null) {

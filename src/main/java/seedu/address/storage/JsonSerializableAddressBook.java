@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonRootName;
 import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.model.AddressBook;
 import seedu.address.model.ReadOnlyAddressBook;
+import seedu.address.model.lesson.RegularLesson;
 import seedu.address.model.student.Student;
 
 /**
@@ -23,6 +24,11 @@ class JsonSerializableAddressBook {
     public static final String MESSAGE_EMPTY_STUDENT_ENTRY = "Students list contains an empty entry.";
     /** Message for a duplicate student, e.g. "Student 3 (Alex Yeoh)", and the position of the earlier student. */
     public static final String MESSAGE_DUPLICATE_STUDENT = "%s has the same name and phone number as student %d.";
+    /**
+     * Message for a lesson, e.g. "Lesson 1 (MONDAY 17:00-18:30)", that overlaps another lesson, e.g.
+     * "lesson 2 (MONDAY 18:00-19:00)" of the same student, or "lesson 1 (MONDAY 18:00-19:00) of student 1 (John Tan)".
+     */
+    public static final String MESSAGE_OVERLAPPING_LESSON = "%s overlaps %s.";
 
     private final List<JsonAdaptedStudent> students;
 
@@ -71,17 +77,51 @@ class JsonSerializableAddressBook {
                     throw new IllegalValueException(String.format(MESSAGE_DUPLICATE_STUDENT, shownStudent, j + 1));
                 }
             }
-            for (var lesson : student.getLessons()) {
-                long overlaps = student.getLessons().stream().filter(lesson::clashesWith).count();
-                boolean clashesWithOthers = addressBook.getStudentList().stream()
-                        .flatMap(existing -> existing.getLessons().stream()).anyMatch(lesson::clashesWith);
-                if (overlaps > 1 || clashesWithOthers) {
-                    throw new IllegalValueException(shownStudent + ": The data file contains overlapping lessons.");
-                }
-            }
+            checkNoOverlappingLessons(student, shownStudent, earlierStudents);
             addressBook.addStudent(student);
         }
         return addressBook;
+    }
+
+    /**
+     * Checks that no lesson of {@code student} overlaps another of their lessons or a lesson of
+     * {@code earlierStudents}. A student's lessons are in the order of the data file.
+     *
+     * @param shownStudent Name of the student as the user can find them in the data file, e.g.
+     *         "Student 2 (Priya Nair)".
+     * @throws IllegalValueException If two lessons overlap. The message names both lessons, and the other student.
+     */
+    private static void checkNoOverlappingLessons(Student student, String shownStudent, List<Student> earlierStudents)
+            throws IllegalValueException {
+        List<RegularLesson> lessons = student.getLessons();
+        for (int i = 0; i < lessons.size(); i++) {
+            RegularLesson lesson = lessons.get(i);
+            String shownLesson = describeLesson("Lesson", i + 1, lesson);
+            for (int j = 0; j < lessons.size(); j++) {
+                if (j != i && lesson.clashesWith(lessons.get(j))) {
+                    throw new IllegalValueException(String.format(JsonAdaptedStudent.ENTRY_PREFIX_FORMAT, shownStudent)
+                            + String.format(MESSAGE_OVERLAPPING_LESSON, shownLesson,
+                                    describeLesson("lesson", j + 1, lessons.get(j))));
+                }
+            }
+            for (int j = 0; j < earlierStudents.size(); j++) {
+                List<RegularLesson> otherLessons = earlierStudents.get(j).getLessons();
+                for (int k = 0; k < otherLessons.size(); k++) {
+                    if (lesson.clashesWith(otherLessons.get(k))) {
+                        String otherLesson = describeLesson("lesson", k + 1, otherLessons.get(k)) + " of "
+                                + JsonAdaptedStudent.describeEntry("student", j + 1,
+                                        earlierStudents.get(j).getName().toString());
+                        throw new IllegalValueException(String.format(JsonAdaptedStudent.ENTRY_PREFIX_FORMAT,
+                                shownStudent) + String.format(MESSAGE_OVERLAPPING_LESSON, shownLesson, otherLesson));
+                    }
+                }
+            }
+        }
+    }
+
+    /** Returns the name of a lesson as the user can find it in the data file, e.g. "Lesson 1 (MONDAY 17:00-18:30)". */
+    private static String describeLesson(String kind, int position, RegularLesson lesson) {
+        return JsonAdaptedStudent.describeEntry(kind, position, new JsonAdaptedLesson(lesson).getTimeSlot());
     }
 
 }

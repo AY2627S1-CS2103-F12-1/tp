@@ -10,6 +10,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Test;
 
@@ -144,8 +146,48 @@ public class JsonSerializableAddressBookTest {
         JsonSerializableAddressBook data = new JsonSerializableAddressBook(List.of(
                 new JsonAdaptedStudent(john), new JsonAdaptedStudent(mary)));
 
-        assertThrows(IllegalValueException.class, "Student 2 (Mary Lim): The data file contains overlapping lessons.",
-                data::toModelType);
+        assertThrows(IllegalValueException.class, "Student 2 (Mary Lim): Lesson 1 (MONDAY 17:00-19:00) overlaps "
+                + "lesson 1 (MONDAY 16:00-18:00) of student 1 (John Tan).", data::toModelType);
+    }
+
+    @Test
+    public void toModelType_lessonOverlapsOwnLesson_namesBothLessons() throws Exception {
+        RegularLesson lesson = new JsonAdaptedLesson("MATH", "MONDAY", "16:00", "18:00").toModelType();
+        RegularLesson overlapping = new JsonAdaptedLesson("MATH", "MONDAY", "17:00", "19:00").toModelType();
+        Student john = new StudentBuilder().build().withLessons(List.of(lesson, overlapping));
+        JsonSerializableAddressBook data = new JsonSerializableAddressBook(List.of(new JsonAdaptedStudent(john)));
+
+        assertThrows(IllegalValueException.class, "Student 1 (John Tan): Lesson 1 (MONDAY 16:00-18:00) overlaps "
+                + "lesson 2 (MONDAY 17:00-19:00).", data::toModelType);
+    }
+
+    @Test
+    public void toModelType_invalidLessonInSampleData_namesLesson() throws Exception {
+        // PE round 2: the reasons for a lesson named the student but not the lesson
+        assertSampleDataReason("\"dayOfWeek\" : \"MONDAY\"", "\"dayOfWeek\" : \"MOONDAY\"",
+                "Student 1 (Ethan Lim): Lesson 1 (MOONDAY 17:00-18:30): " + RegularLesson.MESSAGE_DAY);
+        assertSampleDataReason("\"endTime\" : \"18:30\"", "\"finishTime\" : \"18:30\"",
+                "Student 1 (Ethan Lim): Lesson 1: Lesson subject, dayOfWeek, startTime and endTime are required.");
+        assertSampleDataReason("\"subject\" : \"CHEMISTRY\",\n      \"dayOfWeek\"",
+                "\"subject\" : \"PHYSICS\",\n      \"dayOfWeek\"",
+                "Student 2 (Priya Nair): Lesson 1 (SATURDAY 15:00-16:30): Lesson subject must be one of the "
+                + "student's subjects.");
+        // Priya Nair's Saturday lesson moved to overlap Ethan Lim's Monday lesson
+        assertSampleDataReason("\"SATURDAY\",\n      \"startTime\" : \"15:00\",\n      \"endTime\" : \"16:30\"",
+                "\"MONDAY\",\n      \"startTime\" : \"18:00\",\n      \"endTime\" : \"19:00\"",
+                "Student 2 (Priya Nair): Lesson 1 (MONDAY 18:00-19:00) overlaps lesson 1 (MONDAY 17:00-18:30) of "
+                + "student 1 (Ethan Lim).");
+    }
+
+    @Test
+    public void toModelType_duplicateLesson_namesBothLessons() throws Exception {
+        List<JsonAdaptedLesson> lessons = List.of(new JsonAdaptedLesson("MATH", "MONDAY", "16:00", "18:00"),
+                new JsonAdaptedLesson("MATH", "MONDAY", "16:00", "18:00"));
+        JsonSerializableAddressBook data = new JsonSerializableAddressBook(List.of(new JsonAdaptedStudent("John Tan",
+                "S3", List.of("MATH"), "91234567", "Mary Tan", "98765432", List.of(), lessons)));
+
+        assertThrows(IllegalValueException.class, "Student 1 (John Tan): Lesson 2 (MONDAY 16:00-18:00) is the same "
+                + "as lesson 1.", data::toModelType);
     }
 
     @Test
@@ -182,4 +224,16 @@ public class JsonSerializableAddressBookTest {
         assertEquals(typicalAddressBook, new JsonSerializableAddressBook(typicalAddressBook).toModelType());
     }
 
+    /**
+     * Asserts that the sample data, with its first {@code target} replaced by {@code replacement}, is rejected with
+     * {@code expectedReason}.
+     */
+    private static void assertSampleDataReason(String target, String replacement, String expectedReason)
+            throws Exception {
+        String sampleData = JsonUtil.toJsonString(new JsonSerializableAddressBook(getSampleAddressBook()));
+        String invalidData = sampleData.replaceFirst(Pattern.quote(target), Matcher.quoteReplacement(replacement));
+        assertNotEquals(sampleData, invalidData);
+        JsonSerializableAddressBook data = JsonUtil.fromJsonString(invalidData, JsonSerializableAddressBook.class);
+        assertThrows(IllegalValueException.class, expectedReason, data::toModelType);
+    }
 }

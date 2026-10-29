@@ -47,11 +47,13 @@ public final class FilterCommandParser implements Parser<FilterCommand> {
         Optional<TuitionSubject> subject = Optional.empty();
         Optional<DayOfWeek> day = Optional.empty();
         for (Map.Entry<String, String> entry : values.entrySet()) {
-            switch (entry.getKey()) {
-                case PREFIX_LEVEL -> academicLevel = Optional.of(parseAcademicLevel(entry.getValue()));
-                case PREFIX_SUBJECT -> subject = Optional.of(parseSubject(entry.getValue()));
-                case PREFIX_DAY -> day = Optional.of(parseDay(entry.getValue()));
-                default -> throw new ParseException(MESSAGE_INVALID_FORMAT);
+            if (PREFIX_LEVEL.equals(entry.getKey())) {
+                academicLevel = Optional.of(parseAcademicLevel(entry.getValue()));
+            } else if (PREFIX_SUBJECT.equals(entry.getKey())) {
+                subject = Optional.of(parseSubject(entry.getValue()));
+            } else {
+                // The tokenizer accepts only level, subject and day prefixes, in input order.
+                day = Optional.of(parseDay(entry.getValue()));
             }
         }
         return new FilterCommand(new StudentFilterPredicate(academicLevel, subject, day));

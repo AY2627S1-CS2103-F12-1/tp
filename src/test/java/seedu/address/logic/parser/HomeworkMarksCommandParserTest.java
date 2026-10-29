@@ -4,6 +4,7 @@ import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailur
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
+import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefix;
 
 import org.junit.jupiter.api.Test;
 
@@ -139,7 +140,9 @@ public class HomeworkMarksCommandParserTest {
 
     @Test
     public void parse_uppercasePrefix_failure() {
-        assertParseFailure(parser, "1 2 SCORE/5/10", MESSAGE_INVALID_FORMAT);
+        String usageLine = "\nUsage: " + HomeworkMarksCommand.MESSAGE_USAGE;
+        assertParseFailure(parser, "1 2 SCORE/5/10", wrongCasePrefix("SCORE/", "score/") + usageLine);
+        assertParseFailure(parser, "1 2 Score/5", wrongCasePrefix("Score/", "score/") + usageLine);
     }
 
     @Test

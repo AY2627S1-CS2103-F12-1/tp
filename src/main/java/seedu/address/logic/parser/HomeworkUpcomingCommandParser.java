@@ -46,8 +46,13 @@ public class HomeworkUpcomingCommandParser implements Parser<HomeworkUpcomingCom
     @Override
     public HomeworkUpcomingCommand parse(String args) throws ParseException {
         requireNonNull(args);
-        Map<String, String> values = StrictArgumentTokenizer.tokenize(args, List.of(PREFIX_DAYS),
-                MESSAGE_INVALID_FORMAT).values();
+        StrictArgumentTokenizer.TokenizedArguments tokenizedArguments =
+                StrictArgumentTokenizer.tokenizeWithPreambleRejectingWrongCase(args, List.of(PREFIX_DAYS),
+                        MESSAGE_INVALID_FORMAT);
+        if (!tokenizedArguments.preamble().isEmpty()) {
+            throw new ParseException(MESSAGE_INVALID_FORMAT);
+        }
+        Map<String, String> values = tokenizedArguments.values();
         int days = values.containsKey(PREFIX_DAYS) ? parseDays(values.get(PREFIX_DAYS)) : DEFAULT_DAYS;
         return new HomeworkUpcomingCommand(LocalDate.now(clock), days);
     }

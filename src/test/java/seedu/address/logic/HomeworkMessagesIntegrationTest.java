@@ -2,6 +2,9 @@ package seedu.address.logic;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefix;
+import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefixWithQuoteHint;
 import static seedu.address.testutil.Assert.assertThrows;
 
 import java.nio.file.Files;
@@ -14,6 +17,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import seedu.address.logic.commands.HomeworkAddCommand;
+import seedu.address.logic.commands.HomeworkEditCommand;
+import seedu.address.logic.commands.HomeworkMarksCommand;
+import seedu.address.logic.commands.HomeworkUpcomingCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
@@ -54,6 +61,26 @@ public class HomeworkMessagesIntegrationTest {
     public void execute_indexTooLarge_namesUpperBound() throws Exception {
         assertParseFailure("hw del 1 9999999999", Messages.MESSAGE_HOMEWORK_INDEX_TOO_LARGE);
         assertParseFailure("hw e 2147483648 1 t/X", Messages.MESSAGE_STUDENT_INDEX_TOO_LARGE);
+    }
+
+    @Test
+    public void execute_wrongCasePrefix_rejectedInsteadOfSavedInValue() throws Exception {
+        assertParseFailure("hw e 1 2 t/X Due/2026-11-11", wrongCasePrefixWithQuoteHint("Due/", "due/",
+                "t/\"X Due/2026-11-11\"") + "\nUsage: " + HomeworkEditCommand.MESSAGE_USAGE);
+        assertParseFailure("hw add 1 t/A S/MATH due/2026-11-01", wrongCasePrefixWithQuoteHint("S/", "s/",
+                "t/\"A S/MATH\"") + "\nUsage: " + HomeworkAddCommand.MESSAGE_USAGE);
+        assertParseFailure("hw m 1 2 Score/5", wrongCasePrefix("Score/", "score/") + "\nUsage: "
+                + HomeworkMarksCommand.MESSAGE_USAGE);
+        assertParseFailure("hw up Due/3", wrongCasePrefix("Due/", "due/") + "\nUsage: "
+                + HomeworkUpcomingCommand.MESSAGE_USAGE);
+    }
+
+    @Test
+    public void execute_wrongCasePrefixInStudentName_keptInName() throws Exception {
+        logic.execute("add n/Ravi S/O Kumar l/S3 s/MATH p/91234568 gn/Kumar Devi gp/98765433");
+
+        assertEquals("Ravi S/O Kumar", model.getStudentList().get(1).getName().toString());
+        assertTrue(Files.readString(dataFilePath).contains("Ravi S/O Kumar"));
     }
 
     /**

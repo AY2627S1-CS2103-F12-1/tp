@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static seedu.address.logic.parser.CommandParserTestUtil.MESSAGE_CURLY_QUOTES;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
+import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefix;
+import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefixWithQuoteHint;
 import static seedu.address.testutil.Assert.assertThrows;
 
 import java.time.Duration;
@@ -333,6 +335,61 @@ public class StrictArgumentTokenizerTest {
     }
 
     @Test
+    public void tokenizeWithPreamble_wrongCasePrefix_keptInValue() throws ParseException {
+        // only the variant that rejects wrong-case prefixes treats Due/ as a mistyped due/
+        assertEquals(Map.of("t/", "X Due/2026-11-11"), StrictArgumentTokenizer.tokenizeWithPreamble(
+                "1 t/X Due/2026-11-11", PREFIXES, MESSAGE_INVALID_FORMAT).values());
+    }
+
+    @Test
+    public void tokenizeWithPreambleRejectingWrongCase_wrongCasePrefixInValue_namesLowercasePrefix() {
+        assertThrows(ParseException.class, wrongCasePrefixWithQuoteHint("Due/", "due/", "t/\"X Due/2026-11-11\"")
+                + USAGE_LINE, () -> tokenizeRejectingWrongCase("1 t/X Due/2026-11-11"));
+        // all capitals and mixed case
+        assertThrows(ParseException.class, wrongCasePrefixWithQuoteHint("DUE/", "due/", "t/\"X DUE/11-11\"")
+                + USAGE_LINE, () -> tokenizeRejectingWrongCase("1 t/X DUE/11-11"));
+        assertThrows(ParseException.class, wrongCasePrefixWithQuoteHint("dUE/", "due/", "t/\"X dUE/11-11\"")
+                + USAGE_LINE, () -> tokenizeRejectingWrongCase("1 t/X dUE/11-11"));
+    }
+
+    @Test
+    public void tokenizeWithPreambleRejectingWrongCase_wrongCasePrefixOutsideValue_namesLowercasePrefix() {
+        // right after the preamble
+        assertThrows(ParseException.class, wrongCasePrefix("T/", "t/") + USAGE_LINE, () ->
+                tokenizeRejectingWrongCase("1 T/A due/3"));
+        // at the start of the arguments
+        assertThrows(ParseException.class, wrongCasePrefix("Due/", "due/") + USAGE_LINE, () ->
+                tokenizeRejectingWrongCase("Due/3"));
+    }
+
+    @Test
+    public void tokenizeWithPreambleRejectingWrongCase_earlierUnknownPrefix_reportedFirst() {
+        assertThrows(ParseException.class, notPrefixWithQuoteHint("x/", "t/\"A x/B Due/3\"") + USAGE_LINE, () ->
+                tokenizeRejectingWrongCase("1 t/A x/B Due/3"));
+    }
+
+    @Test
+    public void tokenizeWithPreambleRejectingWrongCase_quotedOrOtherWords_keptInValue() throws ParseException {
+        // inside a quoted value
+        assertEquals(Map.of("t/", "X Due/2026-11-11", "due/", "3"),
+                tokenizeRejectingWrongCase("1 t/\"X Due/2026-11-11\" due/3").values());
+        assertEquals(Map.of("t/", "X Due/2026-11-11"), tokenizeRejectingWrongCase("1 t/\"X Due/2026-11-11\"")
+                .values());
+        // a word that is not an allowed prefix in any case
+        assertEquals(Map.of("n/", "John S/O Tan"), tokenizeRejectingWrongCase("1 n/John S/O Tan").values());
+        // not after whitespace
+        assertEquals(Map.of("t/", "XDue/3"), tokenizeRejectingWrongCase("1 t/XDue/3").values());
+    }
+
+    @Test
+    public void tokenizeWithPreambleRejectingWrongCase_otherWordInPreamble_keptInPreamble() throws ParseException {
+        TokenizedArguments result = tokenizeRejectingWrongCase("1 A/B t/X");
+
+        assertEquals("1 A/B", result.preamble());
+        assertEquals(Map.of("t/", "X"), result.values());
+    }
+
+    @Test
     public void tokenizedArguments_valuesUnmodifiable() throws ParseException {
         TokenizedArguments result = StrictArgumentTokenizer.tokenize(" n/John", PREFIXES, MESSAGE_INVALID_FORMAT);
 
@@ -341,5 +398,10 @@ public class StrictArgumentTokenizerTest {
 
     private static Map<String, String> tokenizeValues(String arguments) throws ParseException {
         return StrictArgumentTokenizer.tokenize(arguments, PREFIXES, MESSAGE_INVALID_FORMAT).values();
+    }
+
+    private static TokenizedArguments tokenizeRejectingWrongCase(String arguments) throws ParseException {
+        return StrictArgumentTokenizer.tokenizeWithPreambleRejectingWrongCase(arguments, PREFIXES,
+                MESSAGE_INVALID_FORMAT);
     }
 }

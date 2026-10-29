@@ -40,6 +40,23 @@ public class CommandParserTestUtil {
     }
 
     /**
+     * Returns the first line of the error for {@code word}, an allowed prefix typed in another case (e.g.
+     * {@code Due/} for {@code due/}) that is not inside any value. The usage line follows it on the next line.
+     */
+    public static String wrongCasePrefix(String word, String prefix) {
+        return word + " is not a prefix of this command; prefixes are lowercase (" + prefix + ").";
+    }
+
+    /**
+     * Returns the first line of the error for {@code word}, an allowed prefix typed in another case inside a value,
+     * with {@code example} (the field's prefix and its whole text in quotes) showing how to quote it.
+     */
+    public static String wrongCasePrefixWithQuoteHint(String word, String prefix, String example) {
+        return wrongCasePrefix(word, prefix) + " To use it inside a value, wrap the whole value in straight double "
+                + "quotes, e.g. " + example + ".";
+    }
+
+    /**
      * Asserts that the parsing of {@code userInput} by {@code parser} is successful and the command created
      * is equal to {@code expectedCommand}.
      */

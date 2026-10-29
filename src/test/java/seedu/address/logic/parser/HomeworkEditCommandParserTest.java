@@ -5,6 +5,8 @@ import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailur
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
+import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefix;
+import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefixWithQuoteHint;
 import static seedu.address.model.homework.DueDateTest.MESSAGE_EMPTY;
 import static seedu.address.model.homework.DueDateTest.MESSAGE_YEAR_OUT_OF_RANGE;
 import static seedu.address.model.homework.DueDateTest.leapDayMessage;
@@ -133,7 +135,21 @@ public class HomeworkEditCommandParserTest {
 
     @Test
     public void parse_uppercasePrefix_failure() {
-        assertParseFailure(parser, "1 2 T/Algebra", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 2 T/Algebra", wrongCasePrefix("T/", "t/") + USAGE_LINE);
+        assertParseFailure(parser, "1 2 Title/Algebra", wrongCasePrefix("Title/", "title/") + USAGE_LINE);
+        // not saved into the title, leaving the intended field unchanged
+        assertParseFailure(parser, "1 2 t/X Due/2026-11-11",
+                wrongCasePrefixWithQuoteHint("Due/", "due/", "t/\"X Due/2026-11-11\"") + USAGE_LINE);
+        assertParseFailure(parser, "1 2 t/Y S/MATH", wrongCasePrefixWithQuoteHint("S/", "s/", "t/\"Y S/MATH\"")
+                + USAGE_LINE);
+        assertParseFailure(parser, "1 2 t/Z DUE/11-11", wrongCasePrefixWithQuoteHint("DUE/", "due/",
+                "t/\"Z DUE/11-11\"") + USAGE_LINE);
+    }
+
+    @Test
+    public void parse_quotedWrongCasePrefixInTitle_keptInTitle() {
+        assertParseSuccess(parser, "1 2 t/\"X Due/2026-11-11\"",
+                editCommand(new EditHomeworkDescriptor(new Title("X Due/2026-11-11"), null, null), false));
     }
 
     @Test

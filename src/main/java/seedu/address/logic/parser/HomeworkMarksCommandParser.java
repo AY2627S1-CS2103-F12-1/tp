@@ -34,7 +34,8 @@ public class HomeworkMarksCommandParser implements Parser<HomeworkMarksCommand> 
     public HomeworkMarksCommand parse(String args) throws ParseException {
         requireNonNull(args);
         StrictArgumentTokenizer.TokenizedArguments tokenizedArguments =
-                StrictArgumentTokenizer.tokenizeWithPreamble(args, List.of(PREFIX_SCORE), MESSAGE_INVALID_FORMAT);
+                StrictArgumentTokenizer.tokenizeWithPreambleRejectingWrongCase(args, List.of(PREFIX_SCORE),
+                        MESSAGE_INVALID_FORMAT);
         String[] indices = tokenizedArguments.preamble().split("\\s+");
         if (indices.length != 2) {
             throw new ParseException(MESSAGE_INVALID_FORMAT);

@@ -5,6 +5,7 @@ import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailur
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
+import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefix;
 import static seedu.address.logic.parser.HomeworkUpcomingCommandParser.MESSAGE_INVALID_DAYS;
 
 import java.time.Clock;
@@ -136,7 +137,9 @@ public class HomeworkUpcomingCommandParserTest {
 
     @Test
     public void parse_uppercasePrefix_failure() {
-        assertParseFailure(parser, "DUE/3", MESSAGE_INVALID_FORMAT);
+        String usageLine = "\nUsage: " + HomeworkUpcomingCommand.MESSAGE_USAGE;
+        assertParseFailure(parser, "DUE/3", wrongCasePrefix("DUE/", "due/") + usageLine);
+        assertParseFailure(parser, "Due/3", wrongCasePrefix("Due/", "due/") + usageLine);
     }
 
     @Test

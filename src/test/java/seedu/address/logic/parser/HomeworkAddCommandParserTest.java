@@ -6,6 +6,8 @@ import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailur
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
+import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefix;
+import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefixWithQuoteHint;
 import static seedu.address.model.homework.DueDateTest.MESSAGE_EMPTY;
 import static seedu.address.model.homework.DueDateTest.MESSAGE_YEAR_OUT_OF_RANGE;
 import static seedu.address.model.homework.DueDateTest.leapDayMessage;
@@ -251,9 +253,21 @@ public class HomeworkAddCommandParserTest {
 
     @Test
     public void parse_uppercasePrefix_failure() {
-        // TITLE/ is not a prefix, so it is unprefixed text in the preamble
         assertParseFailure(parser, "1 TITLE/Complete algebra worksheet s/MATH due/2026-10-15",
-                MESSAGE_INVALID_FORMAT);
+                wrongCasePrefix("TITLE/", "title/") + USAGE_LINE);
+        // S/MATH is not kept in the title, which would leave s/ missing
+        assertParseFailure(parser, "1 t/A S/MATH due/2026-11-01",
+                wrongCasePrefixWithQuoteHint("S/", "s/", "t/\"A S/MATH\"") + USAGE_LINE);
+        assertParseFailure(parser, "1 t/A s/MATH Due/2026-11-01",
+                wrongCasePrefixWithQuoteHint("Due/", "due/", "s/\"MATH Due/2026-11-01\"") + USAGE_LINE);
+    }
+
+    @Test
+    public void parse_quotedWrongCasePrefixInTitle_keptInTitle() {
+        Homework expectedHomework = new Homework(new Title("Notes S/MATH"), TuitionSubject.MATH,
+                DueDate.parseFullDate("2026-11-01"));
+        assertParseSuccess(parser, "1 t/\"Notes S/MATH\" s/MATH due/2026-11-01",
+                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, false));
     }
 
     @Test

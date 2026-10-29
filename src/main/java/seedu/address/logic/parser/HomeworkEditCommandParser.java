@@ -50,7 +50,8 @@ public class HomeworkEditCommandParser implements Parser<HomeworkEditCommand> {
     public HomeworkEditCommand parse(String args) throws ParseException {
         requireNonNull(args);
         StrictArgumentTokenizer.TokenizedArguments tokenizedArguments =
-                StrictArgumentTokenizer.tokenizeWithPreamble(args, ALLOWED_PREFIXES, MESSAGE_INVALID_FORMAT);
+                StrictArgumentTokenizer.tokenizeWithPreambleRejectingWrongCase(args, ALLOWED_PREFIXES,
+                        MESSAGE_INVALID_FORMAT);
         Map<String, String> values = tokenizedArguments.values();
         HomeworkAddCommandParser.validateTitlePrefixes(values);
 

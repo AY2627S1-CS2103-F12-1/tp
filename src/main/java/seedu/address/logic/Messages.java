@@ -39,6 +39,8 @@ public class Messages {
     public static final String MESSAGE_SAVE_CAUSE_READ_ONLY_HOME_FOLDER = "the home folder is read-only";
     public static final String MESSAGE_SAVE_CAUSE_READ_ONLY_OTHER_FOLDER = "the folder %s is read-only";
     public static final String MESSAGE_SAVE_CAUSE_BLOCKED_FOLDER = "a file named %s is in the way of the data folder";
+    public static final String MESSAGE_SAVE_CAUSE_FOLDER_LOCK_FILE = "the lock file %s is a folder, not a file";
+    public static final String MESSAGE_SAVE_CAUSE_READ_ONLY_LOCK_FILE = "the lock file %s is read-only";
 
     /** Returns all six student fields in the Add Student success-message format. */
     public static String format(Student student) {

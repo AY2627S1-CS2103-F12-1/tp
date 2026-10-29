@@ -885,13 +885,43 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_readOnlyLockFile_reportsReadOnlyLockFile() throws Exception {
+        Path dataFile = temporaryFolder.resolve("data").resolve("tutorflow.json");
+        setUpLogic(getSampleAddressBook(), new JsonAddressBookStorage(dataFile), SAMPLE_CLOCK);
+        logic.execute("edit 6 l/S5");
+        byte[] fileBefore = Files.readAllBytes(dataFile);
+        Path lockFile = dataFile.resolveSibling("tutorflow.json.lock");
+        assertTrue(lockFile.toFile().setWritable(false));
+        try {
+            assumeFalse(Files.isWritable(lockFile), "the file is still writable, e.g. when running as root");
+            assertSaveFailureRestores("hw add 1 t/Test s/MATH due/2026-12-01", getCommandSaveFailureMessage(
+                    "homework could not be added", "the lock file " + SHOWN_DATA_FILE_NAME + ".lock is read-only",
+                    "homework"));
+            assertArrayEquals(fileBefore, Files.readAllBytes(dataFile));
+        } finally {
+            lockFile.toFile().setWritable(true);
+        }
+    }
+
+    @Test
+    public void execute_lockFileIsFolder_reportsFolderLockFile() throws Exception {
+        Path dataFile = temporaryFolder.resolve("data").resolve("tutorflow.json");
+        Files.createDirectories(dataFile.resolveSibling("tutorflow.json.lock"));
+        setUpLogic(getSampleAddressBook(), new JsonAddressBookStorage(dataFile), SAMPLE_CLOCK);
+
+        assertSaveFailureRestores("delete 1", getCommandSaveFailureMessage("student could not be deleted",
+                "the lock file " + SHOWN_DATA_FILE_NAME + ".lock is a folder, not a file", "student"));
+        assertFalse(Files.exists(dataFile));
+    }
+
+    @Test
     public void execute_readOnlyDataFolderNoLock_reportsReadOnlyFolder() throws Exception {
         Path dataFolder = Files.createDirectories(temporaryFolder.resolve("data"));
         setUpLogic(getSampleAddressBook(), new JsonAddressBookStorage(dataFolder.resolve("tutorflow.json")),
                 SAMPLE_CLOCK);
         makeFolderReadOnly(dataFolder);
         try {
-            // the failure is on the internal lock file, which is never named
+            // the failure is on creating the internal lock file, so the folder, not the lock file, is the cause
             assertSaveFailureRestores("delete 1", getCommandSaveFailureMessage(
                     "student could not be deleted", SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER, "student"));
             assertEquals(List.of(), listFileNames(dataFolder));

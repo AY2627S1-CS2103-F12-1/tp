@@ -30,6 +30,9 @@ import seedu.address.storage.Storage;
  * The main LogicManager of the app.
  */
 public class LogicManager implements Logic {
+    /** Ending of the name of the lock file that storage keeps next to the data file while saving. */
+    private static final String LOCK_FILE_SUFFIX = ".lock";
+
     private final Logger logger = LogsCenter.getLogger(LogicManager.class);
 
     private final Model model;
@@ -127,8 +130,9 @@ public class LogicManager implements Logic {
 
     /**
      * Returns a plain description of why {@code dataFile} could not be saved, checking the common causes in this
-     * order: the data file is a folder, the data file is read-only, a file is where its folder should be, or the
-     * nearest existing folder above it is read-only. Otherwise, the system's text of {@code exception} is returned.
+     * order: the data file is a folder, the data file is read-only, its lock file is a folder or read-only, a file is
+     * where its folder should be, or the nearest existing folder above it is read-only. Otherwise, the system's text
+     * of {@code exception} is returned.
      * The causes are read from the file system, as the exception may be about a different file, such as the
      * internal lock file next to the data file.
      */
@@ -138,6 +142,13 @@ public class LogicManager implements Logic {
         }
         if (Files.exists(dataFile) && !Files.isWritable(dataFile)) {
             return Messages.MESSAGE_SAVE_CAUSE_READ_ONLY_FILE;
+        }
+        Path lockFile = dataFile.resolveSibling(dataFile.getFileName() + LOCK_FILE_SUFFIX);
+        if (Files.isDirectory(lockFile)) {
+            return String.format(Messages.MESSAGE_SAVE_CAUSE_FOLDER_LOCK_FILE, getShownName(lockFile));
+        }
+        if (Files.exists(lockFile) && !Files.isWritable(lockFile)) {
+            return String.format(Messages.MESSAGE_SAVE_CAUSE_READ_ONLY_LOCK_FILE, getShownName(lockFile));
         }
         Path existingAncestor = findNearestExistingAncestor(dataFile);
         if (existingAncestor != null && !Files.isDirectory(existingAncestor)) {

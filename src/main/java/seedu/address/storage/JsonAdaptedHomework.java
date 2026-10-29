@@ -85,7 +85,7 @@ class JsonAdaptedHomework {
      * @throws IllegalValueException if there were any data constraints violated in the adapted homework.
      */
     public Homework toModelType() throws IllegalValueException {
-        final Title modelTitle = toModelValue("title", title, Title::new, Title.MESSAGE_CONSTRAINTS);
+        final Title modelTitle = toModelTitle();
         final TuitionSubject modelSubject = toModelValue("subject", subject, TuitionSubject::parse,
                 TuitionSubject.MESSAGE_CONSTRAINTS);
         final DueDate modelDueDate = toModelDueDate();
@@ -93,6 +93,28 @@ class JsonAdaptedHomework {
         final HomeworkStatus modelStatus = status == null ? HomeworkStatus.ASSIGNED
                 : toModelValue("status", status, HomeworkStatus::parse, HomeworkStatus.MESSAGE_CONSTRAINTS);
         return new Homework(modelTitle, modelSubject, modelDueDate, modelScore, modelStatus);
+    }
+
+    /**
+     * Returns the model title parsed from the required field {@code title}. An invalid title keeps the message of
+     * the rule it breaks, e.g. its length, as the homework commands give it. An empty title gets
+     * {@link Title#MESSAGE_CONSTRAINTS}.
+     *
+     * @throws IllegalValueException If the field is missing or its value is invalid.
+     */
+    private Title toModelTitle() throws IllegalValueException {
+        if (title == null) {
+            throw new IllegalValueException(String.format(MISSING_FIELD_MESSAGE_FORMAT, "title"));
+        }
+        try {
+            return new Title(title);
+        } catch (IllegalArgumentException exception) {
+            // "Enter 1 to 100 characters" in Title.MESSAGE_EMPTY is advice for the commands, not for the file
+            String message = exception.getMessage().equals(Title.MESSAGE_EMPTY)
+                    ? Title.MESSAGE_CONSTRAINTS
+                    : exception.getMessage();
+            throw new IllegalValueException(message);
+        }
     }
 
     /**
@@ -120,7 +142,8 @@ class JsonAdaptedHomework {
      *
      * @param modelTitle Title of the homework, used in the warning.
      * @throws IllegalValueException If {@code score} is neither a number nor a valid score in {@code MARKS} or
-     *         {@code MARKS_OBTAINED/TOTAL_MARKS} format.
+     *         {@code MARKS_OBTAINED/TOTAL_MARKS} format. A value that is neither text nor a number, e.g.
+     *         {@code true}, gets {@link Score#MESSAGE_INVALID_FORMAT}, as text in neither format does.
      */
     private Score toModelScore(Title modelTitle) throws IllegalValueException {
         if (score == null || score.isNull()) {
@@ -135,7 +158,7 @@ class JsonAdaptedHomework {
             }
         }
         if (!score.isTextual()) {
-            throw new IllegalValueException(Score.MESSAGE_CONSTRAINTS);
+            throw new IllegalValueException(Score.MESSAGE_INVALID_FORMAT);
         }
         try {
             return Score.parse(score.textValue());

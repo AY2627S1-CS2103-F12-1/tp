@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.commons.util.JsonUtil;
 import seedu.address.model.AddressBook;
+import seedu.address.model.homework.Score;
 import seedu.address.model.lesson.RegularLesson;
 import seedu.address.model.student.Student;
 import seedu.address.model.student.StudentName;
@@ -177,6 +178,17 @@ public class JsonSerializableAddressBookTest {
                 "\"MONDAY\",\n      \"startTime\" : \"18:00\",\n      \"endTime\" : \"19:00\"",
                 "Student 2 (Priya Nair): Lesson 1 (MONDAY 18:00-19:00) overlaps lesson 1 (MONDAY 17:00-18:30) of "
                 + "student 1 (Ethan Lim).");
+    }
+
+    @Test
+    public void toModelType_invalidHomeworkInSampleData_givesCommandMessage() throws Exception {
+        // PE round 3: these gave other wording than the homework commands give for the same value
+        assertSampleDataReason("\"score\" : null", "\"score\" : true",
+                "Student 1 (Ethan Lim): Homework 1 (Quadratic equations worksheet): " + Score.MESSAGE_INVALID_FORMAT);
+        String longTitle = "A".repeat(101);
+        assertSampleDataReason("\"Quadratic equations worksheet\"", "\"" + longTitle + "\"",
+                "Student 1 (Ethan Lim): Homework 1 (" + longTitle + "): Homework title must be at most 100 "
+                + "characters, but has 101.");
     }
 
     @Test

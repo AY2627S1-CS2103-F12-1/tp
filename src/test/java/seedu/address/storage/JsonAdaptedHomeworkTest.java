@@ -37,6 +37,8 @@ public class JsonAdaptedHomeworkTest {
     private static final String VALID_TITLE = "Complete algebra worksheet";
     private static final String VALID_SUBJECT = "MATH";
     private static final String VALID_DUE_DATE = "2026-10-15";
+    private static final String MESSAGE_ZERO_WIDTH_SPACE = String.format(Title.MESSAGE_UNSUPPORTED_CHARACTER,
+            "U+200B (ZERO WIDTH SPACE)");
 
     @Test
     public void toModelType_missingOrNullStatus_defaultsAssignedEvenWithScore() throws Exception {
@@ -128,12 +130,24 @@ public class JsonAdaptedHomeworkTest {
         // zero-width space inside the title, which an earlier version accepted
         JsonAdaptedHomework homeworkWithZeroWidthSpace = new JsonAdaptedHomework("Alge\u200Bbra drill", VALID_SUBJECT,
                 VALID_DUE_DATE, null);
-        assertThrows(IllegalValueException.class, Title.MESSAGE_CONSTRAINTS, homeworkWithZeroWidthSpace::toModelType);
+        assertThrows(IllegalValueException.class, MESSAGE_ZERO_WIDTH_SPACE, homeworkWithZeroWidthSpace::toModelType);
 
         // zero-width space only
         JsonAdaptedHomework homeworkWithZeroWidthTitle = new JsonAdaptedHomework("\u200B", VALID_SUBJECT,
                 VALID_DUE_DATE, null);
-        assertThrows(IllegalValueException.class, Title.MESSAGE_CONSTRAINTS, homeworkWithZeroWidthTitle::toModelType);
+        assertThrows(IllegalValueException.class, MESSAGE_ZERO_WIDTH_SPACE, homeworkWithZeroWidthTitle::toModelType);
+    }
+
+    @Test
+    public void toModelType_titleLength_acceptsUpTo100Characters() throws Exception {
+        String longestTitle = "A".repeat(100);
+        assertEquals(longestTitle, new JsonAdaptedHomework(longestTitle, VALID_SUBJECT, VALID_DUE_DATE, null)
+                .toModelType().getTitle().toString());
+
+        // PE round 3: the data file gave the general title rule instead of the length, as the command gives
+        JsonAdaptedHomework tooLong = new JsonAdaptedHomework("A".repeat(101), VALID_SUBJECT, VALID_DUE_DATE, null);
+        assertThrows(IllegalValueException.class, "Homework title must be at most 100 characters, but has 101.",
+                tooLong::toModelType);
     }
 
     @Test
@@ -265,8 +279,11 @@ public class JsonAdaptedHomeworkTest {
         assertInvalidScore("\"5/0\"", Score.MESSAGE_TOTAL_TOO_SMALL); // zero total
         assertInvalidScore("\"5 / 10\"", Score.MESSAGE_INVALID_FORMAT); // spaces inside
         assertInvalidScore("\"abc\"", Score.MESSAGE_INVALID_FORMAT); // non-numeric text
-        assertInvalidScore("true", Score.MESSAGE_CONSTRAINTS); // boolean
-        assertInvalidScore("[\"5/10\"]", Score.MESSAGE_CONSTRAINTS); // list
+        // PE round 3: a score that is neither text nor a number gave the wording of an older score rule
+        assertInvalidScore("true", Score.MESSAGE_INVALID_FORMAT); // boolean
+        assertInvalidScore("{}", Score.MESSAGE_INVALID_FORMAT); // object
+        assertInvalidScore("[5]", Score.MESSAGE_INVALID_FORMAT); // list of a number
+        assertInvalidScore("[\"5/10\"]", Score.MESSAGE_INVALID_FORMAT); // list of text
         assertThrows(IllegalValueException.class, Score.MESSAGE_LEADING_ZEROES, fromJsonWithScore(
                 "\"017\"")::toModelType); // leading zero
         assertThrows(IllegalValueException.class, Score.MESSAGE_TOO_LARGE, fromJsonWithScore(

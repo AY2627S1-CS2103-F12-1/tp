@@ -18,6 +18,7 @@ import seedu.address.commons.util.JsonUtil;
 import seedu.address.model.AddressBook;
 import seedu.address.model.lesson.RegularLesson;
 import seedu.address.model.student.Student;
+import seedu.address.model.student.StudentName;
 import seedu.address.model.student.StudentPhone;
 import seedu.address.testutil.AddressBookBuilder;
 import seedu.address.testutil.HomeworkBuilder;
@@ -48,8 +49,8 @@ public class JsonSerializableAddressBookTest {
     public void toModelType_invalidStudentFile_throwsIllegalValueException() throws Exception {
         JsonSerializableAddressBook dataFromFile = JsonUtil.readJsonFile(INVALID_STUDENT_FILE,
                 JsonSerializableAddressBook.class).get();
-        assertThrows(IllegalValueException.class, "Student 1 (Alice Tan): " + StudentPhone.MESSAGE_CONSTRAINTS,
-                dataFromFile::toModelType);
+        assertThrows(IllegalValueException.class, "Student 1 (Alice Tan): phone: "
+                + StudentPhone.MESSAGE_CONSTRAINTS, dataFromFile::toModelType);
     }
 
     @Test
@@ -95,8 +96,30 @@ public class JsonSerializableAddressBookTest {
         assertNotEquals(sampleData, invalidData);
         JsonSerializableAddressBook data = JsonUtil.fromJsonString(invalidData, JsonSerializableAddressBook.class);
 
-        assertThrows(IllegalValueException.class, "Student 2 (Priya Nair): " + StudentPhone.MESSAGE_CONSTRAINTS,
-                data::toModelType);
+        assertThrows(IllegalValueException.class, "Student 2 (Priya Nair): phone: "
+                + StudentPhone.MESSAGE_CONSTRAINTS, data::toModelType);
+    }
+
+    @Test
+    public void toModelType_invalidGuardianFieldsInSampleData_namesKey() throws Exception {
+        // PE round 2: Ethan Lim's guardian fields changed by hand, which gave the same reason as his own phone or name
+        String sampleData = JsonUtil.toJsonString(new JsonSerializableAddressBook(getSampleAddressBook()));
+        String invalidPhoneData = sampleData.replace("\"guardianPhone\" : \"98765432\"",
+                "\"guardianPhone\" : \"12ab\"");
+        assertNotEquals(sampleData, invalidPhoneData);
+        JsonSerializableAddressBook invalidPhone = JsonUtil.fromJsonString(invalidPhoneData,
+                JsonSerializableAddressBook.class);
+        assertThrows(IllegalValueException.class, "Student 1 (Ethan Lim): guardianPhone: Phone numbers must be "
+                + "an 8-digit Singapore number starting with 6, 8, or 9, or an international number in "
+                + "+<country code><number> format.", invalidPhone::toModelType);
+
+        String invalidNameData = sampleData.replace("\"guardianName\" : \"Grace Lim\"",
+                "\"guardianName\" : \"Grace@Lim\"");
+        assertNotEquals(sampleData, invalidNameData);
+        JsonSerializableAddressBook invalidName = JsonUtil.fromJsonString(invalidNameData,
+                JsonSerializableAddressBook.class);
+        assertThrows(IllegalValueException.class, "Student 1 (Ethan Lim): guardianName: "
+                + StudentName.MESSAGE_CONSTRAINTS, invalidName::toModelType);
     }
 
     @Test

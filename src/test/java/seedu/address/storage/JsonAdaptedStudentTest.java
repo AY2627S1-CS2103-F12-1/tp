@@ -74,7 +74,7 @@ public class JsonAdaptedStudentTest {
     public void toModelType_invalidName_throwsIllegalValueException() {
         JsonAdaptedStudent student = new JsonAdaptedStudent(INVALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
                 VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, VALID_HOMEWORKS);
-        assertThrows(IllegalValueException.class, StudentName.MESSAGE_CONSTRAINTS, student::toModelType);
+        assertThrows(IllegalValueException.class, "name: " + StudentName.MESSAGE_CONSTRAINTS, student::toModelType);
     }
 
     @Test
@@ -88,7 +88,8 @@ public class JsonAdaptedStudentTest {
     public void toModelType_invalidAcademicLevel_throwsIllegalValueException() {
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, "P6", VALID_SUBJECTS,
                 VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, VALID_HOMEWORKS);
-        assertThrows(IllegalValueException.class, AcademicLevel.MESSAGE_CONSTRAINTS, student::toModelType);
+        assertThrows(IllegalValueException.class, "academicLevel: " + AcademicLevel.MESSAGE_CONSTRAINTS,
+                student::toModelType);
     }
 
     @Test
@@ -109,8 +110,8 @@ public class JsonAdaptedStudentTest {
         // the exact text shown in the load error
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, List.of("BIOLOGY"),
                 VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, VALID_HOMEWORKS);
-        assertThrows(IllegalValueException.class, "Subjects must contain one or more of: MATH, PHYSICS, CHEMISTRY, "
-                + "separated by commas.", student::toModelType);
+        assertThrows(IllegalValueException.class, "subjects: Subjects must contain one or more of: MATH, PHYSICS, "
+                + "CHEMISTRY, separated by commas.", student::toModelType);
     }
 
     @Test
@@ -131,7 +132,7 @@ public class JsonAdaptedStudentTest {
     public void toModelType_invalidPhone_throwsIllegalValueException() {
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
                 INVALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, VALID_HOMEWORKS);
-        assertThrows(IllegalValueException.class, StudentPhone.MESSAGE_CONSTRAINTS, student::toModelType);
+        assertThrows(IllegalValueException.class, "phone: " + StudentPhone.MESSAGE_CONSTRAINTS, student::toModelType);
     }
 
     @Test
@@ -145,7 +146,8 @@ public class JsonAdaptedStudentTest {
     public void toModelType_invalidGuardianName_throwsIllegalValueException() {
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
                 VALID_PHONE, INVALID_NAME, VALID_GUARDIAN_PHONE, VALID_HOMEWORKS);
-        assertThrows(IllegalValueException.class, StudentName.MESSAGE_CONSTRAINTS, student::toModelType);
+        assertThrows(IllegalValueException.class, "guardianName: " + StudentName.MESSAGE_CONSTRAINTS,
+                student::toModelType);
     }
 
     @Test
@@ -159,7 +161,8 @@ public class JsonAdaptedStudentTest {
     public void toModelType_invalidGuardianPhone_throwsIllegalValueException() {
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
                 VALID_PHONE, VALID_GUARDIAN_NAME, INVALID_PHONE, VALID_HOMEWORKS);
-        assertThrows(IllegalValueException.class, StudentPhone.MESSAGE_CONSTRAINTS, student::toModelType);
+        assertThrows(IllegalValueException.class, "guardianPhone: " + StudentPhone.MESSAGE_CONSTRAINTS,
+                student::toModelType);
     }
 
     @Test
@@ -234,6 +237,7 @@ public class JsonAdaptedStudentTest {
     private static void assertInvalidSubjects(List<String> subjects) {
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, subjects,
                 VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, VALID_HOMEWORKS);
-        assertThrows(IllegalValueException.class, TuitionSubjects.MESSAGE_CONSTRAINTS, student::toModelType);
+        assertThrows(IllegalValueException.class, "subjects: " + TuitionSubjects.MESSAGE_CONSTRAINTS,
+                student::toModelType);
     }
 }

@@ -28,7 +28,7 @@ class JsonAdaptedStudent {
     /** Message for a duplicate homework, e.g. "Homework 2 (Essay)", and the position of the earlier homework. */
     public static final String MESSAGE_DUPLICATE_HOMEWORK =
             "%s has the same title, subject and due date as homework %d.";
-    /** Prefix naming the entry that an error is about, e.g. "Homework 2 (Essay): ". */
+    /** Prefix naming the entry or key that an error is about, e.g. "Homework 2 (Essay): " or "guardianPhone: ". */
     public static final String ENTRY_PREFIX_FORMAT = "%s: ";
 
     private final String name;
@@ -210,7 +210,8 @@ class JsonAdaptedStudent {
         }
         // A comma inside one entry would otherwise be read as two subjects
         if (subjects.stream().anyMatch(subject -> subject == null || subject.contains(","))) {
-            throw new IllegalValueException(TuitionSubjects.MESSAGE_CONSTRAINTS);
+            throw new IllegalValueException(String.format(ENTRY_PREFIX_FORMAT, "subjects")
+                    + TuitionSubjects.MESSAGE_CONSTRAINTS);
         }
         return toModelValue("subjects", String.join(",", subjects), TuitionSubjects::new,
                 TuitionSubjects.MESSAGE_CONSTRAINTS);
@@ -219,12 +220,13 @@ class JsonAdaptedStudent {
     /**
      * Returns the model value parsed from the required student field {@code value}.
      *
-     * @throws IllegalValueException If the field is missing or its value is invalid.
+     * @throws IllegalValueException If the field is missing or its value is invalid. The message for an invalid value
+     *         starts with the field's JSON key, as fields such as {@code phone} and {@code guardianPhone} share a rule.
      */
     private static <T> T toModelValue(String fieldName, String value, Function<String, T> parser,
             String messageConstraints) throws IllegalValueException {
         return JsonAdaptedHomework.toModelValue(MISSING_FIELD_MESSAGE_FORMAT, fieldName, value, parser,
-                messageConstraints);
+                String.format(ENTRY_PREFIX_FORMAT, fieldName) + messageConstraints);
     }
 
 }

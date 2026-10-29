@@ -94,6 +94,60 @@ public class FileUtilTest {
     }
 
     @Test
+    public void writeToFile_symbolicLinkToMissingFile_createsTargetAndKeepsLink() throws IOException {
+        // PE round 3: a link whose file was missing or deleted was replaced by a regular file
+        Path target = Files.createDirectories(testFolder.resolve("real")).resolve("tutorflow.json");
+        Path link = Files.createDirectories(testFolder.resolve("data")).resolve("tutorflow.json");
+        createSymbolicLinkOrSkip(link, Path.of("..", "real", "tutorflow.json"));
+
+        FileUtil.writeToFile(link, CONTENT);
+
+        assertTrue(Files.isSymbolicLink(link));
+        assertEquals(CONTENT, Files.readString(target));
+        assertEquals(List.of(link), listFiles(link.getParent()));
+        assertEquals(List.of(target), listFiles(target.getParent()));
+    }
+
+    @Test
+    public void writeToFile_chainOfSymbolicLinksToMissingFile_createsTargetAndKeepsLinks() throws IOException {
+        Path target = Files.createDirectories(testFolder.resolve("real")).resolve("tutorflow.json");
+        // each link is relative to its own folder
+        Path middleLink = Files.createDirectories(testFolder.resolve("middle")).resolve("link.json");
+        createSymbolicLinkOrSkip(middleLink, Path.of("..", "real", "tutorflow.json"));
+        Path link = Files.createDirectories(testFolder.resolve("data")).resolve("tutorflow.json");
+        createSymbolicLinkOrSkip(link, Path.of("..", "middle", "link.json"));
+
+        FileUtil.writeToFile(link, CONTENT);
+
+        assertTrue(Files.isSymbolicLink(link));
+        assertTrue(Files.isSymbolicLink(middleLink));
+        assertEquals(CONTENT, Files.readString(target));
+    }
+
+    @Test
+    public void writeToFile_symbolicLinkIntoMissingFolder_throwsAndKeepsLink() throws IOException {
+        Path link = Files.createDirectories(testFolder.resolve("data")).resolve("tutorflow.json");
+        createSymbolicLinkOrSkip(link, Path.of("..", "gone", "tutorflow.json"));
+
+        assertThrows(IOException.class, () -> FileUtil.writeToFile(link, CONTENT));
+
+        assertTrue(Files.isSymbolicLink(link));
+        assertFalse(Files.exists(testFolder.resolve("gone")));
+        assertEquals(List.of(link), listFiles(link.getParent()));
+    }
+
+    @Test
+    public void writeToFile_symbolicLinkToItself_throwsAndKeepsLink() throws IOException {
+        Path link = testFolder.resolve("tutorflow.json");
+        createSymbolicLinkOrSkip(link, Path.of("tutorflow.json"));
+
+        assertThrows(IOException.class, () -> FileUtil.writeToFile(link, CONTENT));
+
+        assertTrue(Files.isSymbolicLink(link));
+        assertEquals(List.of(link), listFiles(testFolder));
+    }
+
+    @Test
     public void writeToFile_missingFileAndFolder_createsFile() throws IOException {
         Path file = testFolder.resolve("data").resolve("tutorflow.json");
 

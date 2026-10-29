@@ -33,6 +33,8 @@ public class FileUtil {
     private static final String TEMP_FILE_SUFFIX = ".tmp";
     private static final String ATTRIBUTE_VIEW_POSIX = "posix";
     private static final String ATTRIBUTE_VIEW_ACL = "acl";
+    /** Largest number of symbolic links followed in a chain, as on Linux, so that a loop of links ends. */
+    private static final int MAX_SYMBOLIC_LINKS = 40;
 
     /**
      * Creates parent directories of file if it has a parent directory
@@ -72,14 +74,16 @@ public class FileUtil {
      * Writes given string to a file, creating the file and its missing parent directories if needed.
      * The content is first written to a new temporary file with a unique name next to {@code file}, which then
      * replaces {@code file}, so {@code file} is never left partially written: if writing fails, it keeps its
-     * previous content. Other files in the folder are never changed. If {@code file} is a symbolic link to an existing
-     * file, that file is replaced in the same way and the link is kept.
+     * previous content. Other files in the folder are never changed. If {@code file} is a symbolic link, the file it
+     * points to is written in the same way, even if it does not exist yet, and the link is kept; the folder of that
+     * file must exist.
      * An existing {@code file} keeps its POSIX file permissions or its access control list (on Windows), whichever
      * the file system supports. A new {@code file} gets the permissions that any new file gets, e.g. from the
      * user's umask on POSIX file systems.
      *
      * @throws AccessDeniedException If {@code file} exists but is read-only, or its folder cannot be written to.
-     * @throws IOException If the content cannot be written. An error about the temporary file names {@code file}.
+     * @throws IOException If the content cannot be written, e.g. because {@code file} is a symbolic link to a file in
+     *         a folder that does not exist. An error about the temporary file names {@code file}.
      */
     public static void writeToFile(Path file, String content) throws IOException {
         // A move can replace a read-only file, so check it first to keep the file read-only for the user
@@ -89,7 +93,7 @@ public class FileUtil {
 
         createParentDirsOfFile(file);
         // Replacing a symbolic link would leave the file it points to with the old content, so that file is replaced
-        Path target = Files.isSymbolicLink(file) && Files.exists(file) ? file.toRealPath() : file;
+        Path target = resolveSymbolicLinks(file);
         Path folder = target.toAbsolutePath().getParent();
         Path tempFile = null;
         try {
@@ -105,6 +109,26 @@ public class FileUtil {
             deleteAfterFailure(tempFile, e);
             throw e;
         }
+    }
+
+    /**
+     * Returns the file that {@code file} points to, following a chain of symbolic links, each relative to the folder
+     * of its link, or {@code file} itself if it is not a symbolic link. The file returned need not exist.
+     *
+     * @throws IOException If a link cannot be read, or the chain has more than {@link #MAX_SYMBOLIC_LINKS} links,
+     *         e.g. because it loops.
+     */
+    public static Path resolveSymbolicLinks(Path file) throws IOException {
+        Path target = file;
+        int linkCount = 0;
+        while (Files.isSymbolicLink(target)) {
+            if (linkCount == MAX_SYMBOLIC_LINKS) {
+                throw new FileSystemException(file.toString(), null, "Too many levels of symbolic links");
+            }
+            target = target.resolveSibling(Files.readSymbolicLink(target));
+            linkCount++;
+        }
+        return target;
     }
 
     /**

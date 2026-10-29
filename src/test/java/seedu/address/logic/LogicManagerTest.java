@@ -26,6 +26,7 @@ import static seedu.address.model.homework.DueDateTest.wrongFormatMessage;
 import static seedu.address.model.util.SampleDataUtil.getSampleAddressBook;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TestUtil.ARABIC_EGYPT;
+import static seedu.address.testutil.TestUtil.createSymbolicLinkOrSkip;
 import static seedu.address.testutil.TestUtil.runWithFormatLocale;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalHomeworks.MECHANICS;
@@ -906,6 +907,23 @@ public class LogicManagerTest {
             assertSaveFailureRestores(ADD_SAMPLE_STUDENT_COMMAND, "Another copy of TutorFlow is saving "
                     + SET_UP_DATA_FILE_NAME + ". Try again. No data was changed.");
         }
+    }
+
+    @Test
+    public void execute_linkedDataFileDeletedWhileOpen_savesThroughLink() throws Exception {
+        // PE round 3: the file that data/tutorflow.json links to was deleted, and the next save replaced the link
+        Path target = Files.createDirectories(temporaryFolder.resolve("synced")).resolve("tutorflow.json");
+        new JsonAddressBookStorage(target).saveAddressBook(getSampleAddressBook());
+        Path link = Files.createDirectories(temporaryFolder.resolve("data")).resolve("tutorflow.json");
+        createSymbolicLinkOrSkip(link, target);
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(link);
+        setUpLogic(storage.readAddressBook().orElseThrow(), storage, SAMPLE_CLOCK);
+        Files.delete(target);
+
+        logic.execute(ADD_SAMPLE_STUDENT_COMMAND);
+
+        assertTrue(Files.isSymbolicLink(link));
+        assertEquals(model.getAddressBook(), new JsonAddressBookStorage(target).readAddressBook().orElseThrow());
     }
 
     @Test

@@ -350,6 +350,43 @@ public class JsonAddressBookStorageTest {
     }
 
     @Test
+    public void saveAddressBook_linkToFileMissingAtLoad_savesThroughLink() throws Exception {
+        // PE round 3: the first save replaced the link with a regular file
+        Path target = Files.createDirectories(testFolder.resolve("synced")).resolve("tutorflow.json");
+        Path link = Files.createDirectories(testFolder.resolve("data")).resolve("tutorflow.json");
+        createSymbolicLinkOrSkip(link, target);
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(link);
+        assertTrue(storage.readAddressBook().isEmpty());
+
+        storage.saveAddressBook(getTypicalAddressBook());
+
+        assertTrue(Files.isSymbolicLink(link));
+        assertEquals(getTypicalAddressBook(), new JsonAddressBookStorage(target).readAddressBook().orElseThrow());
+    }
+
+    @Test
+    public void saveAddressBook_linkedFileDeletedAfterLoad_savesThroughLink() throws Exception {
+        // PE round 3: the link's file was deleted while TutorFlow was open, and the next save replaced the link
+        Path target = Files.createDirectories(testFolder.resolve("synced")).resolve("tutorflow.json");
+        new JsonAddressBookStorage(target).saveAddressBook(getTypicalAddressBook());
+        Path link = Files.createDirectories(testFolder.resolve("data")).resolve("tutorflow.json");
+        createSymbolicLinkOrSkip(link, target);
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(link);
+        AddressBook data = new AddressBook(storage.readAddressBook().orElseThrow());
+        Files.delete(target);
+
+        data.deleteStudent(ALICE);
+        storage.saveAddressBook(data);
+
+        assertTrue(Files.isSymbolicLink(link));
+        assertEquals(data, new JsonAddressBookStorage(target).readAddressBook().orElseThrow());
+
+        // a change to the file the link points to is still found
+        new JsonAddressBookStorage(target).saveAddressBook(getTypicalAddressBook());
+        assertThrows(DataFileConflictException.class, () -> storage.saveAddressBook(new AddressBook()));
+    }
+
+    @Test
     public void saveAddressBook_typicalAddressBook_writesHumanEditableJson() throws Exception {
         Path filePath = testFolder.resolve("TempAddressBook.json");
         new JsonAddressBookStorage(filePath).saveAddressBook(getTypicalAddressBook());

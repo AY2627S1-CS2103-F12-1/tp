@@ -105,7 +105,8 @@ public class JsonAddressBookStorage {
             // A data file deleted since it was loaded or saved is written again from the data in memory
             if (knownVersions.containsKey(normalized) && currentVersion != null
                     && !Arrays.equals(knownVersions.get(normalized), currentVersion)) {
-                throw new DataFileConflictException(DataFileConflictException.MESSAGE_CHANGED);
+                throw new DataFileConflictException(knownVersions.get(normalized) == null
+                        ? DataFileConflictException.MESSAGE_CREATED : DataFileConflictException.MESSAGE_CHANGED);
             }
             String json = JsonUtil.toJsonString(new JsonSerializableAddressBook(addressBook));
             FileUtil.writeToFile(normalized, json);

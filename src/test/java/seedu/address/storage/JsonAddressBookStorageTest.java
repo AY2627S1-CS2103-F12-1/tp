@@ -204,6 +204,19 @@ public class JsonAddressBookStorageTest {
     }
 
     @Test
+    public void saveAddressBook_fileCreatedByAnotherCopyAfterMissingAtLoad_throwsCreatedConflict() throws Exception {
+        Path filePath = testFolder.resolve("TempAddressBook.json");
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(filePath);
+        assertTrue(storage.readAddressBook().isEmpty());
+        new JsonAddressBookStorage(filePath).saveAddressBook(getTypicalAddressBook());
+        byte[] fileBefore = Files.readAllBytes(filePath);
+
+        assertThrows(DataFileConflictException.class, DataFileConflictException.MESSAGE_CREATED, () ->
+                storage.saveAddressBook(new AddressBook()));
+        assertArrayEquals(fileBefore, Files.readAllBytes(filePath));
+    }
+
+    @Test
     public void saveAddressBook_fileChangedByAnotherCopyAfterLoad_throwsChangedConflict() throws Exception {
         Path filePath = testFolder.resolve("TempAddressBook.json");
         new JsonAddressBookStorage(filePath).saveAddressBook(getTypicalAddressBook());

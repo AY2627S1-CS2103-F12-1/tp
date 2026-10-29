@@ -91,7 +91,8 @@ public class LogicManager implements Logic {
             logger.warning("Could not save data, so the command's changes are undone: " + ioe);
             restoreModel(dataBeforeCommand, predicateBeforeCommand, displayedBeforeCommand);
             Path dataFile = storage.getAddressBookFilePath().toAbsolutePath().normalize();
-            String message = ioe instanceof DataFileConflictException ? ioe.getMessage()
+            String message = ioe instanceof DataFileConflictException conflict
+                    ? conflict.getMessage(getShownName(dataFile))
                     : command.getSaveFailureMessage(getShownName(dataFile), describeSaveFailure(ioe, dataFile));
             throw new CommandException(message, ioe);
         }

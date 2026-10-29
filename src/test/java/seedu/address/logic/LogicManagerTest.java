@@ -851,6 +851,19 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_dataFileCreatedByAnotherCopy_namesFileAndKeepsData() throws Exception {
+        // No data file at launch, so this copy starts with no data; another copy then creates the file
+        assertTrue(addressBookStorage.readAddressBook().isEmpty());
+        new JsonAddressBookStorage(dataFilePath).saveAddressBook(getTypicalAddressBook());
+        byte[] fileBefore = Files.readAllBytes(dataFilePath);
+
+        assertCommandException(ADD_STUDENT_COMMAND, "Another program or copy of TutorFlow created "
+                + SET_UP_DATA_FILE_NAME + " after this copy started. Restart TutorFlow before making changes."
+                + " No data was changed.");
+        assertArrayEquals(fileBefore, Files.readAllBytes(dataFilePath));
+    }
+
+    @Test
     public void execute_dataFileConflict_keepsConflictMessage() {
         setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(
                 new DataFileConflictException(DataFileConflictException.MESSAGE_CHANGED)));

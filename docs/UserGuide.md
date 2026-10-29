@@ -29,11 +29,11 @@ TutorFlow is a **desktop application for private tutors to manage their students
 
    * `add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777` : Adds a student named `Aaron Koh` to the student list.
 
-   * `list` : Lists all students.
-
    * `edit 1 n/Updated Student` : Changes the name of the 1st student shown in the list.
 
    * `search Tan` : Shows students whose name, phone, guardian name or guardian phone contains `Tan`.
+
+   * `list` : Lists all students.
 
    * `homework list 1` : Lists the upcoming homework of the 1st student shown in the student list.
 

@@ -48,11 +48,39 @@ public class StudentFieldsTest {
 
     @Test
     public void name_lengthAndCharactersEnforced() {
-        assertEquals("A".repeat(70), new StudentName("A".repeat(70)).toString());
-        for (String invalidName : new String[] {"  ", "A".repeat(71), "John@Tan", "John_Tan"}) {
+        for (String validName : new String[] {"A", "AB", "A".repeat(69), "A".repeat(70)}) {
+            assertEquals(validName, new StudentName(validName).toString());
+        }
+        for (String invalidName : new String[] {"", "  ", "A".repeat(71), "John@Tan", "John_Tan"}) {
             assertEquals(StudentName.MESSAGE_CONSTRAINTS,
                     assertThrows(IllegalArgumentException.class, () -> new StudentName(invalidName)).getMessage());
         }
+    }
+
+    @Test
+    public void name_maximumLength_appliesAfterWhitespaceNormalization() {
+        String maximumName = "A".repeat(70);
+        String maximumSpacedName = "A".repeat(68) + " B";
+
+        assertEquals(maximumName, new StudentName("  " + maximumName + " \t ").toString());
+        assertEquals(maximumSpacedName, new StudentName("A".repeat(68) + " \t  B").toString());
+    }
+
+    @Test
+    public void name_nonAsciiLetters_preservesCharacters() {
+        assertEquals("李明", new StudentName("李明").toString());
+    }
+
+    @Test
+    public void name_supplementaryLetters_countsCodePointsAtLengthBoundary() {
+        // U+10400 is a letter represented by two UTF-16 code units.
+        String supplementaryLetter = "\uD801\uDC00";
+        String maximumName = supplementaryLetter.repeat(70);
+        String excessiveName = supplementaryLetter.repeat(71);
+
+        assertEquals(maximumName, new StudentName(maximumName).toString());
+        assertEquals(StudentName.MESSAGE_CONSTRAINTS,
+                assertThrows(IllegalArgumentException.class, () -> new StudentName(excessiveName)).getMessage());
     }
 
     @Test

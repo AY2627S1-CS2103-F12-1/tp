@@ -19,6 +19,15 @@ public class StudentAddParserTest {
     private final StudentAddParser parser = new StudentAddParser();
 
     @Test
+    public void parse_nonAsciiStudentAndGuardianNames_preservesValues() throws ParseException {
+        Student student = parser.parse(VALID_ARGUMENTS.replace("n/John Tan", "n/李明")
+                .replace("gn/Mary Tan", "gn/李华"));
+
+        assertEquals("李明", student.getName().toString());
+        assertEquals("李华", student.getGuardianName().toString());
+    }
+
+    @Test
     public void parse_validArgumentsInAnyOrder_returnsNormalizedStudent() throws ParseException {
         Student expected = new Student(new StudentName("Benjamin Lim"), AcademicLevel.S4,
                 new TuitionSubjects("PHYSICS, MATH"), new StudentPhone("92345678"),

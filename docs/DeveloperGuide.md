@@ -536,7 +536,7 @@ Homework is managed with eight subcommands of `homework` (short form `hw`): `add
 
 <img src="images/HomeworkAddActivityDiagram.png" width="800" alt="The checks of homework add, in order" />
 
-Two records are the same (`Homework#isSameHomework`) if they have the same title ignoring case, the same subject and the same due date. Score and status do not count. For example, on 2026-10-28 with the sample students:
+Two records are the same (`Homework#isSameHomework`) if they have the same title ignoring case, the same subject and the same due date. Score and status do not count. For example, on 2026-11-06 with the sample students:
 
 ```
 hw add 2 t/Rates of reaction s/CHEMISTRY due/11-20         → added, due 2026-11-20
@@ -553,7 +553,7 @@ Alternatives considered:
 * A denylist of invisible characters (the previous design): rejected, as it needed several lists of special characters and still accepted invisible characters inside a title.
 * Printable ASCII only: rejected, as accented titles such as `Café` would be rejected, titles would be stricter than student names, and data files with such titles would no longer load.
 
-**Due date.** `DueDate#parse` accepts `YYYY-MM-DD` or the short form `MM-DD`. For `MM-DD`, it picks this year, or next year if the date has already passed this year. For example, on 2026-10-28, `11-20` means 2026-11-20 and `10-01` means 2027-10-01. `02-29` follows the same rule, so it is rejected, with a hint to type the full date, when this year has no 29 February still to come and next year is not a leap year. For example, on 2027-01-01, `02-29` means 2028-02-29. The error says what is wrong: an empty date, input in neither format, a year outside 2000 to 2099, or a date that does not exist (e.g. `2026-02-30 is not a real calendar date.`). `homework add`, `homework edit` and `homework filter` show these messages unchanged. The data file is read with `DueDate#parseFullDate`, which accepts only `YYYY-MM-DD`, so the year of a saved date is never guessed.
+**Due date.** `DueDate#parse` accepts `YYYY-MM-DD` or the short form `MM-DD`. For `MM-DD`, it picks this year, or next year if the date has already passed this year. For example, on 2026-11-06, `11-20` means 2026-11-20 and `10-01` means 2027-10-01. `02-29` follows the same rule, so it is rejected, with a hint to type the full date, when this year has no 29 February still to come and next year is not a leap year. For example, on 2027-01-01, `02-29` means 2028-02-29. The error says what is wrong: an empty date, input in neither format, a year outside 2000 to 2099, or a date that does not exist (e.g. `2026-02-30 is not a real calendar date.`). `homework add`, `homework edit` and `homework filter` show these messages unchanged. The data file is read with `DueDate#parseFullDate`, which accepts only `YYYY-MM-DD`, so the year of a saved date is never guessed.
 
 The year range is fixed (2000 to 2099) to catch typos such as `2206` or `0001`. A range based on today (e.g. 10 years either way) was rejected: a data file that loads today would stop loading a few years later.
 
@@ -561,13 +561,13 @@ The year range is fixed (2000 to 2099) to catch typos such as `2206` or `0001`. 
 
 `homework list STUDENT_INDEX [all]` shows one student's homework. Without `all`, it shows only the records due today or later; with `all`, it also shows the records due before today. It sorts the records by due date, keeping records due on the same date in the order they were added, and shows each with its homework index. It only reads data, so nothing is saved.
 
-Because the numbers are homework indices, not row numbers, they can start above 1 or have gaps. For example, on 2026-10-28 Priya Nair's first record is overdue, so `hw ls 2` shows these records:
+Because the numbers are homework indices, not row numbers, they can start above 1 or have gaps. For example, on 2026-11-06 Priya Nair's first record is overdue, so `hw ls 2` shows these records:
 
 ```
-Listed 2 upcoming homework records for Priya Nair (1 record due before today not shown; use homework list 2 all to see it).
-Homework for Priya Nair:
-2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-02 - score Not recorded - status ASSIGNED
-3. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-09 - score Not recorded - status ASSIGNED
+Listed 2 upcoming homework records for Priya Nair (82345671) (1 record due before today not shown; use homework list 2 all to see it).
+Homework for Priya Nair (82345671):
+2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-09 - score Not recorded - status ASSIGNED
+3. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-23 - score Not recorded - status ASSIGNED
 ```
 
 So that a gap does not look like a bug, the first line says how many records due before today are left out and names the command that lists them, with the `STUDENT_INDEX` the user typed. `homework edit` and `homework delete` show the same list, so they pass their own `STUDENT_INDEX` to `HomeworkListCommand#formatHomeworkList`.
@@ -580,12 +580,11 @@ The activity diagram below shows these steps.
 
 `homework upcoming [due/DAYS]` lists the homework of every student that is due from today to `DAYS` days after today (7 days if `due/` is not given), sorted by due date. It goes through the whole roster, not only the students shown, and starts each line with `Student N:`, where `N` is the student's `STUDENT_INDEX`. The index tells apart two students with the same name, and the tutor can type it into `homework list`. For that, `N` must match the student list on screen, so after building the result the command shows the full roster again, as `list` does (e.g. after a `search`). If an internal error stops the command, the displayed list stays as it was.
 
-For example, on 2026-10-28 with the sample students, `hw up due/3` shows:
+For example, on 2026-11-06 with the sample students, `hw up due/3` shows:
 
 ```
-Found 2 homework records due from 2026-10-28 to 2026-10-31.
-Student 1: Ethan Lim; Kinematics practice set; PHYSICS; Due: 2026-10-28; Score: Not recorded; Status: ASSIGNED
-Student 3: Marcus Tan; Algebraic expansion worksheet; MATH; Due: 2026-10-30; Score: Not recorded; Status: ASSIGNED
+Found 1 homework record due from 2026-11-06 to 2026-11-09.
+Student 2: Priya Nair (82345671); Organic reaction pathways map; CHEMISTRY; Due: 2026-11-09; Score: Not recorded; Status: ASSIGNED
 ```
 
 The sequence diagram below shows how `hw up due/3` builds this result.
@@ -597,9 +596,9 @@ The sequence diagram below shows how `hw up due/3` builds this result.
 `homework delete STUDENT_INDEX HOMEWORK_INDEX` removes one record, and every later record of the student moves up by one. So a second delete that uses the original index may remove the wrong record. For example, `hw ls 2 all` shows Priya Nair's three records:
 
 ```
-1. Integration by parts exercise (MATH) - due 2026-10-26 - ...
-2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-02 - ...
-3. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-09 - ...
+1. Integration by parts exercise (MATH) - due 2026-11-02 - ...
+2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-09 - ...
+3. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-23 - ...
 ```
 
 After `hw del 2 1`, the map is homework 1 and the past paper is homework 2. If the tutor then types `hw del 2 2` to delete the map, reading from the old list, the past paper is deleted instead.

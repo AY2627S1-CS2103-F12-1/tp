@@ -167,8 +167,13 @@ public class JsonSerializableAddressBookTest {
         // PE round 2: the reasons for a lesson named the student but not the lesson
         assertSampleDataReason("\"dayOfWeek\" : \"MONDAY\"", "\"dayOfWeek\" : \"MOONDAY\"",
                 "Student 1 (Ethan Lim): Lesson 1 (MOONDAY 17:00-18:30): " + RegularLesson.MESSAGE_DAY);
+        // PE round 3: the reasons for a missing key did not name the key
         assertSampleDataReason("\"endTime\" : \"18:30\"", "\"finishTime\" : \"18:30\"",
-                "Student 1 (Ethan Lim): Lesson 1: Lesson subject, dayOfWeek, startTime and endTime are required.");
+                "Student 1 (Ethan Lim): Lesson 1: Lesson's endTime field is missing!");
+        assertSampleDataReason("\"startTime\" : \"17:00\",\n", "",
+                "Student 1 (Ethan Lim): Lesson 1: Lesson's startTime field is missing!");
+        assertSampleDataReason("\"subject\" : \"MATH\",\n      \"dayOfWeek\"", "\"dayOfWeek\"",
+                "Student 1 (Ethan Lim): Lesson 1 (MONDAY 17:00-18:30): Lesson's subject field is missing!");
         assertSampleDataReason("\"subject\" : \"CHEMISTRY\",\n      \"dayOfWeek\"",
                 "\"subject\" : \"PHYSICS\",\n      \"dayOfWeek\"",
                 "Student 2 (Priya Nair): Lesson 1 (SATURDAY 15:00-16:30): Lesson subject must be one of the "

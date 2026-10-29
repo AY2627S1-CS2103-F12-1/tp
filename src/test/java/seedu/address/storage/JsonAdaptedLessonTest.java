@@ -38,6 +38,22 @@ public class JsonAdaptedLessonTest {
     }
 
     @Test
+    public void toModelType_missingField_namesField() {
+        // PE round 3: the reason listed every field instead of naming the missing one
+        assertMissingField("subject", new JsonAdaptedLesson(null, "MONDAY", "16:00", "18:00"));
+        assertMissingField("dayOfWeek", new JsonAdaptedLesson("MATH", null, "16:00", "18:00"));
+        assertMissingField("startTime", new JsonAdaptedLesson("MATH", "MONDAY", null, "18:00"));
+        assertMissingField("endTime", new JsonAdaptedLesson("MATH", "MONDAY", "16:00", null));
+        // the first missing field in the order of the data file
+        assertMissingField("dayOfWeek", new JsonAdaptedLesson("MATH", null, null, null));
+    }
+
+    private static void assertMissingField(String fieldName, JsonAdaptedLesson lesson) {
+        IllegalValueException exception = assertThrows(IllegalValueException.class, lesson::toModelType);
+        assertEquals(String.format(JsonAdaptedLesson.MISSING_FIELD_MESSAGE_FORMAT, fieldName), exception.getMessage());
+    }
+
+    @Test
     public void toModelType_studentConstraintsAndLegacyData() throws Exception {
         JsonAdaptedLesson lesson = new JsonAdaptedLesson("MATH", "MONDAY", "16:00", "18:00");
         assertEquals(List.of(), adapted(null).toModelType().getLessons());

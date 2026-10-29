@@ -9,6 +9,8 @@ import seedu.address.model.student.TuitionSubject;
 
 /** Stores the subject, weekday and minute-precision times of a weekly lesson as readable JSON. */
 class JsonAdaptedLesson {
+    public static final String MISSING_FIELD_MESSAGE_FORMAT = "Lesson's %s field is missing!";
+
     private final String subject;
     private final String dayOfWeek;
     private final String startTime;
@@ -43,15 +45,27 @@ class JsonAdaptedLesson {
 
     /** Returns the validated lesson, rejecting missing fields or invalid values. */
     public RegularLesson toModelType() throws IllegalValueException {
-        if (subject == null || dayOfWeek == null || startTime == null || endTime == null) {
-            throw new IllegalValueException("Lesson subject, dayOfWeek, startTime and endTime are required.");
-        }
+        requireField("subject", subject);
+        requireField("dayOfWeek", dayOfWeek);
+        requireField("startTime", startTime);
+        requireField("endTime", endTime);
         try {
             return new RegularLesson(TuitionSubject.parse(subject), RegularLesson.parseDay(dayOfWeek),
                     RegularLesson.parseTime(startTime, RegularLesson.MESSAGE_START),
                     RegularLesson.parseTime(endTime, RegularLesson.MESSAGE_END));
         } catch (IllegalArgumentException exception) {
             throw new IllegalValueException(exception.getMessage());
+        }
+    }
+
+    /**
+     * Checks that the field {@code fieldName} is in the data file.
+     *
+     * @throws IllegalValueException If {@code value} is null, naming the missing field.
+     */
+    private static void requireField(String fieldName, String value) throws IllegalValueException {
+        if (value == null) {
+            throw new IllegalValueException(String.format(MISSING_FIELD_MESSAGE_FORMAT, fieldName));
         }
     }
 }

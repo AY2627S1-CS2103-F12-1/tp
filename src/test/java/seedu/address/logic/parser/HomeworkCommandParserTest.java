@@ -43,13 +43,13 @@ public class HomeworkCommandParserTest {
     @Test
     public void parse_add_returnsHomeworkAddCommand() {
         assertParseSuccess(parser, " add 1 title/Complete algebra worksheet s/MATH due/2026-10-15",
-                new HomeworkAddCommand(Index.fromOneBased(1), ALGEBRA, false));
+                new HomeworkAddCommand(Index.fromOneBased(1), ALGEBRA, false, TODAY));
     }
 
     @Test
     public void parse_addShortDueDate_usesGivenClock() {
         assertParseSuccess(parser, " add 1 t/Complete algebra worksheet s/MATH due/10-15",
-                new HomeworkAddCommand(Index.fromOneBased(1), ALGEBRA, true));
+                new HomeworkAddCommand(Index.fromOneBased(1), ALGEBRA, true, TODAY));
     }
 
     @Test

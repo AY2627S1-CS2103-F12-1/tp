@@ -98,9 +98,11 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_homework() throws Exception {
-        HomeworkAddCommand command = (HomeworkAddCommand) parser.parseCommand(
+        Clock clock = Clock.fixed(Instant.parse("2026-10-05T00:00:00Z"), ZoneOffset.UTC);
+        HomeworkAddCommand command = (HomeworkAddCommand) new AddressBookParser(clock).parseCommand(
                 "homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15");
-        assertEquals(new HomeworkAddCommand(Index.fromOneBased(1), ALGEBRA, false), command);
+        assertEquals(new HomeworkAddCommand(Index.fromOneBased(1), ALGEBRA, false, LocalDate.of(2026, 10, 5)),
+                command);
     }
 
     @Test
@@ -110,7 +112,8 @@ public class AddressBookParserTest {
 
         HomeworkAddCommand command = (HomeworkAddCommand) parserWithClock.parseCommand(
                 "hw add 2 t/Attempt mechanics questions 1-5 s/PHYSICS due/10-20");
-        assertEquals(new HomeworkAddCommand(Index.fromOneBased(2), MECHANICS, true), command);
+        assertEquals(new HomeworkAddCommand(Index.fromOneBased(2), MECHANICS, true, LocalDate.of(2026, 10, 5)),
+                command);
     }
 
     @Test
@@ -122,7 +125,8 @@ public class AddressBookParserTest {
 
         HomeworkAddCommand command = (HomeworkAddCommand) parserWithClock.parseCommand(
                 "hw add 1 t/drinkMilk s/physics due/10-5");
-        assertEquals(new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, true), command);
+        assertEquals(new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, true,
+                LocalDate.of(2026, 10, 5)), command);
     }
 
     @Test

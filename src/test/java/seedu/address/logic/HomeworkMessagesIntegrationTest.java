@@ -162,6 +162,21 @@ public class HomeworkMessagesIntegrationTest {
     }
 
     @Test
+    public void execute_addDueBeforeToday_notesHowToListIt() throws Exception {
+        execute("add n/Ethan Lim l/S1 s/MATH p/81234567 gn/Lim Mei gp/81234568");
+
+        assertEquals("New homework added for Ethan Lim (81234567):\n"
+                + "1. d10 (MATH) - due 2020-01-01 - score Not recorded - status ASSIGNED\n"
+                + "Note: this homework is due before today, so homework list 2 shows it only with all.",
+                execute("hw add 2 t/d10 s/MATH due/2020-01-01"));
+        assertEquals("No upcoming homework found for Ethan Lim (81234567) (1 record due before today not shown; "
+                + "use homework list 2 all to see it).", execute("hw ls 2"));
+        assertEquals("Listed 1 homework record for Ethan Lim (81234567).\n"
+                + "Homework for Ethan Lim (81234567):\n"
+                + "1. d10 (MATH) - due 2020-01-01 - score Not recorded - status ASSIGNED", execute("hw ls 2 all"));
+    }
+
+    @Test
     public void execute_wrongCasePrefixInStudentName_keptInName() throws Exception {
         logic.execute("add n/Ravi S/O Kumar l/S3 s/MATH p/91234568 gn/Kumar Devi gp/98765433");
 

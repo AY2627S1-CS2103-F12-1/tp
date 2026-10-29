@@ -337,7 +337,8 @@ public class LogicManagerTest {
         setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
 
         assertEquals("New homework added for Ethan Lim (91234567):\n"
-                + "3. X (MATH) - due 2001-01-01 - score Not recorded - status ASSIGNED",
+                + "3. X (MATH) - due 2001-01-01 - score Not recorded - status ASSIGNED\n"
+                + "Note: this homework is due before today, so homework list 1 shows it only with all.",
                 logic.execute("hw add 1 t/X s/MATH due/2001-01-01").getFeedbackToUser());
 
         Student savedStudent = addressBookStorage.readAddressBook().orElseThrow().getStudentList().getFirst();

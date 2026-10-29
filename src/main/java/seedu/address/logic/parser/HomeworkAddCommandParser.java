@@ -45,7 +45,7 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
     private final Clock clock;
 
     /**
-     * Creates a parser that infers the year of short-form due dates from {@code clock}.
+     * Creates a parser that infers the year of short-form due dates, and finds today, from {@code clock}.
      */
     public HomeworkAddCommandParser(Clock clock) {
         this.clock = requireNonNull(clock);
@@ -75,9 +75,10 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
                 Messages.MESSAGE_STUDENT_INDEX_TOO_LARGE);
         String rawDueDate = values.get(PREFIX_DUE_DATE);
         try {
+            LocalDate today = LocalDate.now(clock);
             Homework homework = new Homework(new Title(rawTitle), TuitionSubject.parse(values.get(PREFIX_SUBJECT)),
-                    DueDate.parse(rawDueDate, LocalDate.now(clock)));
-            return new HomeworkAddCommand(studentIndex, homework, DueDate.isShortForm(rawDueDate));
+                    DueDate.parse(rawDueDate, today));
+            return new HomeworkAddCommand(studentIndex, homework, DueDate.isShortForm(rawDueDate), today);
         } catch (IllegalArgumentException exception) {
             throw new ParseException(exception.getMessage(), exception);
         }

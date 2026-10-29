@@ -19,6 +19,7 @@ import static seedu.address.testutil.TypicalHomeworks.MECHANICS;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 
 import org.junit.jupiter.api.Test;
@@ -33,8 +34,9 @@ import seedu.address.model.student.TuitionSubject;
 import seedu.address.testutil.HomeworkBuilder;
 
 public class HomeworkAddCommandParserTest {
-    /** Fixed clock at 2026-10-05, so short-form due dates always infer the same year. */
+    /** Fixed clock at 2026-10-05, so short-form due dates always infer the same year and today never changes. */
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-05T00:00:00Z"), ZoneOffset.UTC);
+    private static final LocalDate TODAY = LocalDate.of(2026, 10, 5);
     private static final String VALID_FIELDS = " title/Complete algebra worksheet s/MATH due/2026-10-15";
     private static final String USAGE_LINE = "\nUsage: " + HomeworkAddCommand.MESSAGE_USAGE;
     private static final String EXPECTED_WORDS = "STUDENT_INDEX before the first prefix";
@@ -48,13 +50,13 @@ public class HomeworkAddCommandParserTest {
     @Test
     public void parse_titlePrefix_success() {
         assertParseSuccess(parser, "1 title/Complete algebra worksheet s/MATH due/2026-10-15",
-                new HomeworkAddCommand(Index.fromOneBased(1), ALGEBRA, false));
+                new HomeworkAddCommand(Index.fromOneBased(1), ALGEBRA, false, TODAY));
     }
 
     @Test
     public void parse_titleAliasPrefix_success() {
         assertParseSuccess(parser, "2 t/Attempt mechanics questions 1-5 s/PHYSICS due/2026-10-20",
-                new HomeworkAddCommand(Index.fromOneBased(2), MECHANICS, false));
+                new HomeworkAddCommand(Index.fromOneBased(2), MECHANICS, false, TODAY));
     }
 
     @Test
@@ -63,19 +65,19 @@ public class HomeworkAddCommandParserTest {
                 .withSubject("CHEMISTRY").withDueDate("2026-10-18").build();
 
         assertParseSuccess(parser, "3 due/2026-10-18 s/chemistry title/Revise atomic structure",
-                new HomeworkAddCommand(Index.fromOneBased(3), expectedHomework, false));
+                new HomeworkAddCommand(Index.fromOneBased(3), expectedHomework, false, TODAY));
     }
 
     @Test
     public void parse_extraWhitespace_success() {
         assertParseSuccess(parser, "  1   title/  Complete   algebra worksheet  s/  Math  due/ 2026-10-15  ",
-                new HomeworkAddCommand(Index.fromOneBased(1), ALGEBRA, false));
+                new HomeworkAddCommand(Index.fromOneBased(1), ALGEBRA, false, TODAY));
     }
 
     @Test
     public void parse_largestStudentIndex_success() {
         assertParseSuccess(parser, "2147483647" + VALID_FIELDS,
-                new HomeworkAddCommand(Index.fromOneBased(Integer.MAX_VALUE), ALGEBRA, false));
+                new HomeworkAddCommand(Index.fromOneBased(Integer.MAX_VALUE), ALGEBRA, false, TODAY));
     }
 
     @Test
@@ -83,12 +85,12 @@ public class HomeworkAddCommandParserTest {
         Homework expectedHomework = new HomeworkBuilder().withDueDate("2025-01-01").build();
 
         assertParseSuccess(parser, "1 title/Complete algebra worksheet s/MATH due/2025-01-01",
-                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, false));
+                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, false, TODAY));
 
         // second year of the allowed range
         assertParseSuccess(parser, "1 title/Complete algebra worksheet s/MATH due/2001-01-01",
                 new HomeworkAddCommand(Index.fromOneBased(1), new HomeworkBuilder().withDueDate("2001-01-01").build(),
-                        false));
+                        false, TODAY));
     }
 
     @Test
@@ -96,13 +98,13 @@ public class HomeworkAddCommandParserTest {
         Homework expectedHomework = new HomeworkBuilder().withDueDate("2028-02-29").build();
 
         assertParseSuccess(parser, "1 title/Complete algebra worksheet s/MATH due/2028-02-29",
-                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, false));
+                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, false, TODAY));
     }
 
     @Test
     public void parse_shortDateAfterToday_infersCurrentYear() {
         assertParseSuccess(parser, "1 title/Complete algebra worksheet s/MATH due/10-15",
-                new HomeworkAddCommand(Index.fromOneBased(1), ALGEBRA, true));
+                new HomeworkAddCommand(Index.fromOneBased(1), ALGEBRA, true, TODAY));
     }
 
     @Test
@@ -110,7 +112,7 @@ public class HomeworkAddCommandParserTest {
         Homework expectedHomework = new HomeworkBuilder().withDueDate("2026-10-05").build();
 
         assertParseSuccess(parser, "1 title/Complete algebra worksheet s/MATH due/10-05",
-                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, true));
+                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, true, TODAY));
     }
 
     @Test
@@ -118,7 +120,7 @@ public class HomeworkAddCommandParserTest {
         Homework expectedHomework = new HomeworkBuilder().withDueDate("2027-10-04").build();
 
         assertParseSuccess(parser, "1 title/Complete algebra worksheet s/MATH due/10-04",
-                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, true));
+                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, true, TODAY));
     }
 
     @Test
@@ -126,7 +128,7 @@ public class HomeworkAddCommandParserTest {
         Homework expectedHomework = new HomeworkBuilder().withDueDate("2026-10-05").build();
 
         assertParseSuccess(parser, "1 title/Complete algebra worksheet s/MATH due/10-5",
-                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, true));
+                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, true, TODAY));
     }
 
     @Test
@@ -134,7 +136,7 @@ public class HomeworkAddCommandParserTest {
         Homework expectedHomework = new HomeworkBuilder().withDueDate("2027-09-09").build();
 
         assertParseSuccess(parser, "1 title/Complete algebra worksheet s/MATH due/9-9",
-                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, true));
+                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, true, TODAY));
     }
 
     @Test
@@ -142,7 +144,7 @@ public class HomeworkAddCommandParserTest {
         Homework expectedHomework = new HomeworkBuilder().withDueDate("2026-02-05").build();
 
         assertParseSuccess(parser, "1 title/Complete algebra worksheet s/MATH due/2026-2-5",
-                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, false));
+                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, false, TODAY));
     }
 
     @Test
@@ -151,7 +153,7 @@ public class HomeworkAddCommandParserTest {
                 DueDate.parse("2026-10-15", HomeworkBuilder.DEFAULT_TODAY));
 
         assertParseSuccess(parser, "1 title/Exercise 3/4 and 5/6 s/MATH due/2026-10-15",
-                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, false));
+                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, false, TODAY));
     }
 
     @Test
@@ -159,7 +161,7 @@ public class HomeworkAddCommandParserTest {
         Homework expectedHomework = new HomeworkBuilder().withTitle("Speed in km / h, And/or units").build();
 
         assertParseSuccess(parser, "1 title/Speed in km / h, And/or units s/MATH due/2026-10-15",
-                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, false));
+                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, false, TODAY));
     }
 
     @Test
@@ -168,22 +170,22 @@ public class HomeworkAddCommandParserTest {
                 .withDueDate("2026-11-01").build();
 
         assertParseSuccess(parser, "1 t/\"Speed in km/h\" s/PHYSICS due/2026-11-01",
-                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, false));
+                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, false, TODAY));
 
         // spaces at both ends inside the quotes are removed
         assertParseSuccess(parser, "1 t/\"  Speed in km/h  \" s/PHYSICS due/2026-11-01",
-                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, false));
+                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, false, TODAY));
     }
 
     @Test
     public void parse_titleWithQuotesInside_keepsQuotes() {
         // not wrapped in quotes
         assertParseSuccess(parser, "1 t/Read \"Hamlet\" act 1 s/MATH due/2026-10-15", new HomeworkAddCommand(
-                Index.fromOneBased(1), new HomeworkBuilder().withTitle("Read \"Hamlet\" act 1").build(), false));
+                Index.fromOneBased(1), new HomeworkBuilder().withTitle("Read \"Hamlet\" act 1").build(), false, TODAY));
 
         // wrapped in quotes, with quotes inside
         assertParseSuccess(parser, "1 t/\"Read \"Hamlet\" km/h\" s/MATH due/2026-10-15", new HomeworkAddCommand(
-                Index.fromOneBased(1), new HomeworkBuilder().withTitle("Read \"Hamlet\" km/h").build(), false));
+                Index.fromOneBased(1), new HomeworkBuilder().withTitle("Read \"Hamlet\" km/h").build(), false, TODAY));
     }
 
     @Test
@@ -273,7 +275,7 @@ public class HomeworkAddCommandParserTest {
         Homework expectedHomework = new Homework(new Title("Notes S/MATH"), TuitionSubject.MATH,
                 DueDate.parseFullDate("2026-11-01"));
         assertParseSuccess(parser, "1 t/\"Notes S/MATH\" s/MATH due/2026-11-01",
-                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, false));
+                new HomeworkAddCommand(Index.fromOneBased(1), expectedHomework, false, TODAY));
     }
 
     @Test

@@ -145,6 +145,15 @@ public class JsonAddressBookStorageTest {
     }
 
     @Test
+    public void readAddressBook_objectAfterSampleData_reasonPointsAtObject() throws Exception {
+        // a second root object on the line after the sample data, as found in PE testing
+        String content = Files.readString(TEST_DATA_FOLDER.resolve("missingClosingBraceAddressBook.json"))
+                .stripTrailing() + "\n}\n{\"students\":[]}";
+        assertEquals("The file has unexpected content after the JSON data near line 122, column 1.",
+                getLoadingReason(content));
+    }
+
+    @Test
     public void readAddressBook_arabicDigitsLocale_reasonGivesPositionInAsciiDigits() {
         runWithFormatLocale(ARABIC_EGYPT, () -> {
             assertEquals("The file is not valid JSON near line 2, column 18.", assertDoesNotThrow(() ->

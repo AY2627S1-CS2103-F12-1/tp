@@ -36,6 +36,8 @@ public class JsonUtil {
     public static final String MESSAGE_INVALID_JSON = "The file is not valid JSON near line %d, column %d.";
     public static final String MESSAGE_WRONG_VALUE_TYPE =
             "The file has a value of the wrong type near line %d, column %d.";
+    public static final String MESSAGE_CONTENT_AFTER_DATA =
+            "The file has unexpected content after the JSON data near line %d, column %d.";
     public static final String MESSAGE_REPEATED_KEY = "The key \"%s\" is repeated near line %d, column %d.";
 
     private static final Logger logger = LogsCenter.getLogger(JsonUtil.class);
@@ -206,8 +208,8 @@ public class JsonUtil {
             // Jackson stops after the first value, so content after it would be ignored and lost at the next save
             if (parser.nextToken() != null) {
                 JsonLocation location = parser.getTokenLocation();
-                throw new IOException("Unexpected content after the JSON data at line " + location.getLineNr()
-                        + ", column " + location.getColumnNr());
+                throw new IOException(String.format(Locale.ROOT, MESSAGE_CONTENT_AFTER_DATA, location.getLineNr(),
+                        location.getColumnNr()));
             }
             return instance;
         }

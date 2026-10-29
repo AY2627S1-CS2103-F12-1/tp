@@ -117,7 +117,10 @@ narrowest permitted widths, accounting for wrapped headings so the sidebar remai
 lists show entry counts and empty-state placeholders. `MainWindow.fxml` uses split panes to resize sections,
 and `ScrollSupport` lets users scroll over headings and padding while retaining command-box focus.
 
-`StudentListPanel` creates `StudentCard` objects and caches their rendered roots. It observes the displayed
+`MainWindow#createStudentListPanel` supplies a card factory that creates `StudentCard` roots using the window's
+current display date. `StudentListPanel` calls that factory and caches each root with its student reference and
+displayed position. Cells render only nonempty entries with a non-null student and a nonnegative index; reusing
+a cached root also requires the same student reference at that position. The panel observes the displayed
 student list; the [sort recovery activity](#sorting-students) explains how the previous view is retained during sorting.
 
 ### Logic component
@@ -267,8 +270,8 @@ a prefix, so a `/` inside a word such as `3/4` does not start one.
 `homework add`, `homework edit`, `homework marks` and `homework upcoming` use `StrictArgumentTokenizer#tokenizeWithPreambleRejectingWrongCase`, which also rejects one of the command's prefixes typed in another case, such as `Due/` or `S/`, with `MESSAGE_WRONG_CASE_PREFIX` (e.g. `Due/ is not a prefix of this command; prefixes are lowercase (due/).`) and the same quote hint and usage as an unknown prefix. Otherwise `hw e 1 2 t/X Due/2026-11-11` would save the title `X Due/2026-11-11` without any error. Other words that are not lowercase stay in the value, and student commands keep every such word, so names such as `Ravi S/O Kumar` still work.
 
 Each prefix is checked in the order it appears: an unknown prefix gives the error described below, and a repeated
-prefix gives `Prefix X must be specified exactly once.` by default. The student `filter` command supplies its
-own repeated-prefix message: `Each filter may only be specified once`.
+prefix gives `Prefix X must be specified exactly once.` by default. The student `filter` and `sort` commands supply
+their own messages: `Each filter may only be specified once` and `Each sort parameter may only be specified once`.
 
 `homework add`, `homework edit`, `homework marks` and `homework upcoming` also pass a `StrictArgumentTokenizer.RepeatedPrefixRules`, which lists the prefixes whose values are free text (`title/` and `t/`), the prefixes that are aliases of one field (`title/` and `t/`), a function that gives the hint to quote a title holding a given prefix-shaped word, and a function `startsOwnValue` that says whether the text after a prefix starts with a valid value of that prefix. With it, a repeated prefix gives `MESSAGE_PREFIX_GIVEN_ONCE` (`Prefix t/ can be given only once.`) followed by the usage, and giving both aliases gives the caller's alias message (`Use either title/ or t/, not both.`) with the usage. A prefix that directly follows an unquoted free-text value may be part of it, so the tokenizer records it in `TokenizedArguments#prefixesInText`, unless `startsOwnValue` is true for it, and an unknown, wrong-case or repeated prefix there, or the second alias, gets the hint. `HomeworkAddCommandParser#buildRepeatedPrefixRules` builds the rules with today's date, and its `startsOwnValue` is true for `s/` or `due/` whose first word (up to whitespace or a comma) is a subject or a due date that `DueDate#parse` accepts. Such a copy, as `s/MATH` in `hw add 1 t/A s/MATH due/2026-12-01 s/PHYSICS`, is far more likely a field of its own than part of the title, so that command gives `Prefix s/ can be given only once.` and the usage with no hint, while `t/Read s/o notes s/MATH` still gets it, as `o` is not a subject. A repeated prefix gets it when either copy is in the title, as in `t/Revise t/f questions` or `t/Read s/o notes s/MATH`. `homework add` and `homework edit` give the hint `HomeworkAddCommandParser#buildTitleQuoteHint`, so `hw add 1 t/Read s/o notes s/MATH due/2026-12-01` gives `Prefix s/ can be given only once. If s/ is part of the title, put the whole title in straight double quotes, e.g. t/"Read s/o notes".` `homework marks` and `homework upcoming` have no free-text value (`RepeatedPrefixRules#NO_TEXT_OR_ALIAS_PREFIXES`), so they never give a hint. The alias error is reported only after every later prefix has been checked, so an unknown or repeated prefix is reported first.
 
@@ -327,6 +330,23 @@ Text before the first prefix, when the caller does not allow it, still gives the
 roster. `AddCommand` rejects a duplicate identity (the same normalized name and student phone), adds a unique
 student, and restores the full displayed roster in stored order. This also discards an earlier filter or sort,
 unless saving fails: the rollback then restores them.
+
+All six prefixes are required exactly once, in any order. Structural checks run before field validation;
+`StudentAddParser` wraps a value-validation failure in a `ParseException`, preserving its message and cause.
+`StudentName` collapses Unicode whitespace and strips the ends before checking a length of 1 to 70 Unicode
+code points. It accepts Unicode letters and numbers, spaces, apostrophes, hyphens, periods, parentheses and `/`,
+while preserving case for display. `StudentPhone` strips the ends and accepts eight-digit local numbers starting
+with 6, 8 or 9, or a `+` followed by 8 to 15 digits. `TuitionSubjects` rejects empty, unsupported and repeated
+subjects, and preserves the supplied order in its unmodifiable set and display text.
+
+`Student#isSameStudent` compares normalized names without case and treats an eight-digit local phone and its
+valid `+65` form as the same number. Academic details and guardian contacts do not affect duplicate identity.
+This differs from `Student#equals`, which compares all profile fields, homework and lessons using their stored
+values; name case, phone representation and subject order can therefore distinguish otherwise identical profiles.
+
+`StudentAddParserTest` covers argument structure and name-token handling. `StudentFieldsTest` checks value
+normalization, duplicate identity, phone formats and the 70-code-point name boundary, including supplementary
+Unicode letters that occupy two Java `char` values each.
 
 The sequence below shows the current integrated design for a successful addition. Parsing and list-observer
 callbacks are summarized so the diagram focuses on roster changes and saving. Persistence and save-failure
@@ -415,8 +435,10 @@ failures, and supplies an edit-specific save-failure message.
 
 `AddressBookParser` routes `sort by/KEY [o/ORDER]` to `SortCommandParser`. It uses the shared
 `StrictArgumentTokenizer` with sort-specific repeated-prefix feedback; existing callers retain their messages.
-The parser validates syntax and maps stripped, case-insensitive values to `SortKey` and `SortOrder` before execution.
-`SortCommand` returns normal feedback for empty and single-student views.
+The parser requires one `by/` key (`level`, `subject` or `day`) and accepts an optional `o/` order (`asc` or `desc`),
+defaulting to ascending. It maps stripped, case-insensitive values to `SortKey` and `SortOrder` before execution.
+An empty view returns `No students to sort.` in a plain `CommandResult`. A nonempty view, including a single
+student, returns a `SortCommandResult` with the count, key, direction and previous-order restoration action.
 
 The following sequence focuses on Logic/Model interactions for a successful, nonempty `sort by/day o/desc`.
 Parsing and observable-list callbacks are omitted. The UI boundary is shown separately in the recovery activity:
@@ -432,7 +454,8 @@ result would incorrectly move missing meetings first and reverse ties.
 
 `StudentDisplayList` keeps a permutation of filtered-source occurrence indices and publishes a complete candidate
 only after validating its references and multiplicities. Equal students and repeated references remain separate.
-Source changes preserve surviving display positions and update replaced immutable students. Each
+Source changes preserve surviving display positions and update replaced immutable students; source permutations
+remap occurrence indices through `remapSourceIndex`, and newly visible occurrences are appended. Each
 `updateFilteredStudentList` call resets the permutation, including when the predicate still matches all students.
 Consequently `list`, a new search, successful `add` and `homework upcoming` do not retain an earlier sort.
 Student-index commands continue to use `Model#getStudentList`; lesson-schedule numbering remains independent.
@@ -451,6 +474,8 @@ record runtime failures while this boundary is active; recovery restores old car
 Cached candidate cards also cover later virtualized cells. During a sort, the panel retains failures for
 `MainWindow` to recover and log; ordinary filter rendering failures use the panel callback instead. This avoids
 reporting one sort failure through both error paths. No rendering or recovery work is performed in assertions.
+`MainWindow#restoreStudentSort` performs recovery, while `reportStudentSortFailure` logs its outcome at `WARNING`
+when restoration succeeds or `SEVERE` when it fails, retaining the original cause and any distinct recovery failure.
 
 The activity below focuses on a rendering failure after a completed sort. Recovery first makes the previous
 cards available, then restores the model's display order, and finally restores selection, focus and scrolling.
@@ -464,14 +489,17 @@ The sorting helper and parser have isolated tests. `SortIntegrationTest` exercis
 interactions, including zero save calls during sorting, subsequent displayed-index operations and failed saves.
 It also checks changes to each sort key through `Model#setStudent`, retention of the displayed position until
 another explicit sort, and removal of replacements that no longer match the active filter.
-`StudentSortRenderingTest` and `MainWindowSortTest` use controllable renderers on the JavaFX thread to verify
-selection/scroll recovery, exact feedback and diagnostic ownership. See the [logging guide](Logging.md).
+`StudentSortRenderingTest`, `MainWindowSortTest` and `MainWindowSortRecoveryTest` use controllable renderers on
+the JavaFX thread to verify selection/scroll recovery, exact feedback, diagnostic ownership and failures during
+recovery itself. The recovery tests also cover command rejection, repeated exception instances and execution
+failures before a completed sort result exists. See the [logging guide](Logging.md).
 
 ### Filtering students
 
 **Parsing.** `AddressBookParser` routes `filter [l/LEVEL] [s/SUBJECT] [d/DAY]` to `FilterCommandParser`. At least one
 criterion is required, and each prefix may appear only once. The tokenizer checks argument structure before
-the parser validates values in prefix order. `AcademicLevel` and `TuitionSubject` validate supported values
+the parser validates values in the order the prefixes appear in the input. If several values are invalid, the
+first supplied invalid value determines the error. `AcademicLevel` and `TuitionSubject` validate supported values
 and normalize their case and surrounding whitespace. Meeting days use the same full-weekday validation as
 regular lessons, including case and whitespace normalization. Empty values receive field-specific non-empty errors;
 unsupported values retain the domain constraint message and its exception cause. Comma-separated subjects
@@ -505,14 +533,20 @@ the observable displayed list; those callbacks and parsing details are summarize
 
 <img src="images/FilterSequenceDiagram.png" width="900" alt="Filter the full roster and display matching students" />
 
-**Persistence.** Only the displayed predicate changes. The stored `AddressBook` remains equal to the snapshot taken
-by `LogicManager`, so `Storage#saveAddressBook` is never called and no storage format change is needed.
+**Persistence.** Filtering replaces the displayed predicate and resets the transient display order. The stored
+`AddressBook` remains equal to the snapshot taken by `LogicManager`, so `Storage#saveAddressBook` is never called
+and no storage format change is needed.
 
 **Rendering errors and logging.** Unexpected filtering or card-rendering failures are logged with their cause and
 reported to the user as an internal error. Rendering errors take precedence over success feedback, including when
 a card is first displayed after the command has completed. Student records remain unchanged; the user can retry
 or run `list` to restore the full view. Assertion failures remain programming errors and are not caught by this
 recovery path. See the [logging guide](Logging.md) for diagnostic conventions.
+
+`FilterCommandParserTest` checks validation order and diagnostics; `StudentFilterPredicateTest` covers the
+combinations of supplied and omitted criteria. `FilterIntegrationTest` checks displayed indices, view resets,
+lesson-driven membership changes and failed-save recovery. `ActiveFilterUiTest` checks that typed criteria
+remain visible through sorting, lesson changes and rollback, including when the matching students do not change.
 
 ### Homework records
 
@@ -814,6 +848,9 @@ Priorities: High (must-have) - `* * *`, Medium (should-have) - `* *`, Low (nice-
 | US30 | `* *` | independent tutor | mark homework completed or reopen it independently of its score | track unfinished work accurately |
 | US31 | `* *` | independent tutor | see the homework of all my students that is due in the next few days | prepare for the coming lessons and remind students in time |
 | US32 | `* *` | independent tutor | look up a command's format inside the app | use a command correctly without opening the User Guide |
+| US33 | `* *` | independent tutor | filter students by regular meeting day together with level or subject | focus on the students I teach on a selected day |
+| US34 | `*` | independent tutor | sort displayed students by subject | group students by the subjects I teach them |
+| US35 | `*` | independent tutor | sort displayed students by regular meeting day | review students in weekday order while keeping the current search or filter |
 
 ### Use cases
 
@@ -1198,6 +1235,9 @@ testers are expected to do more *exploratory* testing.
       Expected: Zoe and Ben appear as students 1 and 2, with the supplied contact, guardian and academic details.
    1. Repeat Zoe's add command, then try `add n/Another Student l/S2 s/MATH p/91238887 gn/Ivy Quest` (missing guardian phone).<br>
       Expected: A duplicate-student error and `Missing required prefix(es): gp/` with usage guidance respectively. The roster remains unchanged.
+   1. Run `add n/ zoe   quest l/S5 s/CHEMISTRY p/+6591238888 gn/Other Parent gp/97665557`.<br>
+      Expected: A duplicate-student error despite the changed name case, whitespace, phone representation,
+      academic details and guardian. Zoe and Ben remain the only students.
    1. Run `hw add 1 t/Algebra s/MATH due/2099-12-01` and `lesson add 1 s/MATH d/MONDAY st/16:00 et/17:00`. Run `search Zoe Quest`, then `edit 1 n/Zoe Tan`.<br>
       Expected: Zoe is renamed and disappears from the search results because no profile field now matches `Zoe Quest`. Run `list`: Zoe Tan is still student 1 and Ben is student 2. `hw ls 1 all` and `lesson list` retain Zoe's homework and lesson with the updated name.
    1. Try `edit 1 s/PHYSICS`, `edit 1 n/Ben Lim p/91238889`, `edit 1 n/Zoe Tan` and `edit 1 l/S6`.<br>
@@ -1250,27 +1290,40 @@ testers are expected to do more *exploratory* testing.
 
 ### Sorting students
 
-1. Prerequisite: a roster with different academic levels, multiple subjects, several regular meeting days,
-   at least one student without meetings, and enough records to scroll.
+1. In a disposable test folder, create the following roster in this order. Amy's subject registration order
+   deliberately differs from alphabetical order; Cara and Dan have no regular meetings.
+
+   ```text
+   clear
+   add n/Amy Tan l/S4 s/PHYSICS,MATH p/91110001 gn/Amy Mum gp/92220001
+   add n/Ben Tan l/S4 s/MATH p/91110002 gn/Ben Mum gp/92220002
+   add n/Cara Tan l/J1 s/CHEMISTRY p/91110003 gn/Cara Mum gp/92220003
+   add n/Dan Lim l/S3 s/MATH p/91110004 gn/Dan Mum gp/92220004
+   lesson add 1 s/MATH d/MONDAY st/16:00 et/17:00
+   lesson add 2 s/MATH d/TUESDAY st/16:00 et/17:00
+   homework add 1 t/Algebra s/MATH due/2099-12-01
+   ```
+
 1. Run `search Tan`, then `sort by/level o/desc`.<br>
-   Expected: only the search matches remain, ordered from J2 down to S1. The student count is unchanged,
-   and equal levels retain their order before the sort. Each card has its new consecutive displayed index.
+   Expected: Cara Tan, Amy Tan and Ben Tan are displayed in that order; Dan stays hidden. Amy and Ben have the
+   same level and retain their earlier order. Each card has its new consecutive displayed index.
 1. Run `sort by/subject`, then `sort by/day o/desc`.<br>
-   Expected: subject uses the alphabetically first subject, and day uses the earliest weekday for each student.
-   Students without meetings stay last; equal days retain their order from the subject sort.
-1. Select a student, scroll down, then enter `sort by/day by/level`.<br>
+   Expected: The subject sort gives Cara, Amy, Ben: Amy's key is MATH despite PHYSICS being registered first,
+   and the two MATH students retain their earlier order. The descending day sort gives Ben, Amy, Cara;
+   Cara has no meeting and stays last even in descending order.
+1. Select a student and, if the panel scrolls, move partway down the results. Enter `sort by/day by/level`.<br>
    Expected: `Each sort parameter may only be specified once`; order, count, selection and scroll stay unchanged.
 1. Compare the data file before and after valid sorts and rejected commands.<br>
    Expected: identical data. Persistence-call counts and injected internal/rendering failures are checked by
    automated tests; unchanged file contents alone do not establish that no save was attempted.
-1. Run `homework list INDEX` for a newly displayed index, then `list` and a new `search`.<br>
-   Expected: homework belongs to the displayed student. `list` restores stored order, and the new search uses
-   roster order. A successful `add` and `homework upcoming` also discard the transient sort.
-1. Use a test roster of two students, one meeting only on Monday and another meeting on Tuesday.
-   Run `list`, then `sort by/day`.
-   Run `lesson list`, then delete the Monday student's only meeting with `lesson delete 1`.<br>
-   Expected: that student remains first with no meetings. Run `sort by/day` again: the Tuesday student moves first,
-   and the student without meetings moves last. The stored roster order stays unchanged.
+1. Run `homework list 2 all`, then `list`, then `search Tan`.<br>
+   Expected: Homework belongs to Amy Tan and includes Algebra. `list` restores Amy, Ben, Cara, Dan;
+   the new search restores Amy, Ben, Cara in roster order. A successful `add` and `homework upcoming` also
+   discard the transient sort.
+1. Run `list`, then `sort by/day`, `lesson list` and `lesson delete 1`.<br>
+   Expected: Amy loses her Monday meeting but remains the first displayed student. Run `sort by/day` again:
+   Ben moves first, followed by Amy, Cara and Dan, whose missing days retain their previous relative order.
+   The stored roster order remains Amy, Ben, Cara, Dan.
 
 ### Filtering students
 
@@ -1311,7 +1364,7 @@ testers are expected to do more *exploratory* testing.
    1. Run `filter l/S4`, then `sort by/level`, then `filter l/`.<br>
       Expected: Sorting and the rejected command leave `Filtered: level S4` visible.
    1. Run `filter l/S4` before each of `list`, `ls`, `homework upcoming due/7`, and `search Nurul`.<br>
-      Expected: Each command removes the level/subject description. The first three show all students;
+      Expected: Each command removes the active-filter description. The first three show all students;
       the search shows Nurul Aisyah.
    1. Run `filter l/S4 s/PHYSICS` and narrow the student panel.<br>
       Expected: Both criteria remain readable, wrapping onto multiple lines when needed.
@@ -1345,6 +1398,9 @@ testers are expected to do more *exploratory* testing.
       values list the supported levels or subjects. Comma-separated subjects receive
       `Filter accepts only one subject. Use s/SUBJECT.`. The displayed students, selected student and
       visible scroll position remain unchanged. The data file is unchanged.
+   1. Run `filter s/ l/` and `filter d/ s/` separately.<br>
+      Expected: `Subject must be a non-empty value` and `Day must be a non-empty value` respectively.
+      When multiple values are invalid, validation follows their input order; the view and saved data remain unchanged.
    1. Run a valid filter with a read-only data file.<br>
       Expected: Filtering still succeeds because it never attempts a save.
 

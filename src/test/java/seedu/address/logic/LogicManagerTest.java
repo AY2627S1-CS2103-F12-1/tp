@@ -955,6 +955,8 @@ public class LogicManagerTest {
         try {
             assertSaveFailureRestores(ADD_SAMPLE_STUDENT_COMMAND,
                     getGeneralSaveFailureMessage(SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_HOME_FOLDER));
+            assertSaveFailureRestores("delete 1", getCommandSaveFailureMessage(
+                    "student could not be deleted", CAUSE_READ_ONLY_HOME_FOLDER, "student"));
             assertFalse(Files.exists(dataFile.getParent()));
         } finally {
             makeFolderWritable(temporaryFolder);
@@ -1024,6 +1026,23 @@ public class LogicManagerTest {
             assertSaveFailureRestores("hw del 1 2", getCommandSaveFailureMessage(
                     "homework could not be deleted", CAUSE_READ_ONLY_FILE, "homework"));
             assertEquals(homeworkBefore, model.getAddressBook().getStudentList().getFirst().getHomeworks().get(1));
+        } finally {
+            dataFile.toFile().setWritable(true);
+        }
+    }
+
+    @Test
+    public void execute_readOnlyDataFile_studentDeleteReportsReadOnlyFile() throws Exception {
+        Path dataFile = temporaryFolder.resolve("data").resolve("tutorflow.json");
+        setUpLogic(getSampleAddressBook(), new JsonAddressBookStorage(dataFile), SAMPLE_CLOCK);
+        logic.execute("edit 6 l/S5");
+        byte[] fileBefore = Files.readAllBytes(dataFile);
+        assertTrue(dataFile.toFile().setWritable(false));
+        try {
+            assumeFalse(Files.isWritable(dataFile), "the file is still writable, e.g. when running as root");
+            assertSaveFailureRestores("delete 1", getCommandSaveFailureMessage(
+                    "student could not be deleted", CAUSE_READ_ONLY_FILE, "student"));
+            assertArrayEquals(fileBefore, Files.readAllBytes(dataFile));
         } finally {
             dataFile.toFile().setWritable(true);
         }

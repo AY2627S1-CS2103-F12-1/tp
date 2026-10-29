@@ -139,6 +139,45 @@ public class SampleDataUtilTest {
     }
 
     @Test
+    public void getSampleStudents_quickStartCommandsInOrder_succeed() throws Exception {
+        AddressBookParser parser = new AddressBookParser(EXAMPLE_CLOCK);
+        Model model = getModelWithStudents(List.of(sampleStudents));
+
+        for (String commandText : List.of("add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777",
+                "edit 1 n/Updated Student", "search Tan", "list")) {
+            assertDoesNotThrow(() -> parser.parseCommand(commandText).execute(model), commandText);
+        }
+        assertEquals("Listed 1 upcoming homework record for Updated Student (91234567) (1 record due before today "
+                + "not shown; use homework list 1 all to see it).\n"
+                + "Homework for Updated Student (91234567):\n"
+                + "2. Kinematics practice set (PHYSICS) - due 2026-11-11 - score Not recorded - status ASSIGNED",
+                parser.parseCommand("homework list 1").execute(model).getFeedbackToUser());
+        assertDoesNotThrow(() -> parser.parseCommand("hw add 1 t/Algebra worksheet s/MATH due/2026-12-01")
+                .execute(model));
+        assertEquals("Deleted student: Marcus Tan; Level: S1; Subjects: MATH; Phone: 87654329; "
+                + "Guardian: Tan Mei Ling; Guardian phone: 91827364",
+                parser.parseCommand("delete 3").execute(model).getFeedbackToUser());
+        for (String commandText : List.of("lesson list", "clear")) {
+            assertDoesNotThrow(() -> parser.parseCommand(commandText).execute(model), commandText);
+        }
+    }
+
+    @Test
+    public void getSampleStudents_userGuideEditTitleExample_showsDocumentedResult() throws Exception {
+        String expectedMessage = "Edited homework:\n"
+                + "Ethan Lim (91234567); Title: Kinematics practice set B; Subject: PHYSICS; Due: 2026-11-11\n"
+                + "Listed 1 upcoming homework record for Ethan Lim (91234567) (1 record due before today not shown;"
+                + " use homework list 1 all to see it).\n"
+                + "Homework for Ethan Lim (91234567):\n"
+                + "2. Kinematics practice set B (PHYSICS) - due 2026-11-11 - score Not recorded - status ASSIGNED";
+        for (Clock clock : List.of(EXAMPLE_CLOCK, NEXT_DAY_CLOCK)) {
+            Model model = getModelWithStudents(List.of(sampleStudents));
+            assertEquals(expectedMessage, new AddressBookParser(clock)
+                    .parseCommand("hw e 1 2 t/Kinematics practice set B").execute(model).getFeedbackToUser());
+        }
+    }
+
+    @Test
     public void getSampleStudents_userGuideEditExample_showsDocumentedResult() throws Exception {
         String expectedMessage = "Edited homework:\n"
                 + "Priya Nair (82345671); Title: Integration by parts exercise; Subject: MATH; Due: 2026-12-05\n"
@@ -192,5 +231,22 @@ public class SampleDataUtilTest {
                 + "Student 2: Priya Nair (82345671); Organic reaction pathways map; CHEMISTRY; Due: 2026-11-09"
                 + "; Score: Not recorded; Status: ASSIGNED",
                 parser.parseCommand("hw up due/3").execute(model).getFeedbackToUser());
+    }
+
+    @Test
+    public void getSampleStudents_userGuideUpcomingLineExample_matchesOutput() throws Exception {
+        AddressBookParser parser = new AddressBookParser(EXAMPLE_CLOCK);
+        Model model = getModelWithStudents(List.of(sampleStudents));
+        parser.parseCommand("hw m 1 2 score/5/10").execute(model);
+
+        // the second line is the one the user guide quotes
+        assertEquals("Found 3 homework records due from 2026-11-06 to 2026-11-13.\n"
+                + "Student 2: Priya Nair (82345671); Organic reaction pathways map; CHEMISTRY; Due: 2026-11-09"
+                + "; Score: Not recorded; Status: ASSIGNED\n"
+                + "Student 1: Ethan Lim (91234567); Kinematics practice set; PHYSICS; Due: 2026-11-11"
+                + "; Score: 5/10; Status: ASSIGNED\n"
+                + "Student 3: Marcus Tan (87654329); Algebraic expansion worksheet; MATH; Due: 2026-11-12"
+                + "; Score: Not recorded; Status: ASSIGNED",
+                parser.parseCommand("hw up").execute(model).getFeedbackToUser());
     }
 }

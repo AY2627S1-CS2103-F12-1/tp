@@ -1,12 +1,15 @@
 package seedu.address.logic;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.parser.CommandParserTestUtil.unexpectedWords;
 import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefix;
 import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefixWithQuoteHint;
 import static seedu.address.testutil.Assert.assertThrows;
+import static seedu.address.testutil.TestUtil.ARABIC_EGYPT;
+import static seedu.address.testutil.TestUtil.runWithFormatLocale;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -63,8 +66,8 @@ public class HomeworkMessagesIntegrationTest {
 
     @Test
     public void execute_indexTooLarge_namesUpperBound() throws Exception {
-        assertParseFailure("hw del 1 9999999999", Messages.MESSAGE_HOMEWORK_INDEX_TOO_LARGE);
-        assertParseFailure("hw e 2147483648 1 t/X", Messages.MESSAGE_STUDENT_INDEX_TOO_LARGE);
+        assertParseFailure("hw del 1 9999999999", "HOMEWORK_INDEX must be no greater than 2147483647.");
+        assertParseFailure("hw e 2147483648 1 t/X", "STUDENT_INDEX must be no greater than 2147483647.");
     }
 
     @Test
@@ -93,6 +96,8 @@ public class HomeworkMessagesIntegrationTest {
                 "2 words (1 2)", HomeworkListCommand.MESSAGE_USAGE));
         assertParseFailure("hw add 1 extra t/A s/MATH due/2026-11-01", unexpectedWords("STUDENT_INDEX before the "
                 + "first prefix", "2 words (1 extra)", HomeworkAddCommand.MESSAGE_USAGE));
+        assertParseFailure("hw add t/Essay s/MATH due/2026-11-20 1", unexpectedWords("STUDENT_INDEX before the "
+                + "first prefix", "none", HomeworkAddCommand.MESSAGE_USAGE));
         assertParseFailure("hw up 3", unexpectedWords("no words other than due/DAYS", "1 word (3)",
                 HomeworkUpcomingCommand.MESSAGE_USAGE));
         assertParseFailure("hw E 1 2 t/X", "Homework subcommands are lowercase: type e, not E.\nUsage: "
@@ -174,6 +179,63 @@ public class HomeworkMessagesIntegrationTest {
         assertEquals("Listed 1 homework record for Ethan Lim (81234567).\n"
                 + "Homework for Ethan Lim (81234567):\n"
                 + "1. d10 (MATH) - due 2020-01-01 - score Not recorded - status ASSIGNED", execute("hw ls 2 all"));
+    }
+
+    @Test
+    public void execute_nearDuplicateTitles_bothAdded() throws Exception {
+        // titles that differ by a space or a period are different homework
+        assertEquals("New homework added for Tan Ah Kow Jr. (91234567):\n"
+                + "3. Worksheet1 (MATH) - due 2026-11-20 - score Not recorded - status ASSIGNED",
+                execute("hw add 1 t/Worksheet1 s/MATH due/2026-11-20"));
+        assertEquals("New homework added for Tan Ah Kow Jr. (91234567):\n"
+                + "4. Worksheet 1 (MATH) - due 2026-11-20 - score Not recorded - status ASSIGNED",
+                execute("hw add 1 t/Worksheet 1 s/MATH due/2026-11-20"));
+    }
+
+    @Test
+    public void execute_prefixGluedToTitle_keptInTitle() throws Exception {
+        assertEquals("Edited homework:\n"
+                + "Tan Ah Kow Jr. (91234567); Title: Xs/MATH; Subject: PHYSICS; Due: 2026-11-05\n"
+                + "Listed 2 upcoming homework records for Tan Ah Kow Jr. (91234567).\n"
+                + "Homework for Tan Ah Kow Jr. (91234567):\n"
+                + "1. Algebra (MATH) - due 2026-11-02 - score Not recorded - status ASSIGNED\n"
+                + "2. Xs/MATH (PHYSICS) - due 2026-11-05 - score Not recorded - status ASSIGNED",
+                execute("hw e 1 2 t/Xs/MATH"));
+    }
+
+    @Test
+    public void execute_semicolonInTitle_keptInUpcomingLine() throws Exception {
+        assertEquals("New homework added for Tan Ah Kow Jr. (91234567):\n"
+                + "3. Read ch 1; ch 2 (MATH) - due 2026-11-03 - score Not recorded - status ASSIGNED",
+                execute("hw add 1 t/Read ch 1; ch 2 s/MATH due/2026-11-03"));
+        assertEquals("Found 3 homework records due from 2026-10-29 to 2026-11-05.\n"
+                + "Student 1: Tan Ah Kow Jr. (91234567); Algebra; MATH; Due: 2026-11-02; Score: Not recorded; "
+                + "Status: ASSIGNED\n"
+                + "Student 1: Tan Ah Kow Jr. (91234567); Read ch 1; ch 2; MATH; Due: 2026-11-03; "
+                + "Score: Not recorded; Status: ASSIGNED\n"
+                + "Student 1: Tan Ah Kow Jr. (91234567); Optics; PHYSICS; Due: 2026-11-05; Score: Not recorded; "
+                + "Status: ASSIGNED", execute("hw up"));
+    }
+
+    @Test
+    public void execute_arabicDigitsLocale_upcomingListCountInAsciiDigits() throws Exception {
+        execute("hw add 1 t/Old s/MATH due/2026-01-01");
+
+        runWithFormatLocale(ARABIC_EGYPT, () -> assertEquals("Listed 2 upcoming homework records for "
+                + "Tan Ah Kow Jr. (91234567) (1 record due before today not shown; use homework list 1 all to see "
+                + "it).\n"
+                + "Homework for Tan Ah Kow Jr. (91234567):\n"
+                + "1. Algebra (MATH) - due 2026-11-02 - score Not recorded - status ASSIGNED\n"
+                + "2. Optics (PHYSICS) - due 2026-11-05 - score Not recorded - status ASSIGNED",
+                assertDoesNotThrow(() -> execute("hw ls 1"))));
+    }
+
+    @Test
+    public void execute_shortDateYesterday_infersNextYear() throws Exception {
+        // today is 2026-10-29
+        assertEquals("New homework added for Tan Ah Kow Jr. (91234567):\n"
+                + "3. X (MATH) - due 2027-10-28 - score Not recorded - status ASSIGNED\n"
+                + "Inferred year: 2027", execute("hw add 1 t/X s/MATH due/10-28"));
     }
 
     @Test

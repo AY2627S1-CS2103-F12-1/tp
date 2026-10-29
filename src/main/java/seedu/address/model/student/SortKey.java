@@ -29,6 +29,7 @@ public enum SortKey {
                     String.CASE_INSENSITIVE_ORDER));
             case DAY -> Comparator.comparing(SortKey::getFirstDay,
                     Comparator.nullsLast(order.applyTo(Comparator.<DayOfWeek>naturalOrder())));
+            default -> throw new IllegalStateException("Unsupported student sort key: " + this);
         };
     }
 

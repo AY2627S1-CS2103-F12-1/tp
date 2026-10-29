@@ -47,16 +47,11 @@ note right of HomeworkMarksCommand
   and stops here.
 end note
 
-HomeworkMarksCommand -> HomeworkMarksCommand : homework.withScore(8/10)
-activate HomeworkMarksCommand
-
-HomeworkMarksCommand --> HomeworkMarksCommand : scored
-deactivate HomeworkMarksCommand
-
 note right of HomeworkMarksCommand
-  scored is a copy of homework with the score 8/10
-  and the same status. updatedStudent is a copy of
-  student with scored in place of homework.
+  marksCommand calls homework.withScore(8/10), which
+  returns scored, a copy of homework with the score
+  8/10 and the same status. updatedStudent is a copy
+  of student with scored in place of homework.
 end note
 
 HomeworkMarksCommand -> Model : setStudent(student, updatedStudent)

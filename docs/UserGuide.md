@@ -64,7 +64,8 @@ TutorFlow is a **desktop application for private tutors to manage their students
   For example, `[s/SUBJECT]` in `homework edit` may be left out, so both `hw e 1 2 t/Kinematics practice set B s/PHYSICS` and `hw e 1 2 t/Kinematics practice set B` are accepted.
 
 * Items separated by `|` are alternatives; type any one of them.<br>
-  For example, `homework|hw list|ls STUDENT_INDEX` can be used as `homework list 1` or as `hw ls 1`.
+  For example, `homework|hw list|ls STUDENT_INDEX` can be used as `homework list 1` or as `hw ls 1`.<br>
+  In a parameter with a prefix, `|` separates only the prefixes or only the value formats: `title/|t/TITLE` means `title/TITLE` or `t/TITLE`, and `due/YYYY-MM-DD|MM-DD` means `due/YYYY-MM-DD` or `due/MM-DD`.
 
 * Parameters with a prefix can be in any order. Indices such as `STUDENT_INDEX` and `HOMEWORK_INDEX` have no prefix and must come first, right after the command word, or right after the subcommand in `homework` and `lesson` commands, e.g. `hw del 1 2`.<br>
   For example, if the command specifies `n/STUDENT_NAME p/STUDENT_PHONE`, `p/STUDENT_PHONE n/STUDENT_NAME` is also acceptable.

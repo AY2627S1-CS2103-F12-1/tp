@@ -106,7 +106,7 @@ public class HomeworkListCommand extends Command {
         // the phone tells students with the same name apart, and keeps a name ending in "." off the sentence end
         String owner = Messages.formatLessonOwner(student);
         if (homeworks.isEmpty()) {
-            return String.format(MESSAGE_NO_HOMEWORK, owner);
+            return String.format(Locale.ROOT, MESSAGE_NO_HOMEWORK, owner);
         }
 
         // Stream#sorted is stable, so homework due on the same date stays in insertion order
@@ -117,13 +117,15 @@ public class HomeworkListCommand extends Command {
                 .toList();
         String hiddenNote = formatHiddenNote(homeworks.size() - listedIndices.size(), studentIndex);
         if (listedIndices.isEmpty()) {
-            return String.format(MESSAGE_NO_UPCOMING_HOMEWORK, owner, hiddenNote);
+            return String.format(Locale.ROOT, MESSAGE_NO_UPCOMING_HOMEWORK, owner, hiddenNote);
         }
 
         String recordWord = getRecordWord(listedIndices.size());
+        // Locale.ROOT prints the count in ASCII digits in every locale
         StringBuilder message = new StringBuilder(isAllShown
-                ? String.format(MESSAGE_SUCCESS_ALL, listedIndices.size(), recordWord, owner, owner)
-                : String.format(MESSAGE_SUCCESS, listedIndices.size(), recordWord, owner, hiddenNote, owner));
+                ? String.format(Locale.ROOT, MESSAGE_SUCCESS_ALL, listedIndices.size(), recordWord, owner, owner)
+                : String.format(Locale.ROOT, MESSAGE_SUCCESS, listedIndices.size(), recordWord, owner, hiddenNote,
+                        owner));
         for (int zeroBasedIndex : listedIndices) {
             message.append(formatHomeworkLine(zeroBasedIndex + 1, homeworks.get(zeroBasedIndex)));
         }

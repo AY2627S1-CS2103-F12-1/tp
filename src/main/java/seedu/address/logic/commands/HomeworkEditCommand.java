@@ -116,7 +116,8 @@ public class HomeworkEditCommand extends Command {
      * upcoming homework of {@code editedStudent}.
      */
     private String buildSuccessMessage(Student editedStudent, Homework editedHomework) {
-        String message = String.format(MESSAGE_SUCCESS, Messages.format(editedStudent, editedHomework));
+        String message = String.format(Locale.ROOT, MESSAGE_SUCCESS,
+                Messages.format(editedStudent, editedHomework));
         if (isYearInferred) {
             // Locale.ROOT prints the year in ASCII digits in every locale, like the due date before it
             message += String.format(Locale.ROOT, HomeworkAddCommand.MESSAGE_INFERRED_YEAR,

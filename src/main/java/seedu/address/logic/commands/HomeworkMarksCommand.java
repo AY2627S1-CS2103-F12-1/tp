@@ -5,6 +5,7 @@ import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.logging.Level;
@@ -101,7 +102,7 @@ public class HomeworkMarksCommand extends Command {
         Homework scoredHomework = homework.withScore(score);
         List<Homework> updatedHomeworks = new ArrayList<>(student.getHomeworks());
         updatedHomeworks.set(homeworkIndex.getZeroBased(), scoredHomework);
-        String message = String.format(score == null ? MESSAGE_CLEAR_SUCCESS : MESSAGE_SUCCESS,
+        String message = String.format(Locale.ROOT, score == null ? MESSAGE_CLEAR_SUCCESS : MESSAGE_SUCCESS,
                 Messages.formatWithScore(student, scoredHomework));
 
         model.setStudent(student, student.withHomeworks(updatedHomeworks));

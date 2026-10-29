@@ -6,6 +6,7 @@ import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -79,7 +80,7 @@ public class HomeworkDeleteCommand extends Command {
         List<Homework> remainingHomeworks = new ArrayList<>(student.getHomeworks());
         remainingHomeworks.remove(homeworkIndex.getZeroBased());
         Student editedStudent = student.withHomeworks(remainingHomeworks);
-        String message = String.format(MESSAGE_SUCCESS,
+        String message = String.format(Locale.ROOT, MESSAGE_SUCCESS,
                 HomeworkListCommand.formatHomeworkLine(homeworkIndex.getOneBased(), homeworkToDelete),
                 HomeworkListCommand.formatHomeworkList(editedStudent, studentIndex, today, false));
 

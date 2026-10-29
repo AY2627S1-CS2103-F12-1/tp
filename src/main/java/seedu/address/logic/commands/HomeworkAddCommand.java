@@ -84,7 +84,7 @@ public class HomeworkAddCommand extends Command {
 
         List<Homework> updatedHomeworks = new ArrayList<>(student.getHomeworks());
         updatedHomeworks.add(homework);
-        String message = String.format(MESSAGE_SUCCESS, Messages.format(student, homework));
+        String message = String.format(Locale.ROOT, MESSAGE_SUCCESS, Messages.format(student, homework));
         if (isYearInferred) {
             // Locale.ROOT prints the year in ASCII digits in every locale, like the due date before it
             message += String.format(Locale.ROOT, MESSAGE_INFERRED_YEAR, homework.getDueDate().getDate().getYear());

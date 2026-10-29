@@ -114,8 +114,10 @@ public class HomeworkUpcomingCommandTest {
 
     @Test
     public void execute_arabicDigitsLocale_listsAsciiStudentIndices() {
-        // Issue #151: under ar-EG, String.format prints Arabic-Indic digits, which the index parser rejects
-        String expectedLines = "\nStudent 1: Zoe Lee (91111111); Today worksheet; MATH; Due: 2026-10-17; Score: 5/10;"
+        // Issue #151: under ar-EG, String.format prints Arabic-Indic digits, which the index parser rejects;
+        // the count in the summary line is in ASCII digits too
+        String expectedMessage = "Found 2 homework records due from 2026-10-17 to 2026-10-17."
+                + "\nStudent 1: Zoe Lee (91111111); Today worksheet; MATH; Due: 2026-10-17; Score: 5/10;"
                 + " Status: ASSIGNED\n"
                 + "Student 3: Adam Ng (92222222); Today quiz; CHEMISTRY; Due: 2026-10-17; Score: 0/20; Status: "
                 + "ASSIGNED";
@@ -123,7 +125,7 @@ public class HomeworkUpcomingCommandTest {
 
         runWithFormatLocale(ARABIC_EGYPT, () -> {
             String feedback = assertDoesNotThrow(() -> command.execute(model)).getFeedbackToUser();
-            assertTrue(feedback.endsWith(expectedLines), feedback);
+            assertEquals(expectedMessage, feedback);
         });
     }
 

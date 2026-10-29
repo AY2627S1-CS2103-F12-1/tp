@@ -90,10 +90,11 @@ public class HomeworkUpcomingCommand extends Command {
                 .sorted(Comparator.comparing(dueHomework -> dueHomework.homework().getDueDate().getDate()))
                 .toList();
         if (dueHomeworks.isEmpty()) {
-            return String.format(MESSAGE_NO_HOMEWORK, today, lastDay);
+            return String.format(Locale.ROOT, MESSAGE_NO_HOMEWORK, today, lastDay);
         }
 
-        StringBuilder message = new StringBuilder(String.format(MESSAGE_SUCCESS, dueHomeworks.size(),
+        // Locale.ROOT prints the count in ASCII digits in every locale
+        StringBuilder message = new StringBuilder(String.format(Locale.ROOT, MESSAGE_SUCCESS, dueHomeworks.size(),
                 HomeworkListCommand.getRecordWord(dueHomeworks.size()), today, lastDay));
         for (DueHomework dueHomework : dueHomeworks) {
             int position = dueHomework.rosterPosition();

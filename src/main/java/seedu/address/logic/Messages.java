@@ -35,6 +35,7 @@ public class Messages {
     public static final String MESSAGE_SAVE_FAILURE = "Could not save %s: %s. Nothing was changed.";
     public static final String MESSAGE_SAVE_CAUSE_FOLDER = "it is a folder, not a file";
     public static final String MESSAGE_SAVE_CAUSE_READ_ONLY_FILE = "the file is read-only";
+    public static final String MESSAGE_SAVE_CAUSE_UNREADABLE_FILE = "the file cannot be read (no permission)";
     public static final String MESSAGE_SAVE_CAUSE_READ_ONLY_FOLDER = "the data folder is read-only";
     public static final String MESSAGE_SAVE_CAUSE_READ_ONLY_HOME_FOLDER = "the home folder is read-only";
     public static final String MESSAGE_SAVE_CAUSE_READ_ONLY_OTHER_FOLDER = "the folder %s is read-only";

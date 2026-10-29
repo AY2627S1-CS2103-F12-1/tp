@@ -1050,6 +1050,24 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_unreadableDataFile_reportsUnreadableFile() throws Exception {
+        assumeTrue(FileSystems.getDefault().supportedFileAttributeViews().contains("posix"),
+                "file permissions only block reads on POSIX file systems");
+        Path dataFile = temporaryFolder.resolve("data").resolve("tutorflow.json");
+        setUpLogic(getSampleAddressBook(), new JsonAddressBookStorage(dataFile), SAMPLE_CLOCK);
+        logic.execute("edit 6 l/S5");
+        // PE round 2: chmod 200 data/tutorflow.json with the app open; the cause was only the absolute path
+        Files.setPosixFilePermissions(dataFile, PosixFilePermissions.fromString("-w-------"));
+        try {
+            assumeFalse(Files.isReadable(dataFile), "the file is still readable, e.g. when running as root");
+            assertSaveFailureRestores("hw m 1 2 score/5/10", getCommandSaveFailureMessage(
+                    "homework marks could not be recorded", "the file cannot be read (no permission)", "homework"));
+        } finally {
+            Files.setPosixFilePermissions(dataFile, PosixFilePermissions.fromString("rw-------"));
+        }
+    }
+
+    @Test
     public void execute_readOnlyDataFolder_otherCommandsReportReadOnlyFolder() throws Exception {
         Path dataFile = temporaryFolder.resolve("data").resolve("tutorflow.json");
         setUpLogic(getSampleAddressBook(), new JsonAddressBookStorage(dataFile), SAMPLE_CLOCK);

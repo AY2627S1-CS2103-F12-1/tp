@@ -130,8 +130,9 @@ public class LogicManager implements Logic {
 
     /**
      * Returns a plain description of why {@code dataFile} could not be saved, checking the common causes in this
-     * order: the data file is a folder, the data file is read-only, its lock file is a folder or read-only, a file is
-     * where its folder should be, or the nearest existing folder above it is read-only. Otherwise, the system's text
+     * order: the data file is a folder, the data file is read-only, the data file cannot be read, its lock file is a
+     * folder or read-only, a file is where its folder should be, or the nearest existing folder above it is
+     * read-only. Otherwise, the system's text
      * of {@code exception} is returned.
      * The causes are read from the file system, as the exception may be about a different file, such as the
      * internal lock file next to the data file.
@@ -142,6 +143,10 @@ public class LogicManager implements Logic {
         }
         if (Files.exists(dataFile) && !Files.isWritable(dataFile)) {
             return Messages.MESSAGE_SAVE_CAUSE_READ_ONLY_FILE;
+        }
+        // The file is read before saving, to check that no other program changed it
+        if (Files.exists(dataFile) && !Files.isReadable(dataFile)) {
+            return Messages.MESSAGE_SAVE_CAUSE_UNREADABLE_FILE;
         }
         Path lockFile = dataFile.resolveSibling(dataFile.getFileName() + LOCK_FILE_SUFFIX);
         if (Files.isDirectory(lockFile)) {

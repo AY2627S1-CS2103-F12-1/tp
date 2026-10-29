@@ -16,6 +16,7 @@ public final class Title {
     public static final int MAX_LENGTH = 100;
     public static final String MESSAGE_CONSTRAINTS = "Homework title must be 1 to " + MAX_LENGTH + " characters and"
             + " may contain only letters, numbers, punctuation, symbols and spaces.";
+    public static final String MESSAGE_EMPTY = "The homework title is empty. Enter 1 to " + MAX_LENGTH + " characters.";
     public static final String MESSAGE_TOO_LONG =
             "Homework title must be at most " + MAX_LENGTH + " characters, but has %d.";
     public static final String MESSAGE_UNSUPPORTED_CHARACTER = "Homework title has an unsupported character: %s. "
@@ -32,7 +33,7 @@ public final class Title {
      * removing surrounding whitespace. NFC gives canonically equivalent text one encoding, e.g. {@code é} written as
      * one character or as {@code e} followed by a combining accent. Capitalization is preserved for display.
      *
-     * @throws IllegalArgumentException With {@link #MESSAGE_CONSTRAINTS} if the normalized title is empty, with
+     * @throws IllegalArgumentException With {@link #MESSAGE_EMPTY} if the normalized title is empty, with
      *         {@link #MESSAGE_TOO_LONG} if it is longer than {@link #MAX_LENGTH} characters, or with
      *         {@link #MESSAGE_UNSUPPORTED_CHARACTER} naming the first unsupported character.
      */
@@ -42,7 +43,7 @@ public final class Title {
         String normalizedTitle = WHITESPACE.matcher(nfcTitle).replaceAll(" ").strip();
         int length = normalizedTitle.codePointCount(0, normalizedTitle.length());
         if (length < 1) {
-            throw new IllegalArgumentException(MESSAGE_CONSTRAINTS);
+            throw new IllegalArgumentException(MESSAGE_EMPTY);
         }
         if (length > MAX_LENGTH) {
             // Locale.ROOT prints the length in ASCII digits in every locale

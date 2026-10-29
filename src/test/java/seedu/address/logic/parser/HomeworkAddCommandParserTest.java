@@ -35,6 +35,7 @@ import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.model.homework.DueDate;
 import seedu.address.model.homework.Homework;
 import seedu.address.model.homework.Title;
+import seedu.address.model.homework.TitleTest;
 import seedu.address.model.student.TuitionSubject;
 import seedu.address.testutil.HomeworkBuilder;
 
@@ -237,10 +238,11 @@ public class HomeworkAddCommandParserTest {
 
     @Test
     public void parse_emptyQuotedTitle_failure() {
-        assertParseFailure(parser, "1 t/\"\" s/MATH due/2026-10-15", Title.MESSAGE_CONSTRAINTS);
+        // r3-ald-06
+        assertParseFailure(parser, "1 t/\"\" s/MATH due/2026-10-15", TitleTest.MESSAGE_EMPTY);
 
         // only spaces inside the quotes
-        assertParseFailure(parser, "1 t/\" \" s/MATH due/2026-10-15", Title.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 t/\" \" s/MATH due/2026-10-15", TitleTest.MESSAGE_EMPTY);
     }
 
     @Test
@@ -424,12 +426,13 @@ public class HomeworkAddCommandParserTest {
 
     @Test
     public void parse_emptyTitle_failure() {
-        assertParseFailure(parser, "1 title/ s/MATH due/2026-10-15", Title.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 title/ s/MATH due/2026-10-15", TitleTest.MESSAGE_EMPTY);
     }
 
     @Test
     public void parse_emptyTitleAlias_failure() {
-        assertParseFailure(parser, "1 t/ s/MATH due/2026-10-15", Title.MESSAGE_CONSTRAINTS);
+        // r3-ald-06
+        assertParseFailure(parser, "1 t/ s/MATH due/2026-12-01", TitleTest.MESSAGE_EMPTY);
     }
 
     @Test
@@ -571,7 +574,7 @@ public class HomeworkAddCommandParserTest {
 
     @Test
     public void parse_invalidTitleAndInvalidSubject_reportsTitle() {
-        assertParseFailure(parser, "1 title/ s/BIOLOGY due/2026-10-15", Title.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 title/ s/BIOLOGY due/2026-10-15", TitleTest.MESSAGE_EMPTY);
     }
 
     @Test

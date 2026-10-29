@@ -32,6 +32,7 @@ import seedu.address.logic.commands.HomeworkEditCommand;
 import seedu.address.logic.commands.HomeworkEditCommand.EditHomeworkDescriptor;
 import seedu.address.model.homework.DueDate;
 import seedu.address.model.homework.Title;
+import seedu.address.model.homework.TitleTest;
 import seedu.address.model.student.TuitionSubject;
 
 public class HomeworkEditCommandParserTest {
@@ -284,9 +285,11 @@ public class HomeworkEditCommandParserTest {
 
     @Test
     public void parse_invalidTitle_failure() {
-        // empty
-        assertParseFailure(parser, "1 2 t/", Title.MESSAGE_CONSTRAINTS);
-        assertParseFailure(parser, "1 2 title/   s/MATH", Title.MESSAGE_CONSTRAINTS);
+        // empty, r3-ald-06
+        assertParseFailure(parser, "1 2 t/", TitleTest.MESSAGE_EMPTY);
+        assertParseFailure(parser, "1 2 title/   s/MATH", TitleTest.MESSAGE_EMPTY);
+        assertParseFailure(parser, "1 2 t/\"\"", TitleTest.MESSAGE_EMPTY);
+        assertParseFailure(parser, "1 2 t/\" \" s/MATH", TitleTest.MESSAGE_EMPTY);
 
         // 101 characters
         assertParseFailure(parser, "1 2 t/" + "a".repeat(101),
@@ -344,7 +347,7 @@ public class HomeworkEditCommandParserTest {
 
     @Test
     public void parse_invalidTitleAndSubject_reportsTitle() {
-        assertParseFailure(parser, "1 2 s/BIOLOGY t/", Title.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 2 s/BIOLOGY t/", TitleTest.MESSAGE_EMPTY);
     }
 
     @Test

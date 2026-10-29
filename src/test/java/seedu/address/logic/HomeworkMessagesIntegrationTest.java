@@ -236,6 +236,15 @@ public class HomeworkMessagesIntegrationTest {
     }
 
     @Test
+    public void execute_emptyTitle_saysTitleIsEmpty() throws Exception {
+        // r3-ald-06
+        String expectedMessage = "The homework title is empty. Enter 1 to 100 characters.";
+        assertParseFailure("hw add 1 t/ s/MATH due/2026-12-01", expectedMessage);
+        assertParseFailure("hw add 1 t/\"\" s/MATH due/2026-12-01", expectedMessage);
+        assertParseFailure("hw e 1 2 t/\" \"", expectedMessage);
+    }
+
+    @Test
     public void execute_nameEndingInPeriod_noDoublePeriod() throws Exception {
         assertEquals("Listed 2 homework records for Tan Ah Kow Jr. (91234567).\n"
                 + "Homework for Tan Ah Kow Jr. (91234567):\n"

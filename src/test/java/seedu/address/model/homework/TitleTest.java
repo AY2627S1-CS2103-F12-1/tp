@@ -8,6 +8,8 @@ import static seedu.address.testutil.Assert.assertThrows;
 import org.junit.jupiter.api.Test;
 
 public class TitleTest {
+    /** Error for a title that is empty after normalization. */
+    public static final String MESSAGE_EMPTY = "The homework title is empty. Enter 1 to 100 characters.";
     private static final String MESSAGE_TOO_LONG_101 = "Homework title must be at most 100 characters, but has 101.";
 
     @Test
@@ -17,9 +19,9 @@ public class TitleTest {
 
     @Test
     public void constructor_emptyOrWhitespaceOnly_throwsIllegalArgumentException() {
-        assertInvalidTitle(""); // 0 characters
-        assertInvalidTitle("   "); // 0 characters after normalization
-        assertInvalidTitle("\u00A0\u3000"); // only Unicode spaces
+        assertEmptyTitle(""); // 0 characters
+        assertEmptyTitle("   "); // 0 characters after normalization
+        assertEmptyTitle("\u00A0\u3000"); // only Unicode spaces
     }
 
     @Test
@@ -166,8 +168,8 @@ public class TitleTest {
         assertEquals(rawTitle, new Title(rawTitle).toString());
     }
 
-    private static void assertInvalidTitle(String rawTitle) {
-        assertThrows(IllegalArgumentException.class, Title.MESSAGE_CONSTRAINTS, () -> new Title(rawTitle));
+    private static void assertEmptyTitle(String rawTitle) {
+        assertThrows(IllegalArgumentException.class, MESSAGE_EMPTY, () -> new Title(rawTitle));
     }
 
     private static void assertUnsupportedCharacter(String rawTitle, String character) {

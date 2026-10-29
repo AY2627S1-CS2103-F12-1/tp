@@ -29,6 +29,7 @@ import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.UserPrefs;
+import seedu.address.model.homework.Score;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
 import seedu.address.storage.StorageManager;
@@ -98,6 +99,16 @@ public class HomeworkMessagesIntegrationTest {
                 + HomeworkEditCommand.MESSAGE_USAGE);
         assertParseFailure("hw ls 1 ALL", "The word all is lowercase: type all, not ALL.\nUsage: "
                 + HomeworkListCommand.MESSAGE_USAGE);
+    }
+
+    @Test
+    public void execute_invalidScore_namesFailedRule() throws Exception {
+        assertParseFailure("hw m 1 2 score/11/10", "Marks obtained (11) must not be more than the total marks (10).");
+        assertParseFailure("hw m 1 2 score/5/0", Score.MESSAGE_TOTAL_TOO_SMALL);
+        assertParseFailure("hw m 1 2 score/0/0", Score.MESSAGE_TOTAL_TOO_SMALL);
+        for (String invalidFormat : new String[] {"-1", "abc", "50.5", "1e2", "+5", "\uFF15", "5/10/20"}) {
+            assertParseFailure("hw m 1 2 score/" + invalidFormat, Score.MESSAGE_INVALID_FORMAT);
+        }
     }
 
     @Test

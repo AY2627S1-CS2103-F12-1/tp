@@ -85,7 +85,7 @@ public class HomeworkMarksCommandParserTest {
     @Test
     public void parse_invalidQuotedScore_failure() {
         // spaces between digits are kept
-        assertParseFailure(parser, "1 2 score/\"1 7\"", Score.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 2 score/\"1 7\"", Score.MESSAGE_INVALID_FORMAT);
     }
 
     @Test
@@ -218,40 +218,50 @@ public class HomeworkMarksCommandParserTest {
     @Test
     public void parse_invalidScore_failure() {
         // marks obtained above the total
-        assertParseFailure(parser, "1 2 score/11/10", Score.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 2 score/11/10",
+                "Marks obtained (11) must not be more than the total marks (10).");
 
         // zero total
-        assertParseFailure(parser, "1 2 score/5/0", Score.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 2 score/5/0", Score.MESSAGE_TOTAL_TOO_SMALL);
+        assertParseFailure(parser, "1 2 score/0/0", Score.MESSAGE_TOTAL_TOO_SMALL);
 
         // decimal
-        assertParseFailure(parser, "1 2 score/5.5/10", Score.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 2 score/5.5/10", Score.MESSAGE_INVALID_FORMAT);
 
         // spaces inside
-        assertParseFailure(parser, "1 2 score/5 / 10", Score.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 2 score/5 / 10", Score.MESSAGE_INVALID_FORMAT);
 
         // sign
-        assertParseFailure(parser, "1 2 score/-1/10", Score.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 2 score/-1/10", Score.MESSAGE_INVALID_FORMAT);
 
         // extra word after the score
-        assertParseFailure(parser, "1 2 score/5/10 extra", Score.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 2 score/5/10 extra", Score.MESSAGE_INVALID_FORMAT);
 
         // empty total
-        assertParseFailure(parser, "1 2 score/17/", Score.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 2 score/17/", Score.MESSAGE_INVALID_FORMAT);
+
+        // reported cases: word, exponent, full-width digits, three numbers
+        assertParseFailure(parser, "1 2 score/abc", Score.MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 2 score/50.5", Score.MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 2 score/1e2", Score.MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 2 score/+5", Score.MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 2 score/\uFF15", Score.MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 2 score/5/10/20", Score.MESSAGE_INVALID_FORMAT);
     }
 
     @Test
     public void parse_invalidBareScore_failure() {
         // plus sign
-        assertParseFailure(parser, "1 2 score/+17", Score.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 2 score/+17", Score.MESSAGE_INVALID_FORMAT);
 
         // negative
-        assertParseFailure(parser, "1 2 score/-1", Score.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 2 score/-1", Score.MESSAGE_INVALID_FORMAT);
 
         // decimal
-        assertParseFailure(parser, "1 2 score/17.5", Score.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 2 score/17.5", Score.MESSAGE_INVALID_FORMAT);
 
         // space inside
-        assertParseFailure(parser, "1 2 score/1 7", Score.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 2 score/1 7", Score.MESSAGE_INVALID_FORMAT);
     }
 
     @Test
@@ -272,7 +282,7 @@ public class HomeworkMarksCommandParserTest {
         assertParseFailure(parser, "1 2 score/02147483648", Score.MESSAGE_LEADING_ZEROES);
 
         // other format error as well
-        assertParseFailure(parser, "1 2 score/-05", Score.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 2 score/-05", Score.MESSAGE_INVALID_FORMAT);
     }
 
     @Test

@@ -257,16 +257,16 @@ public class JsonAdaptedHomeworkTest {
 
     @Test
     public void toModelType_invalidScoreInJson_throwsIllegalValueException() throws Exception {
-        assertInvalidScore("\"85.5\""); // decimal written as text
-        assertInvalidScore("\"-3\""); // negative written as text
-        assertInvalidScore("\"\""); // empty text
-        assertInvalidScore("\"5.5/10\""); // decimal marks
-        assertInvalidScore("\"11/10\""); // marks above the total
-        assertInvalidScore("\"5/0\""); // zero total
-        assertInvalidScore("\"5 / 10\""); // spaces inside
-        assertInvalidScore("\"abc\""); // non-numeric text
-        assertInvalidScore("true"); // boolean
-        assertInvalidScore("[\"5/10\"]"); // list
+        assertInvalidScore("\"85.5\"", Score.MESSAGE_INVALID_FORMAT); // decimal written as text
+        assertInvalidScore("\"-3\"", Score.MESSAGE_INVALID_FORMAT); // negative written as text
+        assertInvalidScore("\"\"", Score.MESSAGE_INVALID_FORMAT); // empty text
+        assertInvalidScore("\"5.5/10\"", Score.MESSAGE_INVALID_FORMAT); // decimal marks
+        assertInvalidScore("\"11/10\"", "Marks obtained (11) must not be more than the total marks (10).");
+        assertInvalidScore("\"5/0\"", Score.MESSAGE_TOTAL_TOO_SMALL); // zero total
+        assertInvalidScore("\"5 / 10\"", Score.MESSAGE_INVALID_FORMAT); // spaces inside
+        assertInvalidScore("\"abc\"", Score.MESSAGE_INVALID_FORMAT); // non-numeric text
+        assertInvalidScore("true", Score.MESSAGE_CONSTRAINTS); // boolean
+        assertInvalidScore("[\"5/10\"]", Score.MESSAGE_CONSTRAINTS); // list
         assertThrows(IllegalValueException.class, Score.MESSAGE_LEADING_ZEROES, fromJsonWithScore(
                 "\"017\"")::toModelType); // leading zero
         assertThrows(IllegalValueException.class, Score.MESSAGE_TOO_LARGE, fromJsonWithScore(
@@ -336,8 +336,8 @@ public class JsonAdaptedHomeworkTest {
         }
     }
 
-    private static void assertInvalidScore(String score) throws Exception {
-        assertThrows(IllegalValueException.class, Score.MESSAGE_CONSTRAINTS, fromJsonWithScore(score)::toModelType);
+    private static void assertInvalidScore(String score, String expectedMessage) throws Exception {
+        assertThrows(IllegalValueException.class, expectedMessage, fromJsonWithScore(score)::toModelType);
     }
 
     /**

@@ -2,6 +2,7 @@ package seedu.address.model.homework;
 
 import static java.util.Objects.requireNonNull;
 
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -17,6 +18,11 @@ import java.util.regex.Pattern;
 public final class Score {
     public static final String MESSAGE_CONSTRAINTS = "Score must be a whole number, or MARKS_OBTAINED/TOTAL_MARKS "
             + "with whole numbers, a positive total, and marks obtained between zero and the total.";
+    public static final String MESSAGE_INVALID_FORMAT = "Score must be whole marks such as 17, or marks out of a "
+            + "total such as 5/10, with no signs, decimals, spaces or other characters.";
+    public static final String MESSAGE_MARKS_ABOVE_TOTAL =
+            "Marks obtained (%d) must not be more than the total marks (%d).";
+    public static final String MESSAGE_TOTAL_TOO_SMALL = "Total marks must be at least 1.";
     public static final String MESSAGE_TOO_LARGE =
             "Marks are too large. Enter whole numbers no greater than " + Integer.MAX_VALUE + ".";
     public static final String MESSAGE_LEADING_ZEROES =
@@ -66,9 +72,10 @@ public final class Score {
      * surrounding whitespace.
      *
      * @throws IllegalArgumentException With {@link #MESSAGE_LEADING_ZEROES} if a number has leading zeroes but the
-     *         input is otherwise in one of the formats, with {@link #MESSAGE_CONSTRAINTS} if the input is in neither
-     *         format or breaks the rules of {@link #Score(int, int)}, or with {@link #MESSAGE_TOO_LARGE} if a number
-     *         in the right format is larger than {@link Integer#MAX_VALUE}.
+     *         input is otherwise in one of the formats, with {@link #MESSAGE_INVALID_FORMAT} if the input is in
+     *         neither format, with {@link #MESSAGE_TOO_LARGE} if a number in the right format is larger than
+     *         {@link Integer#MAX_VALUE}, with {@link #MESSAGE_TOTAL_TOO_SMALL} if the total is 0, or with
+     *         {@link #MESSAGE_MARKS_ABOVE_TOTAL} if the marks obtained are more than the total.
      */
     public static Score parse(String rawScore) {
         requireNonNull(rawScore);
@@ -77,13 +84,22 @@ public final class Score {
         if (!matcher.matches()) {
             throw new IllegalArgumentException(SCORE_FORMAT_WITH_LEADING_ZEROES.matcher(strippedScore).matches()
                     ? MESSAGE_LEADING_ZEROES
-                    : MESSAGE_CONSTRAINTS);
+                    : MESSAGE_INVALID_FORMAT);
         }
         int marksObtained = parseMarks(matcher.group(1));
         if (matcher.group(2) == null) {
             return new Score(marksObtained);
         }
-        return new Score(marksObtained, parseMarks(matcher.group(2)));
+        int totalMarks = parseMarks(matcher.group(2));
+        if (totalMarks < 1) {
+            throw new IllegalArgumentException(MESSAGE_TOTAL_TOO_SMALL);
+        }
+        if (marksObtained > totalMarks) {
+            // Locale.ROOT prints the marks in ASCII digits, as the user typed them, in every locale
+            throw new IllegalArgumentException(String.format(Locale.ROOT, MESSAGE_MARKS_ABOVE_TOTAL, marksObtained,
+                    totalMarks));
+        }
+        return new Score(marksObtained, totalMarks);
     }
 
     /**

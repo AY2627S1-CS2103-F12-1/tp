@@ -1434,8 +1434,11 @@ testers are expected to do more *exploratory* testing.
 
    1. Prerequisites: Start with the sample students (delete `data/tutorflow.json` first) and run `hw m 1 1 score/5/10`, which creates the data file.
 
-   1. Make `data/tutorflow.json` read-only (e.g. `chmod 444 data/tutorflow.json` on macOS or Linux), then run `hw e 1 1 t/Changed title`, `hw m 1 1 score/9/10` and `hw del 1 1`.<br>
-      Expected: Each shows that the homework could not be edited, that its marks could not be recorded, or that it could not be deleted, and that no homework data was changed, e.g. `The homework could not be deleted because TutorFlow could not save data/tutorflow.json: the file is read-only. No homework data was changed.` `hw ls 1 all` is unchanged. Restore the file's write permission afterwards.
+   1. Make `data/tutorflow.json` read-only (e.g. `chmod 444 data/tutorflow.json` on macOS or Linux), then run `hw e 1 1 t/Changed title`, `hw m 1 1 score/9/10`, `hw m 1 1 score/` and `hw del 1 1`.<br>
+      Expected: Each shows that the homework could not be edited, that its marks could not be recorded or cleared, or that it could not be deleted, and that no homework data was changed, e.g. `The homework could not be deleted because TutorFlow could not save data/tutorflow.json: the file is read-only. No homework data was changed.` `hw ls 1 all` is unchanged. Restore the file's write permission afterwards.
+
+   1. Make the lock file read-only (e.g. `chmod 444 data/tutorflow.json.lock`), then run `hw m 1 1 score/6/10`.<br>
+      Expected: `The homework marks could not be recorded because TutorFlow could not save data/tutorflow.json: the lock file data/tutorflow.json.lock is read-only. No homework data was changed.` Restore the lock file's write permission afterwards.
 
 ### Quoting values
 
@@ -1590,28 +1593,34 @@ The automated smoke check is `./gradlew test --tests '*LessonEditUiTest' --tests
    1. Prerequisites: Start with the sample students (delete `data/tutorflow.json` first).
 
    1. Add a student with `add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777`. With the sample students, Aaron Koh is student 7, so run `homework add 7 t/Algebra worksheet s/MATH due/2026-12-01` and `lesson add 7 s/MATH d/SUNDAY st/20:00 et/21:00` (use Aaron Koh's index if it is not 7). Close the app and launch it again.<br>
-      Expected: The student, the homework and the lesson are still shown: `homework list 7 all` shows `Listed 1 homework record for Aaron Koh.`, `Homework for Aaron Koh:` and `1. Algebra worksheet (MATH) - due 2026-12-01 - score Not recorded - status ASSIGNED`, and `lesson list` shows the lesson as `Aaron Koh (91112222); MATH; SUN; 20:00-21:00`.
+      Expected: The student, the homework and the lesson are still shown: `homework list 7 all` shows `Listed 1 homework record for Aaron Koh (91112222).`, `Homework for Aaron Koh (91112222):` and `1. Algebra worksheet (MATH) - due 2026-12-01 - score Not recorded - status ASSIGNED`, and `lesson list` shows the lesson as `Aaron Koh (91112222); MATH; SUN; 20:00-21:00`.
 
 1. Dealing with a missing data file
 
    1. Close the app and delete `data/tutorflow.json`. Launch the app.<br>
       Expected: The app shows the sample students. A new data file is created after the first command that changes the data, e.g. `hw m 1 1 score/5/10`.
 
+   1. With the app still open, delete `data/tutorflow.json` again, then run `hw m 1 1 score/7/10`. Close the app and launch it again.<br>
+      Expected: `Recorded homework marks:` followed by `Ethan Lim (91234567); Title: Quadratic equations worksheet; Subject: MATH; Due: 2026-11-03; Score: 7/10`, and `data/tutorflow.json` is created again. After the relaunch, `homework list 1 all` shows `1. Quadratic equations worksheet (MATH) - due 2026-11-03 - score 7/10 - status ASSIGNED`.
+
+   1. Copy `data/tutorflow.json` to a safe place, close the app and delete `data/tutorflow.json`. Launch the app, which shows the sample students, then copy the saved file back to `data/tutorflow.json` and run `hw m 1 1 score/9/10`.<br>
+      Expected: `Another program or copy of TutorFlow created data/tutorflow.json after this copy started. Restart TutorFlow before making changes. No data was changed.`
+
 1. Dealing with a corrupted data file
 
-   1. Close the app. In `data/tutorflow.json`, change the `dueDate` of a homework to `10-15` (no year), delete the closing `}`, add a second object such as `{"students":[]}` after the closing `}`, or change a homework title to `Révision` and save the file in the Windows-1252 (Western) encoding instead of UTF-8. Launch the app.<br>
-      Expected: An error dialog shows the absolute data path, a `Reason:` line and recovery instructions; the roster does not open. For `10-15`, the reason is `10-15 is not in YYYY-MM-DD format, e.g. 2026-10-30.`; for a missing closing `}`, it is `The file is not valid JSON near line L, column C.` where `L` and `C` are the line and column of the last character in the file that is not a space or line break (with the sample data, `line 120, column 5`). Dismiss the dialog and verify that the file bytes are unchanged. Restore the valid backup and relaunch: the original records appear.
+   1. Close the app. In `data/tutorflow.json`, change the `dueDate` of Ethan Lim's first homework (`Quadratic equations worksheet`) to `10-15` (no year), delete the closing `}`, add a second object such as `{"students":[]}` after the closing `}`, or change a homework title to `Révision` and save the file in the Windows-1252 (Western) encoding instead of UTF-8. Launch the app.<br>
+      Expected: An error dialog shows the absolute data path, a `Reason:` line and recovery instructions; the roster does not open. For `10-15`, the reason is `Student 1 (Ethan Lim): Homework 1 (Quadratic equations worksheet): 10-15 is not in YYYY-MM-DD format, e.g. 2026-10-30.`; for a missing closing `}`, it is `The file is not valid JSON near line L, column C.` where `L` and `C` are the line and column of the last character in the file that is not a space or line break (with the sample data, `line 120, column 5`); for a second object, it is `The file has unexpected content after the JSON data near line L, column C.` Dismiss the dialog and verify that the file bytes are unchanged. Restore the valid backup and relaunch: the original records appear.
 
-   1. Close the app. In `data/tutorflow.json`, change the `dueDate` of a homework to `2206-10-23`, or rename the `guardianPhone` key of a student to `guardianPhon`. Launch the app.<br>
-      Expected: The same error dialog as above, with `Reason: The due date's year must be from 2000 to 2099.` or `Reason: Student's guardianPhone field is missing!`.
+   1. Close the app. In `data/tutorflow.json`, change the `dueDate` of Ethan Lim's first homework to `2206-10-23`, or rename Ethan Lim's `guardianPhone` key to `guardianPhon`. Launch the app.<br>
+      Expected: The same error dialog as above, with `Reason: Student 1 (Ethan Lim): Homework 1 (Quadratic equations worksheet): The due date's year must be from 2000 to 2099.` or `Reason: Student 1 (Ethan Lim): Student's guardianPhone field is missing!`.
 
    1. Close the app. In `data/tutorflow.json`, add `, "students" : [ ]` just before the last `}` of the file, so that the file has two `"students"` keys. Launch the app.<br>
-      Expected: The same error dialog as above; the roster does not open and the file bytes are unchanged.
+      Expected: The same error dialog as above, with `Reason: The key "students" is repeated near line L, column C.`, where `L` and `C` give the position of the second key; the roster does not open and the file bytes are unchanged.
 
 1. Dealing with a score saved by an older version
 
    1. Start with the sample students and run a command that changes the data, e.g. `hw m 1 1 score/5/10`, so that the data file is created. Close the app. In `data/tutorflow.json`, change the `score` of Ethan Lim's first homework (`Quadratic equations worksheet`) to `85` (a number, without quotes). Launch the app.<br>
-      Expected: All students are shown, and `homework list 1 all` shows `1. Quadratic equations worksheet (MATH) - due 2026-10-23 - score 85 - status ASSIGNED`. The `85` stays in the data file until a command changes the data, which saves the homework with `"score" : "85"`.
+      Expected: All students are shown, and `homework list 1 all` shows `1. Quadratic equations worksheet (MATH) - due 2026-11-03 - score 85 - status ASSIGNED`. The `85` stays in the data file until a command changes the data, which saves the homework with `"score" : "85"`.
 
    1. Change the `score` to `"85"` (text, with quotes) instead. Launch the app.<br>
       Expected: Same as above.
@@ -1620,7 +1629,7 @@ The automated smoke check is `./gradlew test --tests '*LessonEditUiTest' --tests
       Expected: All students are shown, and the homework shows `score Not recorded`. A warning such as `Ignored invalid homework score 85.5 for 'Quadratic equations worksheet'` is logged.
 
    1. Change the `score` to `"85.5"` (text, with quotes) instead. Launch the app.<br>
-      Expected: The loading error dialog appears, the roster does not open, and the data file is unchanged, as for corrupted data above.
+      Expected: The loading error dialog appears with `Reason: Student 1 (Ethan Lim): Homework 1 (Quadratic equations worksheet): Score must be whole marks such as 17, or marks out of a total such as 5/10, with no signs, decimals, spaces or other characters.`, the roster does not open, and the data file is unchanged, as for corrupted data above.
 
 1. Dealing with a data file that cannot be written
 
@@ -1639,7 +1648,7 @@ The automated smoke check is `./gradlew test --tests '*LessonEditUiTest' --tests
       Expected: `The student could not be deleted because TutorFlow could not save data/tutorflow.json: it is a folder, not a file. No student data was changed.` and Ethan Lim is still student 1.
 
    1. Close the app and launch it again with the `tutorflow.json` folder still there.<br>
-      Expected: The loading error dialog appears and the app does not open. The folder is unchanged. Delete the `data` folder afterwards.
+      Expected: The loading error dialog appears with `Reason: It is a folder, not a file.` and the app does not open. The folder is unchanged. Delete the `data` folder afterwards.
 
    1. In a fresh folder, create an empty file named `data` next to the JAR. Launch the app and run `add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777`.<br>
       Expected: `Could not save data/tutorflow.json: a file named data is in the way of the data folder. Nothing was changed.` `list` shows 6 students.

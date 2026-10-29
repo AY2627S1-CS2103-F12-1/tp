@@ -4,7 +4,9 @@ import static java.util.Objects.requireNonNull;
 
 import java.util.Locale;
 
-/** Represents one of the tuition subjects offered by TutorFlow. */
+/**
+ * Represents one of the tuition subjects offered by TutorFlow.
+ */
 public enum TuitionSubject {
     MATH, PHYSICS, CHEMISTRY;
 

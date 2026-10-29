@@ -88,9 +88,13 @@ public class SortCommandTest {
 
     @Test
     public void equals_comparesKeyAndOrder() {
+        assertEquals(command, command);
         assertEquals(command, new SortCommand(SortKey.LEVEL, SortOrder.ASCENDING));
+        assertEquals(command.hashCode(), new SortCommand(SortKey.LEVEL, SortOrder.ASCENDING).hashCode());
         assertFalse(command.equals(new SortCommand(SortKey.DAY, SortOrder.ASCENDING)));
         assertFalse(command.equals(new SortCommand(SortKey.LEVEL, SortOrder.DESCENDING)));
+        assertFalse(command.equals(null));
+        assertFalse(command.equals("sort"));
     }
 
     @Test

@@ -26,6 +26,13 @@ public class FilterCommandParserTest {
     private final FilterCommandParser parser = new FilterCommandParser();
 
     @Test
+    public void parse_multipleInvalidValues_reportsFirstFieldInInputOrder() {
+        assertParseFailure(parser, " l/ s/ d/", FilterCommandParser.MESSAGE_EMPTY_LEVEL);
+        assertParseFailure(parser, " s/ d/ l/", FilterCommandParser.MESSAGE_EMPTY_SUBJECT);
+        assertParseFailure(parser, " d/ l/ s/", FilterCommandParser.MESSAGE_EMPTY_DAY);
+    }
+
+    @Test
     public void parse_levelOnly_acceptsEverySupportedLevel() {
         for (AcademicLevel level : AcademicLevel.values()) {
             FilterCommand expected = new FilterCommand(new StudentFilterPredicate(

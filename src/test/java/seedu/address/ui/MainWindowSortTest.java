@@ -2,12 +2,11 @@ package seedu.address.ui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static seedu.address.testutil.FxTestUtil.runOnFxThread;
 
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
@@ -15,7 +14,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.scene.Parent;
@@ -31,6 +29,7 @@ import seedu.address.model.student.Student;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
 import seedu.address.storage.StorageManager;
+import seedu.address.testutil.FxTestUtil;
 import seedu.address.testutil.LogRecorder;
 import seedu.address.testutil.StudentBuilder;
 
@@ -40,12 +39,7 @@ public class MainWindowSortTest {
 
     @BeforeAll
     public static void startJavaFx() {
-        try {
-            Platform.startup(() -> { });
-        } catch (IllegalStateException exception) {
-            // Another UI test has already initialized the JavaFX runtime.
-        }
-        Platform.setImplicitExit(false);
+        FxTestUtil.startJavaFx();
     }
 
     @Test
@@ -223,9 +217,4 @@ public class MainWindowSortTest {
         return (ListView<Student>) root.lookup("#studentListView");
     }
 
-    private static void runOnFxThread(Runnable action) throws Exception {
-        FutureTask<Void> task = new FutureTask<>(action, null);
-        Platform.runLater(task);
-        task.get(10, TimeUnit.SECONDS);
-    }
 }

@@ -13,7 +13,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.time.DayOfWeek;
 import java.time.Instant;
+import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
@@ -29,7 +31,9 @@ import seedu.address.model.AddressBook;
 import seedu.address.model.ModelManager;
 import seedu.address.model.ReadOnlyAddressBook;
 import seedu.address.model.homework.Score;
+import seedu.address.model.lesson.RegularLesson;
 import seedu.address.model.student.Student;
+import seedu.address.model.student.TuitionSubject;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
 import seedu.address.storage.StorageManager;
@@ -107,6 +111,28 @@ public class FilterIntegrationTest {
 
         assertArrayEquals(savedBefore, Files.readAllBytes(dataFile));
         assertEquals(0, storage.saveCalls);
+    }
+
+    @Test
+    public void execute_twoCriteriaWithDay_appliesBothAndIgnoresOmittedCriterion() throws Exception {
+        Student matchingLevel = new StudentBuilder().withName("Dan Lee").withAcademicLevel("S4")
+                .withSubjects("CHEMISTRY").withLessons(new RegularLesson(TuitionSubject.CHEMISTRY, DayOfWeek.MONDAY,
+                        LocalTime.of(11, 0), LocalTime.of(12, 0))).build();
+        Student matchingSubject = new StudentBuilder().withName("Eve Lim").withAcademicLevel("J1")
+                .withSubjects("MATH,PHYSICS").withLessons(new RegularLesson(TuitionSubject.PHYSICS, DayOfWeek.MONDAY,
+                        LocalTime.of(13, 0), LocalTime.of(14, 0))).build();
+        model.addStudent(matchingLevel);
+        model.addStudent(matchingSubject);
+        AddressBook before = new AddressBook(model.getAddressBook());
+
+        logic.execute("filter l/S4 d/MONDAY");
+        assertEquals(List.of(first, matchingLevel), model.getStudentList());
+        logic.execute("filter s/MATH d/MONDAY");
+        assertEquals(List.of(first, matchingSubject), model.getStudentList());
+
+        assertEquals(before, model.getAddressBook());
+        assertEquals(0, storage.saveCalls);
+        assertFalse(Files.exists(dataFile));
     }
 
     @Test

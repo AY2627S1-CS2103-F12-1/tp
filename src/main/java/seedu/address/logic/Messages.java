@@ -45,7 +45,9 @@ public class Messages {
     public static final String MESSAGE_SAVE_CAUSE_FOLDER_LOCK_FILE = "the lock file %s is a folder, not a file";
     public static final String MESSAGE_SAVE_CAUSE_READ_ONLY_LOCK_FILE = "the lock file %s is read-only";
 
-    /** Returns all six student fields in the Add Student success-message format. */
+    /**
+     * Returns all six student fields in the Add Student success-message format.
+     */
     public static String format(Student student) {
         return student.getName()
                 + "; Level: " + student.getAcademicLevel()

@@ -1,6 +1,7 @@
 package seedu.address.logic.commands;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -118,6 +119,24 @@ public class FilterCommandTest {
         } finally {
             logger.removeHandler(handler);
         }
+    }
+
+    @Test
+    public void equals_comparesFilterCriteria() {
+        StudentFilterPredicate predicate = new StudentFilterPredicate(Optional.of(AcademicLevel.S4), Optional.empty());
+        FilterCommand command = new FilterCommand(predicate);
+        FilterCommand equalCommand = new FilterCommand(
+                new StudentFilterPredicate(Optional.of(AcademicLevel.S4), Optional.empty()));
+        FilterCommand differentCommand = new FilterCommand(
+                new StudentFilterPredicate(Optional.of(AcademicLevel.J1), Optional.empty()));
+
+        assertTrue(command.equals(command));
+        assertEquals(command, equalCommand);
+        assertEquals(command.hashCode(), equalCommand.hashCode());
+        assertFalse(command.equals(differentCommand));
+        assertFalse(command.equals(null));
+        assertFalse(command.equals("filter"));
+        assertEquals("seedu.address.logic.commands.FilterCommand{predicate=" + predicate + "}", command.toString());
     }
 
     private ModelManager createModel() {

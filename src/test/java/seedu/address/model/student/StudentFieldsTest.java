@@ -11,6 +11,34 @@ import org.junit.jupiter.api.Test;
 
 public class StudentFieldsTest {
     @Test
+    public void equals_namesCompareNormalizedValuesAndTypes() {
+        StudentName name = new StudentName("Alice Tan");
+        StudentName equalName = new StudentName("  Alice   Tan  ");
+        StudentName differentCase = new StudentName("alice tan");
+
+        assertEquals(name, equalName);
+        assertEquals(name.hashCode(), equalName.hashCode());
+        assertFalse(name.equals(differentCase));
+        assertTrue(name.isSameNameIgnoringCase(differentCase));
+        assertFalse(name.equals(null));
+        assertFalse(name.equals("Alice Tan"));
+    }
+
+    @Test
+    public void equals_phonesCompareStoredValuesAndTypes() {
+        StudentPhone phone = new StudentPhone("91234567");
+        StudentPhone equalPhone = new StudentPhone(" 91234567 ");
+        StudentPhone internationalPhone = new StudentPhone("+6591234567");
+
+        assertEquals(phone, equalPhone);
+        assertEquals(phone.hashCode(), equalPhone.hashCode());
+        assertFalse(phone.equals(internationalPhone));
+        assertTrue(phone.isSameNumber(internationalPhone));
+        assertFalse(phone.equals(null));
+        assertFalse(phone.equals("91234567"));
+    }
+
+    @Test
     public void name_normalizesWhitespaceAndPreservesCase() {
         StudentName name = new StudentName("  J.   A/P\tClark-Andrew  ");
 
@@ -20,11 +48,39 @@ public class StudentFieldsTest {
 
     @Test
     public void name_lengthAndCharactersEnforced() {
-        assertEquals("A".repeat(70), new StudentName("A".repeat(70)).toString());
-        for (String invalidName : new String[] {"  ", "A".repeat(71), "John@Tan", "John_Tan"}) {
+        for (String validName : new String[] {"A", "AB", "A".repeat(69), "A".repeat(70)}) {
+            assertEquals(validName, new StudentName(validName).toString());
+        }
+        for (String invalidName : new String[] {"", "  ", "A".repeat(71), "John@Tan", "John_Tan"}) {
             assertEquals(StudentName.MESSAGE_CONSTRAINTS,
                     assertThrows(IllegalArgumentException.class, () -> new StudentName(invalidName)).getMessage());
         }
+    }
+
+    @Test
+    public void name_maximumLength_appliesAfterWhitespaceNormalization() {
+        String maximumName = "A".repeat(70);
+        String maximumSpacedName = "A".repeat(68) + " B";
+
+        assertEquals(maximumName, new StudentName("  " + maximumName + " \t ").toString());
+        assertEquals(maximumSpacedName, new StudentName("A".repeat(68) + " \t  B").toString());
+    }
+
+    @Test
+    public void name_nonAsciiLetters_preservesCharacters() {
+        assertEquals("李明", new StudentName("李明").toString());
+    }
+
+    @Test
+    public void name_supplementaryLetters_countsCodePointsAtLengthBoundary() {
+        // U+10400 is a letter represented by two UTF-16 code units.
+        String supplementaryLetter = "\uD801\uDC00";
+        String maximumName = supplementaryLetter.repeat(70);
+        String excessiveName = supplementaryLetter.repeat(71);
+
+        assertEquals(maximumName, new StudentName(maximumName).toString());
+        assertEquals(StudentName.MESSAGE_CONSTRAINTS,
+                assertThrows(IllegalArgumentException.class, () -> new StudentName(excessiveName)).getMessage());
     }
 
     @Test

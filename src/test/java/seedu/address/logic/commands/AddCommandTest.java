@@ -23,6 +23,14 @@ public class AddCommandTest {
     }
 
     @Test
+    public void toString_includesStudentToAdd() {
+        Student student = new StudentBuilder().build();
+
+        assertEquals("seedu.address.logic.commands.AddCommand{studentToAdd=" + student + "}",
+                new AddCommand(student).toString());
+    }
+
+    @Test
     public void execute_newStudent_addsOnceAndShowsFullSummary() throws CommandException {
         Student student = new StudentBuilder().build();
         ModelStub model = new ModelStub();

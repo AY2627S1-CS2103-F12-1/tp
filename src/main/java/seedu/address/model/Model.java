@@ -37,10 +37,14 @@ public interface Model {
     /** Returns the AddressBook */
     ReadOnlyAddressBook getAddressBook();
 
-    /** Returns true if a student with the same normalized name and student phone exists. */
+    /**
+     * Returns true if a student with the same normalized name and student phone exists.
+     */
     boolean hasStudent(Student student);
 
-    /** Adds a student to the end of the student roster. The student must not already exist. */
+    /**
+     * Adds a student to the end of the student roster. The student must not already exist.
+     */
     void addStudent(Student student);
 
     /** Deletes a student from the student roster. The student must be present. */

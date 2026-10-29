@@ -4,12 +4,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
 
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ModifiableObservableListBase;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import seedu.address.testutil.StudentBuilder;
@@ -79,6 +83,57 @@ public class StudentDisplayListTest {
     }
 
     @Test
+    public void sourcePermutation_interiorRange_preservesOccurrencesAndIndexMappings() {
+        Student fourth = new StudentBuilder().withName("Fourth Student").build();
+        ControlledStudentList controlledSource = new ControlledStudentList(List.of(first, second, third, fourth));
+        StudentDisplayList controlledDisplay = new StudentDisplayList(controlledSource);
+        controlledDisplay.setOrder(List.of(third, first, fourth, second));
+
+        controlledSource.permute(1, 3, new int[] {2, 1});
+
+        assertEquals(List.of(first, third, second, fourth), controlledSource);
+        assertEquals(List.of(third, first, fourth, second), controlledDisplay);
+        assertEquals(List.of(1, 0, 3, 2), List.of(controlledDisplay.getSourceIndex(0),
+                controlledDisplay.getSourceIndex(1), controlledDisplay.getSourceIndex(2),
+                controlledDisplay.getSourceIndex(3)));
+        assertEquals(List.of(1, 0, 3, 2), List.of(controlledDisplay.getViewIndex(0),
+                controlledDisplay.getViewIndex(1), controlledDisplay.getViewIndex(2),
+                controlledDisplay.getViewIndex(3)));
+        assertSame(third, controlledDisplay.get(0));
+    }
+
+    @Test
+    public void sourceUpdate_preservesOrderAndNotifiesObservers() {
+        ControlledStudentList controlledSource = new ControlledStudentList(List.of(first, second, third));
+        StudentDisplayList controlledDisplay = new StudentDisplayList(controlledSource);
+        controlledDisplay.setOrder(List.of(third, first, second));
+        AtomicInteger notifications = new AtomicInteger();
+        controlledDisplay.addListener((ListChangeListener<Student>) change -> notifications.incrementAndGet());
+
+        controlledSource.notifyUpdate(1);
+
+        assertEquals(List.of(third, first, second), controlledDisplay);
+        assertSame(second, controlledDisplay.get(2));
+        assertEquals(1, controlledDisplay.getSourceIndex(2));
+        assertEquals(2, controlledDisplay.getViewIndex(1));
+        assertEquals(1, notifications.get());
+    }
+
+    @Test
+    public void sourceUpdate_unreportedInsertion_failsInvariantBeforeNotifyingObservers() {
+        ControlledStudentList controlledSource = new ControlledStudentList(List.of(first, second));
+        StudentDisplayList controlledDisplay = new StudentDisplayList(controlledSource);
+        AtomicInteger notifications = new AtomicInteger();
+        controlledDisplay.addListener((ListChangeListener<Student>) change -> notifications.incrementAndGet());
+
+        Runnable insertWithoutNotification = () -> controlledSource.addWithoutReportingInsertion(third);
+        AssertionError failure = assertThrows(AssertionError.class, insertWithoutNotification::run);
+
+        assertEquals("Every source occurrence must remain displayed", failure.getMessage());
+        assertEquals(0, notifications.get());
+    }
+
+    @Test
     public void setOrder_equalAndRepeatedReferences_preservesEveryOccurrence() {
         Student equalFirst = new StudentBuilder().withName("First Student").build();
         source.setAll(first, equalFirst, first);
@@ -87,5 +142,60 @@ public class StudentDisplayListTest {
         assertSame(first, display.get(0));
         assertSame(first, display.get(1));
         assertSame(equalFirst, display.get(2));
+    }
+
+    private static final class ControlledStudentList extends ModifiableObservableListBase<Student> {
+        private final List<Student> students;
+
+        private ControlledStudentList(List<Student> students) {
+            this.students = new ArrayList<>(students);
+        }
+
+        @Override
+        public Student get(int index) {
+            return students.get(index);
+        }
+
+        @Override
+        public int size() {
+            return students.size();
+        }
+
+        @Override
+        protected void doAdd(int index, Student student) {
+            students.add(index, student);
+        }
+
+        @Override
+        protected Student doSet(int index, Student student) {
+            return students.set(index, student);
+        }
+
+        @Override
+        protected Student doRemove(int index) {
+            return students.remove(index);
+        }
+
+        private void permute(int from, int to, int[] permutation) {
+            List<Student> previous = List.copyOf(students);
+            for (int i = from; i < to; i++) {
+                students.set(permutation[i - from], previous.get(i));
+            }
+            beginChange();
+            nextPermutation(from, to, permutation);
+            endChange();
+        }
+
+        private void notifyUpdate(int index) {
+            beginChange();
+            nextUpdate(index);
+            endChange();
+        }
+
+        private void addWithoutReportingInsertion(Student student) {
+            // Deliberately violate the source contract to verify the display's fail-fast invariant.
+            students.add(student);
+            notifyUpdate(0);
+        }
     }
 }

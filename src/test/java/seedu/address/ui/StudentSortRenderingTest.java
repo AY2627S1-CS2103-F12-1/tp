@@ -3,17 +3,15 @@ package seedu.address.ui;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static seedu.address.testutil.FxTestUtil.runOnFxThread;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Orientation;
@@ -25,17 +23,13 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollBar;
 import javafx.scene.layout.Region;
 import seedu.address.model.student.Student;
+import seedu.address.testutil.FxTestUtil;
 import seedu.address.testutil.StudentBuilder;
 
 public class StudentSortRenderingTest {
     @BeforeAll
     public static void startJavaFx() {
-        try {
-            Platform.startup(() -> { });
-        } catch (IllegalStateException exception) {
-            // Another UI test has already initialized the JavaFX runtime.
-        }
-        Platform.setImplicitExit(false);
+        FxTestUtil.startJavaFx();
     }
 
     @Test
@@ -109,14 +103,35 @@ public class StudentSortRenderingTest {
         });
     }
 
+    @Test
+    public void restoreViewState_newScrollbar_preservesItsUnsavedPosition() throws Exception {
+        runOnFxThread(() -> {
+            ObservableList<Student> students = FXCollections.observableArrayList();
+            for (int i = 0; i < 20; i++) {
+                students.add(new StudentBuilder().withName("Student " + (char) ('A' + i)).build());
+            }
+            StudentListPanel panel = new StudentListPanel(students);
+            StudentListPanel.ViewState state = panel.captureViewState();
+            Region root = panel.getRoot();
+            new Scene(root, 500, 250);
+            root.applyCss();
+            root.layout();
+            ScrollBar scrollBar = (ScrollBar) getListView(root).lookupAll(".scroll-bar").stream()
+                    .filter(node -> ((ScrollBar) node).getOrientation() == Orientation.VERTICAL).findFirst()
+                    .orElseThrow();
+            scrollBar.setValue(0.4);
+            double position = scrollBar.getValue();
+
+            panel.restoreViewState(state);
+
+            assertEquals(position, scrollBar.getValue(), 1e-9);
+            assertEquals(-1, getListView(root).getSelectionModel().getSelectedIndex());
+        });
+    }
+
     @SuppressWarnings("unchecked")
     private static ListView<Student> getListView(Parent root) {
         return (ListView<Student>) root.lookup("#studentListView");
     }
 
-    private static void runOnFxThread(Runnable action) throws Exception {
-        FutureTask<Void> task = new FutureTask<>(action, null);
-        Platform.runLater(task);
-        task.get(10, TimeUnit.SECONDS);
-    }
 }

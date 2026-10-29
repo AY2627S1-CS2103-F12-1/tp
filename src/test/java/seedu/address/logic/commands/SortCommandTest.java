@@ -42,7 +42,7 @@ public class SortCommandTest {
         assertEquals("Sorted 2 student(s) by academic level (ascending).", result.getFeedbackToUser());
         assertEquals(List.of(secondary, junior), model.getStudentList());
         assertEquals(before, model.getAddressBook());
-        assertFalse(result.isShowStudentList());
+        assertFalse(result.shouldShowStudentList());
         result.restorePreviousOrder();
         assertEquals(List.of(junior, secondary), model.getStudentList());
     }

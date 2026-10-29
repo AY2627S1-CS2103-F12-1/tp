@@ -57,7 +57,7 @@ public class CommandResult {
         return exit;
     }
 
-    public boolean isShowStudentList() {
+    public boolean shouldShowStudentList() {
         return showStudentList;
     }
 

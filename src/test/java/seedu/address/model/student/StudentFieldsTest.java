@@ -11,6 +11,34 @@ import org.junit.jupiter.api.Test;
 
 public class StudentFieldsTest {
     @Test
+    public void equals_namesCompareNormalizedValuesAndTypes() {
+        StudentName name = new StudentName("Alice Tan");
+        StudentName equalName = new StudentName("  Alice   Tan  ");
+        StudentName differentCase = new StudentName("alice tan");
+
+        assertEquals(name, equalName);
+        assertEquals(name.hashCode(), equalName.hashCode());
+        assertFalse(name.equals(differentCase));
+        assertTrue(name.isSameNameIgnoringCase(differentCase));
+        assertFalse(name.equals(null));
+        assertFalse(name.equals("Alice Tan"));
+    }
+
+    @Test
+    public void equals_phonesCompareStoredValuesAndTypes() {
+        StudentPhone phone = new StudentPhone("91234567");
+        StudentPhone equalPhone = new StudentPhone(" 91234567 ");
+        StudentPhone internationalPhone = new StudentPhone("+6591234567");
+
+        assertEquals(phone, equalPhone);
+        assertEquals(phone.hashCode(), equalPhone.hashCode());
+        assertFalse(phone.equals(internationalPhone));
+        assertTrue(phone.isSameNumber(internationalPhone));
+        assertFalse(phone.equals(null));
+        assertFalse(phone.equals("91234567"));
+    }
+
+    @Test
     public void name_normalizesWhitespaceAndPreservesCase() {
         StudentName name = new StudentName("  J.   A/P\tClark-Andrew  ");
 

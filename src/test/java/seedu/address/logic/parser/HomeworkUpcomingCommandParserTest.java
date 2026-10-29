@@ -3,6 +3,7 @@ package seedu.address.logic.parser;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
+import static seedu.address.logic.parser.CommandParserTestUtil.givenOnce;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
 import static seedu.address.logic.parser.CommandParserTestUtil.unexpectedWords;
@@ -128,7 +129,7 @@ public class HomeworkUpcomingCommandParserTest {
 
     @Test
     public void parse_repeatedPrefix_failure() {
-        assertParseFailure(parser, "due/3 due/7", "Prefix due/ must be specified exactly once.");
+        assertParseFailure(parser, "due/3 due/7", givenOnce("due/") + "\nUsage: " + USAGE);
     }
 
     @Test

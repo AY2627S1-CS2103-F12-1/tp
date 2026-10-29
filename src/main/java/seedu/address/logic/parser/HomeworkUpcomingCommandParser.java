@@ -9,6 +9,7 @@ import java.util.Map;
 
 import seedu.address.logic.Messages;
 import seedu.address.logic.commands.HomeworkUpcomingCommand;
+import seedu.address.logic.parser.StrictArgumentTokenizer.RepeatedPrefixRules;
 import seedu.address.logic.parser.exceptions.ParseException;
 
 /**
@@ -50,7 +51,7 @@ public class HomeworkUpcomingCommandParser implements Parser<HomeworkUpcomingCom
         requireNonNull(args);
         StrictArgumentTokenizer.TokenizedArguments tokenizedArguments =
                 StrictArgumentTokenizer.tokenizeWithPreambleRejectingWrongCase(args, List.of(PREFIX_DAYS),
-                        MESSAGE_INVALID_FORMAT);
+                        MESSAGE_INVALID_FORMAT, RepeatedPrefixRules.NO_TEXT_OR_ALIAS_PREFIXES);
         if (!tokenizedArguments.preamble().isEmpty()) {
             throw new ParseException(ParserUtil.formatUnexpectedWords(EXPECTED_WORDS,
                     ParserUtil.splitWords(tokenizedArguments.preamble()), HomeworkUpcomingCommand.MESSAGE_USAGE));

@@ -6,6 +6,7 @@ import static seedu.address.logic.parser.HomeworkAddCommandParser.PREFIX_DUE_DAT
 import static seedu.address.logic.parser.HomeworkAddCommandParser.PREFIX_SUBJECT;
 import static seedu.address.logic.parser.HomeworkAddCommandParser.PREFIX_TITLE;
 import static seedu.address.logic.parser.HomeworkAddCommandParser.PREFIX_TITLE_ALIAS;
+import static seedu.address.logic.parser.HomeworkAddCommandParser.REPEATED_PREFIX_RULES;
 
 import java.time.Clock;
 import java.time.LocalDate;
@@ -56,9 +57,8 @@ public class HomeworkEditCommandParser implements Parser<HomeworkEditCommand> {
         requireNonNull(args);
         StrictArgumentTokenizer.TokenizedArguments tokenizedArguments =
                 StrictArgumentTokenizer.tokenizeWithPreambleRejectingWrongCase(args, ALLOWED_PREFIXES,
-                        MESSAGE_INVALID_FORMAT);
+                        MESSAGE_INVALID_FORMAT, REPEATED_PREFIX_RULES);
         Map<String, String> values = tokenizedArguments.values();
-        HomeworkAddCommandParser.validateTitlePrefixes(values);
 
         String[] indices = ParserUtil.splitWords(tokenizedArguments.preamble());
         if (indices.length != 2) {

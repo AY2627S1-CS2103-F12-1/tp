@@ -1,10 +1,12 @@
 package seedu.address.logic.parser;
 
-import static seedu.address.logic.parser.CommandParserTestUtil.MESSAGE_TITLE_AND_ALIAS;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
+import static seedu.address.logic.parser.CommandParserTestUtil.givenOnce;
+import static seedu.address.logic.parser.CommandParserTestUtil.givenOnceWithQuoteHint;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
+import static seedu.address.logic.parser.CommandParserTestUtil.titleAndAliasWithQuoteHint;
 import static seedu.address.logic.parser.CommandParserTestUtil.unexpectedWords;
 import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefix;
 import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefixWithQuoteHint;
@@ -174,18 +176,15 @@ public class HomeworkEditCommandParserTest {
 
     @Test
     public void parse_repeatedPrefix_failure() {
-        assertParseFailure(parser, "1 2 s/MATH s/PHYSICS",
-                String.format(StrictArgumentTokenizer.MESSAGE_REPEATED_PREFIX, "s/"));
-        assertParseFailure(parser, "1 2 due/11-05 due/11-06",
-                String.format(StrictArgumentTokenizer.MESSAGE_REPEATED_PREFIX, "due/"));
-        assertParseFailure(parser, "1 2 t/A t/B",
-                String.format(StrictArgumentTokenizer.MESSAGE_REPEATED_PREFIX, "t/"));
+        assertParseFailure(parser, "1 2 s/MATH s/PHYSICS", givenOnce("s/") + USAGE_LINE);
+        assertParseFailure(parser, "1 2 due/11-05 due/11-06", givenOnce("due/") + USAGE_LINE);
+        assertParseFailure(parser, "1 2 t/X t/Y", givenOnceWithQuoteHint("t/", "t/\"X t/Y\"") + USAGE_LINE);
     }
 
     @Test
     public void parse_titleAndTitleAlias_reportsUseEither() {
-        assertParseFailure(parser, "1 2 t/A title/B", MESSAGE_TITLE_AND_ALIAS);
-        assertParseFailure(parser, "1 2 title/A t/B", MESSAGE_TITLE_AND_ALIAS);
+        assertParseFailure(parser, "1 2 t/A title/B", titleAndAliasWithQuoteHint("t/\"A title/B\"") + USAGE_LINE);
+        assertParseFailure(parser, "1 2 title/A t/B", titleAndAliasWithQuoteHint("title/\"A t/B\"") + USAGE_LINE);
     }
 
     @Test
@@ -196,7 +195,7 @@ public class HomeworkEditCommandParserTest {
 
     @Test
     public void parse_titleConflictAndInvalidIndex_reportsUseEither() {
-        assertParseFailure(parser, "0 2 t/A title/B", MESSAGE_TITLE_AND_ALIAS);
+        assertParseFailure(parser, "0 2 t/A title/B", titleAndAliasWithQuoteHint("t/\"A title/B\"") + USAGE_LINE);
     }
 
     @Test

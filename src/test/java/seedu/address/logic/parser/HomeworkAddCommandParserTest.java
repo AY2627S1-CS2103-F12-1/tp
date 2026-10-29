@@ -1,11 +1,13 @@
 package seedu.address.logic.parser;
 
 import static seedu.address.logic.parser.CommandParserTestUtil.MESSAGE_CURLY_QUOTES;
-import static seedu.address.logic.parser.CommandParserTestUtil.MESSAGE_TITLE_AND_ALIAS;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
+import static seedu.address.logic.parser.CommandParserTestUtil.givenOnce;
+import static seedu.address.logic.parser.CommandParserTestUtil.givenOnceWithQuoteHint;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
+import static seedu.address.logic.parser.CommandParserTestUtil.titleAndAliasWithQuoteHint;
 import static seedu.address.logic.parser.CommandParserTestUtil.unexpectedWords;
 import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefix;
 import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefixWithQuoteHint;
@@ -296,24 +298,38 @@ public class HomeworkAddCommandParserTest {
 
     @Test
     public void parse_repeatedSubjectPrefix_failure() {
-        assertParseFailure(parser, "1" + VALID_FIELDS + " s/PHYSICS",
-                "Prefix s/ must be specified exactly once.");
+        // the first s/ follows the title, but the second does not follow it
+        assertParseFailure(parser, "1" + VALID_FIELDS + " s/PHYSICS", givenOnce("s/") + USAGE_LINE);
     }
 
     @Test
     public void parse_repeatedTitleAliasPrefix_failure() {
         assertParseFailure(parser, "1 t/First t/Second s/MATH due/2026-10-15",
-                "Prefix t/ must be specified exactly once.");
+                givenOnceWithQuoteHint("t/", "t/\"First t/Second\"") + USAGE_LINE);
+    }
+
+    @Test
+    public void parse_prefixWordInTitle_hintsToQuoteTitle() {
+        // the second t/ is in the title
+        assertParseFailure(parser, "1 t/Revise t/f questions s/MATH due/2026-12-01",
+                givenOnceWithQuoteHint("t/", "t/\"Revise t/f questions\"") + USAGE_LINE);
+        // the first s/ is in the title
+        assertParseFailure(parser, "1 t/Read s/o notes s/MATH due/2026-12-01",
+                givenOnceWithQuoteHint("s/", "t/\"Read s/o notes\"") + USAGE_LINE);
+        assertParseFailure(parser, "1 t/Read title/abstract s/MATH due/2026-12-01",
+                titleAndAliasWithQuoteHint("t/\"Read title/abstract\"") + USAGE_LINE);
     }
 
     @Test
     public void parse_titleThenTitleAlias_reportsUseEither() {
-        assertParseFailure(parser, "1 title/First t/Second s/MATH due/2026-10-15", MESSAGE_TITLE_AND_ALIAS);
+        assertParseFailure(parser, "1 title/First t/Second s/MATH due/2026-10-15",
+                titleAndAliasWithQuoteHint("title/\"First t/Second\"") + USAGE_LINE);
     }
 
     @Test
     public void parse_titleAliasThenTitle_reportsUseEither() {
-        assertParseFailure(parser, "1 t/First title/Second s/MATH due/2026-10-15", MESSAGE_TITLE_AND_ALIAS);
+        assertParseFailure(parser, "1 t/First title/Second s/MATH due/2026-10-15",
+                titleAndAliasWithQuoteHint("t/\"First title/Second\"") + USAGE_LINE);
     }
 
     @Test
@@ -470,18 +486,18 @@ public class HomeworkAddCommandParserTest {
     @Test
     public void parse_repeatedPrefixAndTitleAliasConflict_reportsRepeatedPrefix() {
         assertParseFailure(parser, "1 t/Algebra title/Mechanics s/MATH s/PHYSICS",
-                "Prefix s/ must be specified exactly once.");
+                givenOnceWithQuoteHint("s/", "title/\"Mechanics s/MATH\"") + USAGE_LINE);
     }
 
     @Test
     public void parse_titleAliasConflictAndMissingIndex_reportsUseEither() {
-        assertParseFailure(parser, "t/Algebra title/Mechanics", MESSAGE_TITLE_AND_ALIAS);
+        assertParseFailure(parser, "t/Algebra title/Mechanics",
+                titleAndAliasWithQuoteHint("t/\"Algebra title/Mechanics\"") + USAGE_LINE);
     }
 
     @Test
     public void parse_repeatedPrefixAndInvalidIndex_reportsRepeatedPrefix() {
-        assertParseFailure(parser, "0" + VALID_FIELDS + " due/2026-10-16",
-                "Prefix due/ must be specified exactly once.");
+        assertParseFailure(parser, "0" + VALID_FIELDS + " due/2026-10-16", givenOnce("due/") + USAGE_LINE);
     }
 
     @Test

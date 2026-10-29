@@ -11,7 +11,10 @@ import seedu.address.logic.parser.exceptions.ParseException;
 public class CommandParserTestUtil {
     /** Hint added when the arguments contain a curly quote, on its own line before the usage line. */
     public static final String MESSAGE_CURLY_QUOTES = "Use straight quotes (\"), not curly quotes (“ ”).";
-    /** Error for a homework command given both the title prefix and its alias. */
+    /**
+     * First line of the error for a homework command given both the title prefix and its alias outside a title.
+     * The usage line follows it on the next line.
+     */
     public static final String MESSAGE_TITLE_AND_ALIAS = "Use either title/ or t/, not both.";
 
     /**
@@ -54,6 +57,32 @@ public class CommandParserTestUtil {
     public static String wrongCasePrefixWithQuoteHint(String word, String prefix, String example) {
         return wrongCasePrefix(word, prefix) + " To use it inside a value, wrap the whole value in straight double "
                 + "quotes, e.g. " + example + ".";
+    }
+
+    /**
+     * Returns the first line of the error for {@code prefix}, given more than once where quoting cannot help.
+     * The usage line follows it on the next line.
+     */
+    public static String givenOnce(String prefix) {
+        return "Prefix " + prefix + " can be given only once.";
+    }
+
+    /**
+     * Returns the first line of the error for {@code prefix}, given more than once where one of them is in a
+     * free-text value, with {@code example} (the field's prefix and its whole text in quotes) showing how to quote it.
+     */
+    public static String givenOnceWithQuoteHint(String prefix, String example) {
+        return givenOnce(prefix) + " To use it inside a value, wrap the whole value in straight double quotes, e.g. "
+                + example + ".";
+    }
+
+    /**
+     * Returns the first line of the error for a homework command given both the title prefix and its alias, where
+     * the later one is in a title, with {@code example} showing how to quote that title.
+     */
+    public static String titleAndAliasWithQuoteHint(String example) {
+        return MESSAGE_TITLE_AND_ALIAS + " To use it inside a value, wrap the whole value in straight double quotes, "
+                + "e.g. " + example + ".";
     }
 
     /**

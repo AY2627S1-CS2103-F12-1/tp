@@ -2,6 +2,7 @@ package seedu.address.logic.parser;
 
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
+import static seedu.address.logic.parser.CommandParserTestUtil.givenOnce;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
 import static seedu.address.logic.parser.CommandParserTestUtil.unexpectedWords;
@@ -161,10 +162,9 @@ public class HomeworkMarksCommandParserTest {
 
     @Test
     public void parse_repeatedScorePrefix_failure() {
-        assertParseFailure(parser, "1 2 score/5/10 score/6/10",
-                String.format(StrictArgumentTokenizer.MESSAGE_REPEATED_PREFIX, "score/"));
-        assertParseFailure(parser, "1 2 score/ score/",
-                String.format(StrictArgumentTokenizer.MESSAGE_REPEATED_PREFIX, "score/"));
+        String usageLine = "\nUsage: " + HomeworkMarksCommand.MESSAGE_USAGE;
+        assertParseFailure(parser, "1 2 score/5/10 score/6/10", givenOnce("score/") + usageLine);
+        assertParseFailure(parser, "1 2 score/ score/", givenOnce("score/") + usageLine);
     }
 
     @Test

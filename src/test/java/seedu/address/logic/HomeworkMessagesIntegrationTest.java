@@ -4,6 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.logic.parser.CommandParserTestUtil.givenOnce;
+import static seedu.address.logic.parser.CommandParserTestUtil.givenOnceWithQuoteHint;
+import static seedu.address.logic.parser.CommandParserTestUtil.titleAndAliasWithQuoteHint;
 import static seedu.address.logic.parser.CommandParserTestUtil.unexpectedWords;
 import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefix;
 import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefixWithQuoteHint;
@@ -79,6 +82,25 @@ public class HomeworkMessagesIntegrationTest {
         assertParseFailure("hw m 1 2 Score/5", wrongCasePrefix("Score/", "score/") + "\nUsage: "
                 + HomeworkMarksCommand.MESSAGE_USAGE);
         assertParseFailure("hw up Due/3", wrongCasePrefix("Due/", "due/") + "\nUsage: "
+                + HomeworkUpcomingCommand.MESSAGE_USAGE);
+    }
+
+    @Test
+    public void execute_repeatedPrefix_saysOnceWithUsage() throws Exception {
+        String addUsage = "\nUsage: " + HomeworkAddCommand.MESSAGE_USAGE;
+        assertParseFailure("hw add 1 t/Revise t/f questions s/MATH due/2026-12-01",
+                givenOnceWithQuoteHint("t/", "t/\"Revise t/f questions\"") + addUsage);
+        assertParseFailure("hw add 1 t/Read s/o notes s/MATH due/2026-12-01",
+                givenOnceWithQuoteHint("s/", "t/\"Read s/o notes\"") + addUsage);
+        assertParseFailure("hw add 1 t/Read title/abstract s/MATH due/2026-12-01",
+                titleAndAliasWithQuoteHint("t/\"Read title/abstract\"") + addUsage);
+        assertParseFailure("hw add 1 t/a t/b s/MATH due/2026-12-01", givenOnceWithQuoteHint("t/", "t/\"a t/b\"")
+                + addUsage);
+        assertParseFailure("hw e 1 2 t/X t/Y", givenOnceWithQuoteHint("t/", "t/\"X t/Y\"") + "\nUsage: "
+                + HomeworkEditCommand.MESSAGE_USAGE);
+        assertParseFailure("hw m 1 2 score/1 score/2", givenOnce("score/") + "\nUsage: "
+                + HomeworkMarksCommand.MESSAGE_USAGE);
+        assertParseFailure("hw up due/3 due/7", givenOnce("due/") + "\nUsage: "
                 + HomeworkUpcomingCommand.MESSAGE_USAGE);
     }
 

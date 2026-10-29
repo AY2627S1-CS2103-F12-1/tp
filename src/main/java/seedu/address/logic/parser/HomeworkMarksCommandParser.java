@@ -8,6 +8,7 @@ import java.util.Map;
 import seedu.address.commons.core.index.Index;
 import seedu.address.logic.Messages;
 import seedu.address.logic.commands.HomeworkMarksCommand;
+import seedu.address.logic.parser.StrictArgumentTokenizer.RepeatedPrefixRules;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.homework.Score;
 
@@ -37,7 +38,7 @@ public class HomeworkMarksCommandParser implements Parser<HomeworkMarksCommand> 
         requireNonNull(args);
         StrictArgumentTokenizer.TokenizedArguments tokenizedArguments =
                 StrictArgumentTokenizer.tokenizeWithPreambleRejectingWrongCase(args, List.of(PREFIX_SCORE),
-                        MESSAGE_INVALID_FORMAT);
+                        MESSAGE_INVALID_FORMAT, RepeatedPrefixRules.NO_TEXT_OR_ALIAS_PREFIXES);
         String[] indices = ParserUtil.splitWords(tokenizedArguments.preamble());
         if (indices.length != 2) {
             throw new ParseException(ParserUtil.formatUnexpectedWords(EXPECTED_WORDS, indices,

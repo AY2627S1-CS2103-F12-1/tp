@@ -11,6 +11,7 @@ import java.util.Map;
 import seedu.address.commons.core.index.Index;
 import seedu.address.logic.Messages;
 import seedu.address.logic.commands.HomeworkAddCommand;
+import seedu.address.logic.parser.StrictArgumentTokenizer.RepeatedPrefixRules;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.homework.DueDate;
 import seedu.address.model.homework.Homework;
@@ -23,8 +24,9 @@ import seedu.address.model.student.TuitionSubject;
  * unknown or repeated prefix (in the order the prefixes appear), both {@code title/} and {@code t/} given,
  * a student index that is missing or not a single word, missing prefixes, student index syntax, title, subject,
  * and due date.
- * The {@code title/} and {@code t/} conflict is checked only after all prefixes are tokenized, so an unknown or
+ * The {@code title/} and {@code t/} conflict is reported only after all prefixes are checked, so an unknown or
  * repeated prefix anywhere in the input is reported first (e.g. {@code t/A title/B x/C} reports {@code x/}).
+ * A repeated prefix or the conflict in a title gets a hint to quote the title.
  */
 public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
     public static final String PREFIX_TITLE = "title/";
@@ -38,6 +40,14 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
     /** Prefixes accepted by both {@code homework add} and {@code homework edit}. */
     static final List<String> ALLOWED_PREFIXES = List.of(PREFIX_TITLE, PREFIX_TITLE_ALIAS, PREFIX_SUBJECT,
             PREFIX_DUE_DATE);
+
+    /**
+     * How {@code homework add} and {@code homework edit} explain a repeated prefix: titles are free text, and
+     * {@code title/} and {@code t/} name the same field.
+     */
+    static final RepeatedPrefixRules REPEATED_PREFIX_RULES = new RepeatedPrefixRules(
+            List.of(PREFIX_TITLE, PREFIX_TITLE_ALIAS), List.of(PREFIX_TITLE, PREFIX_TITLE_ALIAS),
+            MESSAGE_TITLE_AND_ALIAS);
 
     private static final String MESSAGE_INVALID_FORMAT = String.format(Messages.MESSAGE_INVALID_FORMAT_WITH_USAGE,
             HomeworkAddCommand.MESSAGE_USAGE);
@@ -61,10 +71,8 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
         requireNonNull(args);
         StrictArgumentTokenizer.TokenizedArguments tokenizedArguments =
                 StrictArgumentTokenizer.tokenizeWithPreambleRejectingWrongCase(args, ALLOWED_PREFIXES,
-                        MESSAGE_INVALID_FORMAT);
+                        MESSAGE_INVALID_FORMAT, REPEATED_PREFIX_RULES);
         Map<String, String> values = tokenizedArguments.values();
-        validateTitlePrefixes(values);
-
         String preamble = tokenizedArguments.preamble();
         validateStudentIndexStructure(preamble);
 
@@ -81,18 +89,6 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
             return new HomeworkAddCommand(studentIndex, homework, DueDate.isShortForm(rawDueDate), today);
         } catch (IllegalArgumentException exception) {
             throw new ParseException(exception.getMessage(), exception);
-        }
-    }
-
-    /**
-     * Checks that the title prefix and its alias are not both present in {@code values}.
-     * Also used by {@code homework edit}.
-     *
-     * @throws ParseException If both title prefixes are present.
-     */
-    static void validateTitlePrefixes(Map<String, String> values) throws ParseException {
-        if (values.containsKey(PREFIX_TITLE) && values.containsKey(PREFIX_TITLE_ALIAS)) {
-            throw new ParseException(MESSAGE_TITLE_AND_ALIAS);
         }
     }
 

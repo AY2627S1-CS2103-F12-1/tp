@@ -923,13 +923,10 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
 * 2d. The tutor leaves the score empty to remove the recorded marks.
   * 2d1. TutorFlow clears the score and displays the homework record with its score shown as not recorded.
   * 2d2. Use case ends.
-* 2d1a. TutorFlow cannot save the updated data.
-  * 2d1a1. TutorFlow leaves the score unchanged and informs the tutor that no homework data was changed, naming the data file and the likely cause.
-  * 2d1a2. Use case ends.
 * 2e. The tutor leaves the score empty, but the homework has no recorded marks.
   * 2e1. TutorFlow informs the tutor that no changes were made.
   * 2e2. Use case ends.
-* 3a. TutorFlow cannot save the updated data.
+* 3a. TutorFlow cannot save the updated data, after recording the score in step 3 or clearing it in step 2d1.
   * 3a1. TutorFlow leaves the score unchanged.
   * 3a2. TutorFlow informs the tutor that no homework data was changed, naming the data file and the likely cause.
   * 3a3. Use case ends.
@@ -939,7 +936,7 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
 **MSS**
 
 1. Tutor requests to list the homework of all students that is due within a number of days from today.
-2. TutorFlow displays that homework, earliest due date first, with each record's student index and name, title, subject, due date, score and status, and resets the student list to all students so that the student indices match.
+2. TutorFlow displays that homework, earliest due date first, with each record's student index and name, title, subject, due date, score and status.
 3. Use case ends.
 
 **Extensions**

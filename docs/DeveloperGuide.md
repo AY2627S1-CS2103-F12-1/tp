@@ -925,6 +925,9 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
 
 **Extensions**
 
+* 1a. The student has no homework.
+  * 1a1. TutorFlow informs the tutor that the student has no homework.
+  * 1a2. Use case ends.
 * 2a. The supplied student index or homework index does not identify a homework record.
   * 2a1. TutorFlow displays an error.
   * 2a2. Use case resumes at step 2.
@@ -1105,7 +1108,7 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
   * 1a1. TutorFlow displays an error.
   * 1a2. Use case resumes at step 1.
 * 1b. The tutor requests to list all of the student's homework, including homework due before today.
-  * 1b1. TutorFlow displays all of the student's homework, earliest due date first, each with its homework index, score and completion status.
+  * 1b1. TutorFlow displays all of the student's homework, earliest due date first, each with its homework index, score and completion status, or informs the tutor that the student has no homework if there is none.
   * 1b2. Use case ends.
 * 2a. The student has no homework.
   * 2a1. TutorFlow informs the tutor that the student has no homework.

@@ -109,12 +109,13 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
      * Checks that {@code values} contains all required prefixes, accepting either title prefix.
      * A null {@code rawTitle} means neither title prefix is present; an empty title is validated later.
      *
-     * @throws ParseException If prefixes are missing, listed in the order title, subject, and due date.
+     * @throws ParseException If prefixes are missing, listed in the order title (naming its alias), subject, and due
+     *     date.
      */
     private static void validateRequiredPrefixes(Map<String, String> values, String rawTitle) throws ParseException {
         List<String> missingPrefixes = new ArrayList<>();
         if (rawTitle == null) {
-            missingPrefixes.add(PREFIX_TITLE);
+            missingPrefixes.add(PREFIX_TITLE + " (or " + PREFIX_TITLE_ALIAS + ")");
         }
         if (!values.containsKey(PREFIX_SUBJECT)) {
             missingPrefixes.add(PREFIX_SUBJECT);

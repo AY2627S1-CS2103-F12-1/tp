@@ -123,6 +123,13 @@ public class HomeworkMessagesIntegrationTest {
     }
 
     @Test
+    public void execute_addWithoutTitle_namesTitleAlias() throws Exception {
+        // a prefix only counts after a space, so 1t/A is the student index
+        assertParseFailure("hw add 1t/A s/MATH due/2026-12-01", "Missing required prefix(es): title/ (or t/)\n"
+                + "Usage: " + HomeworkAddCommand.MESSAGE_USAGE);
+    }
+
+    @Test
     public void execute_wrongWordsOrCase_specificMessage() throws Exception {
         assertParseFailure("hw e 1 2", "Specify at least one field to edit: title/ (or t/), s/ or due/.\nUsage: "
                 + HomeworkEditCommand.MESSAGE_USAGE);

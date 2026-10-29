@@ -334,12 +334,13 @@ public class HomeworkAddCommandParserTest {
 
     @Test
     public void parse_allPrefixesMissing_reportsAllInOrder() {
-        assertParseFailure(parser, "1", String.format(MESSAGE_MISSING_PREFIXES, "title/, s/, due/"));
+        assertParseFailure(parser, "1", String.format(MESSAGE_MISSING_PREFIXES, "title/ (or t/), s/, due/"));
     }
 
     @Test
     public void parse_titleMissing_failure() {
-        assertParseFailure(parser, "1 s/MATH due/2026-10-15", String.format(MESSAGE_MISSING_PREFIXES, "title/"));
+        assertParseFailure(parser, "1 s/MATH due/2026-10-15", String.format(MESSAGE_MISSING_PREFIXES,
+                "title/ (or t/)"));
     }
 
     @Test

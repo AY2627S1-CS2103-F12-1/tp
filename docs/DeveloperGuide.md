@@ -1074,6 +1074,29 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
   * 4a2. TutorFlow reports that no student data was changed and explains the save error.
   * 4a3. Use case ends.
 
+#### Use case: UC10 - List a student's homework
+
+**MSS**
+
+1. Tutor requests to list a student's homework.
+2. TutorFlow displays the student's homework that is due today or later, earliest due date first, each with its homework index, score and completion status.
+3. Use case ends.
+
+**Extensions**
+
+* 1a. The supplied student index does not identify a displayed student.
+  * 1a1. TutorFlow displays an error.
+  * 1a2. Use case resumes at step 1.
+* 1b. The tutor requests to list all of the student's homework, including homework due before today.
+  * 1b1. TutorFlow displays all of the student's homework, earliest due date first, each with its homework index, score and completion status.
+  * 1b2. Use case ends.
+* 2a. The student has no homework.
+  * 2a1. TutorFlow informs the tutor that the student has no homework.
+  * 2a2. Use case ends.
+* 2b. Some of the student's homework is due before today.
+  * 2b1. TutorFlow also states how many of the student's homework records are due before today and not displayed, and how to list them.
+  * 2b2. Use case ends.
+
 ### Non-Functional Requirements
 
 1. TutorFlow should work on Windows, Linux, and macOS on a computer with Java `25` installed.

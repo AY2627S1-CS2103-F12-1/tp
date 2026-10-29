@@ -73,16 +73,16 @@ TutorFlow is a **desktop application for private tutors to manage their students
   For example, if the command specifies `n/NAME p/PHONE_NUMBER`, `p/PHONE_NUMBER n/NAME` is also acceptable.
 
 * A lowercase word directly followed by `/` after a space (such as `km/h` or `and/or`) is read as a prefix. To use such a word in a value, wrap the whole value in double quotes (`"`). The outer quotes are removed before the value is checked. This works for every value that follows a prefix.<br>
-  For example, `hw add 1 t/"Speed in km/h" s/PHYSICS due/2026-11-01` adds homework titled `Speed in km/h`, while `hw add 1 t/Speed in km/h s/PHYSICS due/2026-11-01` is rejected because `km/` is not a prefix of `hw add`:
+  For example, `hw add 1 t/"Speed in km/h" s/PHYSICS due/2026-12-01` adds homework titled `Speed in km/h`, while `hw add 1 t/Speed in km/h s/PHYSICS due/2026-12-01` is rejected because `km/` is not a prefix of `hw add`:
 
   ```text
   km/ is not a prefix of this command. To use it inside a value, wrap the whole value in straight double quotes, e.g. t/"Speed in km/h".
   Usage: homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD
   ```
 
-* The error for such a word names it and shows the command's usage on the next line. The example is built from the value the word is in, up to the next prefix of the command. It is left out when the text before the word is only digits, date or time punctuation and spaces: `hw add 1 t/A s/PHYSICS due/2026-11-01 x/y` gives `x/ is not a prefix of this command. To use it inside a value, wrap the whole value in straight double quotes.` A word that is not inside any value, such as `score/` in `hw e 1 2 score/5/10`, gets only `score/ is not a prefix of this command.` and the usage.
+* The error for such a word names it and shows the command's usage on the next line. The example is built from the value the word is in, up to the next prefix of the command. It is left out when the text before the word is only digits, date or time punctuation and spaces: `hw add 1 t/A s/PHYSICS due/2026-12-01 x/y` gives `x/ is not a prefix of this command. To use it inside a value, wrap the whole value in straight double quotes.` A word that is not inside any value, such as `score/` in `hw e 1 2 score/5/10`, gets only `score/ is not a prefix of this command.` and the usage.
 
-* Only straight double quotes (`"`) can wrap a value. Curly quotes (`“ ”`), which some editors type automatically, are read as part of the value, so `hw add 1 t/“Speed in km/h” s/PHYSICS due/2026-11-01` is rejected, with `Use straight quotes ("), not curly quotes (“ ”).` on its own line before the usage.
+* Only straight double quotes (`"`) can wrap a value. Curly quotes (`“ ”`), which some editors type automatically, are read as part of the value, so `hw add 1 t/“Speed in km/h” s/PHYSICS due/2026-12-01` is rejected, with `Use straight quotes ("), not curly quotes (“ ”).` on its own line before the usage.
 
 * Spaces at both ends of a quoted value are removed, both outside and inside the quotes, as they are for a value without quotes. Quotes protect prefix-shaped text; they do not override a field's validation or whitespace rules. Student names, guardian names and homework titles still collapse repeated whitespace between words to one space, so `gn/"Parent  Alpha"` is saved as `Parent Alpha`.<br>
   For example, `n/" Ravi s/o Kumar "` gives the name `Ravi s/o Kumar`, and `hw up due/" 3 "` is the same as `hw up due/3`. Empty quotes (`""`), or quotes with only spaces inside, give an empty value, which is treated like a prefix with nothing after it: `t/""` is rejected like `t/`.
@@ -91,7 +91,7 @@ TutorFlow is a **desktop application for private tutors to manage their students
   For example, `t/Read "Hamlet" act 1` gives the title `Read "Hamlet" act 1`, and `t/"Read "Hamlet" km/h"` gives `Read "Hamlet" km/h`.
 
 * A value whose opening `"` is never closed in this way is read as typed, as if it had no quotes.<br>
-  For example, `t/"Speed" extra` gives the title `"Speed" extra`, and `hw add 1 t/"Speed in km/h s/PHYSICS due/2026-11-01` is rejected because the quote is not closed, so `km/` is read as a prefix.
+  For example, `t/"Speed" extra` gives the title `"Speed" extra`, and `hw add 1 t/"Speed in km/h s/PHYSICS due/2026-12-01` is rejected because the quote is not closed, so `km/` is read as a prefix.
 
 * In `homework add`, `homework edit`, `homework marks` and `homework upcoming`, a prefix of the command typed with capital letters, such as `S/` or `Due/`, is rejected instead of being kept in the value before it. For example, `hw add 1 t/X S/MATH due/2026-12-01` gives `S/ is not a prefix of this command; prefixes are lowercase (s/). To use it inside a value, wrap the whole value in straight double quotes, e.g. t/"X S/MATH".` Other commands keep such a word in the value, so a name such as `Ravi S/O Kumar` is accepted.
 
@@ -374,10 +374,10 @@ Examples:
   3. Complete algebra worksheet (MATH) - due 2026-10-15 - score Not recorded - status ASSIGNED
   Note: this homework is due before today, so homework list 1 shows it only with all.
   ```
-* `hw add 1 t/Attempt mechanics questions 1-5 s/PHYSICS due/2026-10-20`
+* `hw add 1 t/Attempt mechanics questions 1-5 s/PHYSICS due/2026-11-20`
 * `homework add 2 due/10-18 s/chemistry title/Revise atomic structure` adds homework due on 18 October of this year, or of next year if 18 October has passed.
 * `hw add 1 t/Read chapter 3 s/physics due/10-5` adds homework due on 5 October of this year, or of next year if 5 October has passed.
-* `hw add 1 t/"Speed in km/h" s/PHYSICS due/2026-11-01` adds homework titled `Speed in km/h`; the quotes keep `km/h` in the title.
+* `hw add 1 t/"Speed in km/h" s/PHYSICS due/2026-12-01` adds homework titled `Speed in km/h`; the quotes keep `km/h` in the title.
 
 ### Listing a student's homework: `homework list`
 
@@ -781,7 +781,7 @@ Action | Format, Examples
 **Sort** | `sort by/KEY [o/ORDER]`<br> e.g., `sort by/level`, `sort by/day o/desc`
 **Delete student** | `delete INDEX`<br> e.g., `delete 2`
 **Clear** | `clear`
-**Homework add** | <code>homework&#124;hw add STUDENT_INDEX title/&#124;t/TITLE s/SUBJECT due/YYYY-MM-DD&#124;MM-DD</code><br> e.g., `homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15`, `hw add 1 t/"Speed in km/h" s/PHYSICS due/2026-11-01`
+**Homework add** | <code>homework&#124;hw add STUDENT_INDEX title/&#124;t/TITLE s/SUBJECT due/YYYY-MM-DD&#124;MM-DD</code><br> e.g., `homework add 1 title/Complete algebra worksheet s/MATH due/2026-12-01`, `hw add 1 t/"Speed in km/h" s/PHYSICS due/2026-12-01`
 **Homework list** | <code>homework&#124;hw list&#124;ls STUDENT_INDEX [all]</code><br> e.g., `homework list 1`, `hw ls 2 all`
 **Homework upcoming** | <code>homework&#124;hw upcoming&#124;up [due/DAYS]</code><br> e.g., `hw up`, `hw up due/3`
 **Homework edit** | <code>homework&#124;hw edit&#124;e STUDENT_INDEX HOMEWORK_INDEX [title/&#124;t/TITLE] [s/SUBJECT] [due/YYYY-MM-DD&#124;MM-DD]</code><br> e.g., `hw edit 1 2 t/Revise mechanics s/PHYSICS due/2026-11-10`

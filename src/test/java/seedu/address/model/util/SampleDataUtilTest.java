@@ -91,7 +91,7 @@ public class SampleDataUtilTest {
         // Each example below is tried on the roster that TutorFlow starts with
         String[][] examples = {
             {"homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15"},
-            {"hw add 1 t/Attempt mechanics questions 1-5 s/PHYSICS due/2026-10-20"},
+            {"hw add 1 t/Attempt mechanics questions 1-5 s/PHYSICS due/2026-11-20"},
             {"homework add 2 due/10-18 s/chemistry title/Revise atomic structure"},
             {"hw add 1 t/Read chapter 3 s/physics due/10-5"},
             {"homework list 1"},

@@ -3,17 +3,15 @@ package seedu.address.ui;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static seedu.address.testutil.FxTestUtil.runOnFxThread;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Orientation;
@@ -25,17 +23,13 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollBar;
 import javafx.scene.layout.Region;
 import seedu.address.model.student.Student;
+import seedu.address.testutil.FxTestUtil;
 import seedu.address.testutil.StudentBuilder;
 
 public class StudentSortRenderingTest {
     @BeforeAll
     public static void startJavaFx() {
-        try {
-            Platform.startup(() -> { });
-        } catch (IllegalStateException exception) {
-            // Another UI test has already initialized the JavaFX runtime.
-        }
-        Platform.setImplicitExit(false);
+        FxTestUtil.startJavaFx();
     }
 
     @Test
@@ -140,9 +134,4 @@ public class StudentSortRenderingTest {
         return (ListView<Student>) root.lookup("#studentListView");
     }
 
-    private static void runOnFxThread(Runnable action) throws Exception {
-        FutureTask<Void> task = new FutureTask<>(action, null);
-        Platform.runLater(task);
-        task.get(10, TimeUnit.SECONDS);
-    }
 }

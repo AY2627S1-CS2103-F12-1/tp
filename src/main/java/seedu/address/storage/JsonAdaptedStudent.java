@@ -1,6 +1,7 @@
 package seedu.address.storage;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -252,7 +253,7 @@ class JsonAdaptedStudent {
                 throw invalidSubjects(String.format(MESSAGE_SUBJECTS_NULL_ENTRY, i + 1));
             }
             // A comma inside one entry would otherwise be read as two subjects
-            if (subject.contains(",")) {
+            if (countCommaSeparatedValues(subject) > 1) {
                 throw invalidSubjects(String.format(MESSAGE_SUBJECTS_SEVERAL_IN_ONE_ENTRY, subject));
             }
             TuitionSubject modelSubject = toModelValue("subjects", subject, TuitionSubject::parse,
@@ -262,6 +263,14 @@ class JsonAdaptedStudent {
             }
         }
         return new TuitionSubjects(String.join(",", subjects));
+    }
+
+    /**
+     * Returns the number of nonblank values in {@code text} separated by commas, e.g. 1 for "MATH," and 2 for
+     * "MATH, PHYSICS".
+     */
+    private static long countCommaSeparatedValues(String text) {
+        return Arrays.stream(text.split(",")).filter(value -> !value.isBlank()).count();
     }
 
     /**

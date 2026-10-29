@@ -109,6 +109,12 @@ public class JsonAdaptedStudentTest {
         assertInvalidSubjects(List.of("MATH", " math "), "MATH is listed more than once."); // repeated in other case
         assertInvalidSubjects(List.of("MATH, PHYSICS"),
                 "\"MATH, PHYSICS\" holds more than one subject."); // two subjects in one entry
+        assertInvalidSubjects(List.of("MATH,,PHYSICS"),
+                "\"MATH,,PHYSICS\" holds more than one subject."); // two subjects with an empty one between
+        // PE round 3: a comma alone made any entry hold "more than one subject"
+        assertInvalidSubjects(List.of("MATH,"), "\"MATH,\" is not a subject."); // trailing comma
+        assertInvalidSubjects(List.of(" , MATH"), "\" , MATH\" is not a subject."); // leading comma
+        assertInvalidSubjects(List.of(","), "\",\" is not a subject."); // comma only
         assertInvalidSubjects(Arrays.asList("MATH", null), "Entry 2 is empty (null)."); // empty entry
 
         // the exact text shown in the load error

@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TestUtil.ARABIC_EGYPT;
 import static seedu.address.testutil.TestUtil.runWithFormatLocale;
@@ -15,9 +17,11 @@ import static seedu.address.testutil.TypicalStudents.BENSON;
 import static seedu.address.testutil.TypicalStudents.getTypicalAddressBook;
 
 import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
 import java.util.Optional;
 
@@ -161,6 +165,59 @@ public class JsonAddressBookStorageTest {
             assertEquals("The file has a value of the wrong type near line 1, column 14.", assertDoesNotThrow(() ->
                     getLoadingReason("{\"students\": 5}")));
         });
+    }
+
+    @Test
+    public void readAddressBook_dataFileIsFolder_reasonSaysFolder() throws Exception {
+        Path file = Files.createDirectories(testFolder.resolve("data").resolve("tutorflow.json"));
+        assertEquals("It is a folder, not a file.", getLoadingReasonOfFile(file));
+    }
+
+    @Test
+    public void readAddressBook_unreadableDataFile_reasonSaysNoPermission() throws Exception {
+        Path file = testFolder.resolve("data").resolve("tutorflow.json");
+        new JsonAddressBookStorage(file).saveAddressBook(getTypicalAddressBook());
+        try {
+            removePermissions(file);
+            assertEquals("The file cannot be read (no permission).", getLoadingReasonOfFile(file));
+        } finally {
+            Files.setPosixFilePermissions(file, PosixFilePermissions.fromString("rw-------"));
+        }
+    }
+
+    @Test
+    public void readAddressBook_unreadableDataFolder_reasonSaysNoPermission() throws Exception {
+        Path file = testFolder.resolve("data").resolve("tutorflow.json");
+        new JsonAddressBookStorage(file).saveAddressBook(getTypicalAddressBook());
+        try {
+            removePermissions(file.getParent());
+            assertEquals("The data folder cannot be read (no permission).", getLoadingReasonOfFile(file));
+        } finally {
+            Files.setPosixFilePermissions(file.getParent(), PosixFilePermissions.fromString("rwx------"));
+        }
+    }
+
+    /**
+     * Returns the reason the user is shown when the data file {@code file} cannot be loaded.
+     */
+    private static String getLoadingReasonOfFile(Path file) {
+        try {
+            new JsonAddressBookStorage(file).readAddressBook();
+        } catch (DataLoadingException e) {
+            return e.getCause().getMessage();
+        }
+        throw new AssertionError("The data file was loaded: " + file);
+    }
+
+    /**
+     * Removes all permissions from {@code path}, skipping the test where that does not stop reading it: on file
+     * systems without POSIX permissions, or when running as root.
+     */
+    private static void removePermissions(Path path) throws IOException {
+        assumeTrue(FileSystems.getDefault().supportedFileAttributeViews().contains("posix"),
+                "permissions only block reading on POSIX file systems");
+        Files.setPosixFilePermissions(path, PosixFilePermissions.fromString("---------"));
+        assumeFalse(Files.isReadable(path), "the file is still readable, e.g. when running as root");
     }
 
     @Test

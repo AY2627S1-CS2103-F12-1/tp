@@ -83,7 +83,7 @@ public final class HelpContent {
                             "Adds homework to the student at STUDENT_INDEX. " + TuitionSubject.MESSAGE_CONSTRAINTS
                                     + " " + DueDate.MESSAGE_CONSTRAINTS + " " + DueDate.MESSAGE_YEAR_OUT_OF_RANGE
                                     + " An MM-DD date is in this year, or in the next year if it has passed.",
-                            "hw add 1 t/Algebra worksheet s/MATH due/2026-10-15"),
+                            "hw add 1 t/Algebra worksheet s/MATH due/2026-12-01"),
                     new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_LIST,
                             HomeworkListCommand.MESSAGE_USAGE,
                             "Lists the homework of the student at STUDENT_INDEX that is due today or later, earliest"

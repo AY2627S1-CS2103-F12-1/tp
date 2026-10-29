@@ -37,7 +37,7 @@ TutorFlow is a **desktop application for private tutors to manage their students
 
    * `homework list 1` : Lists the upcoming homework of the 1st student shown in the student list.
 
-   * `hw add 1 t/Algebra worksheet s/MATH due/2026-10-15` : Adds homework to the 1st student.
+   * `hw add 1 t/Algebra worksheet s/MATH due/2026-12-01` : Adds homework to the 1st student.
 
    * `delete 3` : Deletes the 3rd student shown in the student list.
 

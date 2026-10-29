@@ -82,6 +82,21 @@ public class HelpContentTest {
     }
 
     @Test
+    public void getSections_homeworkAddExample_notDueBeforeTodayOnExamDays() throws Exception {
+        HelpContent.Entry addEntry = getEntries().stream()
+                .filter(entry -> entry.commandWord().equals("homework add")).findFirst().orElseThrow();
+        String expectedMessage = "New homework added for Ethan Lim (91234567):\n"
+                + "3. Algebra worksheet (MATH) - due 2026-12-01 - score Not recorded - status ASSIGNED";
+
+        for (String date : List.of("2026-11-06", "2026-11-07")) {
+            Clock clock = Clock.fixed(Instant.parse(date + "T00:00:00Z"), ZoneOffset.UTC);
+            ModelManager model = new ModelManager(SampleDataUtil.getSampleAddressBook(), new UserPrefs());
+            assertEquals(expectedMessage, new AddressBookParser(clock).parseCommand(addEntry.example())
+                    .execute(model).getFeedbackToUser(), date);
+        }
+    }
+
+    @Test
     public void getSections_filterExample_matchesSampleStudent() throws Exception {
         HelpContent.Entry filterEntry = getEntries().stream()
                 .filter(entry -> entry.commandWord().equals(FilterCommand.COMMAND_WORD)).findFirst().orElseThrow();

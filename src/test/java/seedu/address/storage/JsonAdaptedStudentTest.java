@@ -74,7 +74,7 @@ public class JsonAdaptedStudentTest {
     public void toModelType_invalidName_throwsIllegalValueException() {
         JsonAdaptedStudent student = new JsonAdaptedStudent(INVALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
                 VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, VALID_HOMEWORKS);
-        assertThrows(IllegalValueException.class, StudentName.MESSAGE_CONSTRAINTS, student::toModelType);
+        assertThrows(IllegalValueException.class, "name: " + StudentName.MESSAGE_CONSTRAINTS, student::toModelType);
     }
 
     @Test
@@ -88,7 +88,8 @@ public class JsonAdaptedStudentTest {
     public void toModelType_invalidAcademicLevel_throwsIllegalValueException() {
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, "P6", VALID_SUBJECTS,
                 VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, VALID_HOMEWORKS);
-        assertThrows(IllegalValueException.class, AcademicLevel.MESSAGE_CONSTRAINTS, student::toModelType);
+        assertThrows(IllegalValueException.class, "academicLevel: " + AcademicLevel.MESSAGE_CONSTRAINTS,
+                student::toModelType);
     }
 
     @Test
@@ -100,11 +101,28 @@ public class JsonAdaptedStudentTest {
 
     @Test
     public void toModelType_invalidSubjects_throwsIllegalValueException() {
-        assertInvalidSubjects(List.of()); // no subject
-        assertInvalidSubjects(List.of("BIOLOGY")); // unsupported subject
-        assertInvalidSubjects(List.of("MATH", "math")); // repeated subject
-        assertInvalidSubjects(List.of("MATH, PHYSICS")); // two subjects in one entry
-        assertInvalidSubjects(Arrays.asList("MATH", null)); // empty entry
+        // PE round 2: the reason said "separated by commas", which is wrong for a JSON list
+        assertInvalidSubjects(List.of(), "The list is empty."); // no subject
+        assertInvalidSubjects(List.of("BIOLOGY"), "\"BIOLOGY\" is not a subject."); // unsupported subject
+        assertInvalidSubjects(List.of(""), "\"\" is not a subject."); // empty text
+        assertInvalidSubjects(List.of("MATH", "MATH"), "MATH is listed more than once."); // repeated subject
+        assertInvalidSubjects(List.of("MATH", " math "), "MATH is listed more than once."); // repeated in other case
+        assertInvalidSubjects(List.of("MATH, PHYSICS"),
+                "\"MATH, PHYSICS\" holds more than one subject."); // two subjects in one entry
+        assertInvalidSubjects(List.of("MATH,,PHYSICS"),
+                "\"MATH,,PHYSICS\" holds more than one subject."); // two subjects with an empty one between
+        // PE round 3: a comma alone made any entry hold "more than one subject"
+        assertInvalidSubjects(List.of("MATH,"), "\"MATH,\" is not a subject."); // trailing comma
+        assertInvalidSubjects(List.of(" , MATH"), "\" , MATH\" is not a subject."); // leading comma
+        assertInvalidSubjects(List.of(","), "\",\" is not a subject."); // comma only
+        assertInvalidSubjects(Arrays.asList("MATH", null), "Entry 2 is empty (null)."); // empty entry
+
+        // the exact text shown in the load error
+        JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL,
+                List.of("MATH, PHYSICS"), VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, VALID_HOMEWORKS);
+        assertThrows(IllegalValueException.class, "subjects: \"MATH, PHYSICS\" holds more than one subject. "
+                + "Subjects must be a list of one or more of MATH, PHYSICS and CHEMISTRY, each in its own quotes "
+                + "and listed once, e.g. [\"MATH\", \"PHYSICS\"].", student::toModelType);
     }
 
     @Test
@@ -125,7 +143,7 @@ public class JsonAdaptedStudentTest {
     public void toModelType_invalidPhone_throwsIllegalValueException() {
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
                 INVALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, VALID_HOMEWORKS);
-        assertThrows(IllegalValueException.class, StudentPhone.MESSAGE_CONSTRAINTS, student::toModelType);
+        assertThrows(IllegalValueException.class, "phone: " + StudentPhone.MESSAGE_CONSTRAINTS, student::toModelType);
     }
 
     @Test
@@ -139,7 +157,8 @@ public class JsonAdaptedStudentTest {
     public void toModelType_invalidGuardianName_throwsIllegalValueException() {
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
                 VALID_PHONE, INVALID_NAME, VALID_GUARDIAN_PHONE, VALID_HOMEWORKS);
-        assertThrows(IllegalValueException.class, StudentName.MESSAGE_CONSTRAINTS, student::toModelType);
+        assertThrows(IllegalValueException.class, "guardianName: " + StudentName.MESSAGE_CONSTRAINTS,
+                student::toModelType);
     }
 
     @Test
@@ -153,7 +172,8 @@ public class JsonAdaptedStudentTest {
     public void toModelType_invalidGuardianPhone_throwsIllegalValueException() {
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
                 VALID_PHONE, VALID_GUARDIAN_NAME, INVALID_PHONE, VALID_HOMEWORKS);
-        assertThrows(IllegalValueException.class, StudentPhone.MESSAGE_CONSTRAINTS, student::toModelType);
+        assertThrows(IllegalValueException.class, "guardianPhone: " + StudentPhone.MESSAGE_CONSTRAINTS,
+                student::toModelType);
     }
 
     @Test
@@ -161,7 +181,8 @@ public class JsonAdaptedStudentTest {
         List<JsonAdaptedHomework> homeworks = List.of(new JsonAdaptedHomework("Algebra", "MATH", "10-15", null));
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
                 VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, homeworks);
-        assertThrows(IllegalValueException.class, fullDateFormatMessage("10-15"), student::toModelType);
+        assertThrows(IllegalValueException.class, "Homework 1 (Algebra): " + fullDateFormatMessage("10-15"),
+                student::toModelType);
     }
 
     @Test
@@ -170,18 +191,27 @@ public class JsonAdaptedStudentTest {
         homeworks.add(null);
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
                 VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, homeworks);
-        assertThrows(IllegalValueException.class, JsonAdaptedStudent.MESSAGE_EMPTY_HOMEWORK_ENTRY,
-                student::toModelType);
+        // PE round 2: the reason did not say which entry is empty
+        assertThrows(IllegalValueException.class, "Homework 2 is empty (null).", student::toModelType);
+    }
+
+    @Test
+    public void toModelType_emptyLessonEntry_throwsIllegalValueException() {
+        List<JsonAdaptedLesson> lessons = Arrays.asList(new JsonAdaptedLesson("MATH", "MONDAY", "16:00", "18:00"),
+                null);
+        JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
+                VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, VALID_HOMEWORKS, lessons);
+        assertThrows(IllegalValueException.class, "Lesson 2 is empty (null).", student::toModelType);
     }
 
     @Test
     public void toModelType_homeworkSubjectNotTaken_throwsIllegalValueException() {
-        List<JsonAdaptedHomework> homeworks = List.of(new JsonAdaptedHomework(
-                new HomeworkBuilder().withSubject("PHYSICS").build()));
+        List<JsonAdaptedHomework> homeworks = List.of(new JsonAdaptedHomework(ALGEBRA), new JsonAdaptedHomework(
+                new HomeworkBuilder().withTitle("Kinematics").withSubject("PHYSICS").build()));
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
                 VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, homeworks);
-        assertThrows(IllegalValueException.class, JsonAdaptedStudent.MESSAGE_SUBJECT_NOT_TAKEN,
-                student::toModelType);
+        assertThrows(IllegalValueException.class,
+                "Homework 2 (Kinematics): " + JsonAdaptedStudent.MESSAGE_SUBJECT_NOT_TAKEN, student::toModelType);
     }
 
     @Test
@@ -192,8 +222,8 @@ public class JsonAdaptedStudentTest {
         List<JsonAdaptedHomework> homeworks = List.of(new JsonAdaptedHomework(ALGEBRA), duplicate);
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
                 VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, homeworks);
-        assertThrows(IllegalValueException.class, JsonAdaptedStudent.MESSAGE_DUPLICATE_HOMEWORK,
-                student::toModelType);
+        assertThrows(IllegalValueException.class, "Homework 2 (COMPLETE ALGEBRA WORKSHEET) has the same title,"
+                + " subject and due date as homework 1.", student::toModelType);
     }
 
     @Test
@@ -204,8 +234,8 @@ public class JsonAdaptedStudentTest {
                 new JsonAdaptedHomework("Cafe\u0301", "MATH", "2026-11-20", null));
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
                 VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, homeworks);
-        assertThrows(IllegalValueException.class, JsonAdaptedStudent.MESSAGE_DUPLICATE_HOMEWORK,
-                student::toModelType);
+        assertThrows(IllegalValueException.class, "Homework 2 (Cafe\u0301) has the same title, subject and due"
+                + " date as homework 1.", student::toModelType);
     }
 
     @Test
@@ -224,9 +254,10 @@ public class JsonAdaptedStudentTest {
         assertThrows(IllegalValueException.class, expectedMessage, student::toModelType);
     }
 
-    private static void assertInvalidSubjects(List<String> subjects) {
+    private static void assertInvalidSubjects(List<String> subjects, String problem) {
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, subjects,
                 VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, VALID_HOMEWORKS);
-        assertThrows(IllegalValueException.class, TuitionSubjects.MESSAGE_CONSTRAINTS, student::toModelType);
+        assertThrows(IllegalValueException.class, "subjects: " + problem + " "
+                + JsonAdaptedStudent.MESSAGE_SUBJECTS_CONSTRAINTS, student::toModelType);
     }
 }

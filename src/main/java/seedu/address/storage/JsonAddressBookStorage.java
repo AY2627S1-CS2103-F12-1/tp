@@ -7,6 +7,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -27,6 +28,11 @@ import seedu.address.model.ReadOnlyAddressBook;
  * A class to access AddressBook data stored as a JSON file on the hard disk.
  */
 public class JsonAddressBookStorage {
+
+    public static final String MESSAGE_LOAD_CAUSE_FOLDER = "It is a folder, not a file.";
+    public static final String MESSAGE_LOAD_CAUSE_UNREADABLE_FILE = "The file cannot be read (no permission).";
+    public static final String MESSAGE_LOAD_CAUSE_UNREADABLE_FOLDER =
+            "The data folder cannot be read (no permission).";
 
     private static final Logger logger = LogsCenter.getLogger(JsonAddressBookStorage.class);
 
@@ -73,8 +79,27 @@ public class JsonAddressBookStorage {
             return result;
         } catch (IOException | IllegalValueException exception) {
             logger.info("Could not load " + filePath + ": " + exception.getMessage());
-            throw new DataLoadingException(exception);
+            throw new DataLoadingException(describeLoadFailure(exception, filePath));
         }
+    }
+
+    /**
+     * Returns an exception with a plain cause if {@code exception} is because {@code filePath} is a folder or cannot
+     * be read, or {@code exception} itself otherwise. The system's text for these names only the path or says
+     * "Is a directory".
+     */
+    private static Exception describeLoadFailure(Exception exception, Path filePath) {
+        if (Files.isDirectory(filePath)) {
+            return new IOException(MESSAGE_LOAD_CAUSE_FOLDER, exception);
+        }
+        if (!(exception instanceof AccessDeniedException)) {
+            return exception;
+        }
+        Path folder = filePath.toAbsolutePath().getParent();
+        // Without read and execute permission on its folder, the file cannot even be found
+        boolean canOpenFolder = folder == null || Files.isReadable(folder) && Files.isExecutable(folder);
+        return new IOException(canOpenFolder ? MESSAGE_LOAD_CAUSE_UNREADABLE_FILE
+                : MESSAGE_LOAD_CAUSE_UNREADABLE_FOLDER, exception);
     }
 
     /**
@@ -98,12 +123,17 @@ public class JsonAddressBookStorage {
 
         Path normalized = filePath.toAbsolutePath().normalize();
         Files.createDirectories(normalized.getParent());
-        Path lockFile = normalized.resolveSibling(normalized.getFileName() + ".lock");
+        // Saves through different symbolic links to one file, or by its own path, must lock the same lock file
+        Path savedFile = FileUtil.resolveSymbolicLinks(normalized).normalize();
+        Path lockFile = savedFile.resolveSibling(savedFile.getFileName() + ".lock");
         try (FileChannel channel = FileChannel.open(lockFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
                 FileLock lock = acquireWriteLock(channel)) {
-            if (knownVersions.containsKey(normalized)
-                    && !Arrays.equals(knownVersions.get(normalized), readVersion(normalized))) {
-                throw new DataFileConflictException(DataFileConflictException.MESSAGE_CHANGED);
+            byte[] currentVersion = readVersion(normalized);
+            // A data file deleted since it was loaded or saved is written again from the data in memory
+            if (knownVersions.containsKey(normalized) && currentVersion != null
+                    && !Arrays.equals(knownVersions.get(normalized), currentVersion)) {
+                throw new DataFileConflictException(knownVersions.get(normalized) == null
+                        ? DataFileConflictException.MESSAGE_CREATED : DataFileConflictException.MESSAGE_CHANGED);
             }
             String json = JsonUtil.toJsonString(new JsonSerializableAddressBook(addressBook));
             FileUtil.writeToFile(normalized, json);

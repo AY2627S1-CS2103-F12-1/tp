@@ -2,6 +2,7 @@ package seedu.address.storage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static seedu.address.testutil.Assert.assertThrows;
 
 import java.io.IOException;
@@ -81,6 +82,19 @@ public class JsonUserPrefsStorageTest {
                 + "\"windowCoordinates\":null}}");
 
         assertEquals(new UserPrefs(), new JsonUserPrefsStorage(prefsFilePath).readUserPrefs().orElseThrow());
+    }
+
+    @Test
+    public void readUserPrefs_nullWindowWidth_zeroWidthKeepsHeight() throws Exception {
+        // the window's minimum width, not the preferences, keeps the window usable
+        Path prefsFilePath = testFolder.resolve("NullWindowWidthPrefs.json");
+        Files.writeString(prefsFilePath, "{\"guiSettings\":{\"windowWidth\":null,\"windowHeight\":700.0}}");
+
+        GuiSettings guiSettings = new JsonUserPrefsStorage(prefsFilePath).readUserPrefs().orElseThrow()
+                .getGuiSettings();
+        assertEquals(0.0, guiSettings.getWindowWidth());
+        assertEquals(700.0, guiSettings.getWindowHeight());
+        assertNull(guiSettings.getWindowCoordinates());
     }
 
     @Test

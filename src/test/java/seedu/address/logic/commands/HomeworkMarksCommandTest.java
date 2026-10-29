@@ -49,7 +49,8 @@ public class HomeworkMarksCommandTest {
     @Test
     public void execute_homeworkWithoutScore_recordsScore() {
         String expectedMessage = "Recorded homework marks:\n"
-                + "Alice Tan; Title: Attempt mechanics questions 1-5; Subject: PHYSICS; Due: 2026-10-20; Score: 5/10";
+                + "Alice Tan (91111111); Title: Attempt mechanics questions 1-5; Subject: PHYSICS; Due: "
+                + "2026-10-20; Score: 5/10";
         Model expectedModel = getModelWithStudents(List.of(ALICE.withHomeworks(List.of(ALGEBRA,
                 new HomeworkBuilder(MECHANICS).withScore("5/10").build(), ATOMIC_STRUCTURE)), BENSON, CARL));
 
@@ -61,7 +62,8 @@ public class HomeworkMarksCommandTest {
     public void execute_homeworkWithScore_replacesScore() {
         // ATOMIC_STRUCTURE has 17/20; the same ratio with another total is a different score
         String expectedMessage = "Recorded homework marks:\n"
-                + "Alice Tan; Title: Revise atomic structure; Subject: CHEMISTRY; Due: 2026-10-18; Score: 34/40";
+                + "Alice Tan (91111111); Title: Revise atomic structure; Subject: CHEMISTRY; Due: 2026-10-18; "
+                + "Score: 34/40";
         Model expectedModel = getModelWithStudents(List.of(ALICE.withHomeworks(List.of(ALGEBRA, MECHANICS,
                 new HomeworkBuilder(ATOMIC_STRUCTURE).withScore("34/40").build())), BENSON, CARL));
 
@@ -72,7 +74,8 @@ public class HomeworkMarksCommandTest {
     @Test
     public void execute_bareScore_recordsScoreWithoutTotal() {
         String expectedMessage = "Recorded homework marks:\n"
-                + "Alice Tan; Title: Attempt mechanics questions 1-5; Subject: PHYSICS; Due: 2026-10-20; Score: 17";
+                + "Alice Tan (91111111); Title: Attempt mechanics questions 1-5; Subject: PHYSICS; Due: "
+                + "2026-10-20; Score: 17";
         Model expectedModel = getModelWithStudents(List.of(ALICE.withHomeworks(List.of(ALGEBRA,
                 new HomeworkBuilder(MECHANICS).withScore("17").build(), ATOMIC_STRUCTURE)), BENSON, CARL));
 
@@ -84,7 +87,8 @@ public class HomeworkMarksCommandTest {
     public void execute_bareScoreReplacingSameMarksWithTotal_replacesScore() {
         // ATOMIC_STRUCTURE has 17/20; 17 without a total is a different score
         String expectedMessage = "Recorded homework marks:\n"
-                + "Alice Tan; Title: Revise atomic structure; Subject: CHEMISTRY; Due: 2026-10-18; Score: 17";
+                + "Alice Tan (91111111); Title: Revise atomic structure; Subject: CHEMISTRY; Due: 2026-10-18; "
+                + "Score: 17";
         Model expectedModel = getModelWithStudents(List.of(ALICE.withHomeworks(List.of(ALGEBRA, MECHANICS,
                 new HomeworkBuilder(ATOMIC_STRUCTURE).withScore("17").build())), BENSON, CARL));
 
@@ -97,7 +101,8 @@ public class HomeworkMarksCommandTest {
         Model modelWithBareScore = getModelWithStudents(List.of(ALICE.withHomeworks(List.of(ALGEBRA, MECHANICS,
                 new HomeworkBuilder(ATOMIC_STRUCTURE).withScore("17").build())), BENSON, CARL));
         String expectedMessage = "Recorded homework marks:\n"
-                + "Alice Tan; Title: Revise atomic structure; Subject: CHEMISTRY; Due: 2026-10-18; Score: 17/20";
+                + "Alice Tan (91111111); Title: Revise atomic structure; Subject: CHEMISTRY; Due: 2026-10-18; "
+                + "Score: 17/20";
 
         assertCommandSuccess(new HomeworkMarksCommand(FIRST, THIRD, new Score(17, 20)), modelWithBareScore,
                 expectedMessage, getModelWithTypicalStudents());
@@ -106,7 +111,8 @@ public class HomeworkMarksCommandTest {
     @Test
     public void execute_zeroMarks_recordsZero() {
         String expectedMessage = "Recorded homework marks:\n"
-                + "Carl Ng; Title: Attempt mechanics questions 1-5; Subject: PHYSICS; Due: 2026-10-20; Score: 0/10";
+                + "Carl Ng (93333333); Title: Attempt mechanics questions 1-5; Subject: PHYSICS; Due: "
+                + "2026-10-20; Score: 0/10";
         Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON,
                 CARL.withHomeworks(List.of(new HomeworkBuilder(MECHANICS).withScore("0/10").build()))));
 
@@ -117,7 +123,8 @@ public class HomeworkMarksCommandTest {
     @Test
     public void execute_homeworkWithScore_clearsScore() {
         String expectedMessage = "Cleared homework marks:\n"
-                + "Alice Tan; Title: Revise atomic structure; Subject: CHEMISTRY; Due: 2026-10-18; Score: Not recorded";
+                + "Alice Tan (91111111); Title: Revise atomic structure; Subject: CHEMISTRY; Due: 2026-10-18; "
+                + "Score: Not recorded";
         Model expectedModel = getModelWithStudents(List.of(ALICE.withHomeworks(List.of(ALGEBRA, MECHANICS,
                 new HomeworkBuilder(ATOMIC_STRUCTURE).withoutScore().build())), BENSON, CARL));
 
@@ -156,7 +163,8 @@ public class HomeworkMarksCommandTest {
         // CARL is third in the roster but first in the displayed list
         model.updateFilteredStudentList(CARL::equals);
         String expectedMessage = "Recorded homework marks:\n"
-                + "Carl Ng; Title: Attempt mechanics questions 1-5; Subject: PHYSICS; Due: 2026-10-20; Score: 5/10";
+                + "Carl Ng (93333333); Title: Attempt mechanics questions 1-5; Subject: PHYSICS; Due: "
+                + "2026-10-20; Score: 5/10";
         Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON,
                 CARL.withHomeworks(List.of(new HomeworkBuilder(MECHANICS).withScore("5/10").build()))));
 
@@ -177,7 +185,8 @@ public class HomeworkMarksCommandTest {
         Model completedModel = getModelWithStudents(List.of(ALICE, BENSON,
                 CARL.withHomeworks(List.of(COMPLETED_MECHANICS))));
         String expectedMessage = "Recorded homework marks:\n"
-                + "Carl Ng; Title: Attempt mechanics questions 1-5; Subject: PHYSICS; Due: 2026-10-20; Score: 5/10";
+                + "Carl Ng (93333333); Title: Attempt mechanics questions 1-5; Subject: PHYSICS; Due: "
+                + "2026-10-20; Score: 5/10";
         Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON,
                 CARL.withHomeworks(List.of(new HomeworkBuilder(COMPLETED_MECHANICS).withScore("5/10").build()))));
 
@@ -237,6 +246,14 @@ public class HomeworkMarksCommandTest {
         String expectedMessage = "The homework marks could not be recorded because TutorFlow could not save "
                 + SHOWN_DATA_FILE_NAME + ": the data folder is read-only. No homework data was changed.";
         assertEquals(expectedMessage, new HomeworkMarksCommand(FIRST, FIRST, FIVE_OUT_OF_TEN)
+                .getSaveFailureMessage(SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER));
+    }
+
+    @Test
+    public void getSaveFailureMessage_clearingMarks_saysCleared() {
+        String expectedMessage = "The homework marks could not be cleared because TutorFlow could not save "
+                + SHOWN_DATA_FILE_NAME + ": the data folder is read-only. No homework data was changed.";
+        assertEquals(expectedMessage, new HomeworkMarksCommand(FIRST, FIRST)
                 .getSaveFailureMessage(SHOWN_DATA_FILE_NAME, CAUSE_READ_ONLY_FOLDER));
     }
 

@@ -22,9 +22,22 @@ if () then ([valid])
         :Add the homework to the end
         of a copy of the homework list,
         then replace the student;
-        :Save the data, or restore
-        it if saving fails;
-        stop
+        :Save the data
+        (see Saving after a command);
+        if () then ([saved])
+          if () then ([due today or later])
+            :Show the new homework;
+          else ([due before today])
+            :Show the new homework and a Note
+            that homework list shows it
+            only with all;
+          endif
+          stop
+        else ([save failed])
+          :Restore the data and show
+          the save error;
+          stop
+        endif
       else ([same homework exists])
         :Show the error;
         stop

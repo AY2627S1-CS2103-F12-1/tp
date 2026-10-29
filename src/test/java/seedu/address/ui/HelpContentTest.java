@@ -82,6 +82,44 @@ public class HelpContentTest {
     }
 
     @Test
+    public void getSections_homeworkListDescription_explainsWhenNumbersChange() {
+        HelpContent.Entry listEntry = getEntries().stream()
+                .filter(entry -> entry.commandWord().equals("homework list")).findFirst().orElseThrow();
+        assertEquals("Lists the homework of the student at STUDENT_INDEX that is due today or later, earliest first,"
+                + " with its score and status. Add all to list homework due before today too. The number before each"
+                + " homework is its HOMEWORK_INDEX for the other homework commands. Hiding homework due before today"
+                + " does not change these numbers, but deleting a homework renumbers the homework after it.",
+                listEntry.description());
+    }
+
+    @Test
+    public void getSections_homeworkUpcomingDescription_explainsStudentListReset() {
+        HelpContent.Entry upcomingEntry = getEntries().stream()
+                .filter(entry -> entry.commandWord().equals("homework upcoming")).findFirst().orElseThrow();
+        assertEquals("Lists the homework of all students that is due from today to DAYS days later, earliest first,"
+                + " with its score and status. Includes completed records by due date. Each line starts with the"
+                + " STUDENT_INDEX of the student. DAYS is a number of days from 0 to 365, not a date, and is 7 if not"
+                + " given. The lines are not numbered by HOMEWORK_INDEX; use homework list STUDENT_INDEX to find it."
+                + " Like list, it shows all students again, clearing any search or filter and undoing any sort.",
+                upcomingEntry.description());
+    }
+
+    @Test
+    public void getSections_homeworkAddExample_notDueBeforeTodayOnExamDays() throws Exception {
+        HelpContent.Entry addEntry = getEntries().stream()
+                .filter(entry -> entry.commandWord().equals("homework add")).findFirst().orElseThrow();
+        String expectedMessage = "New homework added for Ethan Lim (91234567):\n"
+                + "3. Algebra worksheet (MATH) - due 2026-12-01 - score Not recorded - status ASSIGNED";
+
+        for (String date : List.of("2026-11-06", "2026-11-07")) {
+            Clock clock = Clock.fixed(Instant.parse(date + "T00:00:00Z"), ZoneOffset.UTC);
+            ModelManager model = new ModelManager(SampleDataUtil.getSampleAddressBook(), new UserPrefs());
+            assertEquals(expectedMessage, new AddressBookParser(clock).parseCommand(addEntry.example())
+                    .execute(model).getFeedbackToUser(), date);
+        }
+    }
+
+    @Test
     public void getSections_filterExample_matchesSampleStudent() throws Exception {
         HelpContent.Entry filterEntry = getEntries().stream()
                 .filter(entry -> entry.commandWord().equals(FilterCommand.COMMAND_WORD)).findFirst().orElseThrow();

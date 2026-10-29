@@ -37,6 +37,9 @@ import seedu.address.storage.JsonUserPrefsStorage;
 import seedu.address.testutil.FxTestUtil;
 
 public class MainAppLifecycleTest {
+    /** Start of a reason about the homework whose due date is 2026-10-15 in the typical data. */
+    private static final String ALGEBRA_OF_ALICE = "Student 1 (Alice Tan): Homework 1 (Complete algebra worksheet): ";
+
     @TempDir
     Path temporaryFolder;
 
@@ -65,13 +68,13 @@ public class MainAppLifecycleTest {
     @Test
     public void invalidData_shortFormDueDate_dialogShowsReason() throws Exception {
         String content = getRecoveryDialogContent(getTypicalDataReplacing("\"2026-10-15\"", "\"10-15\""));
-        assertTrue(getReason(content).startsWith(fullDateFormatMessage("10-15")), content);
+        assertTrue(getReason(content).startsWith(ALGEBRA_OF_ALICE + fullDateFormatMessage("10-15")), content);
     }
 
     @Test
     public void invalidData_dueDateYearOutOfRange_dialogShowsReason() throws Exception {
         String content = getRecoveryDialogContent(getTypicalDataReplacing("\"2026-10-15\"", "\"2206-10-30\""));
-        assertTrue(getReason(content).startsWith(MESSAGE_YEAR_OUT_OF_RANGE), content);
+        assertTrue(getReason(content).startsWith(ALGEBRA_OF_ALICE + MESSAGE_YEAR_OUT_OF_RANGE), content);
     }
 
     @Test
@@ -79,7 +82,8 @@ public class MainAppLifecycleTest {
         // unknown keys are ignored, so the renamed key reads as missing
         String content = getRecoveryDialogContent(getTypicalDataReplacing("\"guardianPhone\"",
                 "\"unknownGuardianPhone\""));
-        assertTrue(getReason(content).startsWith("Student's guardianPhone field is missing!"), content);
+        assertTrue(getReason(content).startsWith("Student 1 (Alice Tan): Student's guardianPhone field is missing!"),
+                content);
     }
 
     /**

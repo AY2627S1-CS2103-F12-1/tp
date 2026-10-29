@@ -1,7 +1,10 @@
 package seedu.address.storage;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -23,9 +26,30 @@ import seedu.address.model.student.TuitionSubjects;
 class JsonAdaptedStudent {
 
     public static final String MISSING_FIELD_MESSAGE_FORMAT = "Student's %s field is missing!";
-    public static final String MESSAGE_EMPTY_HOMEWORK_ENTRY = "Student's homeworks list contains an empty entry.";
+    /** Message for a null entry of a list in the data file, e.g. "Homework 2", without the name it lacks. */
+    public static final String MESSAGE_EMPTY_ENTRY = "%s is empty (null).";
     public static final String MESSAGE_SUBJECT_NOT_TAKEN = "Homework subject must be one of the student's subjects.";
-    public static final String MESSAGE_DUPLICATE_HOMEWORK = "Student's homeworks list contains duplicate homework.";
+    public static final String MESSAGE_LESSON_SUBJECT_NOT_TAKEN =
+            "Lesson subject must be one of the student's subjects.";
+    /** Message for a duplicate lesson, e.g. "Lesson 2 (MONDAY 17:00-18:30)", and the position of the earlier one. */
+    public static final String MESSAGE_DUPLICATE_LESSON = "%s is the same as lesson %d.";
+    /** Message for a duplicate homework, e.g. "Homework 2 (Essay)", and the position of the earlier homework. */
+    public static final String MESSAGE_DUPLICATE_HOMEWORK =
+            "%s has the same title, subject and due date as homework %d.";
+    /** Rule for the subjects list in the data file, which, unlike the add command's input, is a JSON list. */
+    public static final String MESSAGE_SUBJECTS_CONSTRAINTS = "Subjects must be a list of one or more of MATH, "
+            + "PHYSICS and CHEMISTRY, each in its own quotes and listed once, e.g. [\"MATH\", \"PHYSICS\"].";
+    public static final String MESSAGE_SUBJECTS_EMPTY = "The list is empty.";
+    /** Message for a null entry of the subjects list, whose {@code %d} is its position, counting from 1. */
+    public static final String MESSAGE_SUBJECTS_NULL_ENTRY = "Entry %d is empty (null).";
+    /** Message for an entry of the subjects list, as written in the file, that holds more than one subject. */
+    public static final String MESSAGE_SUBJECTS_SEVERAL_IN_ONE_ENTRY = "\"%s\" holds more than one subject.";
+    /** Message for an entry of the subjects list, as written in the file, that is not a supported subject. */
+    public static final String MESSAGE_SUBJECTS_UNKNOWN = "\"%s\" is not a subject.";
+    /** Message for a subject that is listed more than once. */
+    public static final String MESSAGE_SUBJECTS_REPEATED = "%s is listed more than once.";
+    /** Prefix naming the entry or key that an error is about, e.g. "Homework 2 (Essay): " or "guardianPhone: ". */
+    public static final String ENTRY_PREFIX_FORMAT = "%s: ";
 
     private final String name;
     private final String academicLevel;
@@ -109,16 +133,21 @@ class JsonAdaptedStudent {
         final List<Homework> modelHomeworks = toModelHomeworks(modelSubjects);
 
         List<RegularLesson> modelLessons = new ArrayList<>();
-        for (JsonAdaptedLesson adapted : lessons) {
+        for (int i = 0; i < lessons.size(); i++) {
+            JsonAdaptedLesson adapted = lessons.get(i);
             if (adapted == null) {
-                throw new IllegalValueException("Student's lessons list contains an empty entry.");
+                throw new IllegalValueException(String.format(MESSAGE_EMPTY_ENTRY, describeEntry("Lesson", i + 1,
+                        null)));
             }
-            RegularLesson lesson = adapted.toModelType();
+            String shownLesson = describeEntry("Lesson", i + 1, adapted.getTimeSlot());
+            RegularLesson lesson = toModelEntry(adapted::toModelType, shownLesson);
             if (!modelSubjects.getSubjects().contains(lesson.getSubject())) {
-                throw new IllegalValueException("Lesson subject must be one of the student's subjects.");
+                throw new IllegalValueException(String.format(ENTRY_PREFIX_FORMAT, shownLesson)
+                        + MESSAGE_LESSON_SUBJECT_NOT_TAKEN);
             }
             if (modelLessons.contains(lesson)) {
-                throw new IllegalValueException("Student's lessons list contains duplicate lessons.");
+                throw new IllegalValueException(String.format(MESSAGE_DUPLICATE_LESSON, shownLesson,
+                        modelLessons.indexOf(lesson) + 1));
             }
             modelLessons.add(lesson);
         }
@@ -130,20 +159,27 @@ class JsonAdaptedStudent {
      * Returns the homework in the {@code homeworks} list, in order. Each homework must be for one of
      * {@code modelSubjects}, and no two homework records may be the same by {@link Homework#isSameHomework(Homework)}.
      *
-     * @throws IllegalValueException If an entry is empty or invalid, is for another subject, or is a duplicate.
+     * @throws IllegalValueException If an entry is empty or invalid, is for another subject, or is a duplicate. The
+     *         message names the homework by its position and title, e.g. "Homework 2 (Essay)".
      */
     private List<Homework> toModelHomeworks(TuitionSubjects modelSubjects) throws IllegalValueException {
         List<Homework> modelHomeworks = new ArrayList<>();
-        for (JsonAdaptedHomework jsonAdaptedHomework : homeworks) {
+        for (int i = 0; i < homeworks.size(); i++) {
+            JsonAdaptedHomework jsonAdaptedHomework = homeworks.get(i);
             if (jsonAdaptedHomework == null) {
-                throw new IllegalValueException(MESSAGE_EMPTY_HOMEWORK_ENTRY);
+                throw new IllegalValueException(String.format(MESSAGE_EMPTY_ENTRY, describeEntry("Homework", i + 1,
+                        null)));
             }
-            Homework homework = jsonAdaptedHomework.toModelType();
+            String shownHomework = describeEntry("Homework", i + 1, jsonAdaptedHomework.getTitle());
+            Homework homework = toModelEntry(jsonAdaptedHomework::toModelType, shownHomework);
             if (!modelSubjects.getSubjects().contains(homework.getSubject())) {
-                throw new IllegalValueException(MESSAGE_SUBJECT_NOT_TAKEN);
+                throw new IllegalValueException(String.format(ENTRY_PREFIX_FORMAT, shownHomework)
+                        + MESSAGE_SUBJECT_NOT_TAKEN);
             }
-            if (modelHomeworks.stream().anyMatch(homework::isSameHomework)) {
-                throw new IllegalValueException(MESSAGE_DUPLICATE_HOMEWORK);
+            for (int j = 0; j < modelHomeworks.size(); j++) {
+                if (modelHomeworks.get(j).isSameHomework(homework)) {
+                    throw new IllegalValueException(String.format(MESSAGE_DUPLICATE_HOMEWORK, shownHomework, j + 1));
+                }
             }
             modelHomeworks.add(homework);
         }
@@ -151,32 +187,111 @@ class JsonAdaptedStudent {
     }
 
     /**
-     * Returns the tuition subjects in the {@code subjects} list, which must be nonempty and hold distinct
-     * supported subjects.
+     * Returns the name of an entry of a list in the data file as the user can find it: its {@code kind}, its
+     * {@code position} counting from 1, and its {@code name} as written in the file, if any, e.g.
+     * "Student 2 (Priya Nair)".
+     */
+    static String describeEntry(String kind, int position, String name) {
+        String entry = kind + " " + position;
+        return name == null || name.isBlank() ? entry : entry + " (" + name.strip() + ")";
+    }
+
+    /**
+     * Returns the model object that {@code converter} makes from an entry of a list in the data file, adding the
+     * entry's {@code shownName} in front of the message of any error.
      *
-     * @throws IllegalValueException If the field is missing or its value is invalid.
+     * @throws IllegalValueException If {@code converter} fails.
+     */
+    static <T> T toModelEntry(ModelConverter<T> converter, String shownName) throws IllegalValueException {
+        try {
+            return converter.convert();
+        } catch (IllegalValueException exception) {
+            throw new IllegalValueException(String.format(ENTRY_PREFIX_FORMAT, shownName) + exception.getMessage(),
+                    exception);
+        }
+    }
+
+    /** Returns the name of the student, as written in the data file. */
+    String getName() {
+        return name;
+    }
+
+    /**
+     * Returns the weekday and times of the lesson at {@code index} of the lessons list, counting from 0, as written
+     * in the data file, e.g. "MONDAY 17:00-18:30", or null if any of them is missing.
+     */
+    String getLessonTimeSlot(int index) {
+        return lessons.get(index).getTimeSlot();
+    }
+
+    /**
+     * Converts an entry of the data file into a model object.
+     */
+    @FunctionalInterface
+    interface ModelConverter<T> {
+        T convert() throws IllegalValueException;
+    }
+
+    /**
+     * Returns the tuition subjects in the {@code subjects} list, which must be nonempty and hold distinct
+     * supported subjects, one per entry.
+     *
+     * @throws IllegalValueException If the field is missing or its value is invalid. The message says what is wrong
+     *         with the list, followed by {@link #MESSAGE_SUBJECTS_CONSTRAINTS}.
      */
     private TuitionSubjects toModelSubjects() throws IllegalValueException {
         if (subjects == null) {
             throw new IllegalValueException(String.format(MISSING_FIELD_MESSAGE_FORMAT, "subjects"));
         }
-        // A comma inside one entry would otherwise be read as two subjects
-        if (subjects.stream().anyMatch(subject -> subject == null || subject.contains(","))) {
-            throw new IllegalValueException(TuitionSubjects.MESSAGE_CONSTRAINTS);
+        if (subjects.isEmpty()) {
+            throw invalidSubjects(MESSAGE_SUBJECTS_EMPTY);
         }
-        return toModelValue("subjects", String.join(",", subjects), TuitionSubjects::new,
-                TuitionSubjects.MESSAGE_CONSTRAINTS);
+        Set<TuitionSubject> modelSubjects = new HashSet<>();
+        for (int i = 0; i < subjects.size(); i++) {
+            String subject = subjects.get(i);
+            if (subject == null) {
+                throw invalidSubjects(String.format(MESSAGE_SUBJECTS_NULL_ENTRY, i + 1));
+            }
+            // A comma inside one entry would otherwise be read as two subjects
+            if (countCommaSeparatedValues(subject) > 1) {
+                throw invalidSubjects(String.format(MESSAGE_SUBJECTS_SEVERAL_IN_ONE_ENTRY, subject));
+            }
+            TuitionSubject modelSubject = toModelValue("subjects", subject, TuitionSubject::parse,
+                    String.format(MESSAGE_SUBJECTS_UNKNOWN, subject) + " " + MESSAGE_SUBJECTS_CONSTRAINTS);
+            if (!modelSubjects.add(modelSubject)) {
+                throw invalidSubjects(String.format(MESSAGE_SUBJECTS_REPEATED, modelSubject));
+            }
+        }
+        return new TuitionSubjects(String.join(",", subjects));
+    }
+
+    /**
+     * Returns the number of nonblank values in {@code text} separated by commas, e.g. 1 for "MATH," and 2 for
+     * "MATH, PHYSICS".
+     */
+    private static long countCommaSeparatedValues(String text) {
+        return Arrays.stream(text.split(",")).filter(value -> !value.isBlank()).count();
+    }
+
+    /**
+     * Returns an exception for an invalid subjects list, whose message names the key, says what is wrong with the
+     * list as {@code problem}, and gives {@link #MESSAGE_SUBJECTS_CONSTRAINTS}.
+     */
+    private static IllegalValueException invalidSubjects(String problem) {
+        return new IllegalValueException(String.format(ENTRY_PREFIX_FORMAT, "subjects") + problem + " "
+                + MESSAGE_SUBJECTS_CONSTRAINTS);
     }
 
     /**
      * Returns the model value parsed from the required student field {@code value}.
      *
-     * @throws IllegalValueException If the field is missing or its value is invalid.
+     * @throws IllegalValueException If the field is missing or its value is invalid. The message for an invalid value
+     *         starts with the field's JSON key, as fields such as {@code phone} and {@code guardianPhone} share a rule.
      */
     private static <T> T toModelValue(String fieldName, String value, Function<String, T> parser,
             String messageConstraints) throws IllegalValueException {
         return JsonAdaptedHomework.toModelValue(MISSING_FIELD_MESSAGE_FORMAT, fieldName, value, parser,
-                messageConstraints);
+                String.format(ENTRY_PREFIX_FORMAT, fieldName) + messageConstraints);
     }
 
 }

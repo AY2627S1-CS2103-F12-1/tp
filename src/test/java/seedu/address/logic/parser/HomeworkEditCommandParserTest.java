@@ -1,10 +1,18 @@
 package seedu.address.logic.parser;
 
+import static seedu.address.logic.parser.CommandParserTestUtil.MESSAGE_SUBJECT_EMPTY;
 import static seedu.address.logic.parser.CommandParserTestUtil.MESSAGE_TITLE_AND_ALIAS;
+import static seedu.address.logic.parser.CommandParserTestUtil.TITLE_EXAMPLE_OTHER_PREFIX;
+import static seedu.address.logic.parser.CommandParserTestUtil.TITLE_EXAMPLE_SUBJECT_PREFIX;
+import static seedu.address.logic.parser.CommandParserTestUtil.TITLE_EXAMPLE_TITLE_PREFIX;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
+import static seedu.address.logic.parser.CommandParserTestUtil.givenOnce;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
-import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
+import static seedu.address.logic.parser.CommandParserTestUtil.notSubject;
+import static seedu.address.logic.parser.CommandParserTestUtil.titleQuoteHint;
+import static seedu.address.logic.parser.CommandParserTestUtil.unexpectedWords;
+import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefix;
 import static seedu.address.model.homework.DueDateTest.MESSAGE_EMPTY;
 import static seedu.address.model.homework.DueDateTest.MESSAGE_YEAR_OUT_OF_RANGE;
 import static seedu.address.model.homework.DueDateTest.leapDayMessage;
@@ -24,15 +32,14 @@ import seedu.address.logic.commands.HomeworkEditCommand;
 import seedu.address.logic.commands.HomeworkEditCommand.EditHomeworkDescriptor;
 import seedu.address.model.homework.DueDate;
 import seedu.address.model.homework.Title;
+import seedu.address.model.homework.TitleTest;
 import seedu.address.model.student.TuitionSubject;
 
 public class HomeworkEditCommandParserTest {
     /** Fixed clock at 2026-10-05, so short-form due dates always infer the same year and today never changes. */
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-05T00:00:00Z"), ZoneOffset.UTC);
     private static final String USAGE_LINE = "\nUsage: " + HomeworkEditCommand.MESSAGE_USAGE;
-    private static final String MESSAGE_INVALID_FORMAT = "Invalid command format.\n"
-            + "Usage: homework|hw edit|e STUDENT_INDEX HOMEWORK_INDEX [title/|t/TITLE] [s/SUBJECT] "
-            + "[due/YYYY-MM-DD|MM-DD]";
+    private static final String EXPECTED_WORDS = "STUDENT_INDEX HOMEWORK_INDEX before the first prefix";
     private static final Index FIRST = Index.fromOneBased(1);
     private static final Index SECOND = Index.fromOneBased(2);
     private static final LocalDate TODAY = LocalDate.of(2026, 10, 5);
@@ -101,31 +108,43 @@ public class HomeworkEditCommandParserTest {
 
     @Test
     public void parse_noIndices_failure() {
-        assertParseFailure(parser, "", MESSAGE_INVALID_FORMAT);
-        assertParseFailure(parser, "t/Algebra", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "", unexpectedWords(EXPECTED_WORDS, "none", HomeworkEditCommand.MESSAGE_USAGE));
+        assertParseFailure(parser, "t/Algebra", unexpectedWords(EXPECTED_WORDS, "none",
+                HomeworkEditCommand.MESSAGE_USAGE));
+        assertParseFailure(parser, "t/X", unexpectedWords(EXPECTED_WORDS, "none", HomeworkEditCommand.MESSAGE_USAGE));
     }
 
     @Test
     public void parse_oneIndex_failure() {
-        assertParseFailure(parser, "1 t/Algebra", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 t/Algebra", unexpectedWords(EXPECTED_WORDS, "1 word (1)",
+                HomeworkEditCommand.MESSAGE_USAGE));
     }
 
     @Test
     public void parse_threeIndices_failure() {
-        assertParseFailure(parser, "1 2 3 t/Algebra", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 2 3 t/Algebra", unexpectedWords(EXPECTED_WORDS, "3 words (1 2 3)",
+                HomeworkEditCommand.MESSAGE_USAGE));
+        assertParseFailure(parser, "1 2 3 t/X", unexpectedWords(EXPECTED_WORDS, "3 words (1 2 3)",
+                HomeworkEditCommand.MESSAGE_USAGE));
+        assertParseFailure(parser, "1 2 extra t/X", unexpectedWords(EXPECTED_WORDS, "3 words (1 2 extra)",
+                HomeworkEditCommand.MESSAGE_USAGE));
     }
 
     @Test
     public void parse_noEditableField_failure() {
-        assertParseFailure(parser, "1 2", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 2", HomeworkEditCommandParser.MESSAGE_NO_FIELDS);
+        assertParseFailure(parser, "1 2", "Specify at least one field to edit: title/ (or t/), s/ or due/."
+                + USAGE_LINE);
     }
 
     @Test
     public void parse_unknownPrefix_failure() {
-        assertParseFailure(parser, "1 2 t/Algebra x/extra",
-                notPrefixWithQuoteHint("x/", "t/\"Algebra x/extra\"") + USAGE_LINE);
-        assertParseFailure(parser, "1 2 t/Speed in km/h", notPrefixWithQuoteHint("km/", "t/\"Speed in km/h\"")
-                + USAGE_LINE);
+        assertParseFailure(parser, "1 2 t/Algebra x/extra", notPrefix("x/")
+                + titleQuoteHint("x/", TITLE_EXAMPLE_OTHER_PREFIX) + USAGE_LINE);
+        assertParseFailure(parser, "1 2 t/Speed in km/h", notPrefix("km/")
+                + titleQuoteHint("km/", TITLE_EXAMPLE_OTHER_PREFIX) + USAGE_LINE);
+        // not in the title, so there is no hint to quote it
+        assertParseFailure(parser, "1 2 s/MATH x/extra", notPrefix("x/") + USAGE_LINE);
 
         // score is recorded with homework marks, not edited here; it is not inside any value
         assertParseFailure(parser, "1 2 score/5/10", notPrefix("score/") + USAGE_LINE);
@@ -133,34 +152,76 @@ public class HomeworkEditCommandParserTest {
 
     @Test
     public void parse_uppercasePrefix_failure() {
-        assertParseFailure(parser, "1 2 T/Algebra", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 2 T/Algebra", wrongCasePrefix("T/", "t/") + USAGE_LINE);
+        assertParseFailure(parser, "1 2 Title/Algebra", wrongCasePrefix("Title/", "title/") + USAGE_LINE);
+        // not inside any value, so no quote hint
+        assertParseFailure(parser, "1 2 Due/2026-11-11", wrongCasePrefix("Due/", "due/") + USAGE_LINE);
+        // not saved into the title, leaving the intended field unchanged
+        assertParseFailure(parser, "1 2 t/X Due/2026-11-11", wrongCasePrefix("Due/", "due/")
+                + titleQuoteHint("Due/", TITLE_EXAMPLE_OTHER_PREFIX) + USAGE_LINE);
+        assertParseFailure(parser, "1 2 t/Y S/MATH", wrongCasePrefix("S/", "s/")
+                + titleQuoteHint("S/", TITLE_EXAMPLE_OTHER_PREFIX) + USAGE_LINE);
+        assertParseFailure(parser, "1 2 t/Z DUE/11-11", wrongCasePrefix("DUE/", "due/")
+                + titleQuoteHint("DUE/", TITLE_EXAMPLE_OTHER_PREFIX) + USAGE_LINE);
+        // after the subject, not in the title
+        assertParseFailure(parser, "1 2 s/MATH Due/11-11", wrongCasePrefix("Due/", "due/") + USAGE_LINE);
+    }
+
+    @Test
+    public void parse_quotedWrongCasePrefixInTitle_keptInTitle() {
+        assertParseSuccess(parser, "1 2 t/\"X Due/2026-11-11\"",
+                editCommand(new EditHomeworkDescriptor(new Title("X Due/2026-11-11"), null, null), false));
+    }
+
+    @Test
+    public void parse_prefixGluedToTitle_keptInTitle() {
+        // a prefix only counts after a space
+        assertParseSuccess(parser, "1 2 t/Xs/MATH",
+                editCommand(new EditHomeworkDescriptor(new Title("Xs/MATH"), null, null), false));
+        assertParseSuccess(parser, "1 2 t/X,s/MATH",
+                editCommand(new EditHomeworkDescriptor(new Title("X,s/MATH"), null, null), false));
     }
 
     @Test
     public void parse_repeatedPrefix_failure() {
-        assertParseFailure(parser, "1 2 s/MATH s/PHYSICS",
-                String.format(StrictArgumentTokenizer.MESSAGE_REPEATED_PREFIX, "s/"));
-        assertParseFailure(parser, "1 2 due/11-05 due/11-06",
-                String.format(StrictArgumentTokenizer.MESSAGE_REPEATED_PREFIX, "due/"));
-        assertParseFailure(parser, "1 2 t/A t/B",
-                String.format(StrictArgumentTokenizer.MESSAGE_REPEATED_PREFIX, "t/"));
+        assertParseFailure(parser, "1 2 s/MATH s/PHYSICS", givenOnce("s/") + USAGE_LINE);
+        assertParseFailure(parser, "1 2 due/11-05 due/11-06", givenOnce("due/") + USAGE_LINE);
+        // r4-01: the first copy follows the title, but starts with a valid value, so is not part of it
+        assertParseFailure(parser, "1 2 t/Essay s/MATH s/PHYSICS", givenOnce("s/") + USAGE_LINE);
+        assertParseFailure(parser, "1 2 t/Essay due/11-05 due/11-06", givenOnce("due/") + USAGE_LINE);
+        // the first s/ is in the title
+        assertParseFailure(parser, "1 2 t/Read s/o notes s/MATH", givenOnce("s/")
+                + titleQuoteHint("s/", TITLE_EXAMPLE_SUBJECT_PREFIX) + USAGE_LINE);
+        assertParseFailure(parser, "1 2 t/X t/Y", givenOnce("t/") + titleQuoteHint("t/", TITLE_EXAMPLE_TITLE_PREFIX)
+                + USAGE_LINE);
+        // r3-emu-01: two prefix-shaped words in the title
+        assertParseFailure(parser, "1 2 t/Q1 t/f Q2 t/f", givenOnce("t/")
+                + titleQuoteHint("t/", TITLE_EXAMPLE_TITLE_PREFIX) + USAGE_LINE);
+        // r3-emu-02: a quote in the title before the prefix-shaped word
+        assertParseFailure(parser, "1 2 t/Say \"hi\" t/f questions", givenOnce("t/")
+                + titleQuoteHint("t/", TITLE_EXAMPLE_TITLE_PREFIX) + USAGE_LINE);
     }
 
     @Test
     public void parse_titleAndTitleAlias_reportsUseEither() {
-        assertParseFailure(parser, "1 2 t/A title/B", MESSAGE_TITLE_AND_ALIAS);
-        assertParseFailure(parser, "1 2 title/A t/B", MESSAGE_TITLE_AND_ALIAS);
+        assertParseFailure(parser, "1 2 t/A title/B", MESSAGE_TITLE_AND_ALIAS
+                + titleQuoteHint("title/", TITLE_EXAMPLE_TITLE_PREFIX) + USAGE_LINE);
+        assertParseFailure(parser, "1 2 title/A t/B", MESSAGE_TITLE_AND_ALIAS
+                + titleQuoteHint("t/", TITLE_EXAMPLE_TITLE_PREFIX) + USAGE_LINE);
+        // the later one is not in a title
+        assertParseFailure(parser, "1 2 t/A s/MATH title/B", MESSAGE_TITLE_AND_ALIAS + USAGE_LINE);
     }
 
     @Test
     public void parse_unknownPrefixAndTitleConflict_reportsUnknownPrefix() {
-        assertParseFailure(parser, "1 2 t/A title/B x/C", notPrefixWithQuoteHint("x/", "title/\"B x/C\"")
-                + USAGE_LINE);
+        assertParseFailure(parser, "1 2 t/A title/B x/C", notPrefix("x/")
+                + titleQuoteHint("x/", TITLE_EXAMPLE_OTHER_PREFIX) + USAGE_LINE);
     }
 
     @Test
     public void parse_titleConflictAndInvalidIndex_reportsUseEither() {
-        assertParseFailure(parser, "0 2 t/A title/B", MESSAGE_TITLE_AND_ALIAS);
+        assertParseFailure(parser, "0 2 t/A title/B", MESSAGE_TITLE_AND_ALIAS
+                + titleQuoteHint("title/", TITLE_EXAMPLE_TITLE_PREFIX) + USAGE_LINE);
     }
 
     @Test
@@ -184,7 +245,7 @@ public class HomeworkEditCommandParserTest {
         assertParseFailure(parser, "one 1 t/A", Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
 
         // larger than the largest int
-        assertParseFailure(parser, "2147483648 1 t/A", Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
+        assertParseFailure(parser, "2147483648 1 t/X", Messages.MESSAGE_STUDENT_INDEX_TOO_LARGE);
     }
 
     @Test
@@ -215,7 +276,7 @@ public class HomeworkEditCommandParserTest {
         assertParseFailure(parser, "1 one t/A", Messages.MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX);
 
         // larger than the largest int
-        assertParseFailure(parser, "1 2147483648 t/A", Messages.MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX);
+        assertParseFailure(parser, "1 2147483648 t/A", Messages.MESSAGE_HOMEWORK_INDEX_TOO_LARGE);
     }
 
     @Test
@@ -230,12 +291,15 @@ public class HomeworkEditCommandParserTest {
 
     @Test
     public void parse_invalidTitle_failure() {
-        // empty
-        assertParseFailure(parser, "1 2 t/", Title.MESSAGE_CONSTRAINTS);
-        assertParseFailure(parser, "1 2 title/   s/MATH", Title.MESSAGE_CONSTRAINTS);
+        // empty, r3-ald-06
+        assertParseFailure(parser, "1 2 t/", TitleTest.MESSAGE_EMPTY);
+        assertParseFailure(parser, "1 2 title/   s/MATH", TitleTest.MESSAGE_EMPTY);
+        assertParseFailure(parser, "1 2 t/\"\"", TitleTest.MESSAGE_EMPTY);
+        assertParseFailure(parser, "1 2 t/\" \" s/MATH", TitleTest.MESSAGE_EMPTY);
 
         // 101 characters
-        assertParseFailure(parser, "1 2 t/" + "a".repeat(101), Title.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 2 t/" + "a".repeat(101),
+                "Homework title must be at most 100 characters, but has 101.");
     }
 
     @Test
@@ -248,13 +312,25 @@ public class HomeworkEditCommandParserTest {
     @Test
     public void parse_invalidSubject_failure() {
         // empty
-        assertParseFailure(parser, "1 2 s/", TuitionSubject.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 2 s/", MESSAGE_SUBJECT_EMPTY);
 
         // unsupported subject
-        assertParseFailure(parser, "1 2 s/BIOLOGY", TuitionSubject.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 2 s/BIOLOGY", notSubject("BIOLOGY"));
 
         // two subjects
-        assertParseFailure(parser, "1 2 s/MATH, PHYSICS", TuitionSubject.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 2 s/MATH, PHYSICS", notSubject("MATH, PHYSICS"));
+    }
+
+    @Test
+    public void parse_subjectPrefixWordInTitle_namesValueAndHintsToQuoteTitle() {
+        // r3-emu-03: s/ is optional in edit, so the rest of the title is read as the subject
+        String quoteHint = titleQuoteHint("s/", TITLE_EXAMPLE_SUBJECT_PREFIX);
+        assertParseFailure(parser, "1 2 t/Read s/o notes", notSubject("o notes") + quoteHint);
+        assertParseFailure(parser, "1 2 t/Physics s/w set", notSubject("w set") + quoteHint);
+        // one word, so more likely a mistyped subject than part of the title
+        assertParseFailure(parser, "1 2 t/Essay s/BIOLOGY", notSubject("BIOLOGY"));
+        // r4-02: starts with a subject, so not the rest of the title
+        assertParseFailure(parser, "1 2 t/Essay s/MATH PHYSICS", notSubject("MATH PHYSICS"));
     }
 
     @Test
@@ -281,12 +357,12 @@ public class HomeworkEditCommandParserTest {
 
     @Test
     public void parse_invalidTitleAndSubject_reportsTitle() {
-        assertParseFailure(parser, "1 2 s/BIOLOGY t/", Title.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 2 s/BIOLOGY t/", TitleTest.MESSAGE_EMPTY);
     }
 
     @Test
     public void parse_invalidSubjectAndDueDate_reportsSubject() {
-        assertParseFailure(parser, "1 2 due/2026-02-30 s/BIOLOGY", TuitionSubject.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1 2 due/2026-02-30 s/BIOLOGY", notSubject("BIOLOGY"));
     }
 
     /**

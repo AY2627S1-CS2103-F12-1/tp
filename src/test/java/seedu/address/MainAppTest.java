@@ -10,6 +10,8 @@ import static seedu.address.testutil.TypicalStudents.getTypicalAddressBook;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -95,7 +97,8 @@ public class MainAppTest {
 
         DataLoadingException exception = assertThrows(DataLoadingException.class, () ->
                 MainApp.readInitialData(storage));
-        assertEquals(MESSAGE_YEAR_OUT_OF_RANGE, exception.getCause().getMessage());
+        assertEquals("Student 1 (Alice Tan): Homework 1 (Complete algebra worksheet): " + MESSAGE_YEAR_OUT_OF_RANGE,
+                exception.getCause().getMessage());
         assertEquals(invalidData, Files.readString(dataFilePath));
     }
 
@@ -165,7 +168,15 @@ public class MainAppTest {
                 .getBytes(StandardCharsets.ISO_8859_1);
         Files.write(dataFilePath, invalidData);
 
-        assertThrows(DataLoadingException.class, () -> MainApp.readInitialData(storage));
+        // PE round 2: the reason gave a byte offset, unlike the line and column of the other reasons
+        List<String> lines = Files.readString(dataFilePath, StandardCharsets.ISO_8859_1).lines().toList();
+        int line = IntStream.range(0, lines.size()).filter(i -> lines.get(i).contains("\u00e9")).findFirst()
+                .orElseThrow() + 1;
+        int column = lines.get(line - 1).indexOf('\u00e9') + 1;
+        DataLoadingException exception = assertThrows(DataLoadingException.class, () ->
+                MainApp.readInitialData(storage));
+        assertEquals("The file is not valid UTF-8 text near line " + line + ", column " + column
+                + ". Save the file as UTF-8.", exception.getCause().getMessage());
         assertArrayEquals(invalidData, Files.readAllBytes(dataFilePath));
     }
 

@@ -1,7 +1,11 @@
 package seedu.address.logic.parser;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
+import static seedu.address.logic.parser.CommandParserTestUtil.unexpectedWords;
+import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 
 import java.time.Clock;
@@ -12,13 +16,16 @@ import java.time.ZoneOffset;
 import org.junit.jupiter.api.Test;
 
 import seedu.address.commons.core.index.Index;
+import seedu.address.logic.Messages;
 import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
 import seedu.address.logic.commands.HomeworkEditCommand;
 import seedu.address.logic.commands.HomeworkEditCommand.EditHomeworkDescriptor;
 import seedu.address.logic.commands.HomeworkListCommand;
 import seedu.address.logic.commands.HomeworkMarksCommand;
+import seedu.address.logic.commands.HomeworkStatusCommand;
 import seedu.address.logic.commands.HomeworkUpcomingCommand;
+import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.homework.Score;
 import seedu.address.model.student.TuitionSubject;
 
@@ -26,29 +33,21 @@ public class HomeworkCommandParserTest {
     /** Fixed clock at 2026-10-05, so short-form due dates always infer the same year and today never changes. */
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-05T00:00:00Z"), ZoneOffset.UTC);
     private static final LocalDate TODAY = LocalDate.of(2026, 10, 5);
-    private static final String MESSAGE_INVALID_FORMAT = "Invalid command format.\n"
-            + "Usage: homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD\n"
-            + "homework|hw list|ls STUDENT_INDEX [all]\n"
-            + "homework|hw upcoming|up [due/DAYS]\n"
-            + "homework|hw edit|e STUDENT_INDEX HOMEWORK_INDEX [title/|t/TITLE] [s/SUBJECT] "
-            + "[due/YYYY-MM-DD|MM-DD]\n"
-            + "homework|hw marks|m STUDENT_INDEX HOMEWORK_INDEX score/[SCORE]\n"
-            + "homework|hw delete|del STUDENT_INDEX HOMEWORK_INDEX\n"
-            + "homework|hw filter [STUDENT_INDEX] [s/SUBJECT] [due/DATE] [status/STATUS]\n"
-            + "homework|hw status STUDENT_INDEX HOMEWORK_INDEX status/STATUS";
+    private static final String SUBCOMMANDS =
+            "Use add, list|ls, upcoming|up, edit|e, marks|m, delete|del, filter or status.";
 
     private final HomeworkCommandParser parser = new HomeworkCommandParser(CLOCK);
 
     @Test
     public void parse_add_returnsHomeworkAddCommand() {
         assertParseSuccess(parser, " add 1 title/Complete algebra worksheet s/MATH due/2026-10-15",
-                new HomeworkAddCommand(Index.fromOneBased(1), ALGEBRA, false));
+                new HomeworkAddCommand(Index.fromOneBased(1), ALGEBRA, false, TODAY));
     }
 
     @Test
     public void parse_addShortDueDate_usesGivenClock() {
         assertParseSuccess(parser, " add 1 t/Complete algebra worksheet s/MATH due/10-15",
-                new HomeworkAddCommand(Index.fromOneBased(1), ALGEBRA, true));
+                new HomeworkAddCommand(Index.fromOneBased(1), ALGEBRA, true, TODAY));
     }
 
     @Test
@@ -109,33 +108,90 @@ public class HomeworkCommandParserTest {
 
     @Test
     public void parse_missingSubcommand_failure() {
-        assertParseFailure(parser, "   ", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "", "Missing homework subcommand. " + SUBCOMMANDS);
+        assertParseFailure(parser, "   ", "Missing homework subcommand. " + SUBCOMMANDS);
     }
 
     @Test
     public void parse_unknownSubcommand_failure() {
-        assertParseFailure(parser, " remove 1 2", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, " remove 1 2", "remove is not a homework subcommand. " + SUBCOMMANDS);
+        assertParseFailure(parser, " rm 1 1", "rm is not a homework subcommand. " + SUBCOMMANDS);
+        assertParseFailure(parser, " d 1 1", "d is not a homework subcommand. " + SUBCOMMANDS);
+        assertParseFailure(parser, " upcomming", "upcomming is not a homework subcommand. " + SUBCOMMANDS);
+        assertParseFailure(parser, " 1", "1 is not a homework subcommand. " + SUBCOMMANDS);
+        // not a subcommand in any case
+        assertParseFailure(parser, " Rm 1 1", "Rm is not a homework subcommand. " + SUBCOMMANDS);
     }
 
     @Test
     public void parse_uppercaseSubcommand_failure() {
-        assertParseFailure(parser, " LIST 1", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, " LIST 1", "Homework subcommands are lowercase: type list, not LIST.\n"
+                + "Usage: " + HomeworkListCommand.MESSAGE_USAGE);
+        assertParseFailure(parser, " LS 1", "Homework subcommands are lowercase: type ls, not LS.\n"
+                + "Usage: " + HomeworkListCommand.MESSAGE_USAGE);
+        assertParseFailure(parser, " E 1 2 t/X", "Homework subcommands are lowercase: type e, not E.\n"
+                + "Usage: " + HomeworkEditCommand.MESSAGE_USAGE);
+        assertParseFailure(parser, " DEL 1 1", "Homework subcommands are lowercase: type del, not DEL.\n"
+                + "Usage: " + HomeworkDeleteCommand.MESSAGE_USAGE);
+        assertParseFailure(parser, " Upcoming", "Homework subcommands are lowercase: type upcoming, not Upcoming.\n"
+                + "Usage: " + HomeworkUpcomingCommand.MESSAGE_USAGE);
+    }
+
+    @Test
+    public void checkCommandWordCase_homeworkWordInOtherCase_throwsParseException() {
+        assertThrows(ParseException.class, "Command words are lowercase: type hw, not hW.", () ->
+                HomeworkCommandParser.checkCommandWordCase("hW"));
+        assertThrows(ParseException.class, "Command words are lowercase: type homework, not HomeWork.", () ->
+                HomeworkCommandParser.checkCommandWordCase("HomeWork"));
+    }
+
+    @Test
+    public void checkCommandWordCase_otherWord_doesNotThrow() {
+        assertDoesNotThrow(() -> HomeworkCommandParser.checkCommandWordCase("LIST"));
+        assertDoesNotThrow(() -> HomeworkCommandParser.checkCommandWordCase("homeworks"));
+        assertDoesNotThrow(() -> HomeworkCommandParser.checkCommandWordCase("H"));
     }
 
     @Test
     public void parse_subcommandJoinedToArgument_failure() {
-        assertParseFailure(parser, " list1", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, " list1", "list1 is not a homework subcommand. " + SUBCOMMANDS);
+        assertParseFailure(parser, " ls3", "ls3 is not a homework subcommand. " + SUBCOMMANDS);
+        assertParseFailure(parser, " del3 1", "del3 is not a homework subcommand. " + SUBCOMMANDS);
+        assertParseFailure(parser, " add1 t/A s/MATH due/2026-12-01", "add1 is not a homework subcommand. "
+                + SUBCOMMANDS);
+        assertParseFailure(parser, " up7", "up7 is not a homework subcommand. " + SUBCOMMANDS);
     }
 
     @Test
     public void parse_invalidSubcommandArguments_reportsSubcommandError() {
-        assertParseFailure(parser, " list",
-                "Invalid command format.\nUsage: homework|hw list|ls STUDENT_INDEX [all]");
+        assertParseFailure(parser, " list", unexpectedWords("STUDENT_INDEX, optionally followed by all", "none",
+                HomeworkListCommand.MESSAGE_USAGE));
+    }
+
+    @Test
+    public void parse_unicodeSpacesInArguments_readAsSpaces() throws Exception {
+        // r3-ald-07: no-break space (U+00A0)
+        assertEquals(parser.parse(" del 1 2"), parser.parse(" del 1\u00A02"));
+        assertEquals(parser.parse(" add 1 t/A s/MATH due/12-02"), parser.parse(" add 1\u00A0t/A s/MATH due/12-02"));
+        // figure space (U+2007), narrow no-break space (U+202F) and ideographic space (U+3000)
+        assertEquals(parser.parse(" e 1 2 t/A s/MATH"), parser.parse(" e 1\u20072\u202Ft/A\u3000s/MATH"));
+        assertEquals(parser.parse(" ls 1 all"), parser.parse(" ls 1\u00A0all"));
+        assertEquals(parser.parse(" m 1 2 score/5"), parser.parse(" m 1\u00A02\u00A0score/5"));
+        assertEquals(parser.parse(" up due/3"), parser.parse(" up\u0020\u00A0due/3"));
+    }
+
+    @Test
+    public void parse_unicodeSpacesInStatusArguments_readAsTyped() {
+        // status belongs to another feature, which reads its arguments as typed
+        assertParseFailure(parser, " status 1\u00A02 status/COMPLETED",
+                String.format(Messages.MESSAGE_INVALID_FORMAT_WITH_USAGE, HomeworkStatusCommand.MESSAGE_USAGE));
     }
 
     @Test
     public void parse_invalidUpcomingArguments_reportsSubcommandError() {
-        assertParseFailure(parser, " up 3",
-                "Invalid command format.\nUsage: homework|hw upcoming|up [due/DAYS]");
+        assertParseFailure(parser, " up 3", unexpectedWords("no words other than due/DAYS", "1 word (3)",
+                HomeworkUpcomingCommand.MESSAGE_USAGE));
+        assertParseFailure(parser, " up extra", unexpectedWords("no words other than due/DAYS", "1 word (extra)",
+                HomeworkUpcomingCommand.MESSAGE_USAGE));
     }
 }

@@ -52,8 +52,8 @@ public class HomeworkListCommandTest {
 
     @Test
     public void execute_allUpcoming_listsByDueDateWithInsertionIndices() {
-        String expectedMessage = "Listed 3 upcoming homework records for Alice Tan.\n"
-                + "Homework for Alice Tan:\n"
+        String expectedMessage = "Listed 3 upcoming homework records for Alice Tan (91111111).\n"
+                + "Homework for Alice Tan (91111111):\n"
                 + "1. Complete algebra worksheet (MATH) - due 2026-10-15 - score Not recorded - status ASSIGNED\n"
                 + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20 - status ASSIGNED\n"
                 + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded"
@@ -66,9 +66,9 @@ public class HomeworkListCommandTest {
     @Test
     public void execute_someOverdue_listsHomeworkDueTodayOrLater() {
         // homework 1 is overdue, homework 3 is due today; the header says homework 1 is hidden
-        String expectedMessage = "Listed 2 upcoming homework records for Alice Tan"
+        String expectedMessage = "Listed 2 upcoming homework records for Alice Tan (91111111)"
                 + " (1 record due before today not shown; use homework list 1 all to see it).\n"
-                + "Homework for Alice Tan:\n"
+                + "Homework for Alice Tan (91111111):\n"
                 + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20 - status ASSIGNED\n"
                 + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded"
                 + " - status ASSIGNED";
@@ -80,9 +80,9 @@ public class HomeworkListCommandTest {
     @Test
     public void execute_oneUpcoming_listsSingleRecord() {
         // homework 1 and 3 are due before today
-        String expectedMessage = "Listed 1 upcoming homework record for Alice Tan"
+        String expectedMessage = "Listed 1 upcoming homework record for Alice Tan (91111111)"
                 + " (2 records due before today not shown; use homework list 1 all to see them).\n"
-                + "Homework for Alice Tan:\n"
+                + "Homework for Alice Tan (91111111):\n"
                 + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded"
                 + " - status ASSIGNED";
 
@@ -93,14 +93,14 @@ public class HomeworkListCommandTest {
     @Test
     public void execute_allOverdue_showsNoUpcomingHomework() {
         assertCommandSuccess(new HomeworkListCommand(FIRST, AFTER_ALL_DUE_DATES, false), model,
-                "No upcoming homework found for Alice Tan"
+                "No upcoming homework found for Alice Tan (91111111)"
                 + " (3 records due before today not shown; use homework list 1 all to see them).", expectedModel);
     }
 
     @Test
     public void execute_onlyRecordHidden_showsNoUpcomingHomeworkWithSingularHint() {
         assertCommandSuccess(new HomeworkListCommand(Index.fromOneBased(3), AFTER_ALL_DUE_DATES, false), model,
-                "No upcoming homework found for Carl Ng"
+                "No upcoming homework found for Carl Ng (93333333)"
                 + " (1 record due before today not shown; use homework list 3 all to see it).", expectedModel);
     }
 
@@ -110,7 +110,7 @@ public class HomeworkListCommandTest {
         model.updateFilteredStudentList(CARL::equals);
 
         assertCommandSuccess(new HomeworkListCommand(FIRST, AFTER_ALL_DUE_DATES, false), model,
-                "No upcoming homework found for Carl Ng"
+                "No upcoming homework found for Carl Ng (93333333)"
                 + " (1 record due before today not shown; use homework list 1 all to see it).", expectedModel);
     }
 
@@ -127,8 +127,8 @@ public class HomeworkListCommandTest {
 
     @Test
     public void execute_allKeyword_listsOverdueHomeworkToo() {
-        String expectedMessage = "Listed 3 homework records for Alice Tan.\n"
-                + "Homework for Alice Tan:\n"
+        String expectedMessage = "Listed 3 homework records for Alice Tan (91111111).\n"
+                + "Homework for Alice Tan (91111111):\n"
                 + "1. Complete algebra worksheet (MATH) - due 2026-10-15 - score Not recorded - status ASSIGNED\n"
                 + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20 - status ASSIGNED\n"
                 + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded"
@@ -140,8 +140,10 @@ public class HomeworkListCommandTest {
 
     @Test
     public void execute_arabicDigitsLocale_listsAsciiIndices() {
-        // Issue #151: under ar-EG, String.format prints Arabic-Indic digits, which the index parser rejects
-        String expectedLines = "Homework for Alice Tan:\n"
+        // Issue #151: under ar-EG, String.format prints Arabic-Indic digits, which the index parser rejects;
+        // the count in the summary line is in ASCII digits too
+        String expectedMessage = "Listed 3 homework records for Alice Tan (91111111).\n"
+                + "Homework for Alice Tan (91111111):\n"
                 + "1. Complete algebra worksheet (MATH) - due 2026-10-15 - score Not recorded - status ASSIGNED\n"
                 + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20 - status ASSIGNED\n"
                 + "2. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded"
@@ -150,14 +152,14 @@ public class HomeworkListCommandTest {
 
         runWithFormatLocale(ARABIC_EGYPT, () -> {
             String feedback = assertDoesNotThrow(() -> command.execute(model)).getFeedbackToUser();
-            assertTrue(feedback.endsWith(expectedLines), feedback);
+            assertEquals(expectedMessage, feedback);
         });
     }
 
     @Test
     public void execute_allKeywordOneRecord_listsSingleRecord() {
-        String expectedMessage = "Listed 1 homework record for Carl Ng.\n"
-                + "Homework for Carl Ng:\n"
+        String expectedMessage = "Listed 1 homework record for Carl Ng (93333333).\n"
+                + "Homework for Carl Ng (93333333):\n"
                 + "1. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded"
                 + " - status ASSIGNED";
 
@@ -172,8 +174,8 @@ public class HomeworkListCommandTest {
                 new HomeworkBuilder().withTitle("Early").withDueDate("2026-10-15").withScore("5/10").build(),
                 new HomeworkBuilder().withTitle("Late B").withSubject("PHYSICS").withDueDate("2026-10-20").build())
                 .build();
-        String expectedMessage = "Listed 3 upcoming homework records for John Tan.\n"
-                + "Homework for John Tan:\n"
+        String expectedMessage = "Listed 3 upcoming homework records for John Tan (91234567).\n"
+                + "Homework for John Tan (91234567):\n"
                 + "2. Early (MATH) - due 2026-10-15 - score 5/10 - status ASSIGNED\n"
                 + "1. Late A (MATH) - due 2026-10-20 - score Not recorded - status ASSIGNED\n"
                 + "3. Late B (PHYSICS) - due 2026-10-20 - score Not recorded - status ASSIGNED";
@@ -189,8 +191,8 @@ public class HomeworkListCommandTest {
                 new HomeworkBuilder().withTitle("Ratio").withDueDate("2026-10-16").withScore("17/20").build(),
                 new HomeworkBuilder().withTitle("Zero").withDueDate("2026-10-17").withScore("0").build())
                 .build();
-        String expectedMessage = "Listed 3 upcoming homework records for John Tan.\n"
-                + "Homework for John Tan:\n"
+        String expectedMessage = "Listed 3 upcoming homework records for John Tan (91234567).\n"
+                + "Homework for John Tan (91234567):\n"
                 + "1. Bare (MATH) - due 2026-10-15 - score 17 - status ASSIGNED\n"
                 + "2. Ratio (MATH) - due 2026-10-16 - score 17/20 - status ASSIGNED\n"
                 + "3. Zero (MATH) - due 2026-10-17 - score 0 - status ASSIGNED";
@@ -204,9 +206,9 @@ public class HomeworkListCommandTest {
         Index secondIndex = Index.fromOneBased(2);
 
         assertCommandSuccess(new HomeworkListCommand(secondIndex, BEFORE_ALL_DUE_DATES, false), model,
-                "No homework found for Benson Lim.", expectedModel);
+                "No homework found for Benson Lim (92222222).", expectedModel);
         assertCommandSuccess(new HomeworkListCommand(secondIndex, BEFORE_ALL_DUE_DATES, true), model,
-                "No homework found for Benson Lim.", expectedModel);
+                "No homework found for Benson Lim (92222222).", expectedModel);
     }
 
     @Test
@@ -219,8 +221,8 @@ public class HomeworkListCommandTest {
     public void execute_filteredList_listsDisplayedStudent() {
         // CARL is third in the roster but first in the displayed list
         model.updateFilteredStudentList(CARL::equals);
-        String expectedMessage = "Listed 1 upcoming homework record for Carl Ng.\n"
-                + "Homework for Carl Ng:\n"
+        String expectedMessage = "Listed 1 upcoming homework record for Carl Ng (93333333).\n"
+                + "Homework for Carl Ng (93333333):\n"
                 + "1. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded"
                 + " - status ASSIGNED";
 
@@ -242,8 +244,8 @@ public class HomeworkListCommandTest {
                 CARL.withHomeworks(List.of(COMPLETED_MECHANICS))));
         Model expectedCompletedModel = getModelWithStudents(List.of(ALICE, BENSON,
                 CARL.withHomeworks(List.of(COMPLETED_MECHANICS))));
-        String expectedMessage = "Listed 1 upcoming homework record for Carl Ng.\n"
-                + "Homework for Carl Ng:\n"
+        String expectedMessage = "Listed 1 upcoming homework record for Carl Ng (93333333).\n"
+                + "Homework for Carl Ng (93333333):\n"
                 + "1. Attempt mechanics questions 1-5 (PHYSICS) - due 2026-10-20 - score Not recorded"
                 + " - status COMPLETED";
 

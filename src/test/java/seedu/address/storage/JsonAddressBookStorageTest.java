@@ -5,8 +5,11 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TestUtil.ARABIC_EGYPT;
+import static seedu.address.testutil.TestUtil.createSymbolicLinkOrSkip;
 import static seedu.address.testutil.TestUtil.runWithFormatLocale;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalRegularLessons.MONDAY_MATH;
@@ -15,11 +18,17 @@ import static seedu.address.testutil.TypicalStudents.BENSON;
 import static seedu.address.testutil.TypicalStudents.getTypicalAddressBook;
 
 import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -131,6 +140,29 @@ public class JsonAddressBookStorageTest {
     }
 
     @Test
+    public void readAddressBook_repeatedPhoneKeyInSampleData_reasonNamesKeyAndPosition() throws Exception {
+        // the second student's "phone" key repeated on its line, as found in PE testing
+        String content = Files.readString(TEST_DATA_FOLDER.resolve("duplicatePhoneKeyAddressBook.json"));
+        assertEquals("The key \"phone\" is repeated near line 32, column 27.", getLoadingReason(content));
+    }
+
+    @Test
+    public void readAddressBook_repeatedStudentsKeyInSampleData_reasonNamesKeyAndPosition() throws Exception {
+        // a second, empty student list after the sample data, as in the developer guide's manual test
+        String content = Files.readString(TEST_DATA_FOLDER.resolve("duplicateStudentsKeyAddressBook.json"));
+        assertEquals("The key \"students\" is repeated near line 121, column 3.", getLoadingReason(content));
+    }
+
+    @Test
+    public void readAddressBook_objectAfterSampleData_reasonPointsAtObject() throws Exception {
+        // a second root object on the line after the sample data, as found in PE testing
+        String content = Files.readString(TEST_DATA_FOLDER.resolve("missingClosingBraceAddressBook.json"))
+                .stripTrailing() + "\n}\n{\"students\":[]}";
+        assertEquals("The file has unexpected content after the JSON data near line 122, column 1.",
+                getLoadingReason(content));
+    }
+
+    @Test
     public void readAddressBook_arabicDigitsLocale_reasonGivesPositionInAsciiDigits() {
         runWithFormatLocale(ARABIC_EGYPT, () -> {
             assertEquals("The file is not valid JSON near line 2, column 18.", assertDoesNotThrow(() ->
@@ -138,6 +170,68 @@ public class JsonAddressBookStorageTest {
             assertEquals("The file has a value of the wrong type near line 1, column 14.", assertDoesNotThrow(() ->
                     getLoadingReason("{\"students\": 5}")));
         });
+    }
+
+    @Test
+    public void readAddressBook_dataFileIsFolder_reasonSaysFolder() throws Exception {
+        Path file = Files.createDirectories(testFolder.resolve("data").resolve("tutorflow.json"));
+        assertEquals("It is a folder, not a file.", getLoadingReasonOfFile(file));
+    }
+
+    @Test
+    public void readAddressBook_unreadableDataFile_reasonSaysNoPermission() throws Exception {
+        assumePosixPermissions();
+        Path file = testFolder.resolve("data").resolve("tutorflow.json");
+        new JsonAddressBookStorage(file).saveAddressBook(getTypicalAddressBook());
+        try {
+            removePermissions(file);
+            assertEquals("The file cannot be read (no permission).", getLoadingReasonOfFile(file));
+        } finally {
+            Files.setPosixFilePermissions(file, PosixFilePermissions.fromString("rw-------"));
+        }
+    }
+
+    @Test
+    public void readAddressBook_unreadableDataFolder_reasonSaysNoPermission() throws Exception {
+        assumePosixPermissions();
+        Path file = testFolder.resolve("data").resolve("tutorflow.json");
+        new JsonAddressBookStorage(file).saveAddressBook(getTypicalAddressBook());
+        try {
+            removePermissions(file.getParent());
+            assertEquals("The data folder cannot be read (no permission).", getLoadingReasonOfFile(file));
+        } finally {
+            Files.setPosixFilePermissions(file.getParent(), PosixFilePermissions.fromString("rwx------"));
+        }
+    }
+
+    /**
+     * Returns the reason the user is shown when the data file {@code file} cannot be loaded.
+     */
+    private static String getLoadingReasonOfFile(Path file) {
+        try {
+            new JsonAddressBookStorage(file).readAddressBook();
+        } catch (DataLoadingException e) {
+            return e.getCause().getMessage();
+        }
+        throw new AssertionError("The data file was loaded: " + file);
+    }
+
+    /**
+     * Skips the test on file systems without POSIX permissions, e.g. on Windows, before it changes any permissions,
+     * so that its cleanup does not try to restore them.
+     */
+    private static void assumePosixPermissions() {
+        assumeTrue(FileSystems.getDefault().supportedFileAttributeViews().contains("posix"),
+                "permissions only block reading on POSIX file systems");
+    }
+
+    /**
+     * Removes all permissions from {@code path}, skipping the test where that does not stop reading it, e.g. when
+     * running as root. The file system must support POSIX permissions.
+     */
+    private static void removePermissions(Path path) throws IOException {
+        Files.setPosixFilePermissions(path, PosixFilePermissions.fromString("---------"));
+        assumeFalse(Files.isReadable(path), "the file is still readable, e.g. when running as root");
     }
 
     @Test
@@ -173,6 +267,213 @@ public class JsonAddressBookStorageTest {
         jsonAddressBookStorage.saveAddressBook(original); // file path not specified
         readBack = jsonAddressBookStorage.readAddressBook().get(); // file path not specified
         assertEquals(original, new AddressBook(readBack));
+    }
+
+    @Test
+    public void saveAddressBook_fileDeletedAfterLoad_recreatesFile() throws Exception {
+        Path filePath = testFolder.resolve("TempAddressBook.json");
+        new JsonAddressBookStorage(filePath).saveAddressBook(getTypicalAddressBook());
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(filePath);
+        AddressBook data = new AddressBook(storage.readAddressBook().orElseThrow());
+        Files.delete(filePath);
+
+        data.deleteStudent(ALICE);
+        storage.saveAddressBook(data);
+
+        assertEquals(data, new AddressBook(new JsonAddressBookStorage(filePath).readAddressBook().orElseThrow()));
+    }
+
+    @Test
+    public void saveAddressBook_fileDeletedAfterSave_recreatesFile() throws Exception {
+        Path filePath = testFolder.resolve("TempAddressBook.json");
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(filePath);
+        AddressBook data = getTypicalAddressBook();
+        storage.saveAddressBook(data);
+        Files.delete(filePath);
+
+        data.deleteStudent(ALICE);
+        storage.saveAddressBook(data);
+
+        assertEquals(data, new AddressBook(new JsonAddressBookStorage(filePath).readAddressBook().orElseThrow()));
+    }
+
+    @Test
+    public void saveAddressBook_fileCreatedByAnotherCopyAfterMissingAtLoad_throwsCreatedConflict() throws Exception {
+        Path filePath = testFolder.resolve("TempAddressBook.json");
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(filePath);
+        assertTrue(storage.readAddressBook().isEmpty());
+        new JsonAddressBookStorage(filePath).saveAddressBook(getTypicalAddressBook());
+        byte[] fileBefore = Files.readAllBytes(filePath);
+
+        assertThrows(DataFileConflictException.class, DataFileConflictException.MESSAGE_CREATED, () ->
+                storage.saveAddressBook(new AddressBook()));
+        assertArrayEquals(fileBefore, Files.readAllBytes(filePath));
+    }
+
+    @Test
+    public void saveAddressBook_fileChangedByAnotherCopyAfterLoad_throwsChangedConflict() throws Exception {
+        Path filePath = testFolder.resolve("TempAddressBook.json");
+        new JsonAddressBookStorage(filePath).saveAddressBook(getTypicalAddressBook());
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(filePath);
+        storage.readAddressBook();
+        new JsonAddressBookStorage(filePath).saveAddressBook(new AddressBook());
+        byte[] fileBefore = Files.readAllBytes(filePath);
+
+        assertThrows(DataFileConflictException.class, DataFileConflictException.MESSAGE_CHANGED, () ->
+                storage.saveAddressBook(getTypicalAddressBook()));
+        assertArrayEquals(fileBefore, Files.readAllBytes(filePath));
+    }
+
+    @Test
+    public void saveAddressBook_dataFileIsSymbolicLink_savesThroughLink() throws Exception {
+        // PE round 2: data/tutorflow.json as a link to a file elsewhere, e.g. in a synced folder
+        Path target = Files.createDirectories(testFolder.resolve("synced")).resolve("tutorflow.json");
+        new JsonAddressBookStorage(target).saveAddressBook(getTypicalAddressBook());
+        Path link = Files.createDirectories(testFolder.resolve("data")).resolve("tutorflow.json");
+        createSymbolicLinkOrSkip(link, target);
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(link);
+        assertEquals(getTypicalAddressBook(), storage.readAddressBook().orElseThrow());
+
+        // saved twice, so the second save checks the data the first one wrote through the link
+        AddressBook withoutBenson = new AddressBook(getTypicalAddressBook());
+        withoutBenson.deleteStudent(BENSON);
+        storage.saveAddressBook(withoutBenson);
+        storage.saveAddressBook(new AddressBook());
+
+        assertTrue(Files.isSymbolicLink(link));
+        assertEquals(new AddressBook(), new JsonAddressBookStorage(target).readAddressBook().orElseThrow());
+
+        // a change to the file the link points to is still found
+        new JsonAddressBookStorage(target).saveAddressBook(getTypicalAddressBook());
+        assertThrows(DataFileConflictException.class, () -> storage.saveAddressBook(new AddressBook()));
+        assertEquals(getTypicalAddressBook(), new JsonAddressBookStorage(target).readAddressBook().orElseThrow());
+    }
+
+    @Test
+    public void saveAddressBook_newFile_getsPermissionsOfLockFile() throws Exception {
+        // PE round 3: the first save made data/tutorflow.json 600, while the lock file next to it got 644
+        assumeTrue(FileSystems.getDefault().supportedFileAttributeViews().contains("posix"),
+                "file permissions are POSIX only");
+        Path file = testFolder.resolve("data").resolve("tutorflow.json");
+
+        new JsonAddressBookStorage(file).saveAddressBook(getTypicalAddressBook());
+
+        assertEquals(Files.getPosixFilePermissions(file.resolveSibling("tutorflow.json.lock")),
+                Files.getPosixFilePermissions(file));
+    }
+
+    @Test
+    public void saveAddressBook_linkToFileMissingAtLoad_savesThroughLink() throws Exception {
+        // PE round 3: the first save replaced the link with a regular file
+        Path target = Files.createDirectories(testFolder.resolve("synced")).resolve("tutorflow.json");
+        Path link = Files.createDirectories(testFolder.resolve("data")).resolve("tutorflow.json");
+        createSymbolicLinkOrSkip(link, target);
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(link);
+        assertTrue(storage.readAddressBook().isEmpty());
+
+        storage.saveAddressBook(getTypicalAddressBook());
+
+        assertTrue(Files.isSymbolicLink(link));
+        assertEquals(getTypicalAddressBook(), new JsonAddressBookStorage(target).readAddressBook().orElseThrow());
+    }
+
+    @Test
+    public void saveAddressBook_linkedFileDeletedAfterLoad_savesThroughLink() throws Exception {
+        // PE round 3: the link's file was deleted while TutorFlow was open, and the next save replaced the link
+        Path target = Files.createDirectories(testFolder.resolve("synced")).resolve("tutorflow.json");
+        new JsonAddressBookStorage(target).saveAddressBook(getTypicalAddressBook());
+        Path link = Files.createDirectories(testFolder.resolve("data")).resolve("tutorflow.json");
+        createSymbolicLinkOrSkip(link, target);
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(link);
+        AddressBook data = new AddressBook(storage.readAddressBook().orElseThrow());
+        Files.delete(target);
+
+        data.deleteStudent(ALICE);
+        storage.saveAddressBook(data);
+
+        assertTrue(Files.isSymbolicLink(link));
+        assertEquals(data, new JsonAddressBookStorage(target).readAddressBook().orElseThrow());
+
+        // a change to the file the link points to is still found
+        new JsonAddressBookStorage(target).saveAddressBook(getTypicalAddressBook());
+        assertThrows(DataFileConflictException.class, () -> storage.saveAddressBook(new AddressBook()));
+    }
+
+    @Test
+    public void saveAddressBook_linkedFileBeingSavedByItsOwnPath_throwsBusyConflict() throws Exception {
+        // PR #194 review: a save through a link locked a lock file next to the link, not next to the linked file
+        Path target = Files.createDirectories(testFolder.resolve("synced")).resolve("tutorflow.json");
+        new JsonAddressBookStorage(target).saveAddressBook(getTypicalAddressBook());
+        Path link = Files.createDirectories(testFolder.resolve("data")).resolve("tutorflow.json");
+        createSymbolicLinkOrSkip(link, target);
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(link);
+        storage.readAddressBook();
+        byte[] fileBefore = Files.readAllBytes(target);
+
+        assertSaveBusyWhileLocked(storage, target.resolveSibling("tutorflow.json.lock"));
+        assertArrayEquals(fileBefore, Files.readAllBytes(target));
+        assertTrue(Files.isSymbolicLink(link));
+    }
+
+    @Test
+    public void saveAddressBook_linkToMissingFileBeingSaved_throwsBusyConflict() throws Exception {
+        Path target = Files.createDirectories(testFolder.resolve("synced")).resolve("tutorflow.json");
+        Path link = Files.createDirectories(testFolder.resolve("data")).resolve("tutorflow.json");
+        createSymbolicLinkOrSkip(link, target);
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(link);
+        assertTrue(storage.readAddressBook().isEmpty());
+
+        assertSaveBusyWhileLocked(storage, target.resolveSibling("tutorflow.json.lock"));
+        assertFalse(Files.exists(target));
+        assertTrue(Files.isSymbolicLink(link));
+    }
+
+    @Test
+    public void saveAddressBook_twoLinksToSameFile_lockSameFile() throws Exception {
+        Path target = Files.createDirectories(testFolder.resolve("synced")).resolve("tutorflow.json");
+        Path link = Files.createDirectories(testFolder.resolve("data")).resolve("tutorflow.json");
+        Path otherLink = Files.createDirectories(testFolder.resolve("backup")).resolve("tutorflow.json");
+        createSymbolicLinkOrSkip(link, target);
+        createSymbolicLinkOrSkip(otherLink, target);
+
+        new JsonAddressBookStorage(link).saveAddressBook(getTypicalAddressBook());
+        new JsonAddressBookStorage(otherLink).saveAddressBook(new AddressBook());
+
+        assertEquals(List.of(Paths.get("synced", "tutorflow.json.lock")), listLockFiles());
+    }
+
+    @Test
+    public void saveAddressBook_regularFile_locksFileBesideIt() throws Exception {
+        Path file = Files.createDirectories(testFolder.resolve("data")).resolve("tutorflow.json");
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(file);
+
+        storage.saveAddressBook(getTypicalAddressBook());
+
+        assertEquals(List.of(Paths.get("data", "tutorflow.json.lock")), listLockFiles());
+        assertSaveBusyWhileLocked(storage, file.resolveSibling("tutorflow.json.lock"));
+    }
+
+    /**
+     * Saves through {@code storage} while another copy of TutorFlow holds the lock on {@code lockFile}, and
+     * confirms that the save is refused because that copy is saving.
+     */
+    private static void assertSaveBusyWhileLocked(JsonAddressBookStorage storage, Path lockFile) throws IOException {
+        try (FileChannel channel = FileChannel.open(lockFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+                FileLock lock = channel.lock()) {
+            assertThrows(DataFileConflictException.class, DataFileConflictException.MESSAGE_BUSY, () ->
+                    storage.saveAddressBook(new AddressBook()));
+        }
+    }
+
+    /**
+     * Returns the lock files in the test folder and the folders in it, relative to the test folder.
+     */
+    private List<Path> listLockFiles() throws IOException {
+        try (Stream<Path> files = Files.walk(testFolder)) {
+            return files.filter(file -> file.getFileName().toString().endsWith(".lock"))
+                    .map(testFolder::relativize)
+                    .toList();
+        }
     }
 
     @Test

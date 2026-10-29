@@ -74,8 +74,8 @@ public class HomeworkUpcomingCommand extends Command {
     /**
      * Returns the summary line and one line per homework due in the window, or a message saying there is none.
      * Every student in the roster is searched, not only the students that are displayed. Each line starts with the
-     * student's position in the roster, which is the student's {@code STUDENT_INDEX}, so that students with the
-     * same name can be told apart.
+     * student's position in the roster, which is the student's {@code STUDENT_INDEX}, and the student's name and
+     * phone, as in the other homework messages.
      */
     private String listUpcomingHomework(Model model) {
         LocalDate lastDay = today.plusDays(days);
@@ -90,17 +90,18 @@ public class HomeworkUpcomingCommand extends Command {
                 .sorted(Comparator.comparing(dueHomework -> dueHomework.homework().getDueDate().getDate()))
                 .toList();
         if (dueHomeworks.isEmpty()) {
-            return String.format(MESSAGE_NO_HOMEWORK, today, lastDay);
+            return String.format(Locale.ROOT, MESSAGE_NO_HOMEWORK, today, lastDay);
         }
 
-        StringBuilder message = new StringBuilder(String.format(MESSAGE_SUCCESS, dueHomeworks.size(),
+        // Locale.ROOT prints the count in ASCII digits in every locale
+        StringBuilder message = new StringBuilder(String.format(Locale.ROOT, MESSAGE_SUCCESS, dueHomeworks.size(),
                 HomeworkListCommand.getRecordWord(dueHomeworks.size()), today, lastDay));
         for (DueHomework dueHomework : dueHomeworks) {
             int position = dueHomework.rosterPosition();
             Homework homework = dueHomework.homework();
             // Locale.ROOT prints the index in ASCII digits, which the index parsers accept, in every locale
             message.append(String.format(Locale.ROOT, MESSAGE_HOMEWORK_LINE, position + 1,
-                    students.get(position).getName(), homework.getTitle(), homework.getSubject(),
+                    Messages.formatLessonOwner(students.get(position)), homework.getTitle(), homework.getSubject(),
                     homework.getDueDate(), Messages.formatScore(homework), homework.getStatus()));
         }
         return message.toString();

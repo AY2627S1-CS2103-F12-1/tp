@@ -108,21 +108,6 @@ public class StudentTest {
     }
 
     @Test
-    public void hasHomework() {
-        Student student = new StudentBuilder().withHomeworks(ALGEBRA).build();
-
-        // no homework -> returns false
-        assertFalse(new StudentBuilder().build().hasHomework(ALGEBRA));
-
-        // same identity with different title case and score -> returns true
-        assertTrue(student.hasHomework(new HomeworkBuilder(ALGEBRA).withTitle("COMPLETE ALGEBRA WORKSHEET")
-                .withScore("7/10").build()));
-
-        // different homework -> returns false
-        assertFalse(student.hasHomework(MECHANICS));
-    }
-
-    @Test
     public void withHomeworks_returnsNewStudentWithSameProfile() {
         Student original = new StudentBuilder().withName("Jane Lim").withSubjects("MATH, PHYSICS").build();
 

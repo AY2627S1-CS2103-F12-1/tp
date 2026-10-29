@@ -94,9 +94,6 @@ public class ScoreTest {
         assertInvalidScore("/20"); // empty marks obtained
         assertInvalidScore("17//20"); // double slash
         assertInvalidScore("17/20/30"); // three numbers
-        assertInvalidScore("11/10"); // marks obtained above the total
-        assertInvalidScore("5/0"); // zero total
-        assertInvalidScore("0/0"); // zero total and marks
         assertInvalidScore("5.5/10"); // decimal marks obtained
         assertInvalidScore("5/10.0"); // decimal total
         assertInvalidScore("5 / 10"); // spaces inside
@@ -108,6 +105,26 @@ public class ScoreTest {
         assertInvalidScore("five/ten"); // words
         assertInvalidScore("5:10"); // wrong separator
         assertInvalidScore("/"); // slash only
+
+        // the exact text shown for a word
+        assertThrows(IllegalArgumentException.class, "Score must be whole marks such as 17, or marks out of a total "
+                + "such as 5/10, with no signs, decimals, spaces or other characters.", () -> Score.parse("abc"));
+    }
+
+    @Test
+    public void parse_marksAboveTotal_namesBothNumbers() {
+        assertThrows(IllegalArgumentException.class,
+                "Marks obtained (11) must not be more than the total marks (10).", () -> Score.parse("11/10"));
+        assertThrows(IllegalArgumentException.class,
+                "Marks obtained (2147483647) must not be more than the total marks (1).", () ->
+                        Score.parse("2147483647/1"));
+    }
+
+    @Test
+    public void parse_totalBelowOne_throwsIllegalArgumentException() {
+        assertThrows(IllegalArgumentException.class, "Total marks must be at least 1.", () -> Score.parse("5/0"));
+        // zero total and marks: the total is reported, as no marks can be scored out of it
+        assertThrows(IllegalArgumentException.class, Score.MESSAGE_TOTAL_TOO_SMALL, () -> Score.parse("0/0"));
     }
 
     @Test
@@ -119,6 +136,8 @@ public class ScoreTest {
         assertInvalidScore("1 7"); // space inside
         assertInvalidScore("seventeen"); // word
         assertInvalidScore("17%"); // percentage
+        assertInvalidScore("1e2"); // exponent
+        assertInvalidScore("\uFF15"); // full-width digit
     }
 
     @Test
@@ -228,7 +247,7 @@ public class ScoreTest {
     }
 
     private static void assertInvalidScore(String rawScore) {
-        assertThrows(IllegalArgumentException.class, Score.MESSAGE_CONSTRAINTS, () -> Score.parse(rawScore));
+        assertThrows(IllegalArgumentException.class, Score.MESSAGE_INVALID_FORMAT, () -> Score.parse(rawScore));
     }
 
     private static void assertLeadingZeroes(String rawScore) {

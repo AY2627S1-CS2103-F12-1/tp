@@ -8,6 +8,7 @@ import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,20 +16,25 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.AclEntry;
 import java.nio.file.attribute.AclFileAttributeView;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Writes and reads files
  */
 public class FileUtil {
 
+    /** Message for a file that is not UTF-8, with the line and column of its first invalid byte. */
     public static final String MESSAGE_INVALID_UTF8 =
-            "The file is not valid UTF-8 text: invalid bytes at offset %d (counting from 0).";
+            "The file is not valid UTF-8 text near line %d, column %d. Save the file as UTF-8.";
 
     private static final String CHARSET = "UTF-8";
     private static final String TEMP_FILE_SUFFIX = ".tmp";
     private static final String ATTRIBUTE_VIEW_POSIX = "posix";
     private static final String ATTRIBUTE_VIEW_ACL = "acl";
+    /** Largest number of symbolic links followed in a chain, as on Linux, so that a loop of links ends. */
+    private static final int MAX_SYMBOLIC_LINKS = 40;
 
     /**
      * Creates parent directories of file if it has a parent directory
@@ -54,8 +60,13 @@ public class FileUtil {
         try {
             return decoder.decode(bytes).toString();
         } catch (CharacterCodingException e) {
-            // After a decoding error, the buffer is positioned at the first invalid byte
-            throw new IOException(String.format(MESSAGE_INVALID_UTF8, bytes.position()), e);
+            // After a decoding error, the buffer is positioned at the first invalid byte, so the text before it is
+            // valid; its lines and characters give the position as an editor shows it
+            String validText = new String(bytes.array(), 0, bytes.position(), StandardCharsets.UTF_8);
+            long line = validText.chars().filter(c -> c == '\n').count() + 1;
+            int column = validText.length() - (validText.lastIndexOf('\n') + 1) + 1;
+            // Locale.ROOT prints the position in ASCII digits, which editors use for line and column numbers
+            throw new IOException(String.format(Locale.ROOT, MESSAGE_INVALID_UTF8, line, column), e);
         }
     }
 
@@ -63,13 +74,16 @@ public class FileUtil {
      * Writes given string to a file, creating the file and its missing parent directories if needed.
      * The content is first written to a new temporary file with a unique name next to {@code file}, which then
      * replaces {@code file}, so {@code file} is never left partially written: if writing fails, it keeps its
-     * previous content. Other files in the folder are never changed.
+     * previous content. Other files in the folder are never changed. If {@code file} is a symbolic link, the file it
+     * points to is written in the same way, even if it does not exist yet, and the link is kept; the folder of that
+     * file must exist.
      * An existing {@code file} keeps its POSIX file permissions or its access control list (on Windows), whichever
-     * the file system supports. Where the file system supports POSIX file permissions, a new {@code file} can be
-     * read and written only by its owner.
+     * the file system supports. A new {@code file} gets the permissions that any new file gets, e.g. from the
+     * user's umask on POSIX file systems.
      *
      * @throws AccessDeniedException If {@code file} exists but is read-only, or its folder cannot be written to.
-     * @throws IOException If the content cannot be written. An error about the temporary file names {@code file}.
+     * @throws IOException If the content cannot be written, e.g. because {@code file} is a symbolic link to a file in
+     *         a folder that does not exist. An error about the temporary file names {@code file}.
      */
     public static void writeToFile(Path file, String content) throws IOException {
         // A move can replace a read-only file, so check it first to keep the file read-only for the user
@@ -78,20 +92,59 @@ public class FileUtil {
         }
 
         createParentDirsOfFile(file);
-        Path folder = file.toAbsolutePath().getParent();
+        // Replacing a symbolic link would leave the file it points to with the old content, so that file is replaced
+        Path target = resolveSymbolicLinks(file);
+        Path folder = target.toAbsolutePath().getParent();
         Path tempFile = null;
         try {
-            tempFile = Files.createTempFile(folder, file.getFileName().toString(), TEMP_FILE_SUFFIX);
+            tempFile = createTempFile(folder, target.getFileName().toString());
             // Give the temporary file the data file's permissions before it holds the user's data
-            copyPermissions(file, tempFile);
+            copyPermissions(target, tempFile);
             Files.write(tempFile, content.getBytes(CHARSET));
-            replaceFile(tempFile, file);
+            replaceFile(tempFile, target);
         } catch (IOException e) {
             deleteAfterFailure(tempFile, e);
             throw toErrorAboutFile(e, file);
         } catch (RuntimeException e) {
             deleteAfterFailure(tempFile, e);
             throw e;
+        }
+    }
+
+    /**
+     * Returns the file that {@code file} points to, following a chain of symbolic links, each relative to the folder
+     * of its link, or {@code file} itself if it is not a symbolic link. The file returned need not exist.
+     *
+     * @throws IOException If a link cannot be read, or the chain has more than {@link #MAX_SYMBOLIC_LINKS} links,
+     *         e.g. because it loops.
+     */
+    public static Path resolveSymbolicLinks(Path file) throws IOException {
+        Path target = file;
+        int linkCount = 0;
+        while (Files.isSymbolicLink(target)) {
+            if (linkCount == MAX_SYMBOLIC_LINKS) {
+                throw new FileSystemException(file.toString(), null, "Too many levels of symbolic links");
+            }
+            target = target.resolveSibling(Files.readSymbolicLink(target));
+            linkCount++;
+        }
+        return target;
+    }
+
+    /**
+     * Returns a new empty file in {@code folder} with a unique name that starts with {@code prefix}. Unlike
+     * {@link Files#createTempFile}, which lets only its owner read and write it, it gets the permissions that any new
+     * file gets.
+     */
+    private static Path createTempFile(Path folder, String prefix) throws IOException {
+        while (true) {
+            Path tempFile = folder.resolve(prefix + Long.toUnsignedString(ThreadLocalRandom.current().nextLong())
+                    + TEMP_FILE_SUFFIX);
+            try {
+                return Files.createFile(tempFile);
+            } catch (FileAlreadyExistsException e) {
+                // Another file has this name, so another name is tried
+            }
         }
     }
 

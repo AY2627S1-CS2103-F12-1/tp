@@ -83,13 +83,14 @@ public final class HelpContent {
                             "Adds homework to the student at STUDENT_INDEX. " + TuitionSubject.MESSAGE_CONSTRAINTS
                                     + " " + DueDate.MESSAGE_CONSTRAINTS + " " + DueDate.MESSAGE_YEAR_OUT_OF_RANGE
                                     + " An MM-DD date is in this year, or in the next year if it has passed.",
-                            "hw add 1 t/Algebra worksheet s/MATH due/2026-10-15"),
+                            "hw add 1 t/Algebra worksheet s/MATH due/2026-12-01"),
                     new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_LIST,
                             HomeworkListCommand.MESSAGE_USAGE,
                             "Lists the homework of the student at STUDENT_INDEX that is due today or later, earliest"
-                                    + " first, with its score and status. Add all to list overdue homework too."
-                                    + " Each homework"
-                                    + " keeps its number, the HOMEWORK_INDEX used by the other homework commands.",
+                                    + " first, with its score and status. Add all to list homework due before today"
+                                    + " too. The number before each homework is its HOMEWORK_INDEX for the other"
+                                    + " homework commands. Hiding homework due before today does not change these"
+                                    + " numbers, but deleting a homework renumbers the homework after it.",
                             "hw ls 1"),
                     new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_UPCOMING,
                             HomeworkUpcomingCommand.MESSAGE_USAGE,
@@ -100,7 +101,8 @@ public final class HelpContent {
                                     + HomeworkUpcomingCommandParser.MAX_DAYS + ", not a date, and is "
                                     + HomeworkUpcomingCommandParser.DEFAULT_DAYS + " if not given. The lines are not"
                                     + " numbered by HOMEWORK_INDEX; use homework list"
-                                    + " STUDENT_INDEX to find it.",
+                                    + " STUDENT_INDEX to find it. Like list, it shows all students again, clearing"
+                                    + " any search or filter and undoing any sort.",
                             "hw up due/3"),
                     new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_EDIT,
                             HomeworkEditCommand.MESSAGE_USAGE,

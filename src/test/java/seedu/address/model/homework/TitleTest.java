@@ -8,6 +8,10 @@ import static seedu.address.testutil.Assert.assertThrows;
 import org.junit.jupiter.api.Test;
 
 public class TitleTest {
+    /** Error for a title that is empty after normalization. */
+    public static final String MESSAGE_EMPTY = "The homework title is empty. Enter 1 to 100 characters.";
+    private static final String MESSAGE_TOO_LONG_101 = "Homework title must be at most 100 characters, but has 101.";
+
     @Test
     public void constructor_null_throwsNullPointerException() {
         assertThrows(NullPointerException.class, () -> new Title(null));
@@ -15,31 +19,48 @@ public class TitleTest {
 
     @Test
     public void constructor_emptyOrWhitespaceOnly_throwsIllegalArgumentException() {
-        assertInvalidTitle(""); // 0 characters
-        assertInvalidTitle("   "); // 0 characters after normalization
-        assertInvalidTitle("\u00A0\u3000"); // only Unicode spaces
+        assertEmptyTitle(""); // 0 characters
+        assertEmptyTitle("   "); // 0 characters after normalization
+        assertEmptyTitle("\u00A0\u3000"); // only Unicode spaces
     }
 
     @Test
     public void constructor_zeroWidthSpaceOnly_throwsIllegalArgumentException() {
         // Issue #139: a title that looks blank
-        assertInvalidTitle("\u200B");
-        assertInvalidTitle(" \u200B ");
+        assertUnsupportedCharacter("\u200B", "U+200B (ZERO WIDTH SPACE)");
+        assertUnsupportedCharacter(" \u200B ", "U+200B (ZERO WIDTH SPACE)");
     }
 
     @Test
     public void constructor_invisibleCharacter_throwsIllegalArgumentException() {
-        assertInvalidTitle("Alge\u200Bbra drill"); // zero-width space inside a word
-        assertInvalidTitle("\u200BAlgebra drill"); // zero-width space at the start
-        assertInvalidTitle("\u2764\uFE0F"); // red heart followed by the emoji variation selector
-        assertInvalidTitle("\uD83D\uDC68\u200D\uD83D\uDC69"); // man and woman joined by a zero-width joiner
+        // zero-width space inside a word
+        assertUnsupportedCharacter("Alge\u200Bbra drill", "U+200B (ZERO WIDTH SPACE)");
+        // zero-width space at the start
+        assertUnsupportedCharacter("\u200BAlgebra drill", "U+200B (ZERO WIDTH SPACE)");
+        // red heart followed by the emoji variation selector
+        assertUnsupportedCharacter("Love \u2764\uFE0F", "U+FE0F (VARIATION SELECTOR-16)");
+        // man and woman joined by a zero-width joiner
+        assertUnsupportedCharacter("\uD83D\uDC68\u200D\uD83D\uDC69", "U+200D (ZERO WIDTH JOINER)");
     }
 
     @Test
     public void constructor_controlCharacter_throwsIllegalArgumentException() {
-        assertInvalidTitle("Algebra\u0007worksheet"); // bell character
-        assertInvalidTitle("Algebra\u0000worksheet"); // null character
-        assertInvalidTitle("Algebra\u007Fworksheet"); // delete character
+        assertUnsupportedCharacter("Algebra\u0007worksheet", "U+0007 (BEL)"); // bell character
+        assertUnsupportedCharacter("Algebra\u0000worksheet", "U+0000 (NULL)"); // null character
+        assertUnsupportedCharacter("Algebra\u007Fworksheet", "U+007F (DELETE)"); // delete character
+    }
+
+    @Test
+    public void constructor_combiningVowelSign_namesFirstOne() {
+        // Tamil, Hindi and Thai words whose vowel signs are marks, not letters
+        assertUnsupportedCharacter("\u0BA4\u0BAE\u0BBF\u0BB4\u0BCD", "U+0BBF (TAMIL VOWEL SIGN I)");
+        assertUnsupportedCharacter("\u0939\u093F\u0902\u0926\u0940", "U+093F (DEVANAGARI VOWEL SIGN I)");
+        assertUnsupportedCharacter("\u0E04\u0E34\u0E14", "U+0E34 (THAI CHARACTER SARA I)");
+    }
+
+    @Test
+    public void constructor_unassignedCharacter_namesCodeOnly() {
+        assertUnsupportedCharacter("Algebra\u0378", "U+0378");
     }
 
     @Test
@@ -65,7 +86,8 @@ public class TitleTest {
     public void constructor_lengthBoundaries() {
         assertEquals("A", new Title("A").toString()); // 1 character
         assertEquals("A".repeat(100), new Title("A".repeat(100)).toString()); // 100 characters
-        assertInvalidTitle("A".repeat(101)); // 101 characters
+        // 101 characters
+        assertThrows(IllegalArgumentException.class, MESSAGE_TOO_LONG_101, () -> new Title("A".repeat(101)));
     }
 
     @Test
@@ -79,7 +101,8 @@ public class TitleTest {
     public void constructor_lengthCountedAfterUnicodeNormalization() {
         // each e followed by a combining acute accent becomes one character
         assertEquals("\u00E9".repeat(100), new Title("e\u0301".repeat(100)).toString()); // 100 characters
-        assertInvalidTitle("e\u0301".repeat(101)); // 101 characters
+        // 101 characters
+        assertThrows(IllegalArgumentException.class, MESSAGE_TOO_LONG_101, () -> new Title("e\u0301".repeat(101)));
     }
 
     @Test
@@ -145,7 +168,13 @@ public class TitleTest {
         assertEquals(rawTitle, new Title(rawTitle).toString());
     }
 
-    private static void assertInvalidTitle(String rawTitle) {
-        assertThrows(IllegalArgumentException.class, Title.MESSAGE_CONSTRAINTS, () -> new Title(rawTitle));
+    private static void assertEmptyTitle(String rawTitle) {
+        assertThrows(IllegalArgumentException.class, MESSAGE_EMPTY, () -> new Title(rawTitle));
+    }
+
+    private static void assertUnsupportedCharacter(String rawTitle, String character) {
+        assertThrows(IllegalArgumentException.class, "Homework title has an unsupported character: " + character
+                + ". Titles may contain only letters, numbers, punctuation, symbols and spaces.", () ->
+                        new Title(rawTitle));
     }
 }

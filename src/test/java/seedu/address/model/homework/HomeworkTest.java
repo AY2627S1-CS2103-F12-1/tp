@@ -113,6 +113,17 @@ public class HomeworkTest {
     }
 
     @Test
+    public void isSameHomework_titleDiffersBySpaceOrPeriod_returnsFalse() {
+        // a space between words
+        assertFalse(new HomeworkBuilder().withTitle("Worksheet1").build()
+                .isSameHomework(new HomeworkBuilder().withTitle("Worksheet 1").build()));
+
+        // a period at the end
+        assertFalse(new HomeworkBuilder().withTitle("Mole concept worksheet.").build()
+                .isSameHomework(new HomeworkBuilder().withTitle("Mole concept worksheet").build()));
+    }
+
+    @Test
     public void equals() {
         // same object -> returns true
         assertTrue(ALGEBRA.equals(ALGEBRA));

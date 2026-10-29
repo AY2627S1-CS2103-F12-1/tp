@@ -64,7 +64,7 @@ public class HomeworkDeleteCommandTest {
     public void execute_firstHomework_showsDeletedLineAndRenumberedList() {
         String expectedMessage = "Deleted homework:\n"
                 + formatHomeworkLine(1, ALGEBRA_TITLE, "MATH", "2026-10-15", "Not recorded", "ASSIGNED")
-                + "\nListed 2 upcoming homework records for Alice Tan.\nHomework for Alice Tan:\n"
+                + "\nListed 2 upcoming homework records for Alice Tan (91111111).\nHomework for Alice Tan (91111111):\n"
                 + formatHomeworkLine(2, ATOMIC_STRUCTURE_TITLE, "CHEMISTRY", "2026-10-18", "17/20", "ASSIGNED") + "\n"
                 + formatHomeworkLine(1, MECHANICS_TITLE, "PHYSICS", "2026-10-20", "Not recorded", "ASSIGNED");
         Model expectedModel = getModelWithStudents(List.of(
@@ -78,7 +78,7 @@ public class HomeworkDeleteCommandTest {
         // atomic structure moves from 3 to 2
         String expectedMessage = "Deleted homework:\n"
                 + formatHomeworkLine(2, MECHANICS_TITLE, "PHYSICS", "2026-10-20", "Not recorded", "ASSIGNED")
-                + "\nListed 2 upcoming homework records for Alice Tan.\nHomework for Alice Tan:\n"
+                + "\nListed 2 upcoming homework records for Alice Tan (91111111).\nHomework for Alice Tan (91111111):\n"
                 + formatHomeworkLine(1, ALGEBRA_TITLE, "MATH", "2026-10-15", "Not recorded", "ASSIGNED") + "\n"
                 + formatHomeworkLine(2, ATOMIC_STRUCTURE_TITLE, "CHEMISTRY", "2026-10-18", "17/20", "ASSIGNED");
         Model expectedModel = getModelWithStudents(List.of(
@@ -91,7 +91,7 @@ public class HomeworkDeleteCommandTest {
     public void execute_scoredHomework_showsScoreAndStatus() {
         String expectedMessage = "Deleted homework:\n"
                 + formatHomeworkLine(3, ATOMIC_STRUCTURE_TITLE, "CHEMISTRY", "2026-10-18", "17/20", "ASSIGNED")
-                + "\nListed 2 upcoming homework records for Alice Tan.\nHomework for Alice Tan:\n"
+                + "\nListed 2 upcoming homework records for Alice Tan (91111111).\nHomework for Alice Tan (91111111):\n"
                 + formatHomeworkLine(1, ALGEBRA_TITLE, "MATH", "2026-10-15", "Not recorded", "ASSIGNED") + "\n"
                 + formatHomeworkLine(2, MECHANICS_TITLE, "PHYSICS", "2026-10-20", "Not recorded", "ASSIGNED");
         Model expectedModel = getModelWithStudents(List.of(
@@ -105,9 +105,9 @@ public class HomeworkDeleteCommandTest {
         // on 2026-10-16 the algebra homework (due 2026-10-15) is overdue, so it is not listed
         String expectedMessage = "Deleted homework:\n"
                 + formatHomeworkLine(2, MECHANICS_TITLE, "PHYSICS", "2026-10-20", "Not recorded", "ASSIGNED")
-                + "\nListed 1 upcoming homework record for Alice Tan"
+                + "\nListed 1 upcoming homework record for Alice Tan (91111111)"
                 + " (1 record due before today not shown; use homework list 1 all to see it).\n"
-                + "Homework for Alice Tan:\n"
+                + "Homework for Alice Tan (91111111):\n"
                 + formatHomeworkLine(2, ATOMIC_STRUCTURE_TITLE, "CHEMISTRY", "2026-10-18", "17/20", "ASSIGNED");
         Model expectedModel = getModelWithStudents(List.of(
                 ALICE.withHomeworks(List.of(ALGEBRA, ATOMIC_STRUCTURE)), BENSON, CARL));
@@ -121,7 +121,7 @@ public class HomeworkDeleteCommandTest {
         // on 2026-10-16 only the algebra homework (due 2026-10-15) is due before today, so nothing is left out
         String expectedMessage = "Deleted homework:\n"
                 + formatHomeworkLine(1, ALGEBRA_TITLE, "MATH", "2026-10-15", "Not recorded", "ASSIGNED")
-                + "\nListed 2 upcoming homework records for Alice Tan.\nHomework for Alice Tan:\n"
+                + "\nListed 2 upcoming homework records for Alice Tan (91111111).\nHomework for Alice Tan (91111111):\n"
                 + formatHomeworkLine(2, ATOMIC_STRUCTURE_TITLE, "CHEMISTRY", "2026-10-18", "17/20", "ASSIGNED") + "\n"
                 + formatHomeworkLine(1, MECHANICS_TITLE, "PHYSICS", "2026-10-20", "Not recorded", "ASSIGNED");
         Model expectedModel = getModelWithStudents(List.of(
@@ -135,7 +135,7 @@ public class HomeworkDeleteCommandTest {
     public void execute_onlyOverdueHomeworkLeft_showsNoUpcomingHomework() {
         String expectedMessage = "Deleted homework:\n"
                 + formatHomeworkLine(3, ATOMIC_STRUCTURE_TITLE, "CHEMISTRY", "2026-10-18", "17/20", "ASSIGNED")
-                + "\nNo upcoming homework found for Alice Tan"
+                + "\nNo upcoming homework found for Alice Tan (91111111)"
                 + " (2 records due before today not shown; use homework list 1 all to see them).";
         Model expectedModel = getModelWithStudents(List.of(
                 ALICE.withHomeworks(List.of(ALGEBRA, MECHANICS)), BENSON, CARL));
@@ -148,7 +148,7 @@ public class HomeworkDeleteCommandTest {
     public void execute_lastStudentOnlyHomework_showsNoHomeworkFound() {
         String expectedMessage = "Deleted homework:\n"
                 + formatHomeworkLine(1, MECHANICS_TITLE, "PHYSICS", "2026-10-20", "Not recorded", "ASSIGNED")
-                + "\nNo homework found for Carl Ng.";
+                + "\nNo homework found for Carl Ng (93333333).";
         Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON, CARL.withHomeworks(List.of())));
 
         assertCommandSuccess(deleteCommand(3, 1, TODAY), model, expectedMessage, expectedModel);
@@ -160,7 +160,7 @@ public class HomeworkDeleteCommandTest {
         Model actualModel = getModelWithStudents(List.of(student));
         String expectedMessage = "Deleted homework:\n"
                 + formatHomeworkLine(1, MECHANICS_TITLE, "PHYSICS", "2026-10-20", "Not recorded", "COMPLETED")
-                + "\nNo homework found for John Tan.";
+                + "\nNo homework found for John Tan (91234567).";
         Model expectedModel = getModelWithStudents(List.of(student.withHomeworks(List.of())));
 
         assertCommandSuccess(deleteCommand(1, 1, TODAY), actualModel, expectedMessage, expectedModel);
@@ -173,7 +173,7 @@ public class HomeworkDeleteCommandTest {
         Model actualModel = getModelWithStudents(List.of(student));
         String expectedMessage = "Deleted homework:\n"
                 + formatHomeworkLine(1, ALGEBRA_TITLE, "MATH", "2026-10-15", "Not recorded", "ASSIGNED")
-                + "\nListed 1 upcoming homework record for John Tan.\nHomework for John Tan:\n"
+                + "\nListed 1 upcoming homework record for John Tan (91234567).\nHomework for John Tan (91234567):\n"
                 + formatHomeworkLine(1, ALGEBRA_TITLE, "MATH", "2026-10-16", "Not recorded", "ASSIGNED");
         Model expectedModel = getModelWithStudents(List.of(student.withHomeworks(List.of(laterAlgebra))));
 
@@ -193,7 +193,7 @@ public class HomeworkDeleteCommandTest {
         model.updateFilteredStudentList(CARL::equals);
         String expectedMessage = "Deleted homework:\n"
                 + formatHomeworkLine(1, MECHANICS_TITLE, "PHYSICS", "2026-10-20", "Not recorded", "ASSIGNED")
-                + "\nNo homework found for Carl Ng.";
+                + "\nNo homework found for Carl Ng (93333333).";
         Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON, CARL.withHomeworks(List.of())));
 
         assertCommandSuccess(deleteCommand(1, 1, TODAY), model, expectedMessage, expectedModel);
@@ -206,9 +206,9 @@ public class HomeworkDeleteCommandTest {
         actualModel.updateFilteredStudentList(ALICE::equals);
         String expectedMessage = "Deleted homework:\n"
                 + formatHomeworkLine(2, MECHANICS_TITLE, "PHYSICS", "2026-10-20", "Not recorded", "ASSIGNED")
-                + "\nListed 1 upcoming homework record for Alice Tan"
+                + "\nListed 1 upcoming homework record for Alice Tan (91111111)"
                 + " (1 record due before today not shown; use homework list 1 all to see it).\n"
-                + "Homework for Alice Tan:\n"
+                + "Homework for Alice Tan (91111111):\n"
                 + formatHomeworkLine(2, ATOMIC_STRUCTURE_TITLE, "CHEMISTRY", "2026-10-18", "17/20", "ASSIGNED");
         Model expectedModel = getModelWithStudents(List.of(BENSON,
                 ALICE.withHomeworks(List.of(ALGEBRA, ATOMIC_STRUCTURE))));

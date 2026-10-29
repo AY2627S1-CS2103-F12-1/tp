@@ -204,23 +204,26 @@ The app data is saved in `data/tutorflow.json`. `JsonSerializableAddressBook` ho
 * Homework fields: `title`, `subject`, `dueDate`, `score`, and `status`.
 * Lesson fields: `subject`, `dayOfWeek`, `startTime`, and `endTime`.
 
-`JsonUtil#readJsonFile` reads both `data/tutorflow.json` and `preferences.json`. It rejects a file that is not valid UTF-8, has anything but whitespace after its JSON value, or repeats a key within one JSON object. Loading only part of such a file would be unsafe: the next save would overwrite the part that was not loaded. An invalid `preferences.json`, including one whose `guiSettings` is `null`, is replaced with the default preferences (see `MainApp#initPrefs`); the data file is not affected.
+`JsonUtil#readJsonFile` reads both `data/tutorflow.json` and `preferences.json`. It rejects a file that is not valid UTF-8 (`FileUtil#MESSAGE_INVALID_UTF8`, which gives the line and column of the first invalid byte, counted in characters as an editor counts them, e.g. `The file is not valid UTF-8 text near line 3, column 22. Save the file as UTF-8.`), has anything but whitespace after its JSON value, or repeats a key within one JSON object. Loading only part of such a file would be unsafe: the next save would overwrite the part that was not loaded. An invalid `preferences.json`, including one whose `guiSettings` is `null`, is replaced with the default preferences (see `MainApp#initPrefs`); the data file is not affected.
 
 Contact and academic fields, homework titles, dates and completion statuses, and lesson fields are strings. `subjects` is a list of strings, `homeworks` and `lessons` are lists of objects, and `score` is a `MARKS` or `MARKS_OBTAINED/TOTAL_MARKS` string such as `"17"` or `"5/10"`, or `null`. Homework status is `ASSIGNED` or `COMPLETED`; missing or null status defaults to `ASSIGNED`, independently of scores. Lessons store weekdays by name and times in `HH:mm` format.
 
-Each adapted class checks its values in `toModelType()` with the same value classes that commands use. Student and homework adapters report missing fields with `MISSING_FIELD_MESSAGE_FORMAT` and invalid values with the value class's `MESSAGE_CONSTRAINTS`. `JsonAdaptedLesson` reports missing lesson fields together and delegates value validation to `TuitionSubject` and `RegularLesson`. Invalid data produces an `IllegalValueException`. Loading also rejects:
+Each adapted class checks its values in `toModelType()` with the same value classes that commands use. Student and homework adapters report missing fields with `MISSING_FIELD_MESSAGE_FORMAT` and invalid values with the value class's `MESSAGE_CONSTRAINTS`. `JsonAdaptedLesson` reports the first missing lesson field, in the order `subject`, `dayOfWeek`, `startTime`, `endTime`, in the same way (e.g. `Lesson's startTime field is missing!`) and delegates value validation to `TuitionSubject` and `RegularLesson`. Invalid data produces an `IllegalValueException`. Loading also rejects:
 
 * a missing `students` list, or an empty (`null`) student, homework, or lesson entry.
 * two students that are the same by `Student#isSameStudent`.
 * homework for a subject the student does not take, and two homework records of one student that are the same by `Homework#isSameHomework`.
 * a lesson for a subject the student does not take, duplicate lessons within a student, or overlapping lessons within or across students.
 * a lesson with a missing or invalid subject, weekday, start time, or end time.
+* a title that `Title` rejects, with the message of the rule it breaks, as the homework commands give it (e.g. `Homework title must be at most 100 characters, but has 101.`), except that an empty title gets `Title#MESSAGE_CONSTRAINTS`, as `Title#MESSAGE_EMPTY` ("Enter 1 to 100 characters") is advice for a command.
 * a due date that is not a full `YYYY-MM-DD` date, does not exist, or has a year outside 2000 to 2099. `JsonAdaptedHomework` uses `DueDate#parseFullDate`, so the year of a saved date is never inferred from today's date, and keeps its message (e.g. `The due date's year must be from 2000 to 2099.`), which says which of the three is wrong. Dates are saved padded (`2026-02-05`).
-* a text score that `Score#parse` rejects (e.g. `"5.5/10"`, `"11/10"`, `"5/0"`), with `Score#MESSAGE_CONSTRAINTS`, `Score#MESSAGE_LEADING_ZEROES` for a number with leading zeroes (e.g. `"017"`), or `Score#MESSAGE_TOO_LARGE` for a number beyond the `int` range, and a score that is neither text nor a number (e.g. `true`), with `Score#MESSAGE_CONSTRAINTS`.
+* a text score that `Score#parse` rejects, with the message of the rule it breaks: `Score#MESSAGE_INVALID_FORMAT` for a score in neither form (e.g. `"5.5/10"`), `Score#MESSAGE_MARKS_ABOVE_TOTAL` (e.g. `"11/10"`), `Score#MESSAGE_TOTAL_TOO_SMALL` (e.g. `"5/0"`), `Score#MESSAGE_LEADING_ZEROES` for a number with leading zeroes (e.g. `"017"`), or `Score#MESSAGE_TOO_LARGE` for a number beyond the `int` range, and a score that is neither text nor a number (e.g. `true`, `[5]` or `{}`), with `Score#MESSAGE_INVALID_FORMAT`, as text in neither form gets.
+
+`JsonAdaptedStudent` puts the JSON key in front of an invalid student value (e.g. `guardianPhone: Phone numbers must be ...`), as the student's name and guardian's name, and the student's phone and guardian's phone, share a message. For `subjects`, it says what is wrong with the list before `JsonAdaptedStudent#MESSAGE_SUBJECTS_CONSTRAINTS`: the list is empty, an entry is `null`, one entry holds several subjects (`"MATH, PHYSICS"`), an entry is not a subject, or a subject is listed twice. An entry holds several subjects only if its commas separate two or more values that are not blank, so `"MATH,"` is reported as not a subject (`"MATH," is not a subject.`).
 
 A missing `homeworks` list, `lessons` list, or `score` means no homework, no lessons, or no score. This allows older student data without a `lessons` field to load. `JsonAdaptedHomework` keeps `score` as a Jackson `JsonNode`, so it can tell a JSON number from text. A JSON number such as `85` is the format saved before scores were text; `JsonAdaptedHomework` passes its digits (`JsonNode#asText`) to `Score#parse`, so `85` and `"85"` both load as the bare score `85`, which is saved back as `"85"`. A JSON number that `Score#parse` rejects (e.g. `85.5`, `-3`, `3000000000`) makes the homework load with no score, and a warning is logged (`Ignored invalid homework score 85.5 for 'Quadratic equations worksheet'`). This preserves compatibility with legacy numeric scores without discarding the other records. Subjects, levels, and weekdays are accepted in any case and saved in upper case.
 
-`MainApp#readInitialData` returns saved data if the data file is valid, or sample students from `SampleDataUtil#getSampleAddressBook()` if it does not exist. The missing file is first created by a command that changes the data. Loading failures propagate as `DataLoadingException`: `MainApp#init` records the failure and skips model, logic and main-window initialization. `start` shows an error with the absolute data path, the reason and recovery instructions, then exits after the dialog closes. The reason is the message of the exception's cause, e.g. `10-15 is not in YYYY-MM-DD format, e.g. 2026-10-30.` from `DueDate`. For a file that is not valid JSON, `JsonUtil#readJsonFile` replaces Jackson's technical message with a plain one that gives the position, e.g. `The file is not valid JSON near line L, column C.` No replacement roster is created and the original data file is not changed.
+`MainApp#readInitialData` returns saved data if the data file is valid, or sample students from `SampleDataUtil#getSampleAddressBook()` if it does not exist. The missing file is first created by a command that changes the data. Loading failures propagate as `DataLoadingException`: `MainApp#init` records the failure and skips model, logic and main-window initialization. `start` shows an error with the absolute data path, the reason and recovery instructions, then exits after the dialog closes. The reason is the message of the exception's cause. For an invalid value, `JsonSerializableAddressBook` and `JsonAdaptedStudent` put the position and name of the student, and of the homework if any, in front of the value class's message (`JsonAdaptedStudent#toModelEntry`), e.g. `Student 1 (Ethan Lim): Homework 1 (Quadratic equations worksheet): 10-15 is not in YYYY-MM-DD format, e.g. 2026-10-30.` from `DueDate`, so the user can find the record in a long file. A duplicate names the earlier record, e.g. `Student 2 (ETHAN LIM) has the same name and phone number as student 1.` A lesson is described by its position and the day and times written in the file, if any (`JsonAdaptedLesson#getTimeSlot`), e.g. `Student 1 (Ethan Lim): Lesson 2 (MONDAY 17:00-18:30) is the same as lesson 1.`, and an overlap names both lessons, also as written, with the other student if there is one (`JsonSerializableAddressBook#checkNoOverlappingLessons`), e.g. `Student 2 (Priya Nair): Lesson 2 (monday 17:00-19:00) overlaps lesson 1 (MONDAY 17:00-18:30) of student 1 (Ethan Lim).` A `null` entry gives its position, e.g. `Student 1 (Ethan Lim): Homework 1 is empty (null).` For a file that is not valid JSON, `JsonUtil#readJsonFile` replaces Jackson's technical message with a plain one that gives the position, e.g. `The file is not valid JSON near line L, column C.`, `The key "phone" is repeated near line L, column C.` or `The file has unexpected content after the JSON data near line L, column C.` If the data file is a folder or cannot be read, `JsonAddressBookStorage#describeLoadFailure` replaces the system's text (`Is a directory`, or only the path) with `It is a folder, not a file.`, `The file cannot be read (no permission).` or `The data folder cannot be read (no permission).` No replacement roster is created and the original data file is not changed.
 
 The activity diagram below shows how the data file is loaded at startup:
 
@@ -232,7 +235,7 @@ The team planning document specified an empty roster when no data file exists. v
 
 `MainAppLifecycleTest` uses isolated data/preferences paths and an injected shutdown action to exercise the rendered recovery dialog without stopping the test JVM's JavaFX toolkit. It checks recovery text, dialog dismissal, shutdown requests, unchanged invalid data, normal saved-roster startup and preference saving. The public no-argument constructor uses the resolved home folder and JavaFX shutdown. `AppHomeUtilTest` checks packaged and unpacked paths; packaged-JAR smoke tests must also launch from a separate directory and verify that all application files remain beside the JAR.
 
-`FileUtil#writeToFile` saves a file atomically: it writes the content to a new temporary file next to the data file, gives it the data file's permissions, and then moves it over the data file. If writing fails, the temporary file is deleted and the data file keeps its previous content, so it is never left partially written. A read-only data file is reported before anything is written, because the move would otherwise replace it.
+`FileUtil#writeToFile` saves a file atomically: it writes the content to a new temporary file next to the data file, gives it the data file's permissions, and then moves it over the data file. The temporary file is made with `Files#createFile` under a unique name, not `Files#createTempFile`, which lets only the owner read and write it, so a new data file gets the permissions any new file gets (e.g. `644` from a usual umask), as the lock file does. If writing fails, the temporary file is deleted and the data file keeps its previous content, so it is never left partially written. A read-only data file is reported before anything is written, because the move would otherwise replace it.
 
 ### Common classes
 
@@ -253,12 +256,16 @@ This section describes some noteworthy details on how certain features are imple
 `StrictArgumentTokenizer` splits the arguments of `add`, `edit`, `filter`, `sort`, `lesson add`, `lesson edit`,
 `lesson delete` and every homework subcommand (`add`, `list`, `upcoming`, `edit`, `marks`, `delete`, `filter` and
 `status`) into a preamble (the text before the first prefix, such as the indices in `hw e 1 2 t/Algebra`) and the
-value of each prefix. Any lowercase word followed by `/` at the start of the arguments or after whitespace is
+value of each prefix. Any word of lowercase English letters `a` to `z` (not `p1` or `é`) followed by `/` at the start of the arguments or after whitespace is
 a prefix, so a `/` inside a word such as `3/4` does not start one.
+
+`homework add`, `homework edit`, `homework marks` and `homework upcoming` use `StrictArgumentTokenizer#tokenizeWithPreambleRejectingWrongCase`, which also rejects one of the command's prefixes typed in another case, such as `Due/` or `S/`, with `MESSAGE_WRONG_CASE_PREFIX` (e.g. `Due/ is not a prefix of this command; prefixes are lowercase (due/).`) and the same quote hint and usage as an unknown prefix. Otherwise `hw e 1 2 t/X Due/2026-11-11` would save the title `X Due/2026-11-11` without any error. Other words that are not lowercase stay in the value, and student commands keep every such word, so names such as `Ravi S/O Kumar` still work.
 
 Each prefix is checked in the order it appears: an unknown prefix gives the error described below, and a repeated
 prefix gives `Prefix X must be specified exactly once.` by default. The student `filter` command supplies its
 own repeated-prefix message: `Each filter may only be specified once`.
+
+`homework add`, `homework edit`, `homework marks` and `homework upcoming` also pass a `StrictArgumentTokenizer.RepeatedPrefixRules`, which lists the prefixes whose values are free text (`title/` and `t/`), the prefixes that are aliases of one field (`title/` and `t/`), a function that gives the hint to quote a title holding a given prefix-shaped word, and a function `startsOwnValue` that says whether the text after a prefix starts with a valid value of that prefix. With it, a repeated prefix gives `MESSAGE_PREFIX_GIVEN_ONCE` (`Prefix t/ can be given only once.`) followed by the usage, and giving both aliases gives the caller's alias message (`Use either title/ or t/, not both.`) with the usage. A prefix that directly follows an unquoted free-text value may be part of it, so the tokenizer records it in `TokenizedArguments#prefixesInText`, unless `startsOwnValue` is true for it, and an unknown, wrong-case or repeated prefix there, or the second alias, gets the hint. `HomeworkAddCommandParser#buildRepeatedPrefixRules` builds the rules with today's date, and its `startsOwnValue` is true for `s/` or `due/` whose first word (up to whitespace or a comma) is a subject or a due date that `DueDate#parse` accepts. Such a copy, as `s/MATH` in `hw add 1 t/A s/MATH due/2026-12-01 s/PHYSICS`, is far more likely a field of its own than part of the title, so that command gives `Prefix s/ can be given only once.` and the usage with no hint, while `t/Read s/o notes s/MATH` still gets it, as `o` is not a subject. A repeated prefix gets it when either copy is in the title, as in `t/Revise t/f questions` or `t/Read s/o notes s/MATH`. `homework add` and `homework edit` give the hint `HomeworkAddCommandParser#buildTitleQuoteHint`, so `hw add 1 t/Read s/o notes s/MATH due/2026-12-01` gives `Prefix s/ can be given only once. If s/ is part of the title, put the whole title in straight double quotes, e.g. t/"Read s/o notes".` `homework marks` and `homework upcoming` have no free-text value (`RepeatedPrefixRules#NO_TEXT_OR_ALIAS_PREFIXES`), so they never give a hint. The alias error is reported only after every later prefix has been checked, so an unknown or repeated prefix is reported first.
 
 A caller may also pass a `ValueTokenFilter`, which keeps some prefix-shaped words in the previous value;
 `StudentAddParser` and `EditCommandParser` use `StudentAddParser#isPartOfName` so that names can contain words
@@ -272,16 +279,15 @@ such as `s/o` and `d/o`.
 
 For a quoted value, the tokenizer continues searching for prefixes after the closing quote, so the prefix-shaped words inside the quotes are never treated as prefixes. It also skips the `ValueTokenFilter` for the prefix right after the closing quote, since the quotes have already ended the value. The value is then stripped, its outer quotes are removed, and the text inside them is stripped again, so `t/" Speed in km/h "` gives `Speed in km/h`; quotes and whitespace between words inside it are kept. Empty quotes, or quotes with only whitespace inside, give an empty value, as a prefix with nothing after it does. The caller validates the result like any other value, so quoting works the same way in every command that uses the tokenizer.
 
-For example, with the allowed prefixes `title/`, `t/`, `s/` and `due/` of `hw add`, the value of `t/` in `hw add 1 t/"Read "Hamlet" km/h" s/MATH due/2026-11-02` starts with `"`. The quote before `Hamlet` is followed by `Hamlet`, and the quote after `Hamlet` is followed by ` km/`, which is not an allowed prefix, so neither closes the value. The quote after `km/h` is followed by ` s/`, so it closes the value. The search for prefixes resumes there and finds `s/` and `due/`, and the title is `Read "Hamlet" km/h`. In `hw add 1 t/"Speed in km/h s/MATH due/2026-11-02`, no quote closes the value, so `km/` is read as an unknown prefix and the command is rejected, as it is without quotes.
+For example, with the allowed prefixes `title/`, `t/`, `s/` and `due/` of `hw add`, the value of `t/` in `hw add 1 t/"Read "Hamlet" km/h" s/MATH due/2026-12-02` starts with `"`. The quote before `Hamlet` is followed by `Hamlet`, and the quote after `Hamlet` is followed by ` km/`, which is not an allowed prefix, so neither closes the value. The quote after `km/h` is followed by ` s/`, so it closes the value. The search for prefixes resumes there and finds `s/` and `due/`, and the title is `Read "Hamlet" km/h`. In `hw add 1 t/"Speed in km/h s/MATH due/2026-12-02`, no quote closes the value, so `km/` is read as an unknown prefix and the command is rejected, as it is without quotes.
 
-**Unknown prefixes.** For an unknown prefix, `StrictArgumentTokenizer#buildUnknownPrefixMessage` names the word and keeps the text of the caller's format message from `Usage:` on, on a new line, so the user sees which word is wrong and the command's format:
+**Unknown prefixes.** An unknown prefix is named, and the text of the caller's format message from `Usage:` on follows on a new line, so the user sees which word is wrong and the command's format. If the arguments contain a curly quote (`“` or `”`), a line `Use straight quotes ("), not curly quotes (“ ”).` comes before the usage, as curly quotes never wrap a value. The hint to quote a value depends on the caller:
 
-1. If the word is inside the value of an earlier prefix, it adds a hint to quote that value. The example is that prefix and its text up to the next allowed prefix (after whitespace or directly after a quote) or the end, with the straight or curly quotes at both ends removed so they are not doubled: `hw add 1 t/"Speed in km/h"s/PHYSICS due/2026-11-20` gives `e.g. t/"Speed in km/h".`
-1. The example is left out when the value's text before the word is only digits, date or time punctuation (`- / : . +`) and spaces, such as `due/2026-11-01 x/y`, as quoting a date with a word after it is never what the user meant.
+1. A command with `RepeatedPrefixRules` (the homework commands above) gives the hint of its rules, and only for a word in `prefixesInText`. In `homework add` and `homework edit`, `HomeworkAddCommandParser#buildTitleQuoteHint` gives `MESSAGE_TITLE_QUOTE_HINT` with a fixed example title that holds such a word: `t/"True t/f quiz"` for `t/` or `title/`, `t/"Read s/o notes"` for `s/`, and `t/"Pg 5 w/ answers"` otherwise. So `hw add 1 t/Speed in km/h s/PHYSICS due/2026-12-01` gives `km/ is not a prefix of this command. If km/ is part of the title, put the whole title in straight double quotes, e.g. t/"Pg 5 w/ answers".`, and `hw add 1 t/A s/PHYSICS due/2026-12-01 x/y` gives `x/ is not a prefix of this command.` and the usage only.
+1. Any other command uses `StrictArgumentTokenizer#buildPrefixErrorMessage`, which adds a hint whenever the word is inside the value of an earlier prefix. Its example is that prefix and its text up to the next allowed prefix (after whitespace or directly after a quote) or the end, with the straight or curly quotes at both ends removed so they are not doubled: `filter l/S4 p/123` gives `e.g. l/"S4 p/123".` The example is left out when the value's text before the word is only digits, date or time punctuation (`- / : . +`) and spaces, such as `et/18:00 x/y`, as quoting a time with a word after it is never what the user meant.
 1. If the word comes before any prefix (e.g. `score/` in `hw e 1 2 score/5/10`), there is no quote hint.
-1. If the arguments contain a curly quote (`“` or `”`), a line `Use straight quotes ("), not curly quotes (“ ”).` comes before the usage, as curly quotes never wrap a value.
 
-Text before the first prefix, when the caller does not allow it, still gives the caller's own format message. `homework add` and `homework edit` check, after tokenizing, that `title/` and its alias `t/` are not both given (`HomeworkAddCommandParser#validateTitlePrefixes`, `Use either title/ or t/, not both.`), so an unknown prefix anywhere in the input is reported first.
+Text before the first prefix, when the caller does not allow it, still gives the caller's own format message. The homework parsers check the words before the first prefix themselves and report a wrong number of words with `ParserUtil#formatUnexpectedWords`, e.g. `Expected STUDENT_INDEX HOMEWORK_INDEX, but found 3 words (1 1 1).` followed by the usage. `homework add` and `homework edit` reject `title/` and its alias `t/` given together through the rules of `HomeworkAddCommandParser#buildRepeatedPrefixRules`, as described above.
 
 #### Design considerations:
 
@@ -506,7 +512,7 @@ recovery path. See the [logging guide](Logging.md) for diagnostic conventions.
 
 Homework is managed with eight subcommands of `homework` (short form `hw`): `add`, `list`, `upcoming`, `edit`, `marks`, `delete`, `filter` and `status`. This section covers what they share. `filter` and `status` are described in [Filtering homework](#filtering-homework) and [Updating homework completion](#updating-homework-completion).
 
-**Parsing.** `AddressBookParser` passes everything after `homework` or `hw` to `HomeworkCommandParser`. It reads the next word as the subcommand and passes the rest to that subcommand's parser: for `hw del 1 2`, `HomeworkDeleteCommandParser` gets `1 2`. So `AddressBookParser` needs only one case for all homework commands, and a new subcommand only needs a new case in `HomeworkCommandParser`. The subcommand parsers split their arguments with `StrictArgumentTokenizer` (see [Splitting arguments at prefixes](#splitting-arguments-at-prefixes)), which rejects unknown and repeated prefixes. Parsers that need today's date get it from a `java.time.Clock` passed down from `AddressBookParser`, so tests can fix the date.
+**Parsing.** `AddressBookParser` passes everything after `homework` or `hw` to `HomeworkCommandParser`. It reads the next word as the subcommand and passes the rest to that subcommand's parser: for `hw del 1 2`, `HomeworkDeleteCommandParser` gets `1 2`. For every subcommand except `filter` and `status`, it first replaces each Unicode space separator (`\p{Zs}`, such as the no-break space U+00A0) in the rest with an ordinary space, so that text copied from a web page splits into words as typed; the subcommand must still be followed by an ordinary space. A missing subcommand gives `HomeworkCommandParser#MESSAGE_MISSING_SUBCOMMAND`, and any other word gives `MESSAGE_UNKNOWN_SUBCOMMAND`, which names the word and lists the subcommands, e.g. `rm is not a homework subcommand. Use add, list|ls, upcoming|up, edit|e, marks|m, delete|del, filter or status.` A subcommand in capitals gets a hint to type it in lowercase instead. Command words are case-sensitive, so `HW` reaches the default branch of `AddressBookParser#parseCommand`; there, `HomeworkCommandParser#checkCommandWordCase` turns `Unknown command.` into `Command words are lowercase: type hw, not HW.` for `homework` or `hw` in any other case. Other unknown words, such as `LIST`, still give `Unknown command.` So `AddressBookParser` needs only one case for all homework commands, and a new subcommand only needs a new case in `HomeworkCommandParser`. The subcommand parsers split their arguments with `StrictArgumentTokenizer` (see [Splitting arguments at prefixes](#splitting-arguments-at-prefixes)), which rejects unknown and repeated prefixes. Parsers that need today's date get it from a `java.time.Clock` passed down from `AddressBookParser`, so tests can fix the date.
 
 **How homework is stored.** Each `Student` keeps its own homework records in a list, in the order they were added. The class diagram below shows the fields of a `Homework` and the methods that commands use to change homework. `Title`, `DueDate` and `Score` are small classes that each check their own value, and `TuitionSubject` and `HomeworkStatus` are enums. A record has at most one score.
 
@@ -532,18 +538,23 @@ Homework is managed with eight subcommands of `homework` (short form `hw`): `add
 
 ### Adding homework
 
-`homework add STUDENT_INDEX t/TITLE s/SUBJECT due/DATE` adds a record to the end of the student's list, so it gets the next homework index. The activity diagram below shows its checks in order. `HomeworkAddCommandParser` checks the input, `HomeworkAddCommand` checks the student, the subject and duplicates, and `LogicManager` saves. If a check fails, the error is shown and nothing is changed.
+`homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD` adds a record to the end of the student's list, so it gets the next homework index. The activity diagram below shows its checks in order. `HomeworkAddCommandParser` checks the input, `HomeworkAddCommand` checks the student, the subject and duplicates, and `LogicManager` saves. If a check fails, the error is shown and nothing is changed.
+
+`HomeworkAddCommandParser#parseSubject`, which `homework edit` also uses, names a value that is not a subject (`MESSAGE_NOT_SUBJECT`, e.g. `BIOLOGY is not a subject. Subject must be one of: MATH, PHYSICS, CHEMISTRY.`) and says when the value is empty (`MESSAGE_SUBJECT_EMPTY`). If `s/` directly follows an unquoted title and its first word is not a subject (it is in `TokenizedArguments#prefixesInText`), and the value has more than one word, the rest of a title such as `t/Read s/o notes` was probably read as the subject, so it adds the quote hint `If s/ is part of the title, put the whole title in straight double quotes, e.g. t/"Read s/o notes".` A one-word value such as `BIOLOGY` is more likely a mistyped subject, and gets no hint. So does a value that starts with a subject, such as `MATH PHYSICS` or `MATH, PHYSICS`, which is more likely a list of subjects than the rest of a title.
 
 <img src="images/HomeworkAddActivityDiagram.png" width="800" alt="The checks of homework add, in order" />
 
-Two records are the same (`Homework#isSameHomework`) if they have the same title ignoring case, the same subject and the same due date. Score and status do not count. For example, on 2026-10-28 with the sample students:
+Two records are the same (`Homework#isSameHomework`) if they have the same title ignoring case, the same subject and the same due date. Score and status do not count. For example, on 2026-11-06 with the sample students:
 
 ```
 hw add 2 t/Rates of reaction s/CHEMISTRY due/11-20         → added, due 2026-11-20
-hw add 2 t/rates of REACTION s/CHEMISTRY due/2026-11-20    → This homework already exists for the selected student.
+hw add 2 t/rates of REACTION s/CHEMISTRY due/2026-11-20    → This homework already exists for Priya Nair (82345671):
+                                                             4. Rates of reaction (CHEMISTRY) - due 2026-11-20 - score Not recorded - status ASSIGNED
 ```
 
-**Title.** `Title` tidies the text before checking it. It converts the text to Unicode NFC, turns each run of whitespace into one space and trims both ends. NFC stores characters that look the same in one way: `é` can be typed as one character or as `e` plus an accent, and NFC makes both the same. So the duplicate check treats them as one title, and the title is saved in NFC. The title must then have 1 to 100 characters, each a letter, number, punctuation mark, symbol or space.
+`HomeworkCommandUtil#requireSubjectTaken` and `HomeworkCommandUtil#requireNoSameHomework` make these checks for both `homework add` and `homework edit`. The errors name the student, and the subjects the student takes (e.g. `Priya Nair (82345671) does not take PHYSICS. They take MATH, CHEMISTRY.`) or the existing record with its homework index, so the tutor can see what to change without listing the homework first.
+
+**Title.** `Title` tidies the text before checking it. It converts the text to Unicode NFC, turns each run of whitespace into one space and trims both ends. NFC stores characters that look the same in one way: `é` can be typed as one character or as `e` plus an accent, and NFC makes both the same. So the duplicate check treats them as one title, and the title is saved in NFC. The title must then have 1 to 100 characters, each a letter, number, punctuation mark, symbol or space. The error names the rule that failed: `Title#MESSAGE_TOO_LONG` gives the length, and `Title#MESSAGE_UNSUPPORTED_CHARACTER` names the first unsupported character by its code and Unicode name, e.g. `U+FE0F (VARIATION SELECTOR-16)`, as an invisible character cannot be seen. An empty title gets `Title#MESSAGE_EMPTY` (`The homework title is empty. Enter 1 to 100 characters.`). The data file gives the same messages, except that an empty title there gets `Title#MESSAGE_CONSTRAINTS` (see [Storage component](#storage-component)).
 
 This allowlist works like the one in `StudentName`. It rejects invisible characters such as the zero-width space wherever they are. So a title made only of them is rejected (Issue #139), and `Alge<zero-width space>bra drill` is rejected instead of being saved next to `Algebra drill` as a different title. As a result, emoji built with invisible joining characters (e.g. ❤️ and 👨‍👩‍👧) and letters that need a separate combining mark (e.g. many Tamil and Hindi letters) are rejected, as in student names. Single emoji such as 😀 are accepted. A data file with a title that breaks the rule does not load.
 
@@ -553,21 +564,21 @@ Alternatives considered:
 * A denylist of invisible characters (the previous design): rejected, as it needed several lists of special characters and still accepted invisible characters inside a title.
 * Printable ASCII only: rejected, as accented titles such as `Café` would be rejected, titles would be stricter than student names, and data files with such titles would no longer load.
 
-**Due date.** `DueDate#parse` accepts `YYYY-MM-DD` or the short form `MM-DD`. For `MM-DD`, it picks this year, or next year if the date has already passed this year. For example, on 2026-10-28, `11-20` means 2026-11-20 and `10-01` means 2027-10-01. `02-29` is rejected, with a hint to type the full date, when no 29 February falls in the next 12 months. The error says what is wrong: an empty date, input in neither format, a year outside 2000 to 2099, or a date that does not exist (e.g. `2026-02-30 is not a real calendar date.`). `homework add`, `homework edit` and `homework filter` show these messages unchanged. The data file is read with `DueDate#parseFullDate`, which accepts only `YYYY-MM-DD`, so the year of a saved date is never guessed.
+**Due date.** `DueDate#parse` accepts `YYYY-MM-DD` or the short form `MM-DD`. For `MM-DD`, it picks this year, or next year if the date has already passed this year. For example, on 2026-11-06, `11-20` means 2026-11-20 and `10-01` means 2027-10-01. `02-29` follows the same rule, so it is rejected, with a hint to type the full date, when this year has no 29 February still to come and next year is not a leap year. For example, on 2027-01-01, `02-29` means 2028-02-29. The error says what is wrong: an empty date, input in neither format, a year outside 2000 to 2099, or a date that does not exist (e.g. `2026-02-30 is not a real calendar date.`). `homework add`, `homework edit` and `homework filter` show these messages unchanged. The data file is read with `DueDate#parseFullDate`, which accepts only `YYYY-MM-DD`, so the year of a saved date is never guessed.
 
 The year range is fixed (2000 to 2099) to catch typos such as `2206` or `0001`. A range based on today (e.g. 10 years either way) was rejected: a data file that loads today would stop loading a few years later.
 
 ### Listing a student's homework
 
-`homework list STUDENT_INDEX [all]` shows one student's homework. Without `all`, it shows only the records due today or later; with `all`, it also shows overdue records. It sorts the records by due date, keeping records due on the same date in the order they were added, and shows each with its homework index. It only reads data, so nothing is saved.
+`homework list STUDENT_INDEX [all]` shows one student's homework. Without `all`, it shows only the records due today or later; with `all`, it also shows the records due before today. It sorts the records by due date, keeping records due on the same date in the order they were added, and shows each with its homework index. It only reads data, so nothing is saved. A second word other than `all` gives `HomeworkListCommandParser#MESSAGE_SECOND_WORD_NOT_ALL`, e.g. `The word after STUDENT_INDEX can only be all, but found alll.`, or `MESSAGE_ALL_NOT_LOWERCASE` for `all` in another case, each followed by the usage.
 
-Because the numbers are homework indices, not row numbers, they can start above 1 or have gaps. For example, on 2026-10-28 Priya Nair's first record is overdue, so `hw ls 2` shows these records:
+Because the numbers are homework indices, not row numbers, they can start above 1 or have gaps. For example, on 2026-11-06 Priya Nair's first record is due before today, so `hw ls 2` shows these records:
 
 ```
-Listed 2 upcoming homework records for Priya Nair (1 record due before today not shown; use homework list 2 all to see it).
-Homework for Priya Nair:
-2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-02 - score Not recorded - status ASSIGNED
-3. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-09 - score Not recorded - status ASSIGNED
+Listed 2 upcoming homework records for Priya Nair (82345671) (1 record due before today not shown; use homework list 2 all to see it).
+Homework for Priya Nair (82345671):
+2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-09 - score Not recorded - status ASSIGNED
+3. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-23 - score Not recorded - status ASSIGNED
 ```
 
 So that a gap does not look like a bug, the first line says how many records due before today are left out and names the command that lists them, with the `STUDENT_INDEX` the user typed. `homework edit` and `homework delete` show the same list, so they pass their own `STUDENT_INDEX` to `HomeworkListCommand#formatHomeworkList`.
@@ -580,12 +591,11 @@ The activity diagram below shows these steps.
 
 `homework upcoming [due/DAYS]` lists the homework of every student that is due from today to `DAYS` days after today (7 days if `due/` is not given), sorted by due date. It goes through the whole roster, not only the students shown, and starts each line with `Student N:`, where `N` is the student's `STUDENT_INDEX`. The index tells apart two students with the same name, and the tutor can type it into `homework list`. For that, `N` must match the student list on screen, so after building the result the command shows the full roster again, as `list` does (e.g. after a `search`). If an internal error stops the command, the displayed list stays as it was.
 
-For example, on 2026-10-28 with the sample students, `hw up due/3` shows:
+For example, on 2026-11-06 with the sample students, `hw up due/3` shows:
 
 ```
-Found 2 homework records due from 2026-10-28 to 2026-10-31.
-Student 1: Ethan Lim; Kinematics practice set; PHYSICS; Due: 2026-10-28; Score: Not recorded; Status: ASSIGNED
-Student 3: Marcus Tan; Algebraic expansion worksheet; MATH; Due: 2026-10-30; Score: Not recorded; Status: ASSIGNED
+Found 1 homework record due from 2026-11-06 to 2026-11-09.
+Student 2: Priya Nair (82345671); Organic reaction pathways map; CHEMISTRY; Due: 2026-11-09; Score: Not recorded; Status: ASSIGNED
 ```
 
 The sequence diagram below shows how `hw up due/3` builds this result.
@@ -597,28 +607,32 @@ The sequence diagram below shows how `hw up due/3` builds this result.
 `homework delete STUDENT_INDEX HOMEWORK_INDEX` removes one record, and every later record of the student moves up by one. So a second delete that uses the original index may remove the wrong record. For example, `hw ls 2 all` shows Priya Nair's three records:
 
 ```
-1. Integration by parts exercise (MATH) - due 2026-10-26 - ...
-2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-02 - ...
-3. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-09 - ...
+1. Integration by parts exercise (MATH) - due 2026-11-02 - ...
+2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-09 - ...
+3. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-23 - ...
 ```
 
 After `hw del 2 1`, the map is homework 1 and the past paper is homework 2. If the tutor then types `hw del 2 2` to delete the map, reading from the old list, the past paper is deleted instead.
 
-To make this easy to notice, the result shows the deleted record with the number it had, its score and its status, in the `homework list` layout (`HomeworkListCommand#formatHomeworkLine`). It then shows the student's upcoming homework with the new numbers (`HomeworkListCommand#formatHomeworkList`), as `homework edit` does. `HomeworkDeleteCommand` gets today's date for that list from its parser's `Clock`. `homework add`, `homework edit` and `homework marks` show the changed record in their own layouts.
+To make this easy to notice, the result shows the deleted record with the number it had, its score and its status, in the `homework list` layout (`HomeworkListCommand#formatHomeworkLine`). It then shows the student's upcoming homework with the new numbers (`HomeworkListCommand#formatHomeworkList`), as `homework edit` does. `HomeworkDeleteCommand` gets today's date for that list from its parser's `Clock`. `homework add` shows the new record in the same layout, so the user sees its homework index, and `homework edit` and `homework marks` show the changed record in their own layouts.
 
-The object diagram below shows the same `hw del 2 1`. As `Student` is immutable, a new `Student` object replaces the old one, while the two remaining `Homework` objects are the same objects, now at positions 1 and 2.
+The object diagrams below show the same `hw del 2 1`. Before the delete, Priya Nair's homework list holds three records:
 
-<img src="images/HomeworkIndexObjectDiagram.png" width="750" alt="Homework indices before and after deleting a student's first homework" />
+<img src="images/HomeworkIndexBeforeObjectDiagram.png" width="500" alt="Priya Nair's three homework records before deleting her first homework" />
+
+After the delete, as `Student` is immutable, a new `Student` object replaces the old one, while the two remaining `Homework` objects are the same objects, now at positions 1 and 2:
+
+<img src="images/HomeworkIndexAfterObjectDiagram.png" width="500" alt="Priya Nair's two remaining homework records after deleting her first homework" />
 
 For how a homework command runs through the `Logic`, `Model` and `Storage` components, see the `hw del 1 2` sequence diagram in [Logic component](#logic-component).
 
 ### Editing homework and recording marks
 
-`homework edit STUDENT_INDEX HOMEWORK_INDEX [t/TITLE] [s/SUBJECT] [due/DATE]` changes any of a record's title, subject and due date (`HomeworkEditCommand.EditHomeworkDescriptor#applyTo`). Fields that are not given keep their values, and the record keeps its homework index, score and status. Like `homework add`, it rejects a subject the student does not take and a record that would be the same as another of the student's records. It also rejects an edit that changes nothing: running `hw e 2 2 due/11-05` a second time gives `No changes made; the supplied values are identical to the existing homework details.`
+`homework|hw edit|e STUDENT_INDEX HOMEWORK_INDEX [title/|t/TITLE] [s/SUBJECT] [due/YYYY-MM-DD|MM-DD]` changes any of a record's title, subject and due date (`HomeworkEditCommand.EditHomeworkDescriptor#applyTo`). Fields that are not given keep their values, and the record keeps its homework index, score and status. Like `homework add`, it rejects a subject the student does not take and a record that would be the same as another of the student's records (`This edit would make the homework the same as another homework for NAME (PHONE):` followed by that record). If `due/` sets a date before today, the result ends with the same note as `homework add` (`HomeworkAddCommand#MESSAGE_DUE_BEFORE_TODAY`), as the list of upcoming homework shown after the edit leaves the record out. It also rejects an edit that changes nothing: running `hw e 2 2 due/11-05` a second time gives `No changes made; the supplied values are identical to the existing homework details.`
 
-`homework marks STUDENT_INDEX HOMEWORK_INDEX score/[SCORE]` records a score, or clears it when `SCORE` is left empty. It does not change the status, so a record with a score can still be `ASSIGNED`.
+`homework|hw marks|m STUDENT_INDEX HOMEWORK_INDEX score/[SCORE]` records a score, or clears it when `SCORE` is left empty. It does not change the status, so a record with a score can still be `ASSIGNED`.
 
-**Score.** A `Score` is either just the marks (e.g. `17`) or the marks out of a total (e.g. `5/10`). It is kept as typed (`5/10` is not simplified) and saved as text, e.g. `"17"` or `"5/10"`. `Score#parse` checks the format before the size of the numbers. So a number with leading zeroes, such as `05/10`, gets `Score#MESSAGE_LEADING_ZEROES`, even when it is also too large (`02147483648`) or more than the total (`011/10`). Input that is also wrong in another way, such as `-05`, gets `Score#MESSAGE_CONSTRAINTS`.
+**Score.** A `Score` is either just the marks (e.g. `17`) or the marks out of a total (e.g. `5/10`). It is kept as typed (`5/10` is not simplified) and saved as text, e.g. `"17"` or `"5/10"`. `Score#parse` checks the format before the size of the numbers. So a number with leading zeroes, such as `05/10`, gets `Score#MESSAGE_LEADING_ZEROES`, even when it is also too large (`02147483648`) or more than the total (`011/10`). Input that is also wrong in another way, such as `-05`, gets `Score#MESSAGE_INVALID_FORMAT`. Otherwise the message names the rule that failed: `Score#MESSAGE_INVALID_FORMAT` for a score in neither form (e.g. `5.5/10`), `Score#MESSAGE_TOO_LARGE`, `Score#MESSAGE_TOTAL_TOO_SMALL` (`Total marks must be at least 1.`) or `Score#MESSAGE_MARKS_ABOVE_TOTAL` (e.g. `Marks obtained (11) must not be more than the total marks (10).`).
 
 The sequence diagram below shows `hw m 2 1 score/8/10`, which records 8 out of 10 for Priya Nair's first homework.
 
@@ -691,7 +705,13 @@ On success, the command replaces the original at its insertion position in a cop
 
 `LogicManager#execute` saves the data after every command that changes it. If saving fails, it puts back the data and the displayed student list as they were before the command, so the app never shows a change that is not in the data file.
 
-`JsonAddressBookStorage` records the bytes of each successfully loaded or saved file, including whether it was missing. Before saving, it acquires a short-lived OS lock on a companion `.lock` file and compares the data file with that recorded version. The lock serializes the version check and atomic replacement across cooperating processes. A stale writer is rejected without replacing newer data; `LogicManager` restores the pre-command model and reports that the user must restart to load the latest file. A busy writer reports that the command can be retried. Reading data does not create or acquire a write lock, so read-only commands and loading from a read-only folder remain possible. The empty lock file stays beside the data file so every writer continues to lock the same file.
+`JsonAddressBookStorage` records the bytes of each successfully loaded or saved file, including whether it was missing. Before saving, it acquires a short-lived OS lock on a companion `.lock` file and compares the data file with that recorded version. The lock serializes the version check and atomic replacement across cooperating processes. A stale writer is rejected without replacing newer data; `LogicManager` restores the pre-command model and reports that the user must restart to load the latest file. A busy writer reports that the command can be retried. Reading data does not create or acquire a write lock, so read-only commands and loading from a read-only folder remain possible. The empty lock file stays beside the data file so every writer continues to lock the same file. If the data file is a symbolic link, the lock file is beside the file at the end of the link, found with `FileUtil#resolveSymbolicLinks` as for writing, even if that file does not exist yet. Two links to the same file, or a link and the file's own path, therefore share one lock, and the version check and replacement of one save cannot interleave with another's. Messages still name the data file as configured, e.g. `data/tutorflow.json`, and `LogicManager#describeSaveFailure` checks the same lock file that the save used.
+
+The stale writer gets `DataFileConflictException#MESSAGE_CHANGED` (`Another program or copy of TutorFlow changed data/tutorflow.json after this copy last loaded or saved it. Restart TutorFlow before making changes. No data was changed.`), and the busy writer gets `DataFileConflictException#MESSAGE_BUSY` (`Another copy of TutorFlow is saving data/tutorflow.json. Try again. No data was changed.`). Both name the file and say "program or copy" or "copy", as the user may not know that a second copy of TutorFlow is open.
+
+`FileUtil#writeToFile` writes a temporary file and moves it onto the data file, so a failed write never leaves a half-written file. If the data file is a symbolic link, `FileUtil#resolveSymbolicLinks` follows it, and any chain of links (each relative to its link's folder, at most 40, so a loop ends with `Too many levels of symbolic links`), to the file at the end. The temporary file is written next to that file and moved onto it, whether or not it exists, so the link is kept and the data reaches the file the user linked to, also when that file is missing at startup or deleted while TutorFlow is open. If that file's folder does not exist, the save fails and the link is left as it is, rather than replaced by a regular file that the user's synced folder would never see. If saving fails because the data file can be written but not read, `LogicManager#describeSaveFailure` reports `Messages#MESSAGE_SAVE_CAUSE_UNREADABLE_FILE` (`the file cannot be read (no permission)`) instead of the system's text.
+
+A data file that was loaded or saved but is now missing, for example because the user deleted it while TutorFlow is open, is written again from the data in memory, as in AB3, instead of being treated as changed; otherwise every later change would be refused and the session's data lost on restart. A data file that was missing when TutorFlow started but exists now was created by another program or copy, so the save is refused with `DataFileConflictException#MESSAGE_CREATED`, which names the file, e.g. `Another program or copy of TutorFlow created data/tutorflow.json after this copy started. Restart TutorFlow before making changes. No data was changed.`
 
 The activity diagram below shows these steps for a command that succeeds. If the command throws an exception, `LogicManager` passes it on and saves nothing.
 
@@ -700,7 +720,7 @@ The activity diagram below shows these steps for a command that succeeds. If the
 1. Before the command runs, `LogicManager` copies the current data (`new AddressBook(model.getAddressBook())`). The copy is cheap: `Student` and `Homework` are immutable, so only the list is copied, not the students. It also records which students are shown, in their current order (`Model#getStudentList()`), and the search or filter that selects them (`Model#getFilteredStudentListPredicate()`).
 1. After the command succeeds, `LogicManager` compares the data with the copy. If they are equal, the command changed nothing (e.g. `homework list`, `homework upcoming`, `help`, `exit`, or `clear` with no students), so nothing is saved.
 1. Otherwise, `LogicManager` calls `Storage#saveAddressBook`. If this throws an `IOException`, `LogicManager#restoreModel` puts back the copy (`Model#setAddressBook`), the search or filter (`Model#updateFilteredStudentList`) and the display order (`Model#setStudentListOrder`). `LogicManager` then throws a `CommandException` with the save-failure message described in the next two steps, or, for a `DataFileConflictException`, with the conflict's own message. Restoring the data alone is not enough, because `StudentDisplayList` remembers display positions, not students, when the whole roster is replaced. Without the other two, a failed `delete` after a `sort` would shift the students below the deleted one, a failed `clear` would lose the sort, and a failed `add` would show every student instead of the earlier search result.
-1. The message names the data file and the likely cause, e.g. `Could not save data/tutorflow.json: it is a folder, not a file. Nothing was changed.` The file name (`shownName`) is the one the user knows: relative to the app's home folder (see `AppHomeUtil` in [Storage component](#storage-component)), or the absolute path if the file is outside it. The cause comes from `LogicManager#describeSaveFailure`, which checks the file system for common causes, such as `the file is read-only` or `the data folder is read-only`, and otherwise uses the exception's own text. It checks the file system and not the exception, as the exception may be about another file, such as the `.lock` file next to the data file.
+1. The message names the data file and the likely cause, e.g. `Could not save data/tutorflow.json: it is a folder, not a file. Nothing was changed.` The file name (`shownName`) is the one the user knows: relative to the app's home folder (see `AppHomeUtil` in [Storage component](#storage-component)), or the absolute path if the file is outside it. The cause comes from `LogicManager#describeSaveFailure`, which checks the file system for common causes, such as `the file is read-only`, `the data folder is read-only` or `the lock file data/tutorflow.json.lock is read-only`, and otherwise uses the exception's own text. For a data file that is a symbolic link, it checks the folder of the file at the end of the link: `the folder gone does not exist` (`Messages#MESSAGE_SAVE_CAUSE_MISSING_FOLDER`) or `the folder synced is read-only`. A folder above the data file that is a link to a missing folder gives `data links to a folder that does not exist` (`Messages#MESSAGE_SAVE_CAUSE_BROKEN_FOLDER_LINK`). It checks the file system and not the exception, as the exception may be about another file, such as the `.lock` file next to the data file, and its text may be only that file's path.
 1. `Command#getSaveFailureMessage(shownName, cause)` fills the name and cause into the format from `Command#getSaveFailureFormat`, which is `Messages#MESSAGE_SAVE_FAILURE` by default. Commands that want their own wording override `getSaveFailureFormat` to return their own `MESSAGE_SAVE_FAILURE`: the homework commands that change data (`HomeworkAddCommand`, `HomeworkEditCommand`, `HomeworkMarksCommand`, `HomeworkDeleteCommand`, `HomeworkStatusCommand`), `DeleteCommand`, `EditCommand`, `LessonAddCommand`, `LessonEditCommand` and `LessonDeleteCommand`. For example, a failed `hw add` shows `The homework could not be added because TutorFlow could not save data/tutorflow.json: the data folder is read-only. No homework data was changed.` So a new command that needs its own message only overrides `getSaveFailureFormat`, and the name and cause are filled in the same way for every command.
 
 #### Design considerations:
@@ -765,7 +785,7 @@ Priorities: High (must-have) - `* * *`, Medium (should-have) - `* *`, Low (nice-
 | US07 | `* * *` | independent tutor | view all regular lessons in weekday-and-time order | understand my overall teaching schedule |
 | US08 | `* * *` | independent tutor | delete a regular lesson | remove lessons that no longer take place |
 | US09 | `* * *` | independent tutor | be prevented from adding an overlapping regular lesson | avoid double-booking myself |
-| US10 | `* * *` | independent tutor | reopen TutorFlow and recover my student and lesson records | avoid entering them again |
+| US10 | `* * *` | independent tutor | reopen TutorFlow and find my students, their homework and their regular lessons as I left them | avoid entering them again |
 | US11 | `* *` | independent tutor | search for a student by name | find the student's record quickly |
 | US12 | `* *` | independent tutor | filter students by academic level | focus on students at a particular stage of study |
 | US13 | `* *` | independent tutor | filter students by subject | find the students whom I teach a particular subject |
@@ -858,15 +878,21 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
 1. Tutor requests to list a student's homework.
 2. TutorFlow displays the student's upcoming homework, each with its homework index.
 3. Tutor requests to edit one homework record of the student using its homework index, specifying a new title, subject or due date.
-4. TutorFlow updates the homework record, keeping its homework index and score, and displays it together with the student's upcoming homework.
+4. TutorFlow updates the homework record, keeping its homework index, score and completion status, and displays it together with the student's upcoming homework.
 5. Use case ends.
 
 **Extensions**
 
-* 2a. The homework to edit is overdue, so it is not displayed.
+* 1a. The supplied student index does not identify a displayed student.
+  * 1a1. TutorFlow displays an error.
+  * 1a2. Use case resumes at step 1.
+* 2a. The homework to edit is due before today, so it is not displayed.
   * 2a1. Tutor requests to list all of the student's homework.
-  * 2a2. TutorFlow displays all of the student's homework, including overdue homework, each with its homework index.
+  * 2a2. TutorFlow displays all of the student's homework, including homework due before today, each with its homework index.
   * 2a3. Use case resumes at step 3.
+* 2b. The student has no homework.
+  * 2b1. TutorFlow informs the tutor that the student has no homework.
+  * 2b2. Use case ends.
 * 3a. The supplied student index or homework index does not identify a homework record.
   * 3a1. TutorFlow displays an error.
   * 3a2. Use case resumes at step 3.
@@ -874,35 +900,41 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
   * 3b1. TutorFlow displays the relevant error.
   * 3b2. Use case resumes at step 3.
 * 3c. The student does not take the new subject.
-  * 3c1. TutorFlow rejects the edit and displays an error.
+  * 3c1. TutorFlow rejects the edit and displays an error that lists the subjects the student takes.
   * 3c2. Use case resumes at step 3.
 * 3d. The new details are identical to the existing details.
   * 3d1. TutorFlow informs the tutor that no changes were made.
   * 3d2. Use case ends.
 * 3e. The edited homework would duplicate another homework record of the student.
-  * 3e1. TutorFlow rejects the edit and informs the tutor.
-  * 3e2. Use case ends.
+  * 3e1. TutorFlow rejects the edit and displays the other homework record with its homework index.
+  * 3e2. Use case resumes at step 3.
 * 4a. TutorFlow cannot save the updated data.
   * 4a1. TutorFlow leaves the homework unchanged.
   * 4a2. TutorFlow informs the tutor that no homework data was changed, naming the data file and the likely cause.
   * 4a3. Use case ends.
+* 4b. The new due date is before today.
+  * 4b1. TutorFlow also notes that the student's homework list shows this homework only when all of the student's homework is listed.
+  * 4b2. Use case ends.
 
 #### Use case: UC04 - Record homework marks
 
 **MSS**
 
-1. Tutor finds the homework index of the homework record, as in steps 1 and 2 of UC03 (including extension 2a for overdue homework).
+1. Tutor finds the homework index of the homework record, as in steps 1 and 2 of UC03 (including extension 2a for homework due before today).
 2. Tutor requests to record the marks of one homework record of the student using its homework index, specifying the marks obtained, optionally together with the total marks.
 3. TutorFlow records the score, replacing any score recorded before, and displays the homework record with its score.
 4. Use case ends.
 
 **Extensions**
 
+* 1a. The student has no homework.
+  * 1a1. TutorFlow informs the tutor that the student has no homework.
+  * 1a2. Use case ends.
 * 2a. The supplied student index or homework index does not identify a homework record.
   * 2a1. TutorFlow displays an error.
   * 2a2. Use case resumes at step 2.
 * 2b. The score is invalid, for example the marks obtained exceed the total marks.
-  * 2b1. TutorFlow displays the score format and its rules.
+  * 2b1. TutorFlow displays an error that says what is wrong with the score.
   * 2b2. Use case resumes at step 2.
 * 2c. The homework already has this score.
   * 2c1. TutorFlow informs the tutor that no changes were made.
@@ -913,17 +945,17 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
 * 2e. The tutor leaves the score empty, but the homework has no recorded marks.
   * 2e1. TutorFlow informs the tutor that no changes were made.
   * 2e2. Use case ends.
-* 3a. TutorFlow cannot save the updated data.
+* 3a. TutorFlow cannot save the updated data, after recording the score in step 3 or clearing it in step 2d1.
   * 3a1. TutorFlow leaves the score unchanged.
   * 3a2. TutorFlow informs the tutor that no homework data was changed, naming the data file and the likely cause.
   * 3a3. Use case ends.
 
-#### Use case: UC05 - List upcoming homework of all students
+#### Use case: UC05 - List the homework of all students due in the next few days
 
 **MSS**
 
 1. Tutor requests to list the homework of all students that is due within a number of days from today.
-2. TutorFlow displays that homework, earliest due date first, with each record's student index and name, title, subject, due date, score and status, and shows all students in the student list again.
+2. TutorFlow displays that homework, earliest due date first, with each record's student index and name, title, subject, due date, score and status.
 3. Use case ends.
 
 **Extensions**
@@ -934,14 +966,85 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
 * 1b. The number of days is invalid.
   * 1b1. TutorFlow displays an error.
   * 1b2. Use case resumes at step 1.
+* 1c. The tutor gives a date instead of a number of days.
+  * 1c1. TutorFlow displays an error that says the value is a number of days, not a date.
+  * 1c2. Use case resumes at step 1.
 * 2a. No homework is due in that period.
   * 2a1. TutorFlow informs the tutor that no homework is due in that period.
   * 2a2. Use case ends.
 * 2b. The tutor wants to edit, score or delete one of the displayed records.
-  * 2b1. Tutor requests to list the homework of the student with the displayed student index to find the record's homework index, as the displayed order is not the homework index (see UC03 and UC04).
+  * 2b1. Tutor requests to list the homework of the student with the displayed student index to find the record's homework index, as the displayed order is not the homework index (see UC03, UC04 and UC07).
   * 2b2. Use case ends.
 
-#### Use case: UC06 - Delete a student
+#### Use case: UC06 - Add homework to a student
+
+**MSS**
+
+1. Tutor requests to list students.
+2. TutorFlow displays the students with their displayed indices.
+3. Tutor requests to add homework to one displayed student, specifying the title, subject and due date.
+4. TutorFlow adds the homework to the end of the student's homework list and confirms its details and its homework index.
+5. Use case ends.
+
+**Extensions**
+
+* 2a. The student roster is empty.
+  * 2a1. TutorFlow informs the tutor that no students were found.
+  * 2a2. Use case ends.
+* 3a. The supplied student index does not identify a displayed student.
+  * 3a1. TutorFlow displays an error.
+  * 3a2. Use case resumes at step 3.
+* 3b. A detail is missing or invalid, for example the due date is not a real calendar date.
+  * 3b1. TutorFlow displays the relevant error.
+  * 3b2. Use case resumes at step 3.
+* 3c. The due date is given without a year.
+  * 3c1. TutorFlow uses this year, or next year if the date has already passed this year, and states the year it used.
+  * 3c2. Use case resumes at step 4.
+* 3d. The student does not take the subject.
+  * 3d1. TutorFlow rejects the homework and displays an error that lists the subjects the student takes.
+  * 3d2. Use case resumes at step 3.
+* 3e. The student already has homework with the same title (ignoring case), subject and due date.
+  * 3e1. TutorFlow informs the tutor that the homework already exists and displays it with its homework index.
+  * 3e2. Use case resumes at step 3.
+* 4a. TutorFlow cannot save the updated data.
+  * 4a1. TutorFlow leaves the student's homework unchanged.
+  * 4a2. TutorFlow informs the tutor that no homework data was changed, naming the data file and the likely cause.
+  * 4a3. Use case ends.
+* 4b. The due date is before today.
+  * 4b1. TutorFlow also notes that the student's homework list shows this homework only when all of the student's homework is listed.
+  * 4b2. Use case ends.
+
+#### Use case: UC07 - Delete a homework record
+
+**MSS**
+
+1. Tutor requests to list a student's homework.
+2. TutorFlow displays the student's upcoming homework, each with its homework index.
+3. Tutor requests to delete one homework record of the student using its homework index.
+4. TutorFlow deletes the homework record, displays it with the homework index it had, and displays the student's upcoming homework with the updated homework indices.
+5. Use case ends.
+
+**Extensions**
+
+* 1a. The supplied student index does not identify a displayed student.
+  * 1a1. TutorFlow displays an error.
+  * 1a2. Use case resumes at step 1.
+* 2a. The student has no homework.
+  * 2a1. TutorFlow informs the tutor that the student has no homework.
+  * 2a2. Use case ends.
+* 2b. The homework to delete is due before today, so it is not displayed.
+  * 2b1. Tutor requests to list all of the student's homework.
+  * 2b2. TutorFlow displays all of the student's homework, including homework due before today, each with its homework index.
+  * 2b3. Use case resumes at step 3.
+* 3a. The supplied student index or homework index does not identify a homework record.
+  * 3a1. TutorFlow displays an error.
+  * 3a2. Use case resumes at step 3.
+* 4a. TutorFlow cannot save the updated data.
+  * 4a1. TutorFlow keeps the homework record.
+  * 4a2. TutorFlow informs the tutor that no homework data was changed, naming the data file and the likely cause.
+  * 4a3. Use case ends.
+
+#### Use case: UC08 - Delete a student
 
 **MSS**
 
@@ -964,7 +1067,7 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
   * 4a2. TutorFlow reports that no student data was changed and explains the save error.
   * 4a3. Use case ends.
 
-#### Use case: UC07 - Edit a student
+#### Use case: UC09 - Edit a student
 
 **MSS**
 
@@ -993,6 +1096,29 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
   * 4a2. TutorFlow reports that no student data was changed and explains the save error.
   * 4a3. Use case ends.
 
+#### Use case: UC10 - List a student's homework
+
+**MSS**
+
+1. Tutor requests to list a student's homework.
+2. TutorFlow displays the student's homework that is due today or later, earliest due date first, each with its homework index, score and completion status.
+3. Use case ends.
+
+**Extensions**
+
+* 1a. The supplied student index does not identify a displayed student.
+  * 1a1. TutorFlow displays an error.
+  * 1a2. Use case resumes at step 1.
+* 1b. The tutor requests to list all of the student's homework, including homework due before today.
+  * 1b1. TutorFlow displays all of the student's homework, earliest due date first, each with its homework index, score and completion status, or informs the tutor that the student has no homework if there is none.
+  * 1b2. Use case ends.
+* 2a. The student has no homework.
+  * 2a1. TutorFlow informs the tutor that the student has no homework.
+  * 2a2. Use case ends.
+* 2b. Some of the student's homework is due before today.
+  * 2b1. TutorFlow also states how many of the student's homework records are due before today and not displayed, and how to list them.
+  * 2b2. Use case ends.
+
 ### Non-Functional Requirements
 
 1. TutorFlow should work on Windows, Linux, and macOS on a computer with Java `25` installed.
@@ -1010,17 +1136,21 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
 
 * **Academic level**: The student's current secondary or junior-college year, such as `S3` or `J1`.
 * **Command-line interface (CLI)**: A text-based interface in which the user performs operations by entering commands.
+* **Completion status**: Whether a homework record is `ASSIGNED` (still to be done) or `COMPLETED`, set with `homework status` independently of its score.
+* **Data file**: The file `data/tutorflow.json` in the home folder, where TutorFlow saves all students, homework and regular lessons after every command that changes them.
 * **Displayed index**: A temporary one-based number assigned to an item in the currently displayed list. It is not a permanent identifier.
 * **Guardian**: The person recorded as the primary guardian or contact for a student.
+* **Home folder**: The folder that contains the TutorFlow JAR file. TutorFlow keeps its data file, preferences and logs there.
 * **Homework**: Work assigned to a student and recorded in TutorFlow for follow-up.
-* **Homework index**: The one-based position of a homework record in its student's homework list, in the order the homework was added. `homework list` shows it next to each record, and `homework edit`, `homework marks` and `homework delete` use it to identify the record.
+* **Homework index**: The one-based position of a homework record in its student's homework list, in the order the homework was added. `homework list` shows it next to each record, `homework edit`, `homework marks`, `homework status` and `homework delete` use it to identify the record, and `homework filter` shows it.
 * **Lesson clash**: Two regular lessons on the same weekday whose time intervals overlap.
+* **Overdue homework**: Homework whose completion status is `ASSIGNED` and whose due date is before today, regardless of its score.
 * **Regular lesson**: A tuition lesson that repeats weekly for a student at a specified weekday and time.
 * **Score**: The marks a student obtained for a homework record, written on their own, such as `17`, or together with the total marks as `MARKS_OBTAINED/TOTAL_MARKS`, such as `5/10`.
-* **Student profile**: The record containing a student's identity, contact information, academic information, guardian information, and associated regular lessons.
+* **Student profile**: The record containing a student's identity, contact information, academic information, guardian information, homework records and regular lessons.
 * **Student roster**: The collection of student profiles managed by TutorFlow.
-* **Tuition subject**: A subject that the tutor teaches to a student, such as Mathematics, Physics, or Chemistry.
-* **Upcoming homework**: Homework that is due today or later.
+* **Tuition subject**: One of the three subjects TutorFlow supports, `MATH`, `PHYSICS` or `CHEMISTRY`, that a student takes.
+* **Upcoming homework**: Homework that is due today or later. `homework list` and the student card's `Upcoming homework` count use this meaning. `homework upcoming` shows only the part of it that is due within a given number of days from today (7 by default).
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -1214,71 +1344,77 @@ testers are expected to do more *exploratory* testing.
 
 ### Listing, editing and scoring homework
 
-1. Listing upcoming and overdue homework
+1. Listing upcoming homework and homework due before today
 
-   1. Prerequisites: Start with the sample students (delete `data/tutorflow.json` first). Run `hw add 5 t/Old worksheet s/MATH due/2026-10-01`, which gives Daniel Wong (student 5) homework that is already overdue.
+   1. Prerequisites: Start with the sample students (delete `data/tutorflow.json` first). Run `hw add 5 t/Old worksheet s/MATH due/2026-10-01`, which gives Daniel Wong (student 5) homework that is already due before today. The result ends with `Note: this homework is due before today, so homework list 5 shows it only with all.`
 
    1. Test case: `hw ls 5`<br>
-      Expected: `No upcoming homework found for Daniel Wong (1 record due before today not shown; use homework list 5 all to see it).` Daniel Wong's card shows `Upcoming homework: 0`.
+      Expected: `No upcoming homework found for Daniel Wong (96781234) (1 record due before today not shown; use homework list 5 all to see it).` Daniel Wong's card shows `Upcoming homework: 0`.
 
    1. Test case: `hw ls 5 all`<br>
       Expected:
 
       ```
-      Listed 1 homework record for Daniel Wong.
-      Homework for Daniel Wong:
+      Listed 1 homework record for Daniel Wong (96781234).
+      Homework for Daniel Wong (96781234):
       1. Old worksheet (MATH) - due 2026-10-01 - score Not recorded - status ASSIGNED
       ```
 
    1. Test case: `hw ls 5 ALL`<br>
-      Expected: An invalid command format error, as `all` must be in lowercase.
+      Expected: `The word all is lowercase: type all, not ALL.`, followed by the usage `Usage: homework|hw list|ls STUDENT_INDEX [all]`.
+
+   1. Test case: `hw ls 5 alll`<br>
+      Expected: `The word after STUDENT_INDEX can only be all, but found alll.`, followed by the same usage.
 
 1. Listing upcoming homework of all students
 
    1. Prerequisites: In a disposable test folder, run `clear`, then `add n/Ethan Lim l/S3 s/MATH,PHYSICS p/91234567 gn/Grace Lim gp/98765432` and `add n/Marcus Tan l/S1 s/MATH p/87654329 gn/Tan Mei Ling gp/91827364`. This gives two students without sample homework. Run `hw add 2 t/Today drill s/MATH due/TODAY`, then `hw add 1 t/Today forces s/PHYSICS due/TODAY` and `hw add 1 t/Old worksheet s/MATH due/PAST`, replacing `TODAY` with today's full date and `PAST` with yesterday's full date in `YYYY-MM-DD` form.
 
    1. Test case: `hw up due/0`<br>
-      Expected: `Found 2 homework records due from TODAY to TODAY.`, then `Student 1: Ethan Lim; Today forces; PHYSICS; Due: TODAY; Score: Not recorded; Status: ASSIGNED` before `Student 2: Marcus Tan; Today drill; MATH; Due: TODAY; Score: Not recorded; Status: ASSIGNED` (roster order, not the order they were added). `Old worksheet` is not shown, as it is overdue.
+      Expected: `Found 2 homework records due from TODAY to TODAY.`, then `Student 1: Ethan Lim (91234567); Today forces; PHYSICS; Due: TODAY; Score: Not recorded; Status: ASSIGNED` before `Student 2: Marcus Tan (87654329); Today drill; MATH; Due: TODAY; Score: Not recorded; Status: ASSIGNED` (roster order, not the order they were added). `Old worksheet` is not shown, as it is due before today.
 
    1. Test case: `hw up`<br>
       Expected: The summary ends with the date 7 days after today, and the lines are sorted by due date. The data file is not modified.
 
    1. Test case: `hw status 1 1 status/COMPLETED`, `hw add 1 t/Vectors drill s/MATH due/SOON` and `hw add 1 t/Exam revision s/MATH due/LATER`, replacing `SOON` with the date 3 days after today and `LATER` with the date 400 days after today. Then run `hw up due/365` and `hw ls 1 all`.<br>
-      Expected: `hw up due/365` shows the homework due from today through 365 days later, including the completed record, but not `Old worksheet` (overdue) or `Exam revision` (after the window), where `END` is the date 365 days after today:
+      Expected: `hw up due/365` shows the homework due from today through 365 days later, including the completed record, but not `Old worksheet` (due before today) or `Exam revision` (after the window), where `END` is the date 365 days after today:
 
       ```
       Found 3 homework records due from TODAY to END.
-      Student 1: Ethan Lim; Today forces; PHYSICS; Due: TODAY; Score: Not recorded; Status: COMPLETED
-      Student 2: Marcus Tan; Today drill; MATH; Due: TODAY; Score: Not recorded; Status: ASSIGNED
-      Student 1: Ethan Lim; Vectors drill; MATH; Due: SOON; Score: Not recorded; Status: ASSIGNED
+      Student 1: Ethan Lim (91234567); Today forces; PHYSICS; Due: TODAY; Score: Not recorded; Status: COMPLETED
+      Student 2: Marcus Tan (87654329); Today drill; MATH; Due: TODAY; Score: Not recorded; Status: ASSIGNED
+      Student 1: Ethan Lim (91234567); Vectors drill; MATH; Due: SOON; Score: Not recorded; Status: ASSIGNED
       ```
 
       `hw ls 1 all` lists Ethan Lim's homework as 2 (`Old worksheet`), 1 (`Today forces`), 3 (`Vectors drill`) and 4 (`Exam revision`), so the order in `hw up` is not the numbering in `hw ls 1 all`.
 
    1. Test case: `add n/Ethan Lim l/S1 s/MATH p/81234567 gn/Lim Mei gp/81234568` (a second Ethan Lim, with another phone number, who becomes student 3), then `hw add 3 t/Today algebra s/MATH due/TODAY` and `hw up due/0`<br>
-      Expected: The new line starts with `Student 3: Ethan Lim`, while the first Ethan Lim's line starts with `Student 1: Ethan Lim`.
+      Expected: The new line starts with `Student 3: Ethan Lim (81234567)`, while the first Ethan Lim's line starts with `Student 1: Ethan Lim (91234567)`.
 
    1. Test case: `search Marcus`, then `hw up due/0`, then `hw ls 2`<br>
       Expected: After `hw up due/0`, all three students are shown again and Marcus Tan's line starts with `Student 2`. `hw ls 2` lists Marcus Tan's homework.
 
-   1. Incorrect commands to try: `hw up due/366`, `hw up due/007`, `hw up due/-1`, `hw up due/1.5`, `hw up due/2026-10-20`, `hw up due/`<br>
+   1. Incorrect commands to try: `hw up due/366`, `hw up due/007`, `hw up due/-1`, `hw up due/1.5`, `hw up due/`<br>
       Expected: `Days must be a whole number from 0 to 365 without leading zeroes.`
 
+   1. Incorrect commands to try: `hw up due/2026-11-20`, `hw up due/11-20`<br>
+      Expected: `In homework upcoming, due/ is a number of days from 0 to 365, not a date, e.g. due/7.` each time.
+
    1. Other incorrect commands to try: `hw up 3`, `hw up x/3`, `hw up due/3 due/7`<br>
-      Expected: An invalid command format error with the usage `homework|hw upcoming|up [due/DAYS]` for `hw up 3`, `x/ is not a prefix of this command.` followed by that usage for `hw up x/3`, and `Prefix due/ must be specified exactly once.` for the last one.
+      Expected: `Expected no words other than due/DAYS, but found 1 word (3).` followed by the usage `Usage: homework|hw upcoming|up [due/DAYS]` for `hw up 3`, `x/ is not a prefix of this command.` followed by that usage for `hw up x/3`, and `Prefix due/ can be given only once.` followed by that usage for the last one.
 
 1. Adding homework
 
    1. Prerequisites: Start with the sample students.
 
    1. Test case: `hw add 1 t/Algebra drill s/MATH due/12-01`<br>
-      Expected: `New homework added:`, then `Ethan Lim; Title: Algebra drill; Subject: MATH; Due: YEAR-12-01` and `Inferred year: YEAR`, where `YEAR` is this year, or next year from 2 December on. For example, on 2026-10-27 it is `2026`.
+      Expected: `New homework added for Ethan Lim (91234567):`, then `3. Algebra drill (MATH) - due YEAR-12-01 - score Not recorded - status ASSIGNED` and `Inferred year: YEAR`, where `YEAR` is this year, or next year from 2 December on. For example, on 2026-11-06 it is `2026`.
 
    1. Test case: `hw add 1 t/ALGEBRA DRILL s/MATH due/12-01`<br>
-      Expected: `This homework already exists for the selected student.`, as titles are compared ignoring case.
+      Expected: `This homework already exists for Ethan Lim (91234567):` followed by `3. Algebra drill (MATH) - due YEAR-12-01 - score Not recorded - status ASSIGNED`, as titles are compared ignoring case.
 
    1. Test case: `hw add 1 t/Algebra drill s/CHEMISTRY due/12-01`<br>
-      Expected: `The selected student does not take this subject.`
+      Expected: `Ethan Lim (91234567) does not take CHEMISTRY. They take MATH, PHYSICS.`
 
    1. Test case: `hw add 1 t/Algebra drill s/MATH due/2026-02-30`<br>
       Expected: `2026-02-30 is not a real calendar date.`
@@ -1286,33 +1422,57 @@ testers are expected to do more *exploratory* testing.
    1. Test case: `hw add 1 t/A s/MATH`<br>
       Expected: `Missing required prefix(es): due/`, then the usage `Usage: homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD`. No homework is added by these four commands; `hw ls 1 all` shows only `Algebra drill` in addition to the sample homework.
 
+   1. Test case: `hw add 1 s/MATH due/12-02`<br>
+      Expected: `Missing required prefix(es): title/ (or t/)`, then the usage, and no homework is added.
+
+   1. Test case: `hw add 1 t/Revise t/f questions s/MATH due/12-02`, then `hw add 1 t/Read s/o notes s/MATH due/12-02`, then `hw add 1 t/A s/MATH due/12-02 s/PHYSICS`<br>
+      Expected: `Prefix t/ can be given only once. If t/ is part of the title, put the whole title in straight double quotes, e.g. t/"True t/f quiz".`, then `Prefix s/ can be given only once. If s/ is part of the title, put the whole title in straight double quotes, e.g. t/"Read s/o notes".`, then `Prefix s/ can be given only once.`, each followed by the usage, and no homework is added. With the title in quotes, e.g. `hw add 1 t/"Revise t/f questions" s/MATH due/12-02`, the homework is added.
+
+   1. Test case: `hw add 1 t/Algebra drill S/MATH due/12-02`<br>
+      Expected: `S/ is not a prefix of this command; prefixes are lowercase (s/). If S/ is part of the title, put the whole title in straight double quotes, e.g. t/"Pg 5 w/ answers".`, then the usage, and no homework is added.
+
+   1. Test case: `hw add 1 t/Algebra drill s/BIOLOGY due/12-02`, then `hw add 1 t/Algebra drill s/ due/12-02`, then `hw add 1 t/Read s/o notes due/12-02`, then `hw add 1 t/Essay s/MATH PHYSICS due/12-02`<br>
+      Expected: `BIOLOGY is not a subject. Subject must be one of: MATH, PHYSICS, CHEMISTRY.`, then `The subject is empty. Subject must be one of: MATH, PHYSICS, CHEMISTRY.`, then `o notes is not a subject. Subject must be one of: MATH, PHYSICS, CHEMISTRY. If s/ is part of the title, put the whole title in straight double quotes, e.g. t/"Read s/o notes".`, then `MATH PHYSICS is not a subject. Subject must be one of: MATH, PHYSICS, CHEMISTRY.`, and no homework is added.
+
+   1. Test case: `hw add 1 t/ s/MATH due/12-02`, then `hw add 1 t/"" s/MATH due/12-02`<br>
+      Expected: `The homework title is empty. Enter 1 to 100 characters.` each time, and no homework is added.
+
+   1. Other incorrect commands to try: `hw add 1 extra t/A s/MATH due/12-02`, `hw add 2147483648 t/A s/MATH due/12-02`<br>
+      Expected: `Expected STUDENT_INDEX before the first prefix, but found 2 words (1 extra).` followed by the usage, and `STUDENT_INDEX must be no greater than 2147483647.` No homework is added.
+
+   1. Other incorrect commands to try: `HW add 1 t/A s/MATH due/12-02`, `hw rm 1 1`, `hw`<br>
+      Expected: `Command words are lowercase: type hw, not HW.`, then `rm is not a homework subcommand. Use add, list|ls, upcoming|up, edit|e, marks|m, delete|del, filter or status.`, then `Missing homework subcommand. Use add, list|ls, upcoming|up, edit|e, marks|m, delete|del, filter or status.`
+
 1. Adding homework with special characters in the title
 
    1. Prerequisites: Start with the sample students. To type a zero-width space (U+200B), copy it from a character viewer, e.g. Character Viewer on macOS or Character Map on Windows, and paste it into the command box.
 
    1. Test case: `hw add 3 t/ZWSP s/MATH due/2026-12-01`, where `ZWSP` is one zero-width space, followed by an ordinary space before `s/`<br>
-      Expected: `Homework title must be 1 to 100 characters and may contain only letters, numbers, punctuation, symbols and spaces.`, and no homework is added.
+      Expected: `Homework title has an unsupported character: U+200B (ZERO WIDTH SPACE). Titles may contain only letters, numbers, punctuation, symbols and spaces.`, and no homework is added.
 
    1. Test case: `hw add 3 t/AlgeZWSPbra drill s/MATH due/2026-12-02`<br>
       Expected: The same title error, and no homework is added.
 
    1. Test case: `hw add 3 t/x² + π ≈ 3.14 s/MATH due/2026-12-03`<br>
-      Expected: `New homework added:` followed by `Marcus Tan; Title: x² + π ≈ 3.14; Subject: MATH; Due: 2026-12-03`.
+      Expected: `New homework added for Marcus Tan (87654329):` followed by `2. x² + π ≈ 3.14 (MATH) - due 2026-12-03 - score Not recorded - status ASSIGNED`.
 
 1. Editing homework
 
    1. Prerequisites: Start with the sample students.
 
-   1. Test case: `hw e 2 1 due/2026-11-05`<br>
-      Expected: The result shows the edited homework. Run `hw ls 2 all`: Priya Nair's homework is listed in the order 2, 1, 3, as homework 1 is now due after homework 2, even after the sample due dates have passed.
+   1. Test case: `hw e 2 1 due/2026-12-05`<br>
+      Expected: The result shows the edited homework. Run `hw ls 2 all`: Priya Nair's homework is listed in the order 2, 3, 1, as homework 1 is now due last, even after the sample due dates have passed.
 
    1. Test case: `hw e 1 1 t/Quadratic equations worksheet`<br>
       Expected: `No changes made; the supplied values are identical to the existing homework details.`
 
-   1. Test case: `hw e 1 2 t/quadratic EQUATIONS worksheet s/MATH due/2026-10-23`<br>
-      Expected: `This edit would make the homework a duplicate of an existing homework record.`
+   1. Test case: `hw e 1 2 t/quadratic EQUATIONS worksheet s/MATH due/2026-11-03`<br>
+      Expected: `This edit would make the homework the same as another homework for Ethan Lim (91234567):` followed by `1. Quadratic equations worksheet (MATH) - due 2026-11-03 - score Not recorded - status ASSIGNED`.
 
-   1. Other incorrect edit commands to try: `hw e 1 2` (no field), `hw e 1 1 t/A title/B`, `hw e 6 1 s/PHYSICS` (subject not taken), `hw e 1 1 score/5/10`<br>
+   1. Test case: `hw e 1 2 due/2026-11-01`<br>
+      Expected: The result shows the edited homework, then `No upcoming homework found for Ethan Lim (91234567) (2 records due before today not shown; use homework list 1 all to see them).` and `Note: this homework is due before today, so homework list 1 shows it only with all.`
+
+   1. Other incorrect edit commands to try: `hw e 1 2` (no field, `Specify at least one field to edit: title/ (or t/), s/ or due/.`), `hw e 1 1 t/A title/B`, `hw e 6 1 s/PHYSICS` (subject not taken), `hw e 1 1 score/5/10`<br>
       Expected: An error message each time; `hw ls 1 all` and `hw ls 2` are unchanged.
 
 1. Recording homework marks
@@ -1320,16 +1480,16 @@ testers are expected to do more *exploratory* testing.
    1. Prerequisites: Start with the sample students.
 
    1. Test case: `hw m 1 2 score/5/10`, then `hw ls 1 all`<br>
-      Expected: The result shows `Score: 5/10`, and the list shows `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score 5/10 - status ASSIGNED`. Restart the app: `hw ls 1 all` still shows the score.
+      Expected: The result shows `Score: 5/10`, and the list shows `2. Kinematics practice set (PHYSICS) - due 2026-11-11 - score 5/10 - status ASSIGNED`. Restart the app: `hw ls 1 all` still shows the score.
 
    1. Test case: `hw m 1 2 score/5/10` again<br>
       Expected: `No changes made; the homework already has this score.`
 
    1. Test case: `hw m 1 2 score/17`, then `hw ls 1 all`<br>
-      Expected: `Recorded homework marks:` followed by `Ethan Lim; Title: Kinematics practice set; Subject: PHYSICS; Due: 2026-10-28; Score: 17`, and the list shows `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score 17 - status ASSIGNED`. Running `hw m 1 2 score/17` again gives `No changes made; the homework already has this score.`, while `hw m 1 2 score/17/20` records `Score: 17/20`.
+      Expected: `Recorded homework marks:` followed by `Ethan Lim (91234567); Title: Kinematics practice set; Subject: PHYSICS; Due: 2026-11-11; Score: 17`, and the list shows `2. Kinematics practice set (PHYSICS) - due 2026-11-11 - score 17 - status ASSIGNED`. Running `hw m 1 2 score/17` again gives `No changes made; the homework already has this score.`, while `hw m 1 2 score/17/20` records `Score: 17/20`.
 
    1. Test case: `hw m 1 2 score/`, then `hw ls 1 all`<br>
-      Expected: `Cleared homework marks:` followed by `Ethan Lim; Title: Kinematics practice set; Subject: PHYSICS; Due: 2026-10-28; Score: Not recorded`, and the list shows `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score Not recorded - status ASSIGNED`. Restart the app: `hw ls 1 all` still shows `score Not recorded`.
+      Expected: `Cleared homework marks:` followed by `Ethan Lim (91234567); Title: Kinematics practice set; Subject: PHYSICS; Due: 2026-11-11; Score: Not recorded`, and the list shows `2. Kinematics practice set (PHYSICS) - due 2026-11-11 - score Not recorded - status ASSIGNED`. Restart the app: `hw ls 1 all` still shows `score Not recorded`.
 
    1. Test case: `hw m 1 2 score/` again, and `hw m 1 1 score/   ` (only spaces)<br>
       Expected: `No changes made; the homework has no recorded marks.` each time.
@@ -1338,12 +1498,23 @@ testers are expected to do more *exploratory* testing.
       Expected: `Marks must not have leading zeroes. Enter whole numbers such as 5/10, not 05/10.` each time, and the score is unchanged.
 
    1. Other incorrect commands to try: `hw m 1 2 score/11/10`, `hw m 1 2 score/5/0`, `hw m 1 2 score/5.5/10`, `hw m 1 2 score/17.5`, `hw m 1 2 score/2147483648/10`, `hw m 1 2 score/2147483648`, `hw m 1 2`<br>
-      Expected: An error message each time, and the score is unchanged.
+      Expected: The score is unchanged, and the error names the rule that failed: `Marks obtained (11) must not be more than the total marks (10).`, `Total marks must be at least 1.`, `Score must be whole marks such as 17, or marks out of a total such as 5/10, with no signs, decimals, spaces or other characters.` for `5.5/10` and `17.5`, `Marks are too large. Enter whole numbers no greater than 2147483647.` for the two large numbers, and `Missing required prefix(es): score/` followed by the usage for `hw m 1 2`.
 
 1. Saving fails
 
-   1. Make `data/tutorflow.json` read-only, then run `hw e 1 1 t/Changed title` and `hw m 1 1 score/9/10`.<br>
-      Expected: Each shows that the homework could not be edited, or that its marks could not be recorded, and that no homework data was changed. `hw ls 1 all` is unchanged.
+   1. Prerequisites: Start with the sample students (delete `data/tutorflow.json` first) and run `hw m 1 1 score/5/10`, which creates the data file.
+
+   1. Make `data/tutorflow.json` read-only (e.g. `chmod 444 data/tutorflow.json` on macOS or Linux), then run `hw e 1 1 t/Changed title`, `hw m 1 1 score/9/10`, `hw m 1 1 score/` and `hw del 1 1`.<br>
+      Expected: Each shows that the homework could not be edited, that its marks could not be recorded or cleared, or that it could not be deleted, and that no homework data was changed, e.g. `The homework could not be deleted because TutorFlow could not save data/tutorflow.json: the file is read-only. No homework data was changed.` `hw ls 1 all` is unchanged. Restore the file's write permission afterwards.
+
+   1. Make the lock file read-only (e.g. `chmod 444 data/tutorflow.json.lock`), then run `hw m 1 1 score/6/10`.<br>
+      Expected: `The homework marks could not be recorded because TutorFlow could not save data/tutorflow.json: the lock file data/tutorflow.json.lock is read-only. No homework data was changed.` Restore the lock file's write permission afterwards.
+
+   1. Make `data/tutorflow.json` writable but not readable (e.g. `chmod 200 data/tutorflow.json` on macOS or Linux), then run `hw m 1 1 score/6/10`.<br>
+      Expected: `The homework marks could not be recorded because TutorFlow could not save data/tutorflow.json: the file cannot be read (no permission). No homework data was changed.` Restore the file's read permission afterwards (e.g. `chmod 644 data/tutorflow.json`).
+
+   1. With the app open, change `data/tutorflow.json` in a text editor, e.g. change `Grace Lim` to `Grace Tan`, and save it. Then run `hw m 1 1 score/6/10`.<br>
+      Expected: `Another program or copy of TutorFlow changed data/tutorflow.json after this copy last loaded or saved it. Restart TutorFlow before making changes. No data was changed.` After a restart, the guardian is `Grace Tan` and `hw m 1 1 score/6/10` succeeds.
 
 ### Quoting values
 
@@ -1351,26 +1522,26 @@ testers are expected to do more *exploratory* testing.
 
    1. Prerequisites: Start with the sample students.
 
-   1. Test case: `hw add 1 t/"Speed in km/h" s/PHYSICS due/2026-11-01`<br>
-      Expected: `New homework added:` followed by `Ethan Lim; Title: Speed in km/h; Subject: PHYSICS; Due: 2026-11-01`.
+   1. Test case: `hw add 1 t/"Speed in km/h" s/PHYSICS due/2026-12-01`<br>
+      Expected: `New homework added for Ethan Lim (91234567):` followed by `3. Speed in km/h (PHYSICS) - due 2026-12-01 - score Not recorded - status ASSIGNED`.
 
-   1. Test case: `hw add 1 t/"Read "Hamlet" km/h" s/MATH due/2026-11-02`<br>
+   1. Test case: `hw add 1 t/"Read "Hamlet" km/h" s/MATH due/2026-12-02`<br>
       Expected: The title is `Read "Hamlet" km/h`: the outer quotes are removed and the inner ones kept.
 
-   1. Test case: `hw add 1 t/"Speed" extra s/PHYSICS due/2026-11-03`<br>
+   1. Test case: `hw add 1 t/"Speed" extra s/PHYSICS due/2026-12-03`<br>
       Expected: The title is `"Speed" extra`, as typed, because the value does not end with a quote.
 
-   1. Test case: `hw add 1 t/"Speed in km/h s/PHYSICS due/2026-11-04`, then `hw add 1 t/Speed in km/h s/PHYSICS due/2026-11-04`<br>
-      Expected: `km/ is not a prefix of this command. To use it inside a value, wrap the whole value in straight double quotes, e.g. t/"Speed in km/h".` followed by the `hw add` usage each time, and no homework is added.
+   1. Test case: `hw add 1 t/"Speed in km/h s/PHYSICS due/2026-12-04`, then `hw add 1 t/Speed in km/h s/PHYSICS due/2026-12-04`<br>
+      Expected: `km/ is not a prefix of this command. If km/ is part of the title, put the whole title in straight double quotes, e.g. t/"Pg 5 w/ answers".` followed by the `hw add` usage each time, and no homework is added.
 
-   1. Test case: `hw add 1 t/“Speed in km/h” s/PHYSICS due/2026-11-04` (curly quotes)<br>
+   1. Test case: `hw add 1 t/“Speed in km/h” s/PHYSICS due/2026-12-04` (curly quotes)<br>
       Expected: The same error with `Use straight quotes ("), not curly quotes (“ ”).` on its own line before the usage, and no homework is added.
 
-   1. Test case: `hw add 1 t/"  Speed in km/h  " s/PHYSICS due/2026-11-05`<br>
+   1. Test case: `hw add 1 t/"  Speed in km/h  " s/PHYSICS due/2026-12-05`<br>
       Expected: The title is `Speed in km/h`: the spaces at both ends inside the quotes are removed.
 
-   1. Test case: `hw add 1 t/"" s/PHYSICS due/2026-11-06`, then `hw add 1 t/" " s/PHYSICS due/2026-11-06`<br>
-      Expected: The same title error as for `hw add 1 t/ s/PHYSICS due/2026-11-06`, and no homework is added.
+   1. Test case: `hw add 1 t/"" s/PHYSICS due/2026-12-06`, then `hw add 1 t/" " s/PHYSICS due/2026-12-06`<br>
+      Expected: The same title error as for `hw add 1 t/ s/PHYSICS due/2026-12-06`, and no homework is added.
 
    1. Test case: `hw up due/" 3 "`<br>
       Expected: The same result as `hw up due/3`.
@@ -1385,15 +1556,15 @@ testers are expected to do more *exploratory* testing.
 
 1. Deleting homework of a student who has homework
 
-   1. Prerequisites: The 1st student has at least 2 homework records. Check with `homework list 1 all`, which also lists overdue homework.
+   1. Prerequisites: The 1st student has at least 2 homework records. Check with `homework list 1 all`, which also lists homework due before today.
 
    1. Test case: `homework delete 1 2`<br>
-      Expected: The 2nd homework of the 1st student is deleted. The result display shows `Deleted homework:` and the deleted homework in the `homework list` layout, e.g. `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score Not recorded - status ASSIGNED`, followed by the student's upcoming homework with its new numbers (or `No upcoming homework found for Ethan Lim (1 record due before today not shown; use homework list 1 all to see it).`). The student card shows the new number of upcoming homework. For example, with the sample students on 2026-10-27, the result is:
+      Expected: The 2nd homework of the 1st student is deleted. The result display shows `Deleted homework:` and the deleted homework in the `homework list` layout, e.g. `2. Kinematics practice set (PHYSICS) - due 2026-11-11 - score Not recorded - status ASSIGNED`, followed by the student's upcoming homework with its new numbers (or `No upcoming homework found for Ethan Lim (91234567) (1 record due before today not shown; use homework list 1 all to see it).`). The student card shows the new number of upcoming homework. For example, with the sample students on 2026-11-06, the result is:
 
       ```
       Deleted homework:
-      2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score Not recorded - status ASSIGNED
-      No upcoming homework found for Ethan Lim (1 record due before today not shown; use homework list 1 all to see it).
+      2. Kinematics practice set (PHYSICS) - due 2026-11-11 - score Not recorded - status ASSIGNED
+      No upcoming homework found for Ethan Lim (91234567) (1 record due before today not shown; use homework list 1 all to see it).
       ```
 
    1. Test case: `homework delete 1 0`<br>
@@ -1401,6 +1572,9 @@ testers are expected to do more *exploratory* testing.
 
    1. Other incorrect delete commands to try: `homework delete`, `homework delete 1`, `homework delete 1 x` (where x is larger than the number of homework of the student)<br>
       Expected: Similar to previous.
+
+   1. Test case: Start again with the sample students and run `hw del 1 2` with a no-break space (U+00A0, e.g. pasted from a web page) instead of the space between `1` and `2`.<br>
+      Expected: The same result as `homework delete 1 2` above, as the no-break space is read as an ordinary space.
 
 ### Adding a regular lesson
 
@@ -1495,29 +1669,57 @@ The automated smoke check is `./gradlew test --tests '*LessonEditUiTest' --tests
 
 1. Saving students, homework and lessons
 
+   1. Prerequisites: Start with the sample students (delete `data/tutorflow.json` first).
+
    1. Add a student with `add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777`. With the sample students, Aaron Koh is student 7, so run `homework add 7 t/Algebra worksheet s/MATH due/2026-12-01` and `lesson add 7 s/MATH d/SUNDAY st/20:00 et/21:00` (use Aaron Koh's index if it is not 7). Close the app and launch it again.<br>
-      Expected: The student, the homework and the lesson are still shown: `homework list 7 all` shows `Listed 1 homework record for Aaron Koh.`, `Homework for Aaron Koh:` and `1. Algebra worksheet (MATH) - due 2026-12-01 - score Not recorded - status ASSIGNED`, and `lesson list` shows the lesson as `Aaron Koh (91112222); MATH; SUN; 20:00-21:00`.
+      Expected: The student, the homework and the lesson are still shown: `homework list 7 all` shows `Listed 1 homework record for Aaron Koh (91112222).`, `Homework for Aaron Koh (91112222):` and `1. Algebra worksheet (MATH) - due 2026-12-01 - score Not recorded - status ASSIGNED`, and `lesson list` shows the lesson as `Aaron Koh (91112222); MATH; SUN; 20:00-21:00`.
 
 1. Dealing with a missing data file
 
    1. Close the app and delete `data/tutorflow.json`. Launch the app.<br>
-      Expected: The app shows the sample students. A new data file is created after the first command that changes the data, e.g. `clear`.
+      Expected: The app shows the sample students. A new data file is created after the first command that changes the data, e.g. `hw m 1 1 score/5/10`.
+
+   1. With the app still open, delete `data/tutorflow.json` again, then run `hw m 1 1 score/7/10`. Close the app and launch it again.<br>
+      Expected: `Recorded homework marks:` followed by `Ethan Lim (91234567); Title: Quadratic equations worksheet; Subject: MATH; Due: 2026-11-03; Score: 7/10`, and `data/tutorflow.json` is created again. After the relaunch, `homework list 1 all` shows `1. Quadratic equations worksheet (MATH) - due 2026-11-03 - score 7/10 - status ASSIGNED`.
+
+   1. Copy `data/tutorflow.json` to a safe place, close the app and delete `data/tutorflow.json`. Launch the app, which shows the sample students, then copy the saved file back to `data/tutorflow.json` and run `hw m 1 1 score/9/10`.<br>
+      Expected: `Another program or copy of TutorFlow created data/tutorflow.json after this copy started. Restart TutorFlow before making changes. No data was changed.`
 
 1. Dealing with a corrupted data file
 
-   1. Close the app. In `data/tutorflow.json`, change the `dueDate` of a homework to `10-15` (no year), delete the closing `}`, add a second object such as `{"students":[]}` after the closing `}`, or change a homework title to `Révision` and save the file in the Windows-1252 (Western) encoding instead of UTF-8. Launch the app.<br>
-      Expected: An error dialog shows the absolute data path, a `Reason:` line and recovery instructions; the roster does not open. For `10-15`, the reason is `10-15 is not in YYYY-MM-DD format, e.g. 2026-10-30.`; for a missing closing `}`, it is `The file is not valid JSON near line L, column C.` where `L` and `C` are the line and column of the last character in the file that is not a space or line break (with the sample data, `line 120, column 5`). Dismiss the dialog and verify that the file bytes are unchanged. Restore the valid backup and relaunch: the original records appear.
+   1. Close the app. In `data/tutorflow.json`, change the `dueDate` of Ethan Lim's first homework (`Quadratic equations worksheet`) to `10-15` (no year), delete the closing `}`, add a second object such as `{"students":[]}` after the closing `}`, or change a homework title to `Révision` and save the file in the Windows-1252 (Western) encoding instead of UTF-8. Launch the app.<br>
+      Expected: An error dialog shows the absolute data path, a `Reason:` line and recovery instructions; the roster does not open. For `10-15`, the reason is `Student 1 (Ethan Lim): Homework 1 (Quadratic equations worksheet): 10-15 is not in YYYY-MM-DD format, e.g. 2026-10-30.`; for a missing closing `}`, it is `The file is not valid JSON near line L, column C.` where `L` and `C` are the line and column of the last character in the file that is not a space or line break (with the sample data, `line 120, column 5`); for a second object, it is `The file has unexpected content after the JSON data near line L, column C.`; for the Windows-1252 title, it is `The file is not valid UTF-8 text near line L, column C. Save the file as UTF-8.`, where `L` and `C` give the position of `é`. Dismiss the dialog and verify that the file bytes are unchanged. Restore the valid backup and relaunch: the original records appear.
 
-   1. Close the app. In `data/tutorflow.json`, change the `dueDate` of a homework to `2206-10-23`, or rename the `guardianPhone` key of a student to `guardianPhon`. Launch the app.<br>
-      Expected: The same error dialog as above, with `Reason: The due date's year must be from 2000 to 2099.` or `Reason: Student's guardianPhone field is missing!`.
+   1. Close the app. In `data/tutorflow.json`, change the `dueDate` of Ethan Lim's first homework to `2206-10-23`, or rename Ethan Lim's `guardianPhone` key to `guardianPhon`. Launch the app.<br>
+      Expected: The same error dialog as above, with `Reason: Student 1 (Ethan Lim): Homework 1 (Quadratic equations worksheet): The due date's year must be from 2000 to 2099.` or `Reason: Student 1 (Ethan Lim): Student's guardianPhone field is missing!`.
+
+   1. Close the app. In `data/tutorflow.json`, change Ethan Lim's `subjects` to `[ "MATH, PHYSICS" ]`, or add a second lesson to Priya Nair's `lessons`: `{"subject":"MATH","dayOfWeek":"MONDAY","startTime":"18:00","endTime":"19:00"}`. Launch the app.<br>
+      Expected: The same error dialog as above, with `Reason: Student 1 (Ethan Lim): subjects: "MATH, PHYSICS" holds more than one subject. Subjects must be a list of one or more of MATH, PHYSICS and CHEMISTRY, each in its own quotes and listed once, e.g. ["MATH", "PHYSICS"].` or `Reason: Student 2 (Priya Nair): Lesson 2 (MONDAY 18:00-19:00) overlaps lesson 1 (MONDAY 17:00-18:30) of student 1 (Ethan Lim).`
+
+   1. Close the app. In `data/tutorflow.json`, change Ethan Lim's `subjects` to `[ "MATH,", "PHYSICS" ]`, delete the `"startTime"` line of his lesson, or change the title of his first homework to 101 letters `A`. Launch the app.<br>
+      Expected: The same error dialog as above, with `Reason: Student 1 (Ethan Lim): subjects: "MATH," is not a subject. Subjects must be a list of one or more of MATH, PHYSICS and CHEMISTRY, each in its own quotes and listed once, e.g. ["MATH", "PHYSICS"].`, `Reason: Student 1 (Ethan Lim): Lesson 1: Lesson's startTime field is missing!` or `Reason: Student 1 (Ethan Lim): Homework 1 (AAA…A): Homework title must be at most 100 characters, but has 101.`, where `AAA…A` is the whole title.
 
    1. Close the app. In `data/tutorflow.json`, add `, "students" : [ ]` just before the last `}` of the file, so that the file has two `"students"` keys. Launch the app.<br>
-      Expected: The same error dialog as above; the roster does not open and the file bytes are unchanged.
+      Expected: The same error dialog as above, with `Reason: The key "students" is repeated near line L, column C.`, where `L` and `C` give the position of the second key; the roster does not open and the file bytes are unchanged.
+
+1. Keeping the data file in another folder
+
+   1. Close the app. Move `data/tutorflow.json` to another folder, e.g. `~/Shared/tutorflow.json`, and create a symbolic link to it in its place (e.g. `ln -s ~/Shared/tutorflow.json data/tutorflow.json` on macOS or Linux). Launch the app and run `hw m 1 1 score/8/10`.<br>
+      Expected: The students from the moved file are shown and the score is recorded. `data/tutorflow.json` is still a link, and `~/Shared/tutorflow.json` holds `"score" : "8/10"`.
+
+   1. Close the app and delete `~/Shared/tutorflow.json`, keeping the link. Launch the app and run `hw m 1 1 score/8/10`.<br>
+      Expected: The sample students are shown, and the score is recorded. `data/tutorflow.json` is still a link, and `~/Shared/tutorflow.json` exists again and holds `"score" : "8/10"`.
+
+   1. Make `~/Shared` read-only (e.g. `chmod 555 ~/Shared`), then run `delete 1`.<br>
+      Expected: `The student could not be deleted because TutorFlow could not save data/tutorflow.json: the folder FOLDER is read-only. No student data was changed.`, where `FOLDER` is the full path of `~/Shared`. Restore the folder's write permission afterwards.
+
+   1. Close the app. In a fresh folder with the JAR, create a `data` folder and in it a link to a file in a folder that does not exist (e.g. `ln -s ../gone/tutorflow.json data/tutorflow.json`). Launch the app and run `delete 1`.<br>
+      Expected: The sample students are shown, and `delete 1` gives `The student could not be deleted because TutorFlow could not save data/tutorflow.json: the folder gone does not exist. No student data was changed.` The link is unchanged.
 
 1. Dealing with a score saved by an older version
 
    1. Start with the sample students and run a command that changes the data, e.g. `hw m 1 1 score/5/10`, so that the data file is created. Close the app. In `data/tutorflow.json`, change the `score` of Ethan Lim's first homework (`Quadratic equations worksheet`) to `85` (a number, without quotes). Launch the app.<br>
-      Expected: All students are shown, and `homework list 1 all` shows `1. Quadratic equations worksheet (MATH) - due 2026-10-23 - score 85 - status ASSIGNED`. The `85` stays in the data file until a command changes the data, which saves the homework with `"score" : "85"`.
+      Expected: All students are shown, and `homework list 1 all` shows `1. Quadratic equations worksheet (MATH) - due 2026-11-03 - score 85 - status ASSIGNED`. The `85` stays in the data file until a command changes the data, which saves the homework with `"score" : "85"`.
 
    1. Change the `score` to `"85"` (text, with quotes) instead. Launch the app.<br>
       Expected: Same as above.
@@ -1525,25 +1727,30 @@ The automated smoke check is `./gradlew test --tests '*LessonEditUiTest' --tests
    1. Change the `score` to `85.5` (a number that is not a valid score) instead. Launch the app.<br>
       Expected: All students are shown, and the homework shows `score Not recorded`. A warning such as `Ignored invalid homework score 85.5 for 'Quadratic equations worksheet'` is logged.
 
-   1. Change the `score` to `"85.5"` (text, with quotes) instead. Launch the app.<br>
-      Expected: The loading error dialog appears, the roster does not open, and the data file is unchanged, as for corrupted data above.
+   1. Change the `score` to `"85.5"` (text, with quotes), or to `true`, instead. Launch the app.<br>
+      Expected: The loading error dialog appears with `Reason: Student 1 (Ethan Lim): Homework 1 (Quadratic equations worksheet): Score must be whole marks such as 17, or marks out of a total such as 5/10, with no signs, decimals, spaces or other characters.`, the roster does not open, and the data file is unchanged, as for corrupted data above.
 
 1. Dealing with a data file that cannot be written
 
-   1. Make `data/tutorflow.json` read-only, then run `homework add 1 t/Test s/MATH due/2026-12-01` (the 1st student must take MATH).<br>
-      Expected: `The homework could not be added because TutorFlow could not save data/tutorflow.json: the file is read-only. No homework data was changed.` `homework list 1` does not show the homework.
+   1. Prerequisites: Start with the sample students (delete `data/tutorflow.json` first) and run `hw m 1 1 score/5/10`, which creates the data file.
+
+   1. Make `data/tutorflow.json` read-only (e.g. `chmod 444 data/tutorflow.json` on macOS or Linux), then run `homework add 1 t/Test s/MATH due/2026-12-01` (the 1st student must take MATH).<br>
+      Expected: `The homework could not be added because TutorFlow could not save data/tutorflow.json: the file is read-only. No homework data was changed.` `homework list 1` does not show the homework. Restore the file's write permission afterwards.
 
    1. Make the `data` folder read-only instead (e.g. `chmod 555 data` on macOS or Linux), then run `delete 1`.<br>
-      Expected: `Could not save data/tutorflow.json: the data folder is read-only. Nothing was changed.` Restore the folder's write permission afterwards.
+      Expected: `The student could not be deleted because TutorFlow could not save data/tutorflow.json: the data folder is read-only. No student data was changed.` Restore the folder's write permission afterwards.
 
    1. In a fresh folder with no `data` folder, launch the app, make the folder read-only (e.g. `chmod 555 .`), then run `delete 1`.<br>
-      Expected: `Could not save data/tutorflow.json: the home folder is read-only. Nothing was changed.` Restore the folder's write permission afterwards.
+      Expected: `The student could not be deleted because TutorFlow could not save data/tutorflow.json: the home folder is read-only. No student data was changed.` Restore the folder's write permission afterwards.
 
-   1. Close the app, move `data/tutorflow.json` away and create a folder named `tutorflow.json` in `data` in its place. Launch the app and run `delete 1`.<br>
-      Expected: `Could not save data/tutorflow.json: it is a folder, not a file. Nothing was changed.` and Ethan Lim is still student 1.
+   1. In a fresh folder with no `data` folder, launch the app with the sample students. While it is open, create a folder named `data` next to the JAR and, inside it, a folder named `tutorflow.json`. Run `delete 1`.<br>
+      Expected: `The student could not be deleted because TutorFlow could not save data/tutorflow.json: it is a folder, not a file. No student data was changed.` and Ethan Lim is still student 1.
+
+   1. Close the app and launch it again with the `tutorflow.json` folder still there.<br>
+      Expected: The loading error dialog appears with `Reason: It is a folder, not a file.` and the app does not open. The folder is unchanged. Delete the `data` folder afterwards.
 
    1. In a fresh folder, create an empty file named `data` next to the JAR. Launch the app and run `add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777`.<br>
       Expected: `Could not save data/tutorflow.json: a file named data is in the way of the data folder. Nothing was changed.` `list` shows 6 students.
 
    1. In a fresh folder, launch the app with the sample students and run `add n/Temp Student l/S1 s/MATH p/90000000 gn/Temp Parent gp/90000001`, then `delete 7`, to create the data file. Make `data/tutorflow.json` read-only, then run `sort by/level o/desc` and `delete 1`.<br>
-      Expected: `Could not save data/tutorflow.json: the file is read-only. Nothing was changed.` Daniel Wong is still student 1, and the order (Daniel Wong, Priya Nair, Nurul Aisyah, Ethan Lim, Chloe Chua, Marcus Tan) is the same as after the sort. Run `filter s/MATH`, `sort by/level o/desc` and `add n/John Tan l/S3 s/MATH p/91234567 gn/Mary Tan gp/98765432`: the addition fails and the same 5 MATH students stay displayed in the sorted order. Restore the file's write permission afterwards.
+      Expected: `The student could not be deleted because TutorFlow could not save data/tutorflow.json: the file is read-only. No student data was changed.` Daniel Wong is still student 1, and the order (Daniel Wong, Priya Nair, Nurul Aisyah, Ethan Lim, Chloe Chua, Marcus Tan) is the same as after the sort. Run `filter s/MATH`, `sort by/level o/desc` and `add n/John Tan l/S3 s/MATH p/91234567 gn/Mary Tan gp/98765432`: the addition fails and the same 5 MATH students stay displayed in the sorted order. Restore the file's write permission afterwards.

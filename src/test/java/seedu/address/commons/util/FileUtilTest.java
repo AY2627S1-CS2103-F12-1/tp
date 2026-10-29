@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static seedu.address.testutil.Assert.assertThrows;
+import static seedu.address.testutil.TestUtil.createSymbolicLinkOrSkip;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -47,18 +48,103 @@ public class FileUtilTest {
 
         // Issue #156: Windows-1252 é (E9) followed by an ASCII letter, not a continuation byte
         Files.write(file, new byte[] {'R', (byte) 0xE9, 'v'});
-        assertThrows(IOException.class, String.format(FileUtil.MESSAGE_INVALID_UTF8, 1), () ->
-                FileUtil.readFromFile(file));
+        assertThrows(IOException.class, "The file is not valid UTF-8 text near line 1, column 2. Save the file as "
+                + "UTF-8.", () -> FileUtil.readFromFile(file));
 
         // a sequence cut off at the end of the file
         Files.write(file, new byte[] {'a', 'b', (byte) 0xE2, (byte) 0x82});
-        assertThrows(IOException.class, String.format(FileUtil.MESSAGE_INVALID_UTF8, 2), () ->
-                FileUtil.readFromFile(file));
+        assertInvalidUtf8(file, 1, 3);
 
         // a continuation byte without a lead byte
         Files.write(file, new byte[] {(byte) 0x80});
-        assertThrows(IOException.class, String.format(FileUtil.MESSAGE_INVALID_UTF8, 0), () ->
+        assertInvalidUtf8(file, 1, 1);
+
+        // PE round 2: a file saved as UTF-16, which starts with the bytes FF FE
+        Files.write(file, new byte[] {(byte) 0xFF, (byte) 0xFE, '{', 0, '}', 0});
+        assertInvalidUtf8(file, 1, 1);
+
+        // a later line, after a character of two bytes
+        Files.write(file, new byte[] {'{', '\n', ' ', (byte) 0xC3, (byte) 0xA9, (byte) 0xE9});
+        assertInvalidUtf8(file, 2, 3);
+
+        // Windows line endings, whose carriage return is not counted in the column
+        Files.write(file, new byte[] {'{', '\r', '\n', '\r', '\n', 'a', (byte) 0xE9});
+        assertInvalidUtf8(file, 3, 2);
+    }
+
+    private static void assertInvalidUtf8(Path file, int line, int column) {
+        assertThrows(IOException.class, String.format(FileUtil.MESSAGE_INVALID_UTF8, line, column), () ->
                 FileUtil.readFromFile(file));
+    }
+
+    @Test
+    public void writeToFile_symbolicLink_writesTargetAndKeepsLink() throws IOException {
+        // PE round 2: the temporary file replaced the link, so the file it points to silently kept the old data
+        Path target = Files.createDirectories(testFolder.resolve("real")).resolve("tutorflow.json");
+        Files.writeString(target, OLD_CONTENT);
+        Path link = Files.createDirectories(testFolder.resolve("data")).resolve("tutorflow.json");
+        createSymbolicLinkOrSkip(link, Path.of("..", "real", "tutorflow.json"));
+
+        FileUtil.writeToFile(link, CONTENT);
+
+        assertTrue(Files.isSymbolicLink(link));
+        assertEquals(CONTENT, Files.readString(target));
+        assertEquals(List.of(link), listFiles(link.getParent()));
+        assertEquals(List.of(target), listFiles(target.getParent()));
+    }
+
+    @Test
+    public void writeToFile_symbolicLinkToMissingFile_createsTargetAndKeepsLink() throws IOException {
+        // PE round 3: a link whose file was missing or deleted was replaced by a regular file
+        Path target = Files.createDirectories(testFolder.resolve("real")).resolve("tutorflow.json");
+        Path link = Files.createDirectories(testFolder.resolve("data")).resolve("tutorflow.json");
+        createSymbolicLinkOrSkip(link, Path.of("..", "real", "tutorflow.json"));
+
+        FileUtil.writeToFile(link, CONTENT);
+
+        assertTrue(Files.isSymbolicLink(link));
+        assertEquals(CONTENT, Files.readString(target));
+        assertEquals(List.of(link), listFiles(link.getParent()));
+        assertEquals(List.of(target), listFiles(target.getParent()));
+    }
+
+    @Test
+    public void writeToFile_chainOfSymbolicLinksToMissingFile_createsTargetAndKeepsLinks() throws IOException {
+        Path target = Files.createDirectories(testFolder.resolve("real")).resolve("tutorflow.json");
+        // each link is relative to its own folder
+        Path middleLink = Files.createDirectories(testFolder.resolve("middle")).resolve("link.json");
+        createSymbolicLinkOrSkip(middleLink, Path.of("..", "real", "tutorflow.json"));
+        Path link = Files.createDirectories(testFolder.resolve("data")).resolve("tutorflow.json");
+        createSymbolicLinkOrSkip(link, Path.of("..", "middle", "link.json"));
+
+        FileUtil.writeToFile(link, CONTENT);
+
+        assertTrue(Files.isSymbolicLink(link));
+        assertTrue(Files.isSymbolicLink(middleLink));
+        assertEquals(CONTENT, Files.readString(target));
+    }
+
+    @Test
+    public void writeToFile_symbolicLinkIntoMissingFolder_throwsAndKeepsLink() throws IOException {
+        Path link = Files.createDirectories(testFolder.resolve("data")).resolve("tutorflow.json");
+        createSymbolicLinkOrSkip(link, Path.of("..", "gone", "tutorflow.json"));
+
+        assertThrows(IOException.class, () -> FileUtil.writeToFile(link, CONTENT));
+
+        assertTrue(Files.isSymbolicLink(link));
+        assertFalse(Files.exists(testFolder.resolve("gone")));
+        assertEquals(List.of(link), listFiles(link.getParent()));
+    }
+
+    @Test
+    public void writeToFile_symbolicLinkToItself_throwsAndKeepsLink() throws IOException {
+        Path link = testFolder.resolve("tutorflow.json");
+        createSymbolicLinkOrSkip(link, Path.of("tutorflow.json"));
+
+        assertThrows(IOException.class, () -> FileUtil.writeToFile(link, CONTENT));
+
+        assertTrue(Files.isSymbolicLink(link));
+        assertEquals(List.of(link), listFiles(testFolder));
     }
 
     @Test
@@ -158,13 +244,15 @@ public class FileUtilTest {
     }
 
     @Test
-    public void writeToFile_newFile_onlyOwnerCanReadAndWrite() throws IOException {
+    public void writeToFile_newFile_getsPermissionsOfAnyNewFile() throws IOException {
+        // PE round 3: a new data file could be read and written only by its owner (600), unlike other new files
         assumeTrue(isPosix(), "file permissions are POSIX only");
         Path file = testFolder.resolve("tutorflow.json");
+        Path otherNewFile = Files.createFile(testFolder.resolve("other.json"));
 
         FileUtil.writeToFile(file, CONTENT);
 
-        assertEquals(PosixFilePermissions.fromString("rw-------"), Files.getPosixFilePermissions(file));
+        assertEquals(Files.getPosixFilePermissions(otherNewFile), Files.getPosixFilePermissions(file));
     }
 
     @Test

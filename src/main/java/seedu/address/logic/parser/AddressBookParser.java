@@ -83,6 +83,7 @@ public class AddressBookParser {
                 new HomeworkCommandParser(clock).parse(arguments);
             default -> {
                 logger.finer("This user input caused a ParseException: " + userInput);
+                HomeworkCommandParser.checkCommandWordCase(commandWord);
                 throw new ParseException(MESSAGE_UNKNOWN_COMMAND);
             }
         };

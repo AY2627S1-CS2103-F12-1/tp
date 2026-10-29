@@ -6,6 +6,7 @@ import static seedu.address.logic.parser.HomeworkAddCommandParser.PREFIX_DUE_DAT
 import static seedu.address.logic.parser.HomeworkAddCommandParser.PREFIX_SUBJECT;
 import static seedu.address.logic.parser.HomeworkAddCommandParser.PREFIX_TITLE;
 import static seedu.address.logic.parser.HomeworkAddCommandParser.PREFIX_TITLE_ALIAS;
+import static seedu.address.logic.parser.HomeworkAddCommandParser.buildRepeatedPrefixRules;
 
 import java.time.Clock;
 import java.time.LocalDate;
@@ -18,7 +19,6 @@ import seedu.address.logic.commands.HomeworkEditCommand.EditHomeworkDescriptor;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.homework.DueDate;
 import seedu.address.model.homework.Title;
-import seedu.address.model.student.TuitionSubject;
 
 /**
  * Parses the arguments of {@code homework edit} into a {@link HomeworkEditCommand}.
@@ -28,6 +28,11 @@ import seedu.address.model.student.TuitionSubject;
  * title, subject, and due date.
  */
 public class HomeworkEditCommandParser implements Parser<HomeworkEditCommand> {
+    /** What the command expects before its prefixes, named when other words are found. */
+    public static final String EXPECTED_WORDS = "STUDENT_INDEX HOMEWORK_INDEX before the first prefix";
+    public static final String MESSAGE_NO_FIELDS = "Specify at least one field to edit: title/ (or t/), s/ or due/."
+            + "\nUsage: " + HomeworkEditCommand.MESSAGE_USAGE;
+
     private static final String MESSAGE_INVALID_FORMAT = String.format(Messages.MESSAGE_INVALID_FORMAT_WITH_USAGE,
             HomeworkEditCommand.MESSAGE_USAGE);
 
@@ -49,26 +54,33 @@ public class HomeworkEditCommandParser implements Parser<HomeworkEditCommand> {
     @Override
     public HomeworkEditCommand parse(String args) throws ParseException {
         requireNonNull(args);
+        LocalDate today = LocalDate.now(clock);
         StrictArgumentTokenizer.TokenizedArguments tokenizedArguments =
-                StrictArgumentTokenizer.tokenizeWithPreamble(args, ALLOWED_PREFIXES, MESSAGE_INVALID_FORMAT);
+                StrictArgumentTokenizer.tokenizeWithPreambleRejectingWrongCase(args, ALLOWED_PREFIXES,
+                        MESSAGE_INVALID_FORMAT, buildRepeatedPrefixRules(today));
         Map<String, String> values = tokenizedArguments.values();
-        HomeworkAddCommandParser.validateTitlePrefixes(values);
 
-        String[] indices = tokenizedArguments.preamble().split("\\s+");
-        if (indices.length != 2 || values.isEmpty()) {
-            throw new ParseException(MESSAGE_INVALID_FORMAT);
+        String[] indices = ParserUtil.splitWords(tokenizedArguments.preamble());
+        if (indices.length != 2) {
+            throw new ParseException(ParserUtil.formatUnexpectedWords(EXPECTED_WORDS, indices,
+                    HomeworkEditCommand.MESSAGE_USAGE));
+        }
+        if (values.isEmpty()) {
+            throw new ParseException(MESSAGE_NO_FIELDS);
         }
 
-        Index studentIndex = ParserUtil.parseStrictIndex(indices[0], Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
-        Index homeworkIndex = ParserUtil.parseStrictIndex(indices[1], Messages.MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX);
+        Index studentIndex = ParserUtil.parseStrictIndex(indices[0], Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX,
+                Messages.MESSAGE_STUDENT_INDEX_TOO_LARGE);
+        Index homeworkIndex = ParserUtil.parseStrictIndex(indices[1], Messages.MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX,
+                Messages.MESSAGE_HOMEWORK_INDEX_TOO_LARGE);
         String rawTitle = values.getOrDefault(PREFIX_TITLE, values.get(PREFIX_TITLE_ALIAS));
         String rawSubject = values.get(PREFIX_SUBJECT);
         String rawDueDate = values.get(PREFIX_DUE_DATE);
-        LocalDate today = LocalDate.now(clock);
+        boolean isSubjectInTitle = tokenizedArguments.prefixesInText().contains(PREFIX_SUBJECT);
         try {
             EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(
                     rawTitle == null ? null : new Title(rawTitle),
-                    rawSubject == null ? null : TuitionSubject.parse(rawSubject),
+                    rawSubject == null ? null : HomeworkAddCommandParser.parseSubject(rawSubject, isSubjectInTitle),
                     rawDueDate == null ? null : DueDate.parse(rawDueDate, today));
             return new HomeworkEditCommand(studentIndex, homeworkIndex, descriptor,
                     rawDueDate != null && DueDate.isShortForm(rawDueDate), today);

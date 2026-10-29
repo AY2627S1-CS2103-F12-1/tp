@@ -14,12 +14,20 @@ public class Messages {
     public static final String MESSAGE_INVALID_COMMAND_FORMAT = "Invalid command format!\n%1$s";
     public static final String MESSAGE_INVALID_FORMAT_WITH_USAGE = "Invalid command format.\nUsage: %s";
     public static final String MESSAGE_MISSING_PREFIXES_WITH_USAGE = "Missing required prefix(es): %s\nUsage: %s";
+    public static final String MESSAGE_UNEXPECTED_WORDS_WITH_USAGE = "Expected %s, but found %s.\nUsage: %s";
+    public static final String MESSAGE_NO_WORDS = "none";
+    public static final String MESSAGE_ONE_WORD = "1 word (%s)";
+    public static final String MESSAGE_WORDS = "%d words (%s)";
     public static final String MESSAGE_INVALID_STUDENT_INDEX_SYNTAX =
             "STUDENT_INDEX must be a positive whole number without leading zeroes.";
     public static final String MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX =
             "HOMEWORK_INDEX must be a positive whole number without leading zeroes.";
     public static final String MESSAGE_INVALID_LESSON_INDEX_SYNTAX =
             "LESSON_INDEX must be a positive whole number without leading zeroes.";
+    public static final String MESSAGE_STUDENT_INDEX_TOO_LARGE =
+            "STUDENT_INDEX must be no greater than " + Integer.MAX_VALUE + ".";
+    public static final String MESSAGE_HOMEWORK_INDEX_TOO_LARGE =
+            "HOMEWORK_INDEX must be no greater than " + Integer.MAX_VALUE + ".";
     public static final String MESSAGE_INVALID_STUDENT_DISPLAYED_INDEX = "The student index provided is invalid.";
     public static final String MESSAGE_INVALID_HOMEWORK_DISPLAYED_INDEX = "The homework index provided is invalid.";
     public static final String MESSAGE_INVALID_LESSON_DISPLAYED_INDEX = "The lesson index provided is invalid.";
@@ -27,10 +35,15 @@ public class Messages {
     public static final String MESSAGE_SAVE_FAILURE = "Could not save %s: %s. Nothing was changed.";
     public static final String MESSAGE_SAVE_CAUSE_FOLDER = "it is a folder, not a file";
     public static final String MESSAGE_SAVE_CAUSE_READ_ONLY_FILE = "the file is read-only";
+    public static final String MESSAGE_SAVE_CAUSE_UNREADABLE_FILE = "the file cannot be read (no permission)";
     public static final String MESSAGE_SAVE_CAUSE_READ_ONLY_FOLDER = "the data folder is read-only";
     public static final String MESSAGE_SAVE_CAUSE_READ_ONLY_HOME_FOLDER = "the home folder is read-only";
     public static final String MESSAGE_SAVE_CAUSE_READ_ONLY_OTHER_FOLDER = "the folder %s is read-only";
     public static final String MESSAGE_SAVE_CAUSE_BLOCKED_FOLDER = "a file named %s is in the way of the data folder";
+    public static final String MESSAGE_SAVE_CAUSE_MISSING_FOLDER = "the folder %s does not exist";
+    public static final String MESSAGE_SAVE_CAUSE_BROKEN_FOLDER_LINK = "%s links to a folder that does not exist";
+    public static final String MESSAGE_SAVE_CAUSE_FOLDER_LOCK_FILE = "the lock file %s is a folder, not a file";
+    public static final String MESSAGE_SAVE_CAUSE_READ_ONLY_LOCK_FILE = "the lock file %s is read-only";
 
     /** Returns all six student fields in the Add Student success-message format. */
     public static String format(Student student) {
@@ -42,9 +55,12 @@ public class Messages {
                 + "; Guardian phone: " + student.getGuardianPhone();
     }
 
-    /** Returns the owner's name and the homework's title, subject and due date in the homework message format. */
+    /**
+     * Returns the owner's name and phone, and the homework's title, subject and due date in the homework message
+     * format.
+     */
     public static String format(Student student, Homework homework) {
-        return student.getName()
+        return formatLessonOwner(student)
                 + "; Title: " + homework.getTitle()
                 + "; Subject: " + homework.getSubject()
                 + "; Due: " + homework.getDueDate();
@@ -60,7 +76,9 @@ public class Messages {
                 + "; " + lesson.getStartTime() + "-" + lesson.getEndTime();
     }
 
-    /** Returns an unambiguous lesson owner, including the phone that distinguishes same-name students. */
+    /**
+     * Returns an unambiguous lesson or homework owner, including the phone that distinguishes same-name students.
+     */
     public static String formatLessonOwner(Student student) {
         return student.getName() + " (" + student.getPhone() + ")";
     }

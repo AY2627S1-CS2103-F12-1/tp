@@ -343,14 +343,22 @@ public class MainWindow extends UiPart<Stage> {
             throw exception;
         } catch (RuntimeException exception) {
             boolean isRestored = restoreStudentSort(completedSort, previousState, exception);
-            logger.log(isRestored ? Level.WARNING : Level.SEVERE,
-                    "Student sort failed: phase=rendering, recovery=" + (isRestored ? "restored" : "failed")
-                    + ", context=" + (completedSort == null ? "execution" : completedSort.getFeedbackToUser()),
-                    exception);
+            reportStudentSortFailure(completedSort, isRestored, exception);
             throw new CommandException(SortCommand.MESSAGE_INTERNAL_ERROR, exception);
         } finally {
             studentListPanel.endSort();
         }
+    }
+
+    /**
+     * Reports a sort failure with its recovery outcome and execution context without replacing its cause.
+     */
+    private void reportStudentSortFailure(SortCommandResult completedSort, boolean isRestored,
+            RuntimeException exception) {
+        logger.log(isRestored ? Level.WARNING : Level.SEVERE,
+                "Student sort failed: phase=rendering, recovery=" + (isRestored ? "restored" : "failed")
+                + ", context=" + (completedSort == null ? "execution" : completedSort.getFeedbackToUser()),
+                exception);
     }
 
     /**

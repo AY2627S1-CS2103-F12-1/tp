@@ -197,8 +197,13 @@ public class HomeworkMessagesIntegrationTest {
                 + "prefix", "3 words (1 2 extra)", HomeworkEditCommand.MESSAGE_USAGE));
         assertParseFailure("hw m 1 score/5", unexpectedWords("STUDENT_INDEX HOMEWORK_INDEX before the first prefix",
                 "1 word (1)", HomeworkMarksCommand.MESSAGE_USAGE));
-        assertParseFailure("hw ls 1 2", unexpectedWords("STUDENT_INDEX, optionally followed by all",
-                "2 words (1 2)", HomeworkListCommand.MESSAGE_USAGE));
+        // r3-ald-05
+        assertParseFailure("hw ls 1 2", "The word after STUDENT_INDEX can only be all, but found 2.\nUsage: "
+                + HomeworkListCommand.MESSAGE_USAGE);
+        assertParseFailure("hw ls 1 alll", "The word after STUDENT_INDEX can only be all, but found alll.\nUsage: "
+                + HomeworkListCommand.MESSAGE_USAGE);
+        assertParseFailure("hw ls 1 2 3", unexpectedWords("STUDENT_INDEX, optionally followed by all",
+                "3 words (1 2 3)", HomeworkListCommand.MESSAGE_USAGE));
         assertParseFailure("hw add 1 extra t/A s/MATH due/2026-11-01", unexpectedWords("STUDENT_INDEX before the "
                 + "first prefix", "2 words (1 extra)", HomeworkAddCommand.MESSAGE_USAGE));
         assertParseFailure("hw add t/Essay s/MATH due/2026-11-20 1", unexpectedWords("STUDENT_INDEX before the "

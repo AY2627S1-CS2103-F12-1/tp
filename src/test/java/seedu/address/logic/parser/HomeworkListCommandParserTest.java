@@ -54,17 +54,20 @@ public class HomeworkListCommandParserTest {
 
     @Test
     public void parse_extraArgument_failure() {
-        assertParseFailure(parser, "1 2", unexpectedWords(EXPECTED_WORDS, "2 words (1 2)",
-                HomeworkListCommand.MESSAGE_USAGE));
         assertParseFailure(parser, "1 all all", unexpectedWords(EXPECTED_WORDS, "3 words (1 all all)",
                 HomeworkListCommand.MESSAGE_USAGE));
         assertParseFailure(parser, "1 all extra", unexpectedWords(EXPECTED_WORDS, "3 words (1 all extra)",
                 HomeworkListCommand.MESSAGE_USAGE));
-        assertParseFailure(parser, "all 1", unexpectedWords(EXPECTED_WORDS, "2 words (all 1)",
-                HomeworkListCommand.MESSAGE_USAGE));
-        // misspelled all
-        assertParseFailure(parser, "1 alll", unexpectedWords(EXPECTED_WORDS, "2 words (1 alll)",
-                HomeworkListCommand.MESSAGE_USAGE));
+    }
+
+    @Test
+    public void parse_secondWordNotAll_namesWord() {
+        // r3-ald-05: misspelled all
+        assertParseFailure(parser, "1 alll", "The word after STUDENT_INDEX can only be all, but found alll."
+                + USAGE_LINE);
+        assertParseFailure(parser, "1 2", "The word after STUDENT_INDEX can only be all, but found 2." + USAGE_LINE);
+        assertParseFailure(parser, "all 1", "The word after STUDENT_INDEX can only be all, but found 1."
+                + USAGE_LINE);
     }
 
     @Test

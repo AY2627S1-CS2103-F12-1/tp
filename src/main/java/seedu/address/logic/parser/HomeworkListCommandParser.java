@@ -22,6 +22,8 @@ public class HomeworkListCommandParser implements Parser<HomeworkListCommand> {
     public static final String EXPECTED_WORDS = "STUDENT_INDEX, optionally followed by " + KEYWORD_ALL;
     public static final String MESSAGE_ALL_NOT_LOWERCASE = "The word all is lowercase: type all, not %s.\nUsage: "
             + HomeworkListCommand.MESSAGE_USAGE;
+    public static final String MESSAGE_SECOND_WORD_NOT_ALL = "The word after STUDENT_INDEX can only be "
+            + KEYWORD_ALL + ", but found %s.\nUsage: " + HomeworkListCommand.MESSAGE_USAGE;
 
     private static final String MESSAGE_INVALID_FORMAT = String.format(Messages.MESSAGE_INVALID_FORMAT_WITH_USAGE,
             HomeworkListCommand.MESSAGE_USAGE);
@@ -47,10 +49,11 @@ public class HomeworkListCommandParser implements Parser<HomeworkListCommand> {
                 .preamble();
         String[] words = ParserUtil.splitWords(preamble);
         boolean isAllShown = words.length == 2 && words[1].equals(KEYWORD_ALL);
-        if (words.length == 2 && !isAllShown && words[1].equalsIgnoreCase(KEYWORD_ALL)) {
-            throw new ParseException(String.format(MESSAGE_ALL_NOT_LOWERCASE, words[1]));
+        if (words.length == 2 && !isAllShown) {
+            throw new ParseException(String.format(words[1].equalsIgnoreCase(KEYWORD_ALL) ? MESSAGE_ALL_NOT_LOWERCASE
+                    : MESSAGE_SECOND_WORD_NOT_ALL, words[1]));
         }
-        if (words.length == 0 || words.length > 2 || (words.length == 2 && !isAllShown)) {
+        if (words.length == 0 || words.length > 2) {
             throw new ParseException(ParserUtil.formatUnexpectedWords(EXPECTED_WORDS, words,
                     HomeworkListCommand.MESSAGE_USAGE));
         }

@@ -1,0 +1,31 @@
+@startuml
+!include style.puml
+skinparam arrowThickness 1.1
+skinparam arrowColor MODEL_COLOR
+skinparam ObjectBackgroundColor MODEL_COLOR
+skinparam ObjectFontColor #FFFFFF
+skinparam ObjectAttributeFontColor #FFFFFF
+skinparam ObjectBorderColor #FFFFFF
+skinparam ObjectFontName Arial
+show fields
+left to right direction
+
+object "<u>updated:Student</u>" as updated {
+  name = "Priya Nair"
+}
+object "<u>h2:Homework</u>" as h2 {
+  title = "Organic reaction pathways map"
+}
+object "<u>h3:Homework</u>" as h3 {
+  title = "Chemical equilibrium past paper"
+}
+
+updated -- h2
+updated -- h3
+
+note bottom of updated
+  Homework list order:
+  h2, h3
+  (homework 1, 2)
+end note
+@enduml

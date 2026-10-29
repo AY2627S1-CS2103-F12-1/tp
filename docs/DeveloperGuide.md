@@ -607,9 +607,13 @@ After `hw del 2 1`, the map is homework 1 and the past paper is homework 2. If t
 
 To make this easy to notice, the result shows the deleted record with the number it had, its score and its status, in the `homework list` layout (`HomeworkListCommand#formatHomeworkLine`). It then shows the student's upcoming homework with the new numbers (`HomeworkListCommand#formatHomeworkList`), as `homework edit` does. `HomeworkDeleteCommand` gets today's date for that list from its parser's `Clock`. `homework add` shows the new record in the same layout, so the user sees its homework index, and `homework edit` and `homework marks` show the changed record in their own layouts.
 
-The object diagram below shows the same `hw del 2 1`. As `Student` is immutable, a new `Student` object replaces the old one, while the two remaining `Homework` objects are the same objects, now at positions 1 and 2.
+The object diagrams below show the same `hw del 2 1`. Before the delete, Priya Nair's homework list holds three records:
 
-<img src="images/HomeworkIndexObjectDiagram.png" width="750" alt="Homework indices before and after deleting a student's first homework" />
+<img src="images/HomeworkIndexBeforeObjectDiagram.png" width="500" alt="Priya Nair's three homework records before deleting her first homework" />
+
+After the delete, as `Student` is immutable, a new `Student` object replaces the old one, while the two remaining `Homework` objects are the same objects, now at positions 1 and 2:
+
+<img src="images/HomeworkIndexAfterObjectDiagram.png" width="500" alt="Priya Nair's two remaining homework records after deleting her first homework" />
 
 For how a homework command runs through the `Logic`, `Model` and `Storage` components, see the `hw del 1 2` sequence diagram in [Logic component](#logic-component).
 

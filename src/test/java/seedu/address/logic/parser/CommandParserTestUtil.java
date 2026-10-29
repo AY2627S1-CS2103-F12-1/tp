@@ -12,10 +12,16 @@ public class CommandParserTestUtil {
     /** Hint added when the arguments contain a curly quote, on its own line before the usage line. */
     public static final String MESSAGE_CURLY_QUOTES = "Use straight quotes (\"), not curly quotes (“ ”).";
     /**
-     * First line of the error for a homework command given both the title prefix and its alias outside a title.
-     * The usage line follows it on the next line.
+     * First sentence of the error for a homework command given both the title prefix and its alias.
+     * The usage line follows it on the next line, or a hint to quote the title if the later one is in a title.
      */
     public static final String MESSAGE_TITLE_AND_ALIAS = "Use either title/ or t/, not both.";
+    /** Example in the hint to quote a homework title that holds {@code t/} or {@code title/}. */
+    public static final String TITLE_EXAMPLE_TITLE_PREFIX = "t/\"True t/f quiz\"";
+    /** Example in the hint to quote a homework title that holds {@code s/}. */
+    public static final String TITLE_EXAMPLE_SUBJECT_PREFIX = "t/\"Read s/o notes\"";
+    /** Example in the hint to quote a homework title that holds any other prefix-shaped word. */
+    public static final String TITLE_EXAMPLE_OTHER_PREFIX = "t/\"Pg 5 w/ answers\"";
 
     /**
      * Returns the first line of the error for {@code word}, an unknown prefix that is not inside any value
@@ -51,38 +57,20 @@ public class CommandParserTestUtil {
     }
 
     /**
-     * Returns the first line of the error for {@code word}, an allowed prefix typed in another case inside a value,
-     * with {@code example} (the field's prefix and its whole text in quotes) showing how to quote it.
-     */
-    public static String wrongCasePrefixWithQuoteHint(String word, String prefix, String example) {
-        return wrongCasePrefix(word, prefix) + " To use it inside a value, wrap the whole value in straight double "
-                + "quotes, e.g. " + example + ".";
-    }
-
-    /**
-     * Returns the first line of the error for {@code prefix}, given more than once where quoting cannot help.
-     * The usage line follows it on the next line.
+     * Returns the first sentence of the error for {@code prefix}, given more than once. The usage line follows it
+     * on the next line, or a hint to quote a homework title if either one is in the title.
      */
     public static String givenOnce(String prefix) {
         return "Prefix " + prefix + " can be given only once.";
     }
 
     /**
-     * Returns the first line of the error for {@code prefix}, given more than once where one of them is in a
-     * free-text value, with {@code example} (the field's prefix and its whole text in quotes) showing how to quote it.
+     * Returns the hint added after the first sentence of an error about {@code word} inside a homework title, with
+     * {@code example}, a fixed title holding such a word, showing how to quote the title.
      */
-    public static String givenOnceWithQuoteHint(String prefix, String example) {
-        return givenOnce(prefix) + " To use it inside a value, wrap the whole value in straight double quotes, e.g. "
+    public static String titleQuoteHint(String word, String example) {
+        return " If " + word + " is part of the title, put the whole title in straight double quotes, e.g. "
                 + example + ".";
-    }
-
-    /**
-     * Returns the first line of the error for a homework command given both the title prefix and its alias, where
-     * the later one is in a title, with {@code example} showing how to quote that title.
-     */
-    public static String titleAndAliasWithQuoteHint(String example) {
-        return MESSAGE_TITLE_AND_ALIAS + " To use it inside a value, wrap the whole value in straight double quotes, "
-                + "e.g. " + example + ".";
     }
 
     /**

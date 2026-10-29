@@ -4,11 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static seedu.address.logic.parser.CommandParserTestUtil.MESSAGE_CURLY_QUOTES;
 import static seedu.address.logic.parser.CommandParserTestUtil.givenOnce;
-import static seedu.address.logic.parser.CommandParserTestUtil.givenOnceWithQuoteHint;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
 import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefix;
-import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefixWithQuoteHint;
 import static seedu.address.testutil.Assert.assertThrows;
 
 import java.time.Duration;
@@ -16,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -31,7 +30,7 @@ public class StrictArgumentTokenizerTest {
     private static final String MESSAGE_N_AND_T = "Use either n/ or t/, not both.";
     /** Rules where n/ and t/ take free text and name the same field. */
     private static final RepeatedPrefixRules TEXT_RULES = new RepeatedPrefixRules(List.of("n/", "t/"),
-            List.of("n/", "t/"), MESSAGE_N_AND_T);
+            List.of("n/", "t/"), MESSAGE_N_AND_T, StrictArgumentTokenizerTest::textHint);
     private static final ValueTokenFilter ACCEPT_X_PREFIX = (arguments, prefixEnd, previousPrefix, prefix) ->
             "x/".equals(prefix);
 
@@ -350,13 +349,20 @@ public class StrictArgumentTokenizerTest {
 
     @Test
     public void tokenizeWithPreambleRejectingWrongCase_wrongCasePrefixInValue_namesLowercasePrefix() {
-        assertThrows(ParseException.class, wrongCasePrefixWithQuoteHint("Due/", "due/", "t/\"X Due/2026-11-11\"")
-                + USAGE_LINE, () -> tokenizeRejectingWrongCase("1 t/X Due/2026-11-11"));
+        assertThrows(ParseException.class, wrongCasePrefix("Due/", "due/") + textHint("Due/") + USAGE_LINE, () ->
+                tokenizeRejectingWrongCase("1 t/X Due/2026-11-11"));
         // all capitals and mixed case
-        assertThrows(ParseException.class, wrongCasePrefixWithQuoteHint("DUE/", "due/", "t/\"X DUE/11-11\"")
-                + USAGE_LINE, () -> tokenizeRejectingWrongCase("1 t/X DUE/11-11"));
-        assertThrows(ParseException.class, wrongCasePrefixWithQuoteHint("dUE/", "due/", "t/\"X dUE/11-11\"")
-                + USAGE_LINE, () -> tokenizeRejectingWrongCase("1 t/X dUE/11-11"));
+        assertThrows(ParseException.class, wrongCasePrefix("DUE/", "due/") + textHint("DUE/") + USAGE_LINE, () ->
+                tokenizeRejectingWrongCase("1 t/X DUE/11-11"));
+        assertThrows(ParseException.class, wrongCasePrefix("dUE/", "due/") + textHint("dUE/") + USAGE_LINE, () ->
+                tokenizeRejectingWrongCase("1 t/X dUE/11-11"));
+    }
+
+    @Test
+    public void tokenizeWithPreambleRejectingWrongCase_wrongCasePrefixInOtherValue_noHint() {
+        // due/ does not take free text
+        assertThrows(ParseException.class, wrongCasePrefix("T/", "t/") + USAGE_LINE, () ->
+                tokenizeRejectingWrongCase("1 due/3 T/A"));
     }
 
     @Test
@@ -371,8 +377,29 @@ public class StrictArgumentTokenizerTest {
 
     @Test
     public void tokenizeWithPreambleRejectingWrongCase_earlierUnknownPrefix_reportedFirst() {
-        assertThrows(ParseException.class, notPrefixWithQuoteHint("x/", "t/\"A x/B Due/3\"") + USAGE_LINE, () ->
+        assertThrows(ParseException.class, notPrefix("x/") + textHint("x/") + USAGE_LINE, () ->
                 tokenizeRejectingWrongCase("1 t/A x/B Due/3"));
+    }
+
+    @Test
+    public void tokenizeWithPreambleRejectingWrongCase_unknownPrefixOutsideTextValue_noHint() {
+        // in the value of due/, which is not free text
+        assertThrows(ParseException.class, notPrefix("x/") + USAGE_LINE, () ->
+                tokenizeRejectingWrongCase("1 due/3 x/y"));
+        // a command with no free-text values
+        assertThrows(ParseException.class, notPrefix("x/") + USAGE_LINE, () ->
+                StrictArgumentTokenizer.tokenizeWithPreambleRejectingWrongCase("1 t/A x/y", PREFIXES,
+                        MESSAGE_INVALID_FORMAT, RepeatedPrefixRules.NO_TEXT_OR_ALIAS_PREFIXES));
+    }
+
+    @Test
+    public void tokenizeWithPreambleRejectingWrongCase_prefixAfterTextValue_returnedAsInText() throws ParseException {
+        assertEquals(Set.of("due/"), tokenizeRejectingWrongCase("1 t/Read due/3").prefixesInText());
+        // after a quoted value, so not in it
+        assertEquals(Set.of(), tokenizeRejectingWrongCase("1 t/\"Read\" due/3").prefixesInText());
+        // commands without rules have no free-text values
+        assertEquals(Set.of(), StrictArgumentTokenizer.tokenizeWithPreamble("1 t/Read due/3", PREFIXES,
+                MESSAGE_INVALID_FORMAT).prefixesInText());
     }
 
     @Test
@@ -399,12 +426,17 @@ public class StrictArgumentTokenizerTest {
     @Test
     public void tokenizeWithPreambleRejectingWrongCase_repeatedPrefixInTextValue_hintsToQuoteIt() {
         // the second t/ is in the value of the first
-        String expectedMessage = givenOnceWithQuoteHint("t/", "t/\"Revise t/f questions\"") + USAGE_LINE;
-        assertThrows(ParseException.class, expectedMessage, () ->
+        assertThrows(ParseException.class, givenOnce("t/") + textHint("t/") + USAGE_LINE, () ->
                 tokenizeRejectingWrongCase("1 t/Revise t/f questions due/3"));
         // the first due/ is in the value of t/, and the second follows it
-        assertThrows(ParseException.class, givenOnceWithQuoteHint("due/", "t/\"Check due/date\"") + USAGE_LINE, () ->
+        assertThrows(ParseException.class, givenOnce("due/") + textHint("due/") + USAGE_LINE, () ->
                 tokenizeRejectingWrongCase("1 t/Check due/date due/3"));
+        // the first due/ is in the value of t/, though the second does not follow it
+        assertThrows(ParseException.class, givenOnce("due/") + textHint("due/") + USAGE_LINE, () ->
+                tokenizeRejectingWrongCase("1 t/A due/3 n/\"B\" due/4"));
+        // with curly quotes, which do not quote the value
+        assertThrows(ParseException.class, givenOnce("t/") + textHint("t/") + "\n" + MESSAGE_CURLY_QUOTES
+                + USAGE_LINE, () -> tokenizeRejectingWrongCase("1 t/\u201cA t/B\u201d"));
     }
 
     @Test
@@ -412,21 +444,14 @@ public class StrictArgumentTokenizerTest {
         // in the value of due/, which is not free text
         assertThrows(ParseException.class, givenOnce("due/") + USAGE_LINE, () ->
                 tokenizeRejectingWrongCase("1 due/3 due/4"));
-        // the first due/ is in the value of t/, but the second does not follow it
-        assertThrows(ParseException.class, givenOnce("due/") + USAGE_LINE, () ->
-                tokenizeRejectingWrongCase("1 t/A due/3 n/\"B\" due/4"));
         // after a quoted value, so not in it
         assertThrows(ParseException.class, givenOnce("t/") + USAGE_LINE, () ->
                 tokenizeRejectingWrongCase("1 t/\"A\" t/B"));
-        // with curly quotes, which do not quote the value
-        assertThrows(ParseException.class, givenOnceWithQuoteHint("t/", "t/\"A t/B\"") + "\n" + MESSAGE_CURLY_QUOTES
-                + USAGE_LINE, () -> tokenizeRejectingWrongCase("1 t/\u201cA t/B\u201d"));
     }
 
     @Test
     public void tokenizeWithPreambleRejectingWrongCase_aliasesGiven_hintsToQuoteValue() {
-        assertThrows(ParseException.class, MESSAGE_N_AND_T + " To use it inside a value, wrap the whole value in "
-                + "straight double quotes, e.g. n/\"Read t/abstract\"." + USAGE_LINE, () ->
+        assertThrows(ParseException.class, MESSAGE_N_AND_T + textHint("t/") + USAGE_LINE, () ->
                 tokenizeRejectingWrongCase("1 n/Read t/abstract due/3"));
         assertThrows(ParseException.class, MESSAGE_N_AND_T + USAGE_LINE, () ->
                 tokenizeRejectingWrongCase("1 n/Read due/3 t/abstract"));
@@ -434,7 +459,7 @@ public class StrictArgumentTokenizerTest {
 
     @Test
     public void tokenizeWithPreambleRejectingWrongCase_aliasesAndLaterError_reportsLaterError() {
-        assertThrows(ParseException.class, notPrefixWithQuoteHint("x/", "t/\"B x/C\"") + USAGE_LINE, () ->
+        assertThrows(ParseException.class, notPrefix("x/") + textHint("x/") + USAGE_LINE, () ->
                 tokenizeRejectingWrongCase("1 n/A t/B x/C"));
         assertThrows(ParseException.class, givenOnce("due/") + USAGE_LINE, () ->
                 tokenizeRejectingWrongCase("1 n/A t/\"B\" due/3 due/4"));
@@ -456,6 +481,11 @@ public class StrictArgumentTokenizerTest {
 
     private static Map<String, String> tokenizeValues(String arguments) throws ParseException {
         return StrictArgumentTokenizer.tokenize(arguments, PREFIXES, MESSAGE_INVALID_FORMAT).values();
+    }
+
+    /** Returns the hint of {@code TEXT_RULES} for {@code word} inside a free-text value. */
+    private static String textHint(String word) {
+        return " Quote the text that holds " + word + ".";
     }
 
     private static TokenizedArguments tokenizeRejectingWrongCase(String arguments) throws ParseException {

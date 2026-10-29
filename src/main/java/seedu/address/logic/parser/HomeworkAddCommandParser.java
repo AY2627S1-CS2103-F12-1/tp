@@ -26,7 +26,8 @@ import seedu.address.model.student.TuitionSubject;
  * and due date.
  * The {@code title/} and {@code t/} conflict is reported only after all prefixes are checked, so an unknown or
  * repeated prefix anywhere in the input is reported first (e.g. {@code t/A title/B x/C} reports {@code x/}).
- * A repeated prefix or the conflict in a title gets a hint to quote the title.
+ * An unknown, wrong-case or repeated prefix, or the conflict, in a title gets a hint to quote the title, with a fixed
+ * example title that never contains the user's text.
  */
 public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
     public static final String PREFIX_TITLE = "title/";
@@ -34,6 +35,9 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
     public static final String PREFIX_SUBJECT = "s/";
     public static final String PREFIX_DUE_DATE = "due/";
     public static final String MESSAGE_TITLE_AND_ALIAS = "Use either title/ or t/, not both.";
+    /** Hint to quote a title that holds the given prefix-shaped word, with an example title holding such a word. */
+    public static final String MESSAGE_TITLE_QUOTE_HINT = " If %s is part of the title, put the whole title in "
+            + "straight double quotes, e.g. %s.";
     /** What the command expects before its prefixes, named when other words are found. */
     public static final String EXPECTED_WORDS = "STUDENT_INDEX before the first prefix";
 
@@ -47,10 +51,14 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
      */
     static final RepeatedPrefixRules REPEATED_PREFIX_RULES = new RepeatedPrefixRules(
             List.of(PREFIX_TITLE, PREFIX_TITLE_ALIAS), List.of(PREFIX_TITLE, PREFIX_TITLE_ALIAS),
-            MESSAGE_TITLE_AND_ALIAS);
+            MESSAGE_TITLE_AND_ALIAS, HomeworkAddCommandParser::buildTitleQuoteHint);
 
     private static final String MESSAGE_INVALID_FORMAT = String.format(Messages.MESSAGE_INVALID_FORMAT_WITH_USAGE,
             HomeworkAddCommand.MESSAGE_USAGE);
+    // Example titles in the quoting hint, each typed as shown giving the title in its quotes
+    private static final String EXAMPLE_TITLE_WITH_TITLE_PREFIX = "t/\"True t/f quiz\"";
+    private static final String EXAMPLE_TITLE_WITH_SUBJECT_PREFIX = "t/\"Read s/o notes\"";
+    private static final String EXAMPLE_TITLE_WITH_OTHER_PREFIX = "t/\"Pg 5 w/ answers\"";
 
     private final Clock clock;
 
@@ -90,6 +98,19 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
         } catch (IllegalArgumentException exception) {
             throw new ParseException(exception.getMessage(), exception);
         }
+    }
+
+    /**
+     * Returns the hint to quote a title that holds {@code word}, with a fixed example title that holds {@code t/} if
+     * {@code word} is a title prefix, {@code s/} if it is the subject prefix, or {@code w/} otherwise.
+     */
+    static String buildTitleQuoteHint(String word) {
+        String example = switch (word) {
+            case PREFIX_TITLE, PREFIX_TITLE_ALIAS -> EXAMPLE_TITLE_WITH_TITLE_PREFIX;
+            case PREFIX_SUBJECT -> EXAMPLE_TITLE_WITH_SUBJECT_PREFIX;
+            default -> EXAMPLE_TITLE_WITH_OTHER_PREFIX;
+        };
+        return String.format(MESSAGE_TITLE_QUOTE_HINT, word, example);
     }
 
     /**

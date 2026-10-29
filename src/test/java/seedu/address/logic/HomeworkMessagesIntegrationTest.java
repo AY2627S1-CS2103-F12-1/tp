@@ -4,12 +4,15 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.logic.parser.CommandParserTestUtil.MESSAGE_TITLE_AND_ALIAS;
+import static seedu.address.logic.parser.CommandParserTestUtil.TITLE_EXAMPLE_OTHER_PREFIX;
+import static seedu.address.logic.parser.CommandParserTestUtil.TITLE_EXAMPLE_SUBJECT_PREFIX;
+import static seedu.address.logic.parser.CommandParserTestUtil.TITLE_EXAMPLE_TITLE_PREFIX;
 import static seedu.address.logic.parser.CommandParserTestUtil.givenOnce;
-import static seedu.address.logic.parser.CommandParserTestUtil.givenOnceWithQuoteHint;
-import static seedu.address.logic.parser.CommandParserTestUtil.titleAndAliasWithQuoteHint;
+import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
+import static seedu.address.logic.parser.CommandParserTestUtil.titleQuoteHint;
 import static seedu.address.logic.parser.CommandParserTestUtil.unexpectedWords;
 import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefix;
-import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefixWithQuoteHint;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TestUtil.ARABIC_EGYPT;
 import static seedu.address.testutil.TestUtil.runWithFormatLocale;
@@ -76,10 +79,13 @@ public class HomeworkMessagesIntegrationTest {
 
     @Test
     public void execute_wrongCasePrefix_rejectedInsteadOfSavedInValue() throws Exception {
-        assertParseFailure("hw e 1 2 t/X Due/2026-11-11", wrongCasePrefixWithQuoteHint("Due/", "due/",
-                "t/\"X Due/2026-11-11\"") + "\nUsage: " + HomeworkEditCommand.MESSAGE_USAGE);
-        assertParseFailure("hw add 1 t/A S/MATH due/2026-11-01", wrongCasePrefixWithQuoteHint("S/", "s/",
-                "t/\"A S/MATH\"") + "\nUsage: " + HomeworkAddCommand.MESSAGE_USAGE);
+        assertParseFailure("hw e 1 2 t/X Due/2026-11-11", wrongCasePrefix("Due/", "due/")
+                + titleQuoteHint("Due/", TITLE_EXAMPLE_OTHER_PREFIX) + "\nUsage: " + HomeworkEditCommand.MESSAGE_USAGE);
+        assertParseFailure("hw add 1 t/A S/MATH due/2026-11-01", wrongCasePrefix("S/", "s/")
+                + titleQuoteHint("S/", TITLE_EXAMPLE_OTHER_PREFIX) + "\nUsage: " + HomeworkAddCommand.MESSAGE_USAGE);
+        // r3-ald-01: after the subject, not in the title
+        assertParseFailure("hw add 1 t/Essay s/MATH Due/2026-12-01", wrongCasePrefix("Due/", "due/") + "\nUsage: "
+                + HomeworkAddCommand.MESSAGE_USAGE);
         assertParseFailure("hw m 1 2 Score/5", wrongCasePrefix("Score/", "score/") + "\nUsage: "
                 + HomeworkMarksCommand.MESSAGE_USAGE);
         assertParseFailure("hw up Due/3", wrongCasePrefix("Due/", "due/") + "\nUsage: "
@@ -89,20 +95,38 @@ public class HomeworkMessagesIntegrationTest {
     @Test
     public void execute_repeatedPrefix_saysOnceWithUsage() throws Exception {
         String addUsage = "\nUsage: " + HomeworkAddCommand.MESSAGE_USAGE;
-        assertParseFailure("hw add 1 t/Revise t/f questions s/MATH due/2026-12-01",
-                givenOnceWithQuoteHint("t/", "t/\"Revise t/f questions\"") + addUsage);
-        assertParseFailure("hw add 1 t/Read s/o notes s/MATH due/2026-12-01",
-                givenOnceWithQuoteHint("s/", "t/\"Read s/o notes\"") + addUsage);
-        assertParseFailure("hw add 1 t/Read title/abstract s/MATH due/2026-12-01",
-                titleAndAliasWithQuoteHint("t/\"Read title/abstract\"") + addUsage);
-        assertParseFailure("hw add 1 t/a t/b s/MATH due/2026-12-01", givenOnceWithQuoteHint("t/", "t/\"a t/b\"")
+        String titleHint = titleQuoteHint("t/", TITLE_EXAMPLE_TITLE_PREFIX);
+        assertParseFailure("hw add 1 t/Revise t/f questions s/MATH due/2026-12-01", givenOnce("t/") + titleHint
                 + addUsage);
-        assertParseFailure("hw e 1 2 t/X t/Y", givenOnceWithQuoteHint("t/", "t/\"X t/Y\"") + "\nUsage: "
+        assertParseFailure("hw add 1 t/Read s/o notes s/MATH due/2026-12-01", givenOnce("s/")
+                + titleQuoteHint("s/", TITLE_EXAMPLE_SUBJECT_PREFIX) + addUsage);
+        assertParseFailure("hw add 1 t/Read title/abstract s/MATH due/2026-12-01", MESSAGE_TITLE_AND_ALIAS
+                + titleQuoteHint("title/", TITLE_EXAMPLE_TITLE_PREFIX) + addUsage);
+        assertParseFailure("hw add 1 t/a t/b s/MATH due/2026-12-01", givenOnce("t/") + titleHint + addUsage);
+        assertParseFailure("hw e 1 2 t/X t/Y", givenOnce("t/") + titleHint + "\nUsage: "
                 + HomeworkEditCommand.MESSAGE_USAGE);
+        // r3-ald-03: the first due/ is in the title, though the second does not follow it
+        assertParseFailure("hw add 1 t/Revise due/dates s/MATH due/2026-12-02", givenOnce("due/")
+                + titleQuoteHint("due/", TITLE_EXAMPLE_OTHER_PREFIX) + addUsage);
         assertParseFailure("hw m 1 2 score/1 score/2", givenOnce("score/") + "\nUsage: "
                 + HomeworkMarksCommand.MESSAGE_USAGE);
         assertParseFailure("hw up due/3 due/7", givenOnce("due/") + "\nUsage: "
                 + HomeworkUpcomingCommand.MESSAGE_USAGE);
+    }
+
+    @Test
+    public void execute_unknownPrefixInScoreOrDays_noQuoteHint() throws Exception {
+        // r3-emu-04
+        assertParseFailure("hw m 1 2 score/5 t/X", notPrefix("t/") + "\nUsage: " + HomeworkMarksCommand.MESSAGE_USAGE);
+        assertParseFailure("hw up due/7 x/y", notPrefix("x/") + "\nUsage: " + HomeworkUpcomingCommand.MESSAGE_USAGE);
+    }
+
+    @Test
+    public void execute_titleQuoteHintExample_addsExampleTitle() throws Exception {
+        // the example in the hint, typed as shown, gives the title in it
+        execute("hw add 1 " + TITLE_EXAMPLE_TITLE_PREFIX + " s/MATH due/2026-12-01");
+        assertEquals("True t/f quiz", model.getStudentList().getFirst().getHomeworks().get(2).getTitle()
+                .toString());
     }
 
     @Test

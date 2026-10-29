@@ -4,12 +4,13 @@ import static java.util.Objects.requireNonNull;
 import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,8 +28,9 @@ import seedu.address.logic.parser.exceptions.ParseException;
  * Errors are reported in the order the offending text appears. An unknown prefix is named in the error, with a hint
  * to quote the value it is in, followed by the usage text of the command.
  * A command may also reject an allowed prefix typed in another case (e.g. {@code Due/} for {@code due/}) instead of
- * keeping it in a value; other words that are not lowercase stay in the value. Such a command also explains a
- * repeated prefix by its {@link RepeatedPrefixRules}.
+ * keeping it in a value; other words that are not lowercase stay in the value. Such a command explains a repeated
+ * prefix by its {@link RepeatedPrefixRules}, and gives the hint of those rules, instead of an example built from the
+ * value, only for a prefix inside a free-text value.
  */
 public final class StrictArgumentTokenizer {
     public static final String MESSAGE_REPEATED_PREFIX = "Prefix %s must be specified exactly once.";
@@ -163,8 +165,9 @@ public final class StrictArgumentTokenizer {
      * @param isPreambleAllowed Whether text may appear before the first prefix.
      * @param valueTokenFilter Decides which prefix-shaped tokens belong to the preceding value.
      * @param isWrongCaseRejected Whether an allowed prefix typed in another case is rejected.
-     * @param repeatedPrefixRules How to explain a repeated prefix and aliases given together, or null to report a
-     *     repeated prefix with {@code repeatedPrefixMessage} alone and allow aliases together.
+     * @param repeatedPrefixRules How to explain a repeated prefix, aliases given together and a prefix inside a
+     *     free-text value, or null to report a repeated prefix with {@code repeatedPrefixMessage} alone, allow aliases
+     *     together and build the hint for an unknown prefix from the value it is in.
      */
     private static TokenizedArguments tokenize(String arguments, List<String> allowedPrefixes,
             String invalidFormatMessage, String repeatedPrefixMessage, boolean isPreambleAllowed,
@@ -179,19 +182,22 @@ public final class StrictArgumentTokenizer {
         }
 
         Map<String, String> values = new LinkedHashMap<>();
-        // the hint to quote the free-text value each prefix given so far is in, for a repeated prefix right after it
-        Map<String, String> quoteHints = new HashMap<>();
+        Set<String> prefixesInText = new HashSet<>();
         String aliasErrorMessage = null;
         int previousValueStart = -1;
         String previousPrefix = null;
         boolean isPreviousValueQuoted = false;
         while (hasNextPrefix) {
             String prefix = matcher.group(1);
+            boolean isInText = repeatedPrefixRules != null && previousPrefix != null && !isPreviousValueQuoted
+                    && repeatedPrefixRules.textPrefixes().contains(previousPrefix);
+            String quoteHint = isInText ? repeatedPrefixRules.quoteHint().apply(prefix) : "";
             if (!isLowercase(prefix)) {
+                // only commands with rules reject a wrong-case prefix
                 String firstSentence = String.format(MESSAGE_WRONG_CASE_PREFIX, prefix,
                         prefix.toLowerCase(Locale.ROOT));
-                throw new ParseException(buildPrefixErrorMessage(firstSentence, arguments, matcher, previousPrefix,
-                        previousValueStart, allowedPrefixes, valueTokenFilter, invalidFormatMessage));
+                throw new ParseException(buildErrorMessage(firstSentence, quoteHint, arguments,
+                        invalidFormatMessage));
             }
             if (!isPreviousValueQuoted
                     && valueTokenFilter.isPartOfValue(arguments, matcher.end(), previousPrefix, prefix)) {
@@ -204,23 +210,20 @@ public final class StrictArgumentTokenizer {
             }
 
             if (!allowedPrefixes.contains(prefix)) {
-                throw new ParseException(buildPrefixErrorMessage(String.format(MESSAGE_NOT_PREFIX, prefix), arguments,
-                        matcher, previousPrefix, previousValueStart, allowedPrefixes, valueTokenFilter,
-                        invalidFormatMessage));
+                String firstSentence = String.format(MESSAGE_NOT_PREFIX, prefix);
+                throw new ParseException(repeatedPrefixRules != null
+                        ? buildErrorMessage(firstSentence, quoteHint, arguments, invalidFormatMessage)
+                        : buildPrefixErrorMessage(firstSentence, arguments, matcher, previousPrefix,
+                                previousValueStart, allowedPrefixes, valueTokenFilter, invalidFormatMessage));
             }
             if (repeatedPrefixRules == null && values.containsKey(prefix)) {
                 throw new ParseException(String.format(repeatedPrefixMessage, prefix));
             }
             if (repeatedPrefixRules != null) {
-                String quoteHint = isPreviousValueQuoted || previousPrefix == null
-                        || !repeatedPrefixRules.textPrefixes().contains(previousPrefix) ? ""
-                        : buildQuoteHint(arguments, matcher.start(), matcher.end(), previousPrefix,
-                                previousValueStart, allowedPrefixes, valueTokenFilter);
                 if (values.containsKey(prefix)) {
-                    // a repeated prefix right after the first one may mean the first is in the free-text value
-                    // before it, e.g. s/ in t/Read s/o notes s/MATH
-                    String hint = quoteHint.isEmpty() && prefix.equals(previousPrefix)
-                            ? quoteHints.getOrDefault(prefix, "") : quoteHint;
+                    // either one may be in a free-text value, e.g. the first s/ in t/Read s/o notes s/MATH
+                    String hint = prefixesInText.contains(prefix) ? repeatedPrefixRules.quoteHint().apply(prefix)
+                            : quoteHint;
                     throw new ParseException(buildErrorMessage(String.format(MESSAGE_PREFIX_GIVEN_ONCE, prefix),
                             hint, arguments, invalidFormatMessage));
                 }
@@ -229,7 +232,9 @@ public final class StrictArgumentTokenizer {
                     aliasErrorMessage = buildErrorMessage(repeatedPrefixRules.aliasMessage(), quoteHint, arguments,
                             invalidFormatMessage);
                 }
-                quoteHints.put(prefix, quoteHint);
+                if (isInText) {
+                    prefixesInText.add(prefix);
+                }
             }
             previousPrefix = prefix;
             previousValueStart = matcher.end();
@@ -245,7 +250,7 @@ public final class StrictArgumentTokenizer {
             values.put(previousPrefix, extractValue(arguments, previousValueStart, arguments.length(),
                     isPreviousValueQuoted));
         }
-        return new TokenizedArguments(preamble, values);
+        return new TokenizedArguments(preamble, values, prefixesInText);
     }
 
     /**
@@ -431,22 +436,27 @@ public final class StrictArgumentTokenizer {
     }
 
     /**
-     * Describes how a command explains a repeated prefix.
+     * Describes how a command explains a repeated prefix, and a prefix-shaped word that may be part of a free-text
+     * value. Such a word directly follows an unquoted value of one of {@code textPrefixes}, and its error gets the
+     * hint {@code quoteHint} gives for it; an error about any other word gets no hint.
      *
      * @param textPrefixes Prefixes whose values are free text, which may contain prefix-shaped words when quoted.
      * @param aliasPrefixes Prefixes that name the same field, at most one of which may be given.
      * @param aliasMessage First sentence of the error for giving more than one of {@code aliasPrefixes}.
+     * @param quoteHint Returns the hint, starting with a space, to quote the free-text value that holds the given
+     *     prefix-shaped word.
      */
-    public record RepeatedPrefixRules(List<String> textPrefixes, List<String> aliasPrefixes, String aliasMessage) {
+    public record RepeatedPrefixRules(List<String> textPrefixes, List<String> aliasPrefixes, String aliasMessage,
+            UnaryOperator<String> quoteHint) {
         /** Rules for a command whose values are not free text and whose prefixes have no aliases. */
         public static final RepeatedPrefixRules NO_TEXT_OR_ALIAS_PREFIXES =
-                new RepeatedPrefixRules(List.of(), List.of(), "");
+                new RepeatedPrefixRules(List.of(), List.of(), "", prefix -> "");
 
         /**
          * Creates rules holding unmodifiable copies of {@code textPrefixes} and {@code aliasPrefixes}.
          */
         public RepeatedPrefixRules {
-            requireAllNonNull(textPrefixes, aliasPrefixes, aliasMessage);
+            requireAllNonNull(textPrefixes, aliasPrefixes, aliasMessage, quoteHint);
             textPrefixes = List.copyOf(textPrefixes);
             aliasPrefixes = List.copyOf(aliasPrefixes);
         }
@@ -460,16 +470,20 @@ public final class StrictArgumentTokenizer {
     }
 
     /**
-     * Holds the result of tokenizing: the stripped preamble and each prefix's stripped value in the order the
-     * prefixes appear. A prefix that is present with no value maps to an empty string.
+     * Holds the result of tokenizing: the stripped preamble, each prefix's stripped value in the order the
+     * prefixes appear, and the prefixes that directly follow an unquoted free-text value, so may be part of it.
+     * A prefix that is present with no value maps to an empty string. Only a command with
+     * {@link RepeatedPrefixRules} has free-text values.
      */
-    public record TokenizedArguments(String preamble, Map<String, String> values) {
+    public record TokenizedArguments(String preamble, Map<String, String> values, Set<String> prefixesInText) {
         /**
-         * Creates a result holding an unmodifiable copy of {@code values} that keeps its iteration order.
+         * Creates a result holding an unmodifiable copy of {@code values} that keeps its iteration order, and an
+         * unmodifiable copy of {@code prefixesInText}.
          */
         public TokenizedArguments {
-            requireAllNonNull(preamble, values);
+            requireAllNonNull(preamble, values, prefixesInText);
             values = Collections.unmodifiableMap(new LinkedHashMap<>(values));
+            prefixesInText = Set.copyOf(prefixesInText);
         }
     }
 }

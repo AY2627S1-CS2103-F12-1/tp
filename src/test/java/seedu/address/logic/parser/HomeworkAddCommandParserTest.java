@@ -1,16 +1,17 @@
 package seedu.address.logic.parser;
 
 import static seedu.address.logic.parser.CommandParserTestUtil.MESSAGE_CURLY_QUOTES;
+import static seedu.address.logic.parser.CommandParserTestUtil.MESSAGE_TITLE_AND_ALIAS;
+import static seedu.address.logic.parser.CommandParserTestUtil.TITLE_EXAMPLE_OTHER_PREFIX;
+import static seedu.address.logic.parser.CommandParserTestUtil.TITLE_EXAMPLE_SUBJECT_PREFIX;
+import static seedu.address.logic.parser.CommandParserTestUtil.TITLE_EXAMPLE_TITLE_PREFIX;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
 import static seedu.address.logic.parser.CommandParserTestUtil.givenOnce;
-import static seedu.address.logic.parser.CommandParserTestUtil.givenOnceWithQuoteHint;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
-import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
-import static seedu.address.logic.parser.CommandParserTestUtil.titleAndAliasWithQuoteHint;
+import static seedu.address.logic.parser.CommandParserTestUtil.titleQuoteHint;
 import static seedu.address.logic.parser.CommandParserTestUtil.unexpectedWords;
 import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefix;
-import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefixWithQuoteHint;
 import static seedu.address.model.homework.DueDateTest.MESSAGE_EMPTY;
 import static seedu.address.model.homework.DueDateTest.MESSAGE_YEAR_OUT_OF_RANGE;
 import static seedu.address.model.homework.DueDateTest.leapDayMessage;
@@ -192,21 +193,44 @@ public class HomeworkAddCommandParserTest {
 
     @Test
     public void parse_unclosedQuotedTitle_failure() {
-        // km/ is read as an unknown prefix; the opening quote is not doubled in the example
-        assertParseFailure(parser, "1 t/\"Speed in km/h s/MATH due/2026-10-15",
-                notPrefixWithQuoteHint("km/", "t/\"Speed in km/h\"") + USAGE_LINE);
+        // km/ is read as an unknown prefix in the title
+        assertParseFailure(parser, "1 t/\"Speed in km/h s/MATH due/2026-10-15", notPrefix("km/")
+                + titleQuoteHint("km/", TITLE_EXAMPLE_OTHER_PREFIX) + USAGE_LINE);
     }
 
     @Test
     public void parse_noSpaceAfterClosingQuote_throwsParseExceptionNamingWord() {
-        assertParseFailure(parser, "1 t/\"Speed in km/h\"s/PHYSICS due/2026-11-01",
-                notPrefixWithQuoteHint("km/", "t/\"Speed in km/h\"") + USAGE_LINE);
+        assertParseFailure(parser, "1 t/\"Speed in km/h\"s/PHYSICS due/2026-11-01", notPrefix("km/")
+                + titleQuoteHint("km/", TITLE_EXAMPLE_OTHER_PREFIX) + USAGE_LINE);
     }
 
     @Test
     public void parse_curlyQuotes_throwsParseExceptionWithStraightQuoteHint() {
-        assertParseFailure(parser, "1 t/“Speed in km/h” s/PHYSICS due/2026-11-01",
-                notPrefixWithQuoteHint("km/", "t/\"Speed in km/h\"") + "\n" + MESSAGE_CURLY_QUOTES + USAGE_LINE);
+        assertParseFailure(parser, "1 t/“Speed in km/h” s/PHYSICS due/2026-11-01", notPrefix("km/")
+                + titleQuoteHint("km/", TITLE_EXAMPLE_OTHER_PREFIX) + "\n" + MESSAGE_CURLY_QUOTES + USAGE_LINE);
+    }
+
+    @Test
+    public void parse_titleQuoteHintExamples_giveExampleTitles() {
+        // each example in the hint, typed as shown, gives the title in it
+        assertParseSuccess(parser, "1 " + TITLE_EXAMPLE_TITLE_PREFIX + " s/MATH due/2026-10-15",
+                new HomeworkAddCommand(Index.fromOneBased(1), new HomeworkBuilder().withTitle("True t/f quiz").build(),
+                        false, TODAY));
+        assertParseSuccess(parser, "1 " + TITLE_EXAMPLE_SUBJECT_PREFIX + " s/MATH due/2026-10-15",
+                new HomeworkAddCommand(Index.fromOneBased(1), new HomeworkBuilder().withTitle("Read s/o notes")
+                        .build(), false, TODAY));
+        assertParseSuccess(parser, "1 " + TITLE_EXAMPLE_OTHER_PREFIX + " s/MATH due/2026-10-15",
+                new HomeworkAddCommand(Index.fromOneBased(1), new HomeworkBuilder().withTitle("Pg 5 w/ answers")
+                        .build(), false, TODAY));
+    }
+
+    @Test
+    public void parse_quotesInUnquotedTitle_exampleWithoutUserText() {
+        // r3-ald-02: the example does not repeat the title, whose own quotes would end a quoted title early
+        assertParseFailure(parser, "1 t/\"Hamlet\" and/or Macbeth s/MATH due/2026-12-01", notPrefix("and/")
+                + titleQuoteHint("and/", TITLE_EXAMPLE_OTHER_PREFIX) + USAGE_LINE);
+        assertParseFailure(parser, "1 t/Read \"Hamlet\" s/o notes s/MATH due/2026-12-01", givenOnce("s/")
+                + titleQuoteHint("s/", TITLE_EXAMPLE_SUBJECT_PREFIX) + USAGE_LINE);
     }
 
     @Test
@@ -220,20 +244,18 @@ public class HomeworkAddCommandParserTest {
     @Test
     public void parse_titleWithLowercaseSlashWord_failure() {
         // km/ is read as an unknown prefix
-        assertParseFailure(parser, "1 title/Speed in km/h s/MATH due/2026-10-15",
-                notPrefixWithQuoteHint("km/", "title/\"Speed in km/h\"") + USAGE_LINE);
-        assertParseFailure(parser, "1 t/Speed in km/h s/PHYSICS due/2026-11-01",
-                notPrefixWithQuoteHint("km/", "t/\"Speed in km/h\"") + USAGE_LINE);
+        assertParseFailure(parser, "1 title/Speed in km/h s/MATH due/2026-10-15", notPrefix("km/")
+                + titleQuoteHint("km/", TITLE_EXAMPLE_OTHER_PREFIX) + USAGE_LINE);
+        assertParseFailure(parser, "1 t/Speed in km/h s/PHYSICS due/2026-11-01", notPrefix("km/")
+                + titleQuoteHint("km/", TITLE_EXAMPLE_OTHER_PREFIX) + USAGE_LINE);
 
         // and/ is read as an unknown prefix
-        assertParseFailure(parser, "1 t/Read and/or summarize s/MATH due/2026-10-15",
-                notPrefixWithQuoteHint("and/", "t/\"Read and/or summarize\"") + USAGE_LINE);
-        assertParseFailure(parser, "1 t/Essay and/or summary s/MATH due/2026-11-01",
-                notPrefixWithQuoteHint("and/", "t/\"Essay and/or summary\"") + USAGE_LINE);
+        assertParseFailure(parser, "1 t/Read and/or summarize s/MATH due/2026-10-15", notPrefix("and/")
+                + titleQuoteHint("and/", TITLE_EXAMPLE_OTHER_PREFIX) + USAGE_LINE);
 
         // w/ followed by a space is read as an unknown prefix
-        assertParseFailure(parser, "1 t/Kinematics w/ solutions s/PHYSICS due/2026-11-01",
-                notPrefixWithQuoteHint("w/", "t/\"Kinematics w/ solutions\"") + USAGE_LINE);
+        assertParseFailure(parser, "1 t/Kinematics w/ solutions s/PHYSICS due/2026-11-01", notPrefix("w/")
+                + titleQuoteHint("w/", TITLE_EXAMPLE_OTHER_PREFIX) + USAGE_LINE);
     }
 
     @Test
@@ -266,8 +288,10 @@ public class HomeworkAddCommandParserTest {
 
     @Test
     public void parse_unknownPrefix_failure() {
-        // the due date before x/ is only digits and date punctuation, so no example is given
-        assertParseFailure(parser, "1" + VALID_FIELDS + " x/extra", notPrefixWithQuoteHint("x/") + USAGE_LINE);
+        // x/ follows the due date, not the title, so there is no hint to quote the title
+        assertParseFailure(parser, "1" + VALID_FIELDS + " x/extra", notPrefix("x/") + USAGE_LINE);
+        // r3-ald-01
+        assertParseFailure(parser, "1 t/Essay s/MATH due/tomorrow x/y", notPrefix("x/") + USAGE_LINE);
     }
 
     @Test
@@ -276,10 +300,11 @@ public class HomeworkAddCommandParserTest {
                 wrongCasePrefix("TITLE/", "title/") + USAGE_LINE);
         assertParseFailure(parser, "1 T/A s/MATH due/2026-11-01", wrongCasePrefix("T/", "t/") + USAGE_LINE);
         // S/MATH is not kept in the title, which would leave s/ missing
-        assertParseFailure(parser, "1 t/A S/MATH due/2026-11-01",
-                wrongCasePrefixWithQuoteHint("S/", "s/", "t/\"A S/MATH\"") + USAGE_LINE);
-        assertParseFailure(parser, "1 t/A s/MATH Due/2026-11-01",
-                wrongCasePrefixWithQuoteHint("Due/", "due/", "s/\"MATH Due/2026-11-01\"") + USAGE_LINE);
+        assertParseFailure(parser, "1 t/A S/MATH due/2026-11-01", wrongCasePrefix("S/", "s/")
+                + titleQuoteHint("S/", TITLE_EXAMPLE_OTHER_PREFIX) + USAGE_LINE);
+        // r3-ald-01: after the subject, not in the title, so there is no hint to quote it
+        assertParseFailure(parser, "1 t/Essay s/MATH Due/2026-12-01", wrongCasePrefix("Due/", "due/")
+                + USAGE_LINE);
     }
 
     @Test
@@ -298,38 +323,50 @@ public class HomeworkAddCommandParserTest {
 
     @Test
     public void parse_repeatedSubjectPrefix_failure() {
-        // the first s/ follows the title, but the second does not follow it
-        assertParseFailure(parser, "1" + VALID_FIELDS + " s/PHYSICS", givenOnce("s/") + USAGE_LINE);
+        // the first s/ follows the title, so it may be part of it
+        assertParseFailure(parser, "1" + VALID_FIELDS + " s/PHYSICS", givenOnce("s/")
+                + titleQuoteHint("s/", TITLE_EXAMPLE_SUBJECT_PREFIX) + USAGE_LINE);
+        // neither s/ follows the title
+        assertParseFailure(parser, "1 s/MATH t/Essay due/2026-10-15 s/PHYSICS", givenOnce("s/") + USAGE_LINE);
     }
 
     @Test
     public void parse_repeatedTitleAliasPrefix_failure() {
-        assertParseFailure(parser, "1 t/First t/Second s/MATH due/2026-10-15",
-                givenOnceWithQuoteHint("t/", "t/\"First t/Second\"") + USAGE_LINE);
+        assertParseFailure(parser, "1 t/First t/Second s/MATH due/2026-10-15", givenOnce("t/")
+                + titleQuoteHint("t/", TITLE_EXAMPLE_TITLE_PREFIX) + USAGE_LINE);
     }
 
     @Test
     public void parse_prefixWordInTitle_hintsToQuoteTitle() {
         // the second t/ is in the title
-        assertParseFailure(parser, "1 t/Revise t/f questions s/MATH due/2026-12-01",
-                givenOnceWithQuoteHint("t/", "t/\"Revise t/f questions\"") + USAGE_LINE);
+        assertParseFailure(parser, "1 t/Revise t/f questions s/MATH due/2026-12-01", givenOnce("t/")
+                + titleQuoteHint("t/", TITLE_EXAMPLE_TITLE_PREFIX) + USAGE_LINE);
         // the first s/ is in the title
-        assertParseFailure(parser, "1 t/Read s/o notes s/MATH due/2026-12-01",
-                givenOnceWithQuoteHint("s/", "t/\"Read s/o notes\"") + USAGE_LINE);
-        assertParseFailure(parser, "1 t/Read title/abstract s/MATH due/2026-12-01",
-                titleAndAliasWithQuoteHint("t/\"Read title/abstract\"") + USAGE_LINE);
+        assertParseFailure(parser, "1 t/Read s/o notes s/MATH due/2026-12-01", givenOnce("s/")
+                + titleQuoteHint("s/", TITLE_EXAMPLE_SUBJECT_PREFIX) + USAGE_LINE);
+        assertParseFailure(parser, "1 t/Read title/abstract s/MATH due/2026-12-01", MESSAGE_TITLE_AND_ALIAS
+                + titleQuoteHint("title/", TITLE_EXAMPLE_TITLE_PREFIX) + USAGE_LINE);
+    }
+
+    @Test
+    public void parse_prefixWordInTitleNotNextToRepeat_hintsToQuoteTitle() {
+        // r3-ald-03: the first due/ is in the title, though the second does not follow it
+        assertParseFailure(parser, "1 t/Revise due/dates s/MATH due/2026-12-02", givenOnce("due/")
+                + titleQuoteHint("due/", TITLE_EXAMPLE_OTHER_PREFIX) + USAGE_LINE);
+        assertParseFailure(parser, "1 t/Revise s/o notes due/12-02 s/MATH", givenOnce("s/")
+                + titleQuoteHint("s/", TITLE_EXAMPLE_SUBJECT_PREFIX) + USAGE_LINE);
     }
 
     @Test
     public void parse_titleThenTitleAlias_reportsUseEither() {
-        assertParseFailure(parser, "1 title/First t/Second s/MATH due/2026-10-15",
-                titleAndAliasWithQuoteHint("title/\"First t/Second\"") + USAGE_LINE);
+        assertParseFailure(parser, "1 title/First t/Second s/MATH due/2026-10-15", MESSAGE_TITLE_AND_ALIAS
+                + titleQuoteHint("t/", TITLE_EXAMPLE_TITLE_PREFIX) + USAGE_LINE);
     }
 
     @Test
     public void parse_titleAliasThenTitle_reportsUseEither() {
-        assertParseFailure(parser, "1 t/First title/Second s/MATH due/2026-10-15",
-                titleAndAliasWithQuoteHint("t/\"First title/Second\"") + USAGE_LINE);
+        assertParseFailure(parser, "1 t/First title/Second s/MATH due/2026-10-15", MESSAGE_TITLE_AND_ALIAS
+                + titleQuoteHint("title/", TITLE_EXAMPLE_TITLE_PREFIX) + USAGE_LINE);
     }
 
     @Test
@@ -479,21 +516,21 @@ public class HomeworkAddCommandParserTest {
 
     @Test
     public void parse_unknownPrefixAndTitleAliasConflict_reportsUnknownPrefix() {
-        assertParseFailure(parser, "1 t/Algebra title/Mechanics x/extra",
-                notPrefixWithQuoteHint("x/", "title/\"Mechanics x/extra\"") + USAGE_LINE);
+        assertParseFailure(parser, "1 t/Algebra title/Mechanics x/extra", notPrefix("x/")
+                + titleQuoteHint("x/", TITLE_EXAMPLE_OTHER_PREFIX) + USAGE_LINE);
         assertParseFailure(parser, "1 x/extra t/Algebra title/Mechanics", notPrefix("x/") + USAGE_LINE);
     }
 
     @Test
     public void parse_repeatedPrefixAndTitleAliasConflict_reportsRepeatedPrefix() {
-        assertParseFailure(parser, "1 t/Algebra title/Mechanics s/MATH s/PHYSICS",
-                givenOnceWithQuoteHint("s/", "title/\"Mechanics s/MATH\"") + USAGE_LINE);
+        assertParseFailure(parser, "1 t/Algebra title/Mechanics s/MATH s/PHYSICS", givenOnce("s/")
+                + titleQuoteHint("s/", TITLE_EXAMPLE_SUBJECT_PREFIX) + USAGE_LINE);
     }
 
     @Test
     public void parse_titleAliasConflictAndMissingIndex_reportsUseEither() {
-        assertParseFailure(parser, "t/Algebra title/Mechanics",
-                titleAndAliasWithQuoteHint("t/\"Algebra title/Mechanics\"") + USAGE_LINE);
+        assertParseFailure(parser, "t/Algebra title/Mechanics", MESSAGE_TITLE_AND_ALIAS
+                + titleQuoteHint("title/", TITLE_EXAMPLE_TITLE_PREFIX) + USAGE_LINE);
     }
 
     @Test

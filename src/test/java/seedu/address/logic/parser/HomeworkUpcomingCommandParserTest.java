@@ -5,7 +5,6 @@ import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailur
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
 import static seedu.address.logic.parser.CommandParserTestUtil.givenOnce;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
-import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
 import static seedu.address.logic.parser.CommandParserTestUtil.unexpectedWords;
 import static seedu.address.logic.parser.CommandParserTestUtil.wrongCasePrefix;
 import static seedu.address.logic.parser.HomeworkUpcomingCommandParser.MESSAGE_INVALID_DAYS;
@@ -150,8 +149,9 @@ public class HomeworkUpcomingCommandParserTest {
     public void parse_unknownPrefix_failure() {
         String usageLine = "\nUsage: " + HomeworkUpcomingCommand.MESSAGE_USAGE;
         assertParseFailure(parser, "d/3", notPrefix("d/") + usageLine);
-        // the days before s/ are only digits, so no example is given
-        assertParseFailure(parser, "due/3 s/MATH", notPrefixWithQuoteHint("s/") + usageLine);
+        // r3-emu-04: a day count cannot hold a prefix-shaped word, so there is no hint to quote it
+        assertParseFailure(parser, "due/3 s/MATH", notPrefix("s/") + usageLine);
+        assertParseFailure(parser, "due/7 x/y", notPrefix("x/") + usageLine);
     }
 
     @Test

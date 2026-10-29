@@ -12,9 +12,12 @@ import static seedu.address.logic.Messages.MESSAGE_UNKNOWN_COMMAND;
 import static seedu.address.logic.commands.CommandTestUtil.CAUSE_READ_ONLY_FOLDER;
 import static seedu.address.logic.commands.CommandTestUtil.SHOWN_DATA_FILE_NAME;
 import static seedu.address.logic.commands.CommandTestUtil.formatHomeworkLine;
+import static seedu.address.logic.parser.CommandParserTestUtil.MESSAGE_TITLE_AND_ALIAS;
+import static seedu.address.logic.parser.CommandParserTestUtil.TITLE_EXAMPLE_OTHER_PREFIX;
+import static seedu.address.logic.parser.CommandParserTestUtil.TITLE_EXAMPLE_TITLE_PREFIX;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefix;
 import static seedu.address.logic.parser.CommandParserTestUtil.notPrefixWithQuoteHint;
-import static seedu.address.logic.parser.CommandParserTestUtil.titleAndAliasWithQuoteHint;
+import static seedu.address.logic.parser.CommandParserTestUtil.titleQuoteHint;
 import static seedu.address.model.homework.DueDateTest.MESSAGE_EMPTY;
 import static seedu.address.model.homework.DueDateTest.MESSAGE_YEAR_OUT_OF_RANGE;
 import static seedu.address.model.homework.DueDateTest.leapDayMessage;
@@ -263,13 +266,14 @@ public class LogicManagerTest {
         setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
 
         String usageLine = "\nUsage: " + HomeworkAddCommand.MESSAGE_USAGE;
-        assertParseException("hw add 1 t/Speed in km/h s/PHYSICS due/2026-11-01",
-                notPrefixWithQuoteHint("km/", "t/\"Speed in km/h\"") + usageLine);
-        // the quotes around the title are not doubled in the example
-        assertParseException("hw add 1 t/\"Speed in km/h\"s/PHYSICS due/2026-11-20",
-                notPrefixWithQuoteHint("km/", "t/\"Speed in km/h\"") + usageLine);
-        // the due date before x/ is only digits and dashes, so no example is given
-        assertParseException("hw add 1 t/A s/PHYSICS due/2026-11-01 x/y", notPrefixWithQuoteHint("x/") + usageLine);
+        String quoteHint = titleQuoteHint("km/", TITLE_EXAMPLE_OTHER_PREFIX);
+        assertParseException("hw add 1 t/Speed in km/h s/PHYSICS due/2026-11-01", notPrefix("km/") + quoteHint
+                + usageLine);
+        // the closing quote is not followed by a space, so the title is not quoted
+        assertParseException("hw add 1 t/\"Speed in km/h\"s/PHYSICS due/2026-11-20", notPrefix("km/") + quoteHint
+                + usageLine);
+        // x/ follows the due date, not the title, so there is no hint to quote the title
+        assertParseException("hw add 1 t/A s/PHYSICS due/2026-11-01 x/y", notPrefix("x/") + usageLine);
         assertFalse(Files.exists(dataFilePath));
     }
 
@@ -287,7 +291,8 @@ public class LogicManagerTest {
     public void execute_titleAndAliasInEdit_reportsUseEither() {
         setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
 
-        assertParseException("hw e 1 2 t/A title/B", titleAndAliasWithQuoteHint("t/\"A title/B\"") + "\nUsage: "
+        assertParseException("hw e 1 2 t/A title/B", MESSAGE_TITLE_AND_ALIAS
+                + titleQuoteHint("title/", TITLE_EXAMPLE_TITLE_PREFIX) + "\nUsage: "
                 + HomeworkEditCommand.MESSAGE_USAGE);
         assertFalse(Files.exists(dataFilePath));
     }

@@ -101,17 +101,22 @@ public class JsonAdaptedStudentTest {
 
     @Test
     public void toModelType_invalidSubjects_throwsIllegalValueException() {
-        assertInvalidSubjects(List.of()); // no subject
-        assertInvalidSubjects(List.of("BIOLOGY")); // unsupported subject
-        assertInvalidSubjects(List.of("MATH", "math")); // repeated subject
-        assertInvalidSubjects(List.of("MATH, PHYSICS")); // two subjects in one entry
-        assertInvalidSubjects(Arrays.asList("MATH", null)); // empty entry
+        // PE round 2: the reason said "separated by commas", which is wrong for a JSON list
+        assertInvalidSubjects(List.of(), "The list is empty."); // no subject
+        assertInvalidSubjects(List.of("BIOLOGY"), "\"BIOLOGY\" is not a subject."); // unsupported subject
+        assertInvalidSubjects(List.of(""), "\"\" is not a subject."); // empty text
+        assertInvalidSubjects(List.of("MATH", "MATH"), "MATH is listed more than once."); // repeated subject
+        assertInvalidSubjects(List.of("MATH", " math "), "MATH is listed more than once."); // repeated in other case
+        assertInvalidSubjects(List.of("MATH, PHYSICS"),
+                "\"MATH, PHYSICS\" holds more than one subject."); // two subjects in one entry
+        assertInvalidSubjects(Arrays.asList("MATH", null), "Entry 2 is empty (null)."); // empty entry
 
         // the exact text shown in the load error
-        JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, List.of("BIOLOGY"),
-                VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, VALID_HOMEWORKS);
-        assertThrows(IllegalValueException.class, "subjects: Subjects must contain one or more of: MATH, PHYSICS, "
-                + "CHEMISTRY, separated by commas.", student::toModelType);
+        JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL,
+                List.of("MATH, PHYSICS"), VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, VALID_HOMEWORKS);
+        assertThrows(IllegalValueException.class, "subjects: \"MATH, PHYSICS\" holds more than one subject. "
+                + "Subjects must be a list of one or more of MATH, PHYSICS and CHEMISTRY, each in its own quotes "
+                + "and listed once, e.g. [\"MATH\", \"PHYSICS\"].", student::toModelType);
     }
 
     @Test
@@ -234,10 +239,10 @@ public class JsonAdaptedStudentTest {
         assertThrows(IllegalValueException.class, expectedMessage, student::toModelType);
     }
 
-    private static void assertInvalidSubjects(List<String> subjects) {
+    private static void assertInvalidSubjects(List<String> subjects, String problem) {
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, subjects,
                 VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, VALID_HOMEWORKS);
-        assertThrows(IllegalValueException.class, "subjects: " + TuitionSubjects.MESSAGE_CONSTRAINTS,
-                student::toModelType);
+        assertThrows(IllegalValueException.class, "subjects: " + problem + " "
+                + JsonAdaptedStudent.MESSAGE_SUBJECTS_CONSTRAINTS, student::toModelType);
     }
 }

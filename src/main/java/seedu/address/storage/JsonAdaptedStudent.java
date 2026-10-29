@@ -1,7 +1,9 @@
 package seedu.address.storage;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -28,6 +30,18 @@ class JsonAdaptedStudent {
     /** Message for a duplicate homework, e.g. "Homework 2 (Essay)", and the position of the earlier homework. */
     public static final String MESSAGE_DUPLICATE_HOMEWORK =
             "%s has the same title, subject and due date as homework %d.";
+    /** Rule for the subjects list in the data file, which, unlike the add command's input, is a JSON list. */
+    public static final String MESSAGE_SUBJECTS_CONSTRAINTS = "Subjects must be a list of one or more of MATH, "
+            + "PHYSICS and CHEMISTRY, each in its own quotes and listed once, e.g. [\"MATH\", \"PHYSICS\"].";
+    public static final String MESSAGE_SUBJECTS_EMPTY = "The list is empty.";
+    /** Message for a null entry of the subjects list, whose {@code %d} is its position, counting from 1. */
+    public static final String MESSAGE_SUBJECTS_NULL_ENTRY = "Entry %d is empty (null).";
+    /** Message for an entry of the subjects list, as written in the file, that holds more than one subject. */
+    public static final String MESSAGE_SUBJECTS_SEVERAL_IN_ONE_ENTRY = "\"%s\" holds more than one subject.";
+    /** Message for an entry of the subjects list, as written in the file, that is not a supported subject. */
+    public static final String MESSAGE_SUBJECTS_UNKNOWN = "\"%s\" is not a subject.";
+    /** Message for a subject that is listed more than once. */
+    public static final String MESSAGE_SUBJECTS_REPEATED = "%s is listed more than once.";
     /** Prefix naming the entry or key that an error is about, e.g. "Homework 2 (Essay): " or "guardianPhone: ". */
     public static final String ENTRY_PREFIX_FORMAT = "%s: ";
 
@@ -200,21 +214,44 @@ class JsonAdaptedStudent {
 
     /**
      * Returns the tuition subjects in the {@code subjects} list, which must be nonempty and hold distinct
-     * supported subjects.
+     * supported subjects, one per entry.
      *
-     * @throws IllegalValueException If the field is missing or its value is invalid.
+     * @throws IllegalValueException If the field is missing or its value is invalid. The message says what is wrong
+     *         with the list, followed by {@link #MESSAGE_SUBJECTS_CONSTRAINTS}.
      */
     private TuitionSubjects toModelSubjects() throws IllegalValueException {
         if (subjects == null) {
             throw new IllegalValueException(String.format(MISSING_FIELD_MESSAGE_FORMAT, "subjects"));
         }
-        // A comma inside one entry would otherwise be read as two subjects
-        if (subjects.stream().anyMatch(subject -> subject == null || subject.contains(","))) {
-            throw new IllegalValueException(String.format(ENTRY_PREFIX_FORMAT, "subjects")
-                    + TuitionSubjects.MESSAGE_CONSTRAINTS);
+        if (subjects.isEmpty()) {
+            throw invalidSubjects(MESSAGE_SUBJECTS_EMPTY);
         }
-        return toModelValue("subjects", String.join(",", subjects), TuitionSubjects::new,
-                TuitionSubjects.MESSAGE_CONSTRAINTS);
+        Set<TuitionSubject> modelSubjects = new HashSet<>();
+        for (int i = 0; i < subjects.size(); i++) {
+            String subject = subjects.get(i);
+            if (subject == null) {
+                throw invalidSubjects(String.format(MESSAGE_SUBJECTS_NULL_ENTRY, i + 1));
+            }
+            // A comma inside one entry would otherwise be read as two subjects
+            if (subject.contains(",")) {
+                throw invalidSubjects(String.format(MESSAGE_SUBJECTS_SEVERAL_IN_ONE_ENTRY, subject));
+            }
+            TuitionSubject modelSubject = toModelValue("subjects", subject, TuitionSubject::parse,
+                    String.format(MESSAGE_SUBJECTS_UNKNOWN, subject) + " " + MESSAGE_SUBJECTS_CONSTRAINTS);
+            if (!modelSubjects.add(modelSubject)) {
+                throw invalidSubjects(String.format(MESSAGE_SUBJECTS_REPEATED, modelSubject));
+            }
+        }
+        return new TuitionSubjects(String.join(",", subjects));
+    }
+
+    /**
+     * Returns an exception for an invalid subjects list, whose message names the key, says what is wrong with the
+     * list as {@code problem}, and gives {@link #MESSAGE_SUBJECTS_CONSTRAINTS}.
+     */
+    private static IllegalValueException invalidSubjects(String problem) {
+        return new IllegalValueException(String.format(ENTRY_PREFIX_FORMAT, "subjects") + problem + " "
+                + MESSAGE_SUBJECTS_CONSTRAINTS);
     }
 
     /**

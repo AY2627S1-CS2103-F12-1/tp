@@ -563,7 +563,7 @@ The year range is fixed (2000 to 2099) to catch typos such as `2206` or `0001`. 
 
 `homework list STUDENT_INDEX [all]` shows one student's homework. Without `all`, it shows only the records due today or later; with `all`, it also shows the records due before today. It sorts the records by due date, keeping records due on the same date in the order they were added, and shows each with its homework index. It only reads data, so nothing is saved.
 
-Because the numbers are homework indices, not row numbers, they can start above 1 or have gaps. For example, on 2026-11-06 Priya Nair's first record is overdue, so `hw ls 2` shows these records:
+Because the numbers are homework indices, not row numbers, they can start above 1 or have gaps. For example, on 2026-11-06 Priya Nair's first record is due before today, so `hw ls 2` shows these records:
 
 ```
 Listed 2 upcoming homework records for Priya Nair (82345671) (1 record due before today not shown; use homework list 2 all to see it).
@@ -1299,9 +1299,9 @@ testers are expected to do more *exploratory* testing.
 
 ### Listing, editing and scoring homework
 
-1. Listing upcoming and overdue homework
+1. Listing upcoming homework and homework due before today
 
-   1. Prerequisites: Start with the sample students (delete `data/tutorflow.json` first). Run `hw add 5 t/Old worksheet s/MATH due/2026-10-01`, which gives Daniel Wong (student 5) homework that is already overdue. The result ends with `Note: this homework is due before today, so homework list 5 shows it only with all.`
+   1. Prerequisites: Start with the sample students (delete `data/tutorflow.json` first). Run `hw add 5 t/Old worksheet s/MATH due/2026-10-01`, which gives Daniel Wong (student 5) homework that is already due before today. The result ends with `Note: this homework is due before today, so homework list 5 shows it only with all.`
 
    1. Test case: `hw ls 5`<br>
       Expected: `No upcoming homework found for Daniel Wong (96781234) (1 record due before today not shown; use homework list 5 all to see it).` Daniel Wong's card shows `Upcoming homework: 0`.
@@ -1323,13 +1323,13 @@ testers are expected to do more *exploratory* testing.
    1. Prerequisites: In a disposable test folder, run `clear`, then `add n/Ethan Lim l/S3 s/MATH,PHYSICS p/91234567 gn/Grace Lim gp/98765432` and `add n/Marcus Tan l/S1 s/MATH p/87654329 gn/Tan Mei Ling gp/91827364`. This gives two students without sample homework. Run `hw add 2 t/Today drill s/MATH due/TODAY`, then `hw add 1 t/Today forces s/PHYSICS due/TODAY` and `hw add 1 t/Old worksheet s/MATH due/PAST`, replacing `TODAY` with today's full date and `PAST` with yesterday's full date in `YYYY-MM-DD` form.
 
    1. Test case: `hw up due/0`<br>
-      Expected: `Found 2 homework records due from TODAY to TODAY.`, then `Student 1: Ethan Lim (91234567); Today forces; PHYSICS; Due: TODAY; Score: Not recorded; Status: ASSIGNED` before `Student 2: Marcus Tan (87654329); Today drill; MATH; Due: TODAY; Score: Not recorded; Status: ASSIGNED` (roster order, not the order they were added). `Old worksheet` is not shown, as it is overdue.
+      Expected: `Found 2 homework records due from TODAY to TODAY.`, then `Student 1: Ethan Lim (91234567); Today forces; PHYSICS; Due: TODAY; Score: Not recorded; Status: ASSIGNED` before `Student 2: Marcus Tan (87654329); Today drill; MATH; Due: TODAY; Score: Not recorded; Status: ASSIGNED` (roster order, not the order they were added). `Old worksheet` is not shown, as it is due before today.
 
    1. Test case: `hw up`<br>
       Expected: The summary ends with the date 7 days after today, and the lines are sorted by due date. The data file is not modified.
 
    1. Test case: `hw status 1 1 status/COMPLETED`, `hw add 1 t/Vectors drill s/MATH due/SOON` and `hw add 1 t/Exam revision s/MATH due/LATER`, replacing `SOON` with the date 3 days after today and `LATER` with the date 400 days after today. Then run `hw up due/365` and `hw ls 1 all`.<br>
-      Expected: `hw up due/365` shows the homework due from today through 365 days later, including the completed record, but not `Old worksheet` (overdue) or `Exam revision` (after the window), where `END` is the date 365 days after today:
+      Expected: `hw up due/365` shows the homework due from today through 365 days later, including the completed record, but not `Old worksheet` (due before today) or `Exam revision` (after the window), where `END` is the date 365 days after today:
 
       ```
       Found 3 homework records due from TODAY to END.

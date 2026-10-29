@@ -31,6 +31,7 @@ import seedu.address.logic.Messages;
 import seedu.address.model.Model;
 import seedu.address.model.homework.Homework;
 import seedu.address.testutil.HomeworkBuilder;
+import seedu.address.testutil.StudentBuilder;
 
 public class HomeworkAddCommandTest {
     /** A day before the due dates of the typical homework, so adding it shows no note about past due dates. */
@@ -244,14 +245,26 @@ public class HomeworkAddCommandTest {
         // CARL takes PHYSICS only
         HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(3), ALGEBRA, false, TODAY);
 
-        assertCommandFailure(command, model, HomeworkAddCommand.MESSAGE_SUBJECT_NOT_TAKEN);
+        assertCommandFailure(command, model, "Carl Ng (93333333) does not take MATH. They take PHYSICS.");
+    }
+
+    @Test
+    public void execute_subjectNotTakenBySeveralSubjectStudent_listsSubjects() {
+        Model modelWithTwoSubjects = getModelWithStudents(List.of(new StudentBuilder().withName("Ethan Lim")
+                .withPhone("91234567").withSubjects("MATH, PHYSICS").build()));
+        Homework chemistry = new HomeworkBuilder().withTitle("S4").withSubject("CHEMISTRY").build();
+        HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(1), chemistry, false, TODAY);
+
+        assertCommandFailure(command, modelWithTwoSubjects,
+                "Ethan Lim (91234567) does not take CHEMISTRY. They take MATH, PHYSICS.");
     }
 
     @Test
     public void execute_duplicateHomework_failure() {
         HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(1), ALGEBRA, false, TODAY);
 
-        assertCommandFailure(command, model, HomeworkAddCommand.MESSAGE_DUPLICATE_HOMEWORK);
+        assertCommandFailure(command, model, "This homework already exists for Alice Tan (91111111):\n"
+                + "1. Complete algebra worksheet (MATH) - due 2026-10-15 - score Not recorded - status ASSIGNED");
     }
 
     @Test
@@ -259,7 +272,8 @@ public class HomeworkAddCommandTest {
         Homework shoutedAlgebra = new HomeworkBuilder(ALGEBRA).withTitle("COMPLETE   algebra WORKSHEET").build();
         HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(1), shoutedAlgebra, false, TODAY);
 
-        assertCommandFailure(command, model, HomeworkAddCommand.MESSAGE_DUPLICATE_HOMEWORK);
+        assertCommandFailure(command, model, "This homework already exists for Alice Tan (91111111):\n"
+                + "1. Complete algebra worksheet (MATH) - due 2026-10-15 - score Not recorded - status ASSIGNED");
     }
 
     @Test
@@ -270,7 +284,8 @@ public class HomeworkAddCommandTest {
         Model modelWithCafe = getModelWithStudents(List.of(ALICE, BENSON.withHomeworks(List.of(composedCafe)), CARL));
         HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(2), decomposedCafe, false, TODAY);
 
-        assertCommandFailure(command, modelWithCafe, HomeworkAddCommand.MESSAGE_DUPLICATE_HOMEWORK);
+        assertCommandFailure(command, modelWithCafe, "This homework already exists for Benson Lim (92222222):\n"
+                + "1. Caf\u00E9 (MATH) - due 2026-11-20 - score Not recorded - status ASSIGNED");
     }
 
     @Test
@@ -281,7 +296,8 @@ public class HomeworkAddCommandTest {
         HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(1), unscoredAtomicStructure, false,
                 TODAY);
 
-        assertCommandFailure(command, model, HomeworkAddCommand.MESSAGE_DUPLICATE_HOMEWORK);
+        assertCommandFailure(command, model, "This homework already exists for Alice Tan (91111111):\n"
+                + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20 - status ASSIGNED");
     }
 
     @Test

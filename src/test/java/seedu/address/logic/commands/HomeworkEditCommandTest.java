@@ -389,7 +389,7 @@ public class HomeworkEditCommandTest {
         EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(null, TuitionSubject.MATH, null);
 
         assertCommandFailure(new HomeworkEditCommand(THIRD, FIRST, descriptor, false, TODAY), model,
-                HomeworkAddCommand.MESSAGE_SUBJECT_NOT_TAKEN);
+                "Carl Ng (93333333) does not take MATH. They take PHYSICS.");
     }
 
     @Test
@@ -408,7 +408,8 @@ public class HomeworkEditCommandTest {
                 TuitionSubject.MATH, DueDate.parseFullDate("2026-10-15"));
 
         assertCommandFailure(new HomeworkEditCommand(FIRST, SECOND, descriptor, false, TODAY), model,
-                HomeworkEditCommand.MESSAGE_DUPLICATE_HOMEWORK);
+                "This edit would make the homework the same as another homework for Alice Tan (91111111):\n"
+                + "1. Complete algebra worksheet (MATH) - due 2026-10-15 - score Not recorded - status ASSIGNED");
     }
 
     @Test
@@ -420,7 +421,8 @@ public class HomeworkEditCommandTest {
         EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(new Title("Cafe\u0301"), null, null);
 
         assertCommandFailure(new HomeworkEditCommand(FIRST, SECOND, descriptor, false, TODAY), modelWithCafe,
-                HomeworkEditCommand.MESSAGE_DUPLICATE_HOMEWORK);
+                "This edit would make the homework the same as another homework for Alice Tan (91111111):\n"
+                + "1. Caf\u00E9 (MATH) - due 2026-10-15 - score Not recorded - status ASSIGNED");
     }
 
     @Test
@@ -430,7 +432,8 @@ public class HomeworkEditCommandTest {
                 TuitionSubject.CHEMISTRY, DueDate.parseFullDate("2026-10-18"));
 
         assertCommandFailure(new HomeworkEditCommand(FIRST, FIRST, descriptor, false, TODAY), model,
-                HomeworkEditCommand.MESSAGE_DUPLICATE_HOMEWORK);
+                "This edit would make the homework the same as another homework for Alice Tan (91111111):\n"
+                + "3. Revise atomic structure (CHEMISTRY) - due 2026-10-18 - score 17/20 - status ASSIGNED");
     }
 
     @Test

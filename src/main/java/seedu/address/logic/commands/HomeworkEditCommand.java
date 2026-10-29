@@ -33,8 +33,9 @@ public class HomeworkEditCommand extends Command {
             + "[s/SUBJECT] [due/YYYY-MM-DD|MM-DD]";
     public static final String MESSAGE_SUCCESS = "Edited homework:\n%s";
     public static final String MESSAGE_NO_HOMEWORK = "The selected student has no homework to edit.";
+    /** Names the student, then the line of the homework that is the same in the format of {@code homework list}. */
     public static final String MESSAGE_DUPLICATE_HOMEWORK =
-            "This edit would make the homework a duplicate of an existing homework record.";
+            "This edit would make the homework the same as another homework for %s:%s";
     public static final String MESSAGE_NO_CHANGES =
             "No changes made; the supplied values are identical to the existing homework details.";
     public static final String MESSAGE_INTERNAL_ERROR =
@@ -92,15 +93,11 @@ public class HomeworkEditCommand extends Command {
         Student student = HomeworkCommandUtil.getDisplayedStudent(model, studentIndex);
         Homework homeworkToEdit = HomeworkCommandUtil.getHomework(student, homeworkIndex, MESSAGE_NO_HOMEWORK);
         Homework editedHomework = descriptor.applyTo(homeworkToEdit);
-        if (!student.getSubjects().getSubjects().contains(editedHomework.getSubject())) {
-            throw new CommandException(HomeworkAddCommand.MESSAGE_SUBJECT_NOT_TAKEN);
-        }
+        HomeworkCommandUtil.requireSubjectTaken(student, editedHomework);
         if (editedHomework.equals(homeworkToEdit)) {
             throw new CommandException(MESSAGE_NO_CHANGES);
         }
-        if (isDuplicateOfOtherHomework(student.getHomeworks(), editedHomework)) {
-            throw new CommandException(MESSAGE_DUPLICATE_HOMEWORK);
-        }
+        HomeworkCommandUtil.requireNoSameHomework(student, editedHomework, homeworkIndex, MESSAGE_DUPLICATE_HOMEWORK);
 
         List<Homework> updatedHomeworks = new ArrayList<>(student.getHomeworks());
         updatedHomeworks.set(homeworkIndex.getZeroBased(), editedHomework);
@@ -131,19 +128,6 @@ public class HomeworkEditCommand extends Command {
                     studentIndex.getOneBased());
         }
         return message;
-    }
-
-    /**
-     * Returns true if {@code editedHomework} is the same as any homework in {@code homeworks} other than the one
-     * being edited.
-     */
-    private boolean isDuplicateOfOtherHomework(List<Homework> homeworks, Homework editedHomework) {
-        for (int i = 0; i < homeworks.size(); i++) {
-            if (i != homeworkIndex.getZeroBased() && homeworks.get(i).isSameHomework(editedHomework)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     @Override

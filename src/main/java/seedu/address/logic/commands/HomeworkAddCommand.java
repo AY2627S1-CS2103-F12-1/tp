@@ -31,8 +31,10 @@ public class HomeworkAddCommand extends Command {
     public static final String MESSAGE_INFERRED_YEAR = "\nInferred year: %d";
     public static final String MESSAGE_DUE_BEFORE_TODAY =
             "\nNote: this homework is due before today, so homework list %d shows it only with all.";
-    public static final String MESSAGE_SUBJECT_NOT_TAKEN = "The selected student does not take this subject.";
-    public static final String MESSAGE_DUPLICATE_HOMEWORK = "This homework already exists for the selected student.";
+    /** Names the student, the subject they do not take, and the subjects they take. */
+    public static final String MESSAGE_SUBJECT_NOT_TAKEN = "%s does not take %s. They take %s.";
+    /** Names the student, then the line of the homework that is the same in the format of {@code homework list}. */
+    public static final String MESSAGE_DUPLICATE_HOMEWORK = "This homework already exists for %s:%s";
     public static final String MESSAGE_INTERNAL_ERROR =
             "TutorFlow could not add the homework due to an internal error.";
     public static final String MESSAGE_SAVE_FAILURE = "The homework could not be added because TutorFlow could not "
@@ -82,12 +84,8 @@ public class HomeworkAddCommand extends Command {
      */
     private CommandResult addHomework(Model model) throws CommandException {
         Student student = HomeworkCommandUtil.getDisplayedStudent(model, studentIndex);
-        if (!student.getSubjects().getSubjects().contains(homework.getSubject())) {
-            throw new CommandException(MESSAGE_SUBJECT_NOT_TAKEN);
-        }
-        if (student.hasHomework(homework)) {
-            throw new CommandException(MESSAGE_DUPLICATE_HOMEWORK);
-        }
+        HomeworkCommandUtil.requireSubjectTaken(student, homework);
+        HomeworkCommandUtil.requireNoSameHomework(student, homework, null, MESSAGE_DUPLICATE_HOMEWORK);
 
         List<Homework> updatedHomeworks = new ArrayList<>(student.getHomeworks());
         updatedHomeworks.add(homework);

@@ -30,6 +30,7 @@ import seedu.address.logic.commands.HomeworkEditCommand;
 import seedu.address.logic.commands.HomeworkListCommand;
 import seedu.address.logic.commands.HomeworkMarksCommand;
 import seedu.address.logic.commands.HomeworkUpcomingCommand;
+import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
@@ -127,6 +128,20 @@ public class HomeworkMessagesIntegrationTest {
         // a prefix only counts after a space, so 1t/A is the student index
         assertParseFailure("hw add 1t/A s/MATH due/2026-12-01", "Missing required prefix(es): title/ (or t/)\n"
                 + "Usage: " + HomeworkAddCommand.MESSAGE_USAGE);
+    }
+
+    @Test
+    public void execute_subjectNotTakenOrDuplicate_namesSubjectsOrHomework() throws Exception {
+        assertCommandFailure("hw add 1 t/S4 s/CHEMISTRY due/2026-12-01",
+                "Tan Ah Kow Jr. (91234567) does not take CHEMISTRY. They take MATH, PHYSICS.");
+        assertCommandFailure("hw e 1 1 s/CHEMISTRY",
+                "Tan Ah Kow Jr. (91234567) does not take CHEMISTRY. They take MATH, PHYSICS.");
+        assertCommandFailure("hw add 1 t/algebra s/MATH due/2026-11-02", "This homework already exists for "
+                + "Tan Ah Kow Jr. (91234567):\n"
+                + "1. Algebra (MATH) - due 2026-11-02 - score Not recorded - status ASSIGNED");
+        assertCommandFailure("hw e 1 2 t/Algebra s/MATH due/2026-11-02", "This edit would make the homework the "
+                + "same as another homework for Tan Ah Kow Jr. (91234567):\n"
+                + "1. Algebra (MATH) - due 2026-11-02 - score Not recorded - status ASSIGNED");
     }
 
     @Test
@@ -318,6 +333,18 @@ public class HomeworkMessagesIntegrationTest {
      */
     private String execute(String commandText) throws Exception {
         return logic.execute(commandText).getFeedbackToUser();
+    }
+
+    /**
+     * Executes {@code commandText} and checks that it fails to execute with {@code expectedMessage}, leaving the
+     * model and the data file unchanged.
+     */
+    private void assertCommandFailure(String commandText, String expectedMessage) throws Exception {
+        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
+        byte[] savedData = Files.readAllBytes(dataFilePath);
+        assertThrows(CommandException.class, expectedMessage, () -> logic.execute(commandText));
+        assertEquals(expectedModel, model);
+        assertArrayEquals(savedData, Files.readAllBytes(dataFilePath));
     }
 
     /**

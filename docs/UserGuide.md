@@ -368,7 +368,7 @@ Examples:
 
 ### Listing a student's homework: `homework list`
 
-Shows a student's homework that is due today or later, earliest due date first, with the score and completion status of each. Add `all` to also show overdue homework. Listing includes both assigned and completed homework; use `homework filter` to narrow by completion status.
+Shows a student's homework that is due today or later, earliest due date first, with the score and completion status of each. Add `all` to also show homework due before today. Listing includes both assigned and completed homework; use `homework filter` to narrow by completion status.
 
 Format: `homework|hw list|ls STUDENT_INDEX [all]`
 
@@ -383,7 +383,7 @@ Format: `homework|hw list|ls STUDENT_INDEX [all]`
 
 Examples:
 * `homework list 1`
-* `hw ls 2 all` lists all homework of the 2nd student, including overdue homework.
+* `hw ls 2 all` lists all homework of the 2nd student, including homework due before today.
 
 ### Listing upcoming homework of all students: `homework upcoming`
 
@@ -436,7 +436,7 @@ Format: `homework|hw edit|e STUDENT_INDEX HOMEWORK_INDEX [title/|t/TITLE] [s/SUB
 
 * `homework` can be shortened to `hw`, `edit` can be shortened to `e`, and `title/` can be shortened to `t/`.
 * `STUDENT_INDEX` follows the same rules as in `homework add`.
-* `HOMEWORK_INDEX` refers to the number shown by `homework list STUDENT_INDEX` (or by `homework list STUDENT_INDEX all` for overdue homework). It **must be a positive whole number without leading zeroes**.
+* `HOMEWORK_INDEX` refers to the number shown by `homework list STUDENT_INDEX` (or by `homework list STUDENT_INDEX all` for homework due before today). It **must be a positive whole number without leading zeroes**.
 * Give at least one of `title/` (or `t/`), `s/` and `due/`, in any order and each at most once. `title/` and `t/` cannot be used together (`Use either title/ or t/, not both.`). The details you do not give stay unchanged.
 * `TITLE`, `SUBJECT` and the due date follow the same rules as in [`homework add`](#adding-homework-to-a-student-homework-add). A due date in `MM-DD` form gets its year in the same way, and the result shows the year used.
 * The homework keeps its number, score and completion status. To change the score, use [`homework marks`](#recording-homework-marks-homework-marks).
@@ -501,7 +501,7 @@ Format: `homework|hw delete|del STUDENT_INDEX HOMEWORK_INDEX`
 
 * `homework` can be shortened to `hw`, and `delete` can be shortened to `del`.
 * `STUDENT_INDEX` follows the same rules as in `homework add`.
-* `HOMEWORK_INDEX` refers to the number shown by `homework list STUDENT_INDEX` (or by `homework list STUDENT_INDEX all` for overdue homework). It **must be a positive whole number without leading zeroes**.
+* `HOMEWORK_INDEX` refers to the number shown by `homework list STUDENT_INDEX` (or by `homework list STUDENT_INDEX all` for homework due before today). It **must be a positive whole number without leading zeroes**.
 * The remaining homework keeps its order and is renumbered.
 * The result shows the deleted record as `homework list` shows it, with the number it had, its score and its status. Below it is the student's upcoming homework with the new numbers, in the format of `homework list STUDENT_INDEX`. Use these numbers for the next command, as the numbers shown before the deletion may now point to different homework.
 * Deletion cannot be undone.

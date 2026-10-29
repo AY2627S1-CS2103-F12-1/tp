@@ -559,7 +559,7 @@ The year range is fixed (2000 to 2099) to catch typos such as `2206` or `0001`. 
 
 ### Listing a student's homework
 
-`homework list STUDENT_INDEX [all]` shows one student's homework. Without `all`, it shows only the records due today or later; with `all`, it also shows overdue records. It sorts the records by due date, keeping records due on the same date in the order they were added, and shows each with its homework index. It only reads data, so nothing is saved.
+`homework list STUDENT_INDEX [all]` shows one student's homework. Without `all`, it shows only the records due today or later; with `all`, it also shows the records due before today. It sorts the records by due date, keeping records due on the same date in the order they were added, and shows each with its homework index. It only reads data, so nothing is saved.
 
 Because the numbers are homework indices, not row numbers, they can start above 1 or have gaps. For example, on 2026-10-28 Priya Nair's first record is overdue, so `hw ls 2` shows these records:
 
@@ -1461,7 +1461,7 @@ testers are expected to do more *exploratory* testing.
 
 1. Deleting homework of a student who has homework
 
-   1. Prerequisites: The 1st student has at least 2 homework records. Check with `homework list 1 all`, which also lists overdue homework.
+   1. Prerequisites: The 1st student has at least 2 homework records. Check with `homework list 1 all`, which also lists homework due before today.
 
    1. Test case: `homework delete 1 2`<br>
       Expected: The 2nd homework of the 1st student is deleted. The result display shows `Deleted homework:` and the deleted homework in the `homework list` layout, e.g. `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score Not recorded - status ASSIGNED`, followed by the student's upcoming homework with its new numbers (or `No upcoming homework found for Ethan Lim (1 record due before today not shown; use homework list 1 all to see it).`). The student card shows the new number of upcoming homework. For example, with the sample students on 2026-10-27, the result is:

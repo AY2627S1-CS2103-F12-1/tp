@@ -87,8 +87,8 @@ public final class HelpContent {
                     new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_LIST,
                             HomeworkListCommand.MESSAGE_USAGE,
                             "Lists the homework of the student at STUDENT_INDEX that is due today or later, earliest"
-                                    + " first, with its score and status. Add all to list overdue homework too."
-                                    + " Each homework"
+                                    + " first, with its score and status. Add all to list homework due before today"
+                                    + " too. Each homework"
                                     + " keeps its number, the HOMEWORK_INDEX used by the other homework commands.",
                             "hw ls 1"),
                     new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_UPCOMING,

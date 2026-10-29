@@ -108,6 +108,7 @@ public class SampleDataUtilTest {
             {"hw m 1 2 score/5/10"},
             {"hw m 2 1 score/35/50"},
             {"homework marks 4 2 score/0/10"},
+            {"hw m 1 2 score/5/10", "hw m 1 2 score/"},
             {"homework list 1", "homework delete 1 2"},
             {"hw del 3 1"},
             {"lesson list"}

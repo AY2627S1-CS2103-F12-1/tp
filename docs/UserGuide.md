@@ -493,7 +493,7 @@ Examples:
 * `hw m 1 2 score/17` records 17 marks, without a total, for the 2nd homework of the 1st student.
 * `hw m 2 1 score/35/50`
 * `homework marks 4 2 score/0/10` records that the 4th student scored no marks for their 2nd homework.
-* `hw m 1 2 score/` clears the marks of the 2nd homework of the 1st student.
+* `hw m 1 2 score/`, after `hw m 1 2 score/5/10` above, clears the marks of the 2nd homework of the 1st student.
 
 ### Deleting a student's homework: `homework delete`
 

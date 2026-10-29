@@ -934,7 +934,7 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
   * 3a2. TutorFlow informs the tutor that no homework data was changed, naming the data file and the likely cause.
   * 3a3. Use case ends.
 
-#### Use case: UC05 - List upcoming homework of all students
+#### Use case: UC05 - List the homework of all students due in the next few days
 
 **MSS**
 
@@ -1108,7 +1108,7 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
 * **Student profile**: The record containing a student's identity, contact information, academic information, guardian information, homework records and regular lessons.
 * **Student roster**: The collection of student profiles managed by TutorFlow.
 * **Tuition subject**: One of the three subjects TutorFlow supports, `MATH`, `PHYSICS` or `CHEMISTRY`, that a student takes.
-* **Upcoming homework**: Homework that is due today or later.
+* **Upcoming homework**: Homework that is due today or later. `homework list` and the student card's `Upcoming homework` count use this meaning. `homework upcoming` shows only the part of it that is due within a given number of days from today (7 by default).
 
 --------------------------------------------------------------------------------------------------------------------
 

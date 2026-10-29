@@ -400,7 +400,7 @@ Examples:
 
 ### Listing upcoming homework of all students: `homework upcoming`
 
-Shows the homework of all students that is due in the next few days, earliest due date first, with the score and completion status of each.
+Shows the homework of all students that is due in the next few days, earliest due date first, with the score and completion status of each. Unlike `homework list`, which shows all of a student's homework due today or later, this command shows only the homework due within a number of days from today.
 
 Format: `homework|hw upcoming|up [due/DAYS]`
 

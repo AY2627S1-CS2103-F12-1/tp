@@ -25,6 +25,8 @@ public class HomeworkUpcomingCommandParserTest {
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-17T00:00:00Z"), ZoneOffset.UTC);
     private static final LocalDate TODAY = LocalDate.of(2026, 10, 17);
     private static final String USAGE = "homework|hw upcoming|up [due/DAYS]";
+    private static final String MESSAGE_DAYS_NOT_DATE =
+            "In homework upcoming, due/ is a number of days from 0 to 365, not a date, e.g. due/7.";
     private static final String EXPECTED_WORDS = "no words other than due/DAYS";
 
     private final HomeworkUpcomingCommandParser parser = new HomeworkUpcomingCommandParser(CLOCK);
@@ -113,9 +115,9 @@ public class HomeworkUpcomingCommandParserTest {
         // word
         assertParseFailure(parser, "due/seven", MESSAGE_INVALID_DAYS);
 
-        // date instead of days
-        assertParseFailure(parser, "due/2026-10-20", MESSAGE_INVALID_DAYS);
-        assertParseFailure(parser, "due/2026-11-01", MESSAGE_INVALID_DAYS);
+        // a number with a dash or slash that is not shaped like a date
+        assertParseFailure(parser, "due/1-", MESSAGE_INVALID_DAYS);
+        assertParseFailure(parser, "due/-1-2", MESSAGE_INVALID_DAYS);
 
         // internal space
         assertParseFailure(parser, "due/1 0", MESSAGE_INVALID_DAYS);
@@ -125,6 +127,18 @@ public class HomeworkUpcomingCommandParserTest {
     public void parse_emptyDays_failure() {
         assertParseFailure(parser, "due/", MESSAGE_INVALID_DAYS);
         assertParseFailure(parser, "due/   ", MESSAGE_INVALID_DAYS);
+    }
+
+    @Test
+    public void parse_dateInsteadOfDays_saysDaysNotDate() {
+        // full date
+        assertParseFailure(parser, "due/2026-11-20", MESSAGE_DAYS_NOT_DATE);
+        assertParseFailure(parser, "due/2026-10-20", MESSAGE_DAYS_NOT_DATE);
+        // short date
+        assertParseFailure(parser, "due/11-20", MESSAGE_DAYS_NOT_DATE);
+        // with slashes, and not a real date
+        assertParseFailure(parser, "due/20/11", MESSAGE_DAYS_NOT_DATE);
+        assertParseFailure(parser, "due/2026-13-45", MESSAGE_DAYS_NOT_DATE);
     }
 
     @Test

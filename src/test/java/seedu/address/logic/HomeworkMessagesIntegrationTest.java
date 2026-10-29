@@ -115,6 +115,14 @@ public class HomeworkMessagesIntegrationTest {
     }
 
     @Test
+    public void execute_upcomingDate_saysDueIsDays() throws Exception {
+        String expectedMessage = "In homework upcoming, due/ is a number of days from 0 to 365, not a date, e.g. "
+                + "due/7.";
+        assertParseFailure("hw up due/2026-11-20", expectedMessage);
+        assertParseFailure("hw up due/11-20", expectedMessage);
+    }
+
+    @Test
     public void execute_wrongWordsOrCase_specificMessage() throws Exception {
         assertParseFailure("hw e 1 2", "Specify at least one field to edit: title/ (or t/), s/ or due/.\nUsage: "
                 + HomeworkEditCommand.MESSAGE_USAGE);

@@ -24,11 +24,15 @@ public class HomeworkUpcomingCommandParser implements Parser<HomeworkUpcomingCom
     public static final String EXPECTED_WORDS = "no words other than " + PREFIX_DAYS + "DAYS";
     public static final String MESSAGE_INVALID_DAYS =
             "Days must be a whole number from 0 to " + MAX_DAYS + " without leading zeroes.";
+    public static final String MESSAGE_DAYS_NOT_DATE = "In homework upcoming, " + PREFIX_DAYS + " is a number of "
+            + "days from 0 to " + MAX_DAYS + ", not a date, e.g. " + PREFIX_DAYS + DEFAULT_DAYS + ".";
 
     private static final String MESSAGE_INVALID_FORMAT = String.format(Messages.MESSAGE_INVALID_FORMAT_WITH_USAGE,
             HomeworkUpcomingCommand.MESSAGE_USAGE);
     /** At most three digits, so the value always fits in an int; leading zeroes only in 0 itself. */
     private static final String DAYS_VALIDATION_REGEX = "0|[1-9][0-9]{0,2}";
+    /** Numbers joined by dashes or slashes, e.g. {@code 2026-11-20} or {@code 11-20}, which look like a date. */
+    private static final String DATE_SHAPE_REGEX = "[0-9]+([-/][0-9]+)+";
 
     private final Clock clock;
 
@@ -65,9 +69,12 @@ public class HomeworkUpcomingCommandParser implements Parser<HomeworkUpcomingCom
      * Returns the number of days in {@code rawDays}.
      *
      * @throws ParseException If {@code rawDays} is not a whole number from 0 to {@link #MAX_DAYS} without leading
-     *     zeroes.
+     *     zeroes, saying that it is not a date if it looks like one.
      */
     private static int parseDays(String rawDays) throws ParseException {
+        if (rawDays.matches(DATE_SHAPE_REGEX)) {
+            throw new ParseException(MESSAGE_DAYS_NOT_DATE);
+        }
         if (!rawDays.matches(DAYS_VALIDATION_REGEX) || Integer.parseInt(rawDays) > MAX_DAYS) {
             throw new ParseException(MESSAGE_INVALID_DAYS);
         }

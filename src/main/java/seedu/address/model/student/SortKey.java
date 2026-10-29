@@ -2,17 +2,24 @@ package seedu.address.model.student;
 
 import java.time.DayOfWeek;
 import java.util.Comparator;
+import java.util.function.Function;
 
 /**
  * Defines the single value used to order a student for each supported sort key.
  */
 public enum SortKey {
-    LEVEL("academic level"), SUBJECT("subject"), DAY("regular meeting day");
+    LEVEL("academic level", order -> order.applyTo(Comparator.comparing(Student::getAcademicLevel))),
+    SUBJECT("subject", order -> order.applyTo(Comparator.comparing(SortKey::getFirstSubject,
+            String.CASE_INSENSITIVE_ORDER))),
+    DAY("regular meeting day", order -> Comparator.comparing(SortKey::getFirstDay,
+            Comparator.nullsLast(order.applyTo(Comparator.<DayOfWeek>naturalOrder()))));
 
     private final String description;
+    private final Function<SortOrder, Comparator<Student>> comparatorFactory;
 
-    SortKey(String description) {
+    SortKey(String description, Function<SortOrder, Comparator<Student>> comparatorFactory) {
         this.description = description;
+        this.comparatorFactory = comparatorFactory;
     }
 
     public String getDescription() {
@@ -23,14 +30,7 @@ public enum SortKey {
      * Returns an ordering that keeps missing meeting days last in either direction.
      */
     public Comparator<Student> getComparator(SortOrder order) {
-        return switch (this) {
-            case LEVEL -> order.applyTo(Comparator.comparing(Student::getAcademicLevel));
-            case SUBJECT -> order.applyTo(Comparator.comparing(SortKey::getFirstSubject,
-                    String.CASE_INSENSITIVE_ORDER));
-            case DAY -> Comparator.comparing(SortKey::getFirstDay,
-                    Comparator.nullsLast(order.applyTo(Comparator.<DayOfWeek>naturalOrder())));
-            default -> throw new IllegalStateException("Unsupported student sort key: " + this);
-        };
+        return comparatorFactory.apply(order);
     }
 
     /**

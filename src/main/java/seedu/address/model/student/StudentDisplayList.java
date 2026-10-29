@@ -73,13 +73,19 @@ public final class StudentDisplayList extends TransformationList<Student, Studen
         List<Integer> indices = new ArrayList<>(sourceIndices);
         while (change.next()) {
             if (change.wasPermutated()) {
-                indices.replaceAll(index -> index >= change.getFrom() && index < change.getTo()
-                        ? change.getPermutation(index) : index);
+                indices.replaceAll(index -> remapSourceIndex(index, change));
             } else if (!change.wasUpdated()) {
                 indices = updateSourceIndices(indices, change);
             }
         }
         publishOrder(indices);
+    }
+
+    /**
+     * Returns the permuted source index, leaving occurrences outside the changed interval in place.
+     */
+    private static int remapSourceIndex(int index, ListChangeListener.Change<? extends Student> change) {
+        return index >= change.getFrom() && index < change.getTo() ? change.getPermutation(index) : index;
     }
 
     /**

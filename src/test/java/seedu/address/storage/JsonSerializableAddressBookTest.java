@@ -277,11 +277,13 @@ public class JsonSerializableAddressBookTest {
 
     /**
      * Asserts that the sample data, with its first {@code target} replaced by {@code replacement}, is rejected with
-     * {@code expectedReason}.
+     * {@code expectedReason}. Line breaks in {@code target} and {@code replacement} are written as {@code \n}.
      */
     private static void assertSampleDataReason(String target, String replacement, String expectedReason)
             throws Exception {
-        String sampleData = JsonUtil.toJsonString(new JsonSerializableAddressBook(getSampleAddressBook()));
+        // The JSON has the system's line breaks, e.g. \r\n on Windows
+        String sampleData = JsonUtil.toJsonString(new JsonSerializableAddressBook(getSampleAddressBook()))
+                .replace("\r\n", "\n");
         String invalidData = sampleData.replaceFirst(Pattern.quote(target), Matcher.quoteReplacement(replacement));
         assertNotEquals(sampleData, invalidData);
         JsonSerializableAddressBook data = JsonUtil.fromJsonString(invalidData, JsonSerializableAddressBook.class);

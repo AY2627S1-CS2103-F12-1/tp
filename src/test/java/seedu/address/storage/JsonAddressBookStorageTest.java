@@ -180,6 +180,7 @@ public class JsonAddressBookStorageTest {
 
     @Test
     public void readAddressBook_unreadableDataFile_reasonSaysNoPermission() throws Exception {
+        assumePosixPermissions();
         Path file = testFolder.resolve("data").resolve("tutorflow.json");
         new JsonAddressBookStorage(file).saveAddressBook(getTypicalAddressBook());
         try {
@@ -192,6 +193,7 @@ public class JsonAddressBookStorageTest {
 
     @Test
     public void readAddressBook_unreadableDataFolder_reasonSaysNoPermission() throws Exception {
+        assumePosixPermissions();
         Path file = testFolder.resolve("data").resolve("tutorflow.json");
         new JsonAddressBookStorage(file).saveAddressBook(getTypicalAddressBook());
         try {
@@ -215,12 +217,19 @@ public class JsonAddressBookStorageTest {
     }
 
     /**
-     * Removes all permissions from {@code path}, skipping the test where that does not stop reading it: on file
-     * systems without POSIX permissions, or when running as root.
+     * Skips the test on file systems without POSIX permissions, e.g. on Windows, before it changes any permissions,
+     * so that its cleanup does not try to restore them.
      */
-    private static void removePermissions(Path path) throws IOException {
+    private static void assumePosixPermissions() {
         assumeTrue(FileSystems.getDefault().supportedFileAttributeViews().contains("posix"),
                 "permissions only block reading on POSIX file systems");
+    }
+
+    /**
+     * Removes all permissions from {@code path}, skipping the test where that does not stop reading it, e.g. when
+     * running as root. The file system must support POSIX permissions.
+     */
+    private static void removePermissions(Path path) throws IOException {
         Files.setPosixFilePermissions(path, PosixFilePermissions.fromString("---------"));
         assumeFalse(Files.isReadable(path), "the file is still readable, e.g. when running as root");
     }

@@ -15,6 +15,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.AclEntry;
 import java.nio.file.attribute.AclFileAttributeView;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -22,8 +23,9 @@ import java.util.Set;
  */
 public class FileUtil {
 
+    /** Message for a file that is not UTF-8, with the line and column of its first invalid byte. */
     public static final String MESSAGE_INVALID_UTF8 =
-            "The file is not valid UTF-8 text: invalid bytes at offset %d (counting from 0).";
+            "The file is not valid UTF-8 text near line %d, column %d. Save the file as UTF-8.";
 
     private static final String CHARSET = "UTF-8";
     private static final String TEMP_FILE_SUFFIX = ".tmp";
@@ -54,8 +56,13 @@ public class FileUtil {
         try {
             return decoder.decode(bytes).toString();
         } catch (CharacterCodingException e) {
-            // After a decoding error, the buffer is positioned at the first invalid byte
-            throw new IOException(String.format(MESSAGE_INVALID_UTF8, bytes.position()), e);
+            // After a decoding error, the buffer is positioned at the first invalid byte, so the text before it is
+            // valid; its lines and characters give the position as an editor shows it
+            String validText = new String(bytes.array(), 0, bytes.position(), StandardCharsets.UTF_8);
+            long line = validText.chars().filter(c -> c == '\n').count() + 1;
+            int column = validText.length() - (validText.lastIndexOf('\n') + 1) + 1;
+            // Locale.ROOT prints the position in ASCII digits, which editors use for line and column numbers
+            throw new IOException(String.format(Locale.ROOT, MESSAGE_INVALID_UTF8, line, column), e);
         }
     }
 

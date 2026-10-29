@@ -47,17 +47,32 @@ public class FileUtilTest {
 
         // Issue #156: Windows-1252 é (E9) followed by an ASCII letter, not a continuation byte
         Files.write(file, new byte[] {'R', (byte) 0xE9, 'v'});
-        assertThrows(IOException.class, String.format(FileUtil.MESSAGE_INVALID_UTF8, 1), () ->
-                FileUtil.readFromFile(file));
+        assertThrows(IOException.class, "The file is not valid UTF-8 text near line 1, column 2. Save the file as "
+                + "UTF-8.", () -> FileUtil.readFromFile(file));
 
         // a sequence cut off at the end of the file
         Files.write(file, new byte[] {'a', 'b', (byte) 0xE2, (byte) 0x82});
-        assertThrows(IOException.class, String.format(FileUtil.MESSAGE_INVALID_UTF8, 2), () ->
-                FileUtil.readFromFile(file));
+        assertInvalidUtf8(file, 1, 3);
 
         // a continuation byte without a lead byte
         Files.write(file, new byte[] {(byte) 0x80});
-        assertThrows(IOException.class, String.format(FileUtil.MESSAGE_INVALID_UTF8, 0), () ->
+        assertInvalidUtf8(file, 1, 1);
+
+        // PE round 2: a file saved as UTF-16, which starts with the bytes FF FE
+        Files.write(file, new byte[] {(byte) 0xFF, (byte) 0xFE, '{', 0, '}', 0});
+        assertInvalidUtf8(file, 1, 1);
+
+        // a later line, after a character of two bytes
+        Files.write(file, new byte[] {'{', '\n', ' ', (byte) 0xC3, (byte) 0xA9, (byte) 0xE9});
+        assertInvalidUtf8(file, 2, 3);
+
+        // Windows line endings, whose carriage return is not counted in the column
+        Files.write(file, new byte[] {'{', '\r', '\n', '\r', '\n', 'a', (byte) 0xE9});
+        assertInvalidUtf8(file, 3, 2);
+    }
+
+    private static void assertInvalidUtf8(Path file, int line, int column) {
+        assertThrows(IOException.class, String.format(FileUtil.MESSAGE_INVALID_UTF8, line, column), () ->
                 FileUtil.readFromFile(file));
     }
 

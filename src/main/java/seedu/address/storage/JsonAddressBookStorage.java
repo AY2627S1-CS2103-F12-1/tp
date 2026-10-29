@@ -123,7 +123,9 @@ public class JsonAddressBookStorage {
 
         Path normalized = filePath.toAbsolutePath().normalize();
         Files.createDirectories(normalized.getParent());
-        Path lockFile = normalized.resolveSibling(normalized.getFileName() + ".lock");
+        // Saves through different symbolic links to one file, or by its own path, must lock the same lock file
+        Path savedFile = FileUtil.resolveSymbolicLinks(normalized).normalize();
+        Path lockFile = savedFile.resolveSibling(savedFile.getFileName() + ".lock");
         try (FileChannel channel = FileChannel.open(lockFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
                 FileLock lock = acquireWriteLock(channel)) {
             byte[] currentVersion = readVersion(normalized);

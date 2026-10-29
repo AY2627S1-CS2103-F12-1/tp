@@ -910,6 +910,44 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_linkedDataFileBeingSaved_namesLinkAndCopy() throws Exception {
+        // PR #194 review: a copy saving the linked file by its own path did not stop a save through the link
+        Path target = Files.createDirectories(temporaryFolder.resolve("synced")).resolve("tutorflow.json");
+        new JsonAddressBookStorage(target).saveAddressBook(getSampleAddressBook());
+        Path link = Files.createDirectories(temporaryFolder.resolve("data")).resolve("tutorflow.json");
+        createSymbolicLinkOrSkip(link, target);
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(link);
+        setUpLogic(storage.readAddressBook().orElseThrow(), storage, SAMPLE_CLOCK);
+        byte[] fileBefore = Files.readAllBytes(target);
+        Path lockFile = target.resolveSibling("tutorflow.json.lock");
+        try (FileChannel channel = FileChannel.open(lockFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+                FileLock lock = channel.lock()) {
+            assertSaveFailureRestores(ADD_SAMPLE_STUDENT_COMMAND, "Another copy of TutorFlow is saving "
+                    + SHOWN_DATA_FILE_NAME + ". Try again. No data was changed.");
+        }
+        assertArrayEquals(fileBefore, Files.readAllBytes(target));
+    }
+
+    @Test
+    public void execute_readOnlyLockFileOfLinkedFile_reportsThatLockFile() throws Exception {
+        Path target = Files.createDirectories(temporaryFolder.resolve("synced")).resolve("tutorflow.json");
+        new JsonAddressBookStorage(target).saveAddressBook(getSampleAddressBook());
+        Path link = Files.createDirectories(temporaryFolder.resolve("data")).resolve("tutorflow.json");
+        createSymbolicLinkOrSkip(link, target);
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(link);
+        setUpLogic(storage.readAddressBook().orElseThrow(), storage, SAMPLE_CLOCK);
+        Path lockFile = target.resolveSibling("tutorflow.json.lock");
+        assertTrue(lockFile.toFile().setWritable(false));
+        try {
+            assumeFalse(Files.isWritable(lockFile), "the file is still writable, e.g. when running as root");
+            assertSaveFailureRestores("delete 1", getCommandSaveFailureMessage("student could not be deleted",
+                    "the lock file " + Path.of("synced", "tutorflow.json.lock") + " is read-only", "student"));
+        } finally {
+            lockFile.toFile().setWritable(true);
+        }
+    }
+
+    @Test
     public void execute_linkedDataFileDeletedWhileOpen_savesThroughLink() throws Exception {
         // PE round 3: the file that data/tutorflow.json links to was deleted, and the next save replaced the link
         Path target = Files.createDirectories(temporaryFolder.resolve("synced")).resolve("tutorflow.json");

@@ -18,13 +18,17 @@ import static seedu.address.testutil.TypicalStudents.BENSON;
 import static seedu.address.testutil.TypicalStudents.getTypicalAddressBook;
 
 import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -384,6 +388,83 @@ public class JsonAddressBookStorageTest {
         // a change to the file the link points to is still found
         new JsonAddressBookStorage(target).saveAddressBook(getTypicalAddressBook());
         assertThrows(DataFileConflictException.class, () -> storage.saveAddressBook(new AddressBook()));
+    }
+
+    @Test
+    public void saveAddressBook_linkedFileBeingSavedByItsOwnPath_throwsBusyConflict() throws Exception {
+        // PR #194 review: a save through a link locked a lock file next to the link, not next to the linked file
+        Path target = Files.createDirectories(testFolder.resolve("synced")).resolve("tutorflow.json");
+        new JsonAddressBookStorage(target).saveAddressBook(getTypicalAddressBook());
+        Path link = Files.createDirectories(testFolder.resolve("data")).resolve("tutorflow.json");
+        createSymbolicLinkOrSkip(link, target);
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(link);
+        storage.readAddressBook();
+        byte[] fileBefore = Files.readAllBytes(target);
+
+        assertSaveBusyWhileLocked(storage, target.resolveSibling("tutorflow.json.lock"));
+        assertArrayEquals(fileBefore, Files.readAllBytes(target));
+        assertTrue(Files.isSymbolicLink(link));
+    }
+
+    @Test
+    public void saveAddressBook_linkToMissingFileBeingSaved_throwsBusyConflict() throws Exception {
+        Path target = Files.createDirectories(testFolder.resolve("synced")).resolve("tutorflow.json");
+        Path link = Files.createDirectories(testFolder.resolve("data")).resolve("tutorflow.json");
+        createSymbolicLinkOrSkip(link, target);
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(link);
+        assertTrue(storage.readAddressBook().isEmpty());
+
+        assertSaveBusyWhileLocked(storage, target.resolveSibling("tutorflow.json.lock"));
+        assertFalse(Files.exists(target));
+        assertTrue(Files.isSymbolicLink(link));
+    }
+
+    @Test
+    public void saveAddressBook_twoLinksToSameFile_lockSameFile() throws Exception {
+        Path target = Files.createDirectories(testFolder.resolve("synced")).resolve("tutorflow.json");
+        Path link = Files.createDirectories(testFolder.resolve("data")).resolve("tutorflow.json");
+        Path otherLink = Files.createDirectories(testFolder.resolve("backup")).resolve("tutorflow.json");
+        createSymbolicLinkOrSkip(link, target);
+        createSymbolicLinkOrSkip(otherLink, target);
+
+        new JsonAddressBookStorage(link).saveAddressBook(getTypicalAddressBook());
+        new JsonAddressBookStorage(otherLink).saveAddressBook(new AddressBook());
+
+        assertEquals(List.of(Paths.get("synced", "tutorflow.json.lock")), listLockFiles());
+    }
+
+    @Test
+    public void saveAddressBook_regularFile_locksFileBesideIt() throws Exception {
+        Path file = Files.createDirectories(testFolder.resolve("data")).resolve("tutorflow.json");
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(file);
+
+        storage.saveAddressBook(getTypicalAddressBook());
+
+        assertEquals(List.of(Paths.get("data", "tutorflow.json.lock")), listLockFiles());
+        assertSaveBusyWhileLocked(storage, file.resolveSibling("tutorflow.json.lock"));
+    }
+
+    /**
+     * Saves through {@code storage} while another copy of TutorFlow holds the lock on {@code lockFile}, and
+     * confirms that the save is refused because that copy is saving.
+     */
+    private static void assertSaveBusyWhileLocked(JsonAddressBookStorage storage, Path lockFile) throws IOException {
+        try (FileChannel channel = FileChannel.open(lockFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+                FileLock lock = channel.lock()) {
+            assertThrows(DataFileConflictException.class, DataFileConflictException.MESSAGE_BUSY, () ->
+                    storage.saveAddressBook(new AddressBook()));
+        }
+    }
+
+    /**
+     * Returns the lock files in the test folder and the folders in it, relative to the test folder.
+     */
+    private List<Path> listLockFiles() throws IOException {
+        try (Stream<Path> files = Files.walk(testFolder)) {
+            return files.filter(file -> file.getFileName().toString().endsWith(".lock"))
+                    .map(testFolder::relativize)
+                    .toList();
+        }
     }
 
     @Test

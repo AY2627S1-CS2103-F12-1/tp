@@ -151,7 +151,7 @@ public class LogicManager implements Logic {
         if (Files.exists(dataFile) && !Files.isReadable(dataFile)) {
             return Messages.MESSAGE_SAVE_CAUSE_UNREADABLE_FILE;
         }
-        Path lockFile = dataFile.resolveSibling(dataFile.getFileName() + LOCK_FILE_SUFFIX);
+        Path lockFile = findLockFile(dataFile);
         if (Files.isDirectory(lockFile)) {
             return String.format(Messages.MESSAGE_SAVE_CAUSE_FOLDER_LOCK_FILE, getShownName(lockFile));
         }
@@ -192,6 +192,21 @@ public class LogicManager implements Logic {
             return Messages.MESSAGE_SAVE_CAUSE_READ_ONLY_HOME_FOLDER;
         }
         return String.format(Messages.MESSAGE_SAVE_CAUSE_READ_ONLY_OTHER_FOLDER, getShownName(folder));
+    }
+
+    /**
+     * Returns the lock file that saving {@code dataFile} uses: the one next to the file that {@code dataFile} links
+     * to, following any chain of symbolic links, or next to {@code dataFile} if it is not a symbolic link.
+     */
+    private static Path findLockFile(Path dataFile) {
+        Path savedFile;
+        try {
+            savedFile = FileUtil.resolveSymbolicLinks(dataFile).normalize();
+        } catch (IOException e) {
+            // The links cannot be followed, so the save stopped before it locked any file
+            savedFile = dataFile;
+        }
+        return savedFile.resolveSibling(savedFile.getFileName() + LOCK_FILE_SUFFIX);
     }
 
     /**

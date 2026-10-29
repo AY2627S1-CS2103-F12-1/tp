@@ -262,6 +262,8 @@ Each prefix is checked in the order it appears: an unknown prefix gives the erro
 prefix gives `Prefix X must be specified exactly once.` by default. The student `filter` command supplies its
 own repeated-prefix message: `Each filter may only be specified once`.
 
+`homework add`, `homework edit`, `homework marks` and `homework upcoming` also pass a `StrictArgumentTokenizer.RepeatedPrefixRules`, which lists the prefixes whose values are free text (`title/` and `t/`) and the prefixes that are aliases of one field (`title/` and `t/`). With it, a repeated prefix gives `MESSAGE_PREFIX_GIVEN_ONCE` (`Prefix t/ can be given only once.`) followed by the usage, and giving both aliases gives the caller's alias message (`Use either title/ or t/, not both.`) with the usage. A repeated prefix most often comes from a title such as `t/Revise t/f questions` or `t/Read s/o notes`, so both errors add the same quote hint as an unknown prefix when the prefix follows an unquoted title, or follows its own first copy that follows a title: `hw add 1 t/Read s/o notes s/MATH due/2026-12-01` gives `Prefix s/ can be given only once. To use it inside a value, wrap the whole value in straight double quotes, e.g. t/"Read s/o notes".` The alias error is reported only after every later prefix has been checked, so an unknown or repeated prefix is reported first.
+
 A caller may also pass a `ValueTokenFilter`, which keeps some prefix-shaped words in the previous value;
 `StudentAddParser` and `EditCommandParser` use `StudentAddParser#isPartOfName` so that names can contain words
 such as `s/o` and `d/o`.
@@ -283,7 +285,7 @@ For example, with the allowed prefixes `title/`, `t/`, `s/` and `due/` of `hw ad
 1. If the word comes before any prefix (e.g. `score/` in `hw e 1 2 score/5/10`), there is no quote hint.
 1. If the arguments contain a curly quote (`“` or `”`), a line `Use straight quotes ("), not curly quotes (“ ”).` comes before the usage, as curly quotes never wrap a value.
 
-Text before the first prefix, when the caller does not allow it, still gives the caller's own format message. The homework parsers check the words before the first prefix themselves and report a wrong number of words with `ParserUtil#formatUnexpectedWords`, e.g. `Expected STUDENT_INDEX HOMEWORK_INDEX, but found 3 words (1 1 1).` followed by the usage. `homework add` and `homework edit` check, after tokenizing, that `title/` and its alias `t/` are not both given (`HomeworkAddCommandParser#validateTitlePrefixes`, `Use either title/ or t/, not both.`), so an unknown prefix anywhere in the input is reported first.
+Text before the first prefix, when the caller does not allow it, still gives the caller's own format message. The homework parsers check the words before the first prefix themselves and report a wrong number of words with `ParserUtil#formatUnexpectedWords`, e.g. `Expected STUDENT_INDEX HOMEWORK_INDEX, but found 3 words (1 1 1).` followed by the usage. `homework add` and `homework edit` reject `title/` and its alias `t/` given together through `HomeworkAddCommandParser#REPEATED_PREFIX_RULES`, as described above.
 
 #### Design considerations:
 
@@ -508,7 +510,7 @@ recovery path. See the [logging guide](Logging.md) for diagnostic conventions.
 
 Homework is managed with eight subcommands of `homework` (short form `hw`): `add`, `list`, `upcoming`, `edit`, `marks`, `delete`, `filter` and `status`. This section covers what they share. `filter` and `status` are described in [Filtering homework](#filtering-homework) and [Updating homework completion](#updating-homework-completion).
 
-**Parsing.** `AddressBookParser` passes everything after `homework` or `hw` to `HomeworkCommandParser`. It reads the next word as the subcommand and passes the rest to that subcommand's parser: for `hw del 1 2`, `HomeworkDeleteCommandParser` gets `1 2`. So `AddressBookParser` needs only one case for all homework commands, and a new subcommand only needs a new case in `HomeworkCommandParser`. The subcommand parsers split their arguments with `StrictArgumentTokenizer` (see [Splitting arguments at prefixes](#splitting-arguments-at-prefixes)), which rejects unknown and repeated prefixes. Parsers that need today's date get it from a `java.time.Clock` passed down from `AddressBookParser`, so tests can fix the date.
+**Parsing.** `AddressBookParser` passes everything after `homework` or `hw` to `HomeworkCommandParser`. It reads the next word as the subcommand and passes the rest to that subcommand's parser: for `hw del 1 2`, `HomeworkDeleteCommandParser` gets `1 2`. A missing subcommand gives `HomeworkCommandParser#MESSAGE_MISSING_SUBCOMMAND`, and any other word gives `MESSAGE_UNKNOWN_SUBCOMMAND`, which names the word and lists the subcommands, e.g. `rm is not a homework subcommand. Use add, list|ls, upcoming|up, edit|e, marks|m, delete|del, filter or status.` A subcommand in capitals gets a hint to type it in lowercase instead. Command words are case-sensitive, so `HW` reaches the default branch of `AddressBookParser#parseCommand`; there, `HomeworkCommandParser#checkCommandWordCase` turns `Unknown command.` into `Command words are lowercase: type hw, not HW.` for `homework` or `hw` in any other case. Other unknown words, such as `LIST`, still give `Unknown command.` So `AddressBookParser` needs only one case for all homework commands, and a new subcommand only needs a new case in `HomeworkCommandParser`. The subcommand parsers split their arguments with `StrictArgumentTokenizer` (see [Splitting arguments at prefixes](#splitting-arguments-at-prefixes)), which rejects unknown and repeated prefixes. Parsers that need today's date get it from a `java.time.Clock` passed down from `AddressBookParser`, so tests can fix the date.
 
 **How homework is stored.** Each `Student` keeps its own homework records in a list, in the order they were added. The class diagram below shows the fields of a `Homework` and the methods that commands use to change homework. `Title`, `DueDate` and `Score` are small classes that each check their own value, and `TuitionSubject` and `HomeworkStatus` are enums. A record has at most one score.
 
@@ -947,6 +949,9 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
 * 1b. The number of days is invalid.
   * 1b1. TutorFlow displays an error.
   * 1b2. Use case resumes at step 1.
+* 1c. The tutor gives a date instead of a number of days.
+  * 1c1. TutorFlow displays an error that says the value is a number of days, not a date.
+  * 1c2. Use case resumes at step 1.
 * 2a. No homework is due in that period.
   * 2a1. TutorFlow informs the tutor that no homework is due in that period.
   * 2a2. Use case ends.
@@ -1369,11 +1374,14 @@ testers are expected to do more *exploratory* testing.
    1. Test case: `search Marcus`, then `hw up due/0`, then `hw ls 2`<br>
       Expected: After `hw up due/0`, all three students are shown again and Marcus Tan's line starts with `Student 2`. `hw ls 2` lists Marcus Tan's homework.
 
-   1. Incorrect commands to try: `hw up due/366`, `hw up due/007`, `hw up due/-1`, `hw up due/1.5`, `hw up due/2026-10-20`, `hw up due/`<br>
+   1. Incorrect commands to try: `hw up due/366`, `hw up due/007`, `hw up due/-1`, `hw up due/1.5`, `hw up due/`<br>
       Expected: `Days must be a whole number from 0 to 365 without leading zeroes.`
 
+   1. Incorrect commands to try: `hw up due/2026-11-20`, `hw up due/11-20`<br>
+      Expected: `In homework upcoming, due/ is a number of days from 0 to 365, not a date, e.g. due/7.` each time.
+
    1. Other incorrect commands to try: `hw up 3`, `hw up x/3`, `hw up due/3 due/7`<br>
-      Expected: `Expected no words other than due/DAYS, but found 1 word (3).` followed by the usage `Usage: homework|hw upcoming|up [due/DAYS]` for `hw up 3`, `x/ is not a prefix of this command.` followed by that usage for `hw up x/3`, and `Prefix due/ must be specified exactly once.` for the last one.
+      Expected: `Expected no words other than due/DAYS, but found 1 word (3).` followed by the usage `Usage: homework|hw upcoming|up [due/DAYS]` for `hw up 3`, `x/ is not a prefix of this command.` followed by that usage for `hw up x/3`, and `Prefix due/ can be given only once.` followed by that usage for the last one.
 
 1. Adding homework
 
@@ -1394,11 +1402,20 @@ testers are expected to do more *exploratory* testing.
    1. Test case: `hw add 1 t/A s/MATH`<br>
       Expected: `Missing required prefix(es): due/`, then the usage `Usage: homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD`. No homework is added by these four commands; `hw ls 1 all` shows only `Algebra drill` in addition to the sample homework.
 
+   1. Test case: `hw add 1 s/MATH due/12-02`<br>
+      Expected: `Missing required prefix(es): title/ (or t/)`, then the usage, and no homework is added.
+
+   1. Test case: `hw add 1 t/Revise t/f questions s/MATH due/12-02`, then `hw add 1 t/Read s/o notes s/MATH due/12-02`<br>
+      Expected: `Prefix t/ can be given only once. To use it inside a value, wrap the whole value in straight double quotes, e.g. t/"Revise t/f questions".`, then `Prefix s/ can be given only once. To use it inside a value, wrap the whole value in straight double quotes, e.g. t/"Read s/o notes".`, each followed by the usage, and no homework is added. With the title in quotes, e.g. `hw add 1 t/"Revise t/f questions" s/MATH due/12-02`, the homework is added.
+
    1. Test case: `hw add 1 t/Algebra drill S/MATH due/12-02`<br>
       Expected: `S/ is not a prefix of this command; prefixes are lowercase (s/). To use it inside a value, wrap the whole value in straight double quotes, e.g. t/"Algebra drill S/MATH".`, then the usage, and no homework is added.
 
    1. Other incorrect commands to try: `hw add 1 extra t/A s/MATH due/12-02`, `hw add 2147483648 t/A s/MATH due/12-02`<br>
       Expected: `Expected STUDENT_INDEX before the first prefix, but found 2 words (1 extra).` followed by the usage, and `STUDENT_INDEX must be no greater than 2147483647.` No homework is added.
+
+   1. Other incorrect commands to try: `HW add 1 t/A s/MATH due/12-02`, `hw rm 1 1`, `hw`<br>
+      Expected: `Command words are lowercase: type hw, not HW.`, then `rm is not a homework subcommand. Use add, list|ls, upcoming|up, edit|e, marks|m, delete|del, filter or status.`, then `Missing homework subcommand. Use add, list|ls, upcoming|up, edit|e, marks|m, delete|del, filter or status.`
 
 1. Adding homework with special characters in the title
 

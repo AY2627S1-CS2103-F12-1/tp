@@ -98,7 +98,18 @@ TutorFlow is a **desktop application for private tutors to manage their students
 
 * In `homework add`, `homework edit`, `homework marks` and `homework upcoming`, a prefix of the command typed with capital letters, such as `S/` or `Due/`, is rejected instead of being kept in the value before it. For example, `hw add 1 t/X S/MATH due/2026-12-01` gives `S/ is not a prefix of this command; prefixes are lowercase (s/). To use it inside a value, wrap the whole value in straight double quotes, e.g. t/"X S/MATH".` Other commands keep such a word in the value, so a name such as `Ravi S/O Kumar` is accepted.
 
-* Homework subcommands and the word `all` must be typed in lowercase: `hw E 1 2 t/X` gives `Homework subcommands are lowercase: type e, not E.`, and `hw ls 1 ALL` gives `The word all is lowercase: type all, not ALL.`
+* In `homework add`, `homework edit`, `homework marks` and `homework upcoming`, each prefix can be given only once. A repeated prefix is rejected with `Prefix t/ can be given only once.` (naming the repeated prefix) and the command's usage on the next line. This often happens when a title contains a word such as `t/f` or `s/o`. In that case the error also shows how to keep the word in the title by quoting it. For example, `hw add 1 t/Revise t/f questions s/MATH due/2026-12-01` gives:
+
+  ```text
+  Prefix t/ can be given only once. To use it inside a value, wrap the whole value in straight double quotes, e.g. t/"Revise t/f questions".
+  Usage: homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD
+  ```
+
+  `hw add 1 t/Read s/o notes s/MATH due/2026-12-01` gives `Prefix s/ can be given only once.` with the example `t/"Read s/o notes"`, and `hw m 1 2 score/1 score/2` gives `Prefix score/ can be given only once.` and the usage only. Other commands keep their own messages for a repeated prefix.
+
+* The command words `homework` and `hw`, homework subcommands and the word `all` must be typed in lowercase: `HW e 1 2 t/X` gives `Command words are lowercase: type hw, not HW.`, `hw E 1 2 t/X` gives `Homework subcommands are lowercase: type e, not E.`, and `hw ls 1 ALL` gives `The word all is lowercase: type all, not ALL.`
+
+* `homework` or `hw` must be followed by a space and one of the homework subcommands. `hw` on its own gives `Missing homework subcommand. Use add, list|ls, upcoming|up, edit|e, marks|m, delete|del, filter or status.`, and a word that is not a subcommand is named, e.g. `hw rm 1 1` gives `rm is not a homework subcommand. Use add, list|ls, upcoming|up, edit|e, marks|m, delete|del, filter or status.` The subcommand must be followed by a space too, so `hw ls1` is rejected in the same way, naming `ls1`.
 
 * In homework commands, a missing index or an extra word before the first prefix is rejected with what was expected and what was found. For example, `hw del 1 1 1` gives `Expected STUDENT_INDEX HOMEWORK_INDEX, but found 3 words (1 1 1).`, and `hw add 1 extra t/X s/MATH due/2026-12-01` gives `Expected STUDENT_INDEX before the first prefix, but found 2 words (1 extra).` These errors, like the ones above, show the command's usage on the next line.
 
@@ -349,7 +360,8 @@ Adds a homework record to the end of a student's homework list.
 
 Format: `homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD`
 
-* `homework` can be shortened to `hw`, and `title/` can be shortened to `t/`. Use either `title/` or `t/`, not both; giving both is rejected with `Use either title/ or t/, not both.`
+* `homework` can be shortened to `hw`, and `title/` can be shortened to `t/`. Use either `title/` or `t/`, not both; giving both is rejected with `Use either title/ or t/, not both.` and the usage. If the second one is in the title, e.g. `hw add 1 t/Read title/abstract s/MATH due/2026-12-01`, the error also shows how to quote the title: `Use either title/ or t/, not both. To use it inside a value, wrap the whole value in straight double quotes, e.g. t/"Read title/abstract".`
+* All three of the title, `s/` and `due/` are required. A missing one is named in the error, followed by the usage, e.g. `hw add 1 s/MATH due/2026-12-01` gives `Missing required prefix(es): title/ (or t/)`.
 * `STUDENT_INDEX` refers to the index number shown in the displayed student list. It **must be a positive whole number without leading zeroes**, such as 1, 2, 3, …​ A number above 2147483647 is rejected with `STUDENT_INDEX must be no greater than 2147483647.`
 * `TITLE` must be 1 to 100 characters long and may contain only letters, numbers, punctuation, symbols and spaces, such as `Café`, `x² + π ≈ 3.14`, `😀 quiz` or `Ch 3 Q1-10 (pg. 45)`. Extra spaces are removed, and capitalization is kept. A longer title is rejected with a message that gives its length, e.g. `Homework title must be at most 100 characters, but has 101.`
 * Invisible characters, such as a zero-width space (U+200B) or the variation selector U+FE0F at the end of some emoji, are rejected wherever they are in the title. So emoji that contain an invisible character, such as ❤️ (U+2764 followed by U+FE0F) or 👨‍👩‍👧 (joined by U+200D), are rejected. The error names the first such character by its code and name, e.g. `t/Love ❤️` gives `Homework title has an unsupported character: U+FE0F (VARIATION SELECTOR-16). Titles may contain only letters, numbers, punctuation, symbols and spaces.`
@@ -409,7 +421,8 @@ Format: `homework|hw upcoming|up [due/DAYS]`
 
 * `homework` can be shortened to `hw`, and `upcoming` can be shortened to `up`.
 * `DAYS` is a **number of days, not a date**: the homework shown is due from today to `DAYS` days after today, both days included. For example, on 2026-11-06, `due/3` shows homework due from 2026-11-06 to 2026-11-09, and `due/0` shows homework due today only.
-* `DAYS` must be a whole number from 0 to 365 without signs, decimals, spaces or leading zeroes (`0` itself is accepted). If `due/` is left out, `DAYS` is 7.
+* `DAYS` must be a whole number from 0 to 365 without signs, decimals, spaces or leading zeroes (`0` itself is accepted). If `due/` is left out, `DAYS` is 7. Other values are rejected with `Days must be a whole number from 0 to 365 without leading zeroes.`
+* A date given as `DAYS`, i.e. numbers joined by `-` or `/` such as `due/2026-11-20` or `due/11-20`, is rejected with `In homework upcoming, due/ is a number of days from 0 to 365, not a date, e.g. due/7.` To see the homework due on one date, use [`homework filter`](#filtering-homework-homework-filter) with `due/DATE`.
 * Homework due before today is left out. Homework is shown whether or not it has marks, including completed homework. Upcoming lists and the student card's upcoming count are based on due dates only; use `homework filter status/ASSIGNED` to find unfinished work.
 * Unlike the **At a glance** panel, which shows every `ASSIGNED` homework of every student, including overdue homework, this command shows homework of any status due within the period and leaves out homework due before today.
 * The homework of every student is searched, not only the students shown in the student list.

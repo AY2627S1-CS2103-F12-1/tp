@@ -376,10 +376,10 @@ Format: `homework|hw list|ls STUDENT_INDEX [all]`
 * `STUDENT_INDEX` follows the same rules as in `homework add`.
 * Without `all`, homework due before today is left out. With `all` (in lowercase), all of the student's homework is shown.
 * Homework is sorted by due date, earliest first. Homework due on the same date is shown in the order it was added.
-* The result starts with a line such as `Listed N upcoming homework records for NAME.` (`Listed N homework records for NAME.` with `all`, and `record` when there is only one) and `Homework for NAME:`, followed by one line per homework with its number, title, subject, due date, score and status, e.g. `2. Kinematics practice set (PHYSICS) - due 2026-10-28 - score 5/10 - status ASSIGNED`. Homework without marks shows `score Not recorded`.
-* Without `all`, if any homework is left out because it is due before today, the first line also says how many records are not shown and how to see them, e.g. `Listed 2 upcoming homework records for Priya Nair (1 record due before today not shown; use homework list 2 all to see it).`
+* The result starts with a line such as `Listed N upcoming homework records for NAME (PHONE).` (`Listed N homework records for NAME (PHONE).` with `all`, and `record` when there is only one) and `Homework for NAME (PHONE):`, followed by one line per homework with its number, title, subject, due date, score and status, e.g. `2. Kinematics practice set (PHYSICS) - due 2026-11-11 - score 5/10 - status ASSIGNED`. Homework without marks shows `score Not recorded`.
+* Without `all`, if any homework is left out because it is due before today, the first line also says how many records are not shown and how to see them, e.g. `Listed 2 upcoming homework records for Priya Nair (82345671) (1 record due before today not shown; use homework list 2 all to see it).`
 * Each homework is numbered by its position in the order the homework was added, so the numbers may appear out of order. These numbers are the `HOMEWORK_INDEX` values used by `homework edit`, `homework marks` and `homework delete`. They change only when homework is deleted. They are always written with the digits 0 to 9, even if your computer's language and region settings use other digits, so you can type them into these commands.
-* If the student has no homework, the result is `No homework found for NAME.` If none of the student's homework is due today or later, the result is `No upcoming homework found for NAME (N records due before today not shown; use homework list STUDENT_INDEX all to see them).` (`1 record` and `see it` when there is only one).
+* If the student has no homework, the result is `No homework found for NAME (PHONE).` If none of the student's homework is due today or later, the result is `No upcoming homework found for NAME (PHONE) (N records due before today not shown; use homework list STUDENT_INDEX all to see them).` (`1 record` and `see it` when there is only one).
 
 Examples:
 * `homework list 1`
@@ -392,36 +392,35 @@ Shows the homework of all students that is due in the next few days, earliest du
 Format: `homework|hw upcoming|up [due/DAYS]`
 
 * `homework` can be shortened to `hw`, and `upcoming` can be shortened to `up`.
-* `DAYS` is a **number of days, not a date**: the homework shown is due from today to `DAYS` days after today, both days included. For example, on 2026-10-27, `due/3` shows homework due from 2026-10-27 to 2026-10-30, and `due/0` shows homework due today only.
+* `DAYS` is a **number of days, not a date**: the homework shown is due from today to `DAYS` days after today, both days included. For example, on 2026-11-06, `due/3` shows homework due from 2026-11-06 to 2026-11-09, and `due/0` shows homework due today only.
 * `DAYS` must be a whole number from 0 to 365 without signs, decimals, spaces or leading zeroes (`0` itself is accepted). If `due/` is left out, `DAYS` is 7.
 * Homework due before today is left out. Homework is shown whether or not it has marks, including completed homework. Upcoming lists and the student card's upcoming count are based on due dates only; use `homework filter status/ASSIGNED` to find unfinished work.
 * Unlike the **At a glance** panel, which shows every `ASSIGNED` homework of every student, including overdue homework, this command shows homework of any status due within the period and leaves out homework due before today.
 * The homework of every student is searched, not only the students shown in the student list.
 * Like [`list`](#listing-all-students-list), this command shows all students again in stored roster order, even when no homework is due. It clears any `search` or `filter` and undoes any `sort` of the student list, so `Student N` always matches the student list shown afterwards. Run `sort` again if you want the sorted order back.
 * Homework is sorted by due date, earliest first. Homework due on the same date is shown in the order of the students in the student list, and then in the order it was added.
-* The result starts with `Found N homework records due from START to END.` (`record` when there is only one), followed by one line per homework with the student's `STUDENT_INDEX` and name, title, subject, due date, score and status, e.g. `Student 1: Ethan Lim; Quadratic equations worksheet; MATH; Due: 2026-10-23; Score: 5/10; Status: ASSIGNED`. Homework without marks shows `Score: Not recorded`.
+* The result starts with `Found N homework records due from START to END.` (`record` when there is only one), followed by one line per homework with the student's `STUDENT_INDEX`, name and phone, title, subject, due date, score and status, e.g. `Student 1: Ethan Lim (91234567); Kinematics practice set; PHYSICS; Due: 2026-11-11; Score: 5/10; Status: ASSIGNED`. Homework without marks shows `Score: Not recorded`.
 * `Student N` is the index of the student in the displayed student list, the `STUDENT_INDEX` that other commands take. It tells apart students with the same name. Like the numbers in `homework list`, it is always written with the digits 0 to 9.
 * If no homework is due in that period, the result is `No homework due from START to END.`
 * The lines are not numbered, and their order is not the `HOMEWORK_INDEX` used by other homework commands. To edit, score or delete a record shown here, find its number with [`homework list STUDENT_INDEX`](#listing-a-students-homework-homework-list), using the student index shown after `Student`.
 * This command does not change your data.
 
 Examples:
-* `hw up` shows the homework due from today to 7 days after today. The result depends on today's date. For example, with the sample students on 2026-10-27, the result is:
+* `hw up` shows the homework due from today to 7 days after today. The result depends on today's date. For example, with the sample students on 2026-11-06, the result is:
 
   ```
-  Found 3 homework records due from 2026-10-27 to 2026-11-03.
-  Student 1: Ethan Lim; Kinematics practice set; PHYSICS; Due: 2026-10-28; Score: Not recorded; Status: ASSIGNED
-  Student 3: Marcus Tan; Algebraic expansion worksheet; MATH; Due: 2026-10-30; Score: Not recorded; Status: ASSIGNED
-  Student 2: Priya Nair; Organic reaction pathways map; CHEMISTRY; Due: 2026-11-02; Score: Not recorded; Status: ASSIGNED
+  Found 3 homework records due from 2026-11-06 to 2026-11-13.
+  Student 2: Priya Nair (82345671); Organic reaction pathways map; CHEMISTRY; Due: 2026-11-09; Score: Not recorded; Status: ASSIGNED
+  Student 1: Ethan Lim (91234567); Kinematics practice set; PHYSICS; Due: 2026-11-11; Score: Not recorded; Status: ASSIGNED
+  Student 3: Marcus Tan (87654329); Algebraic expansion worksheet; MATH; Due: 2026-11-12; Score: Not recorded; Status: ASSIGNED
   ```
 
   On other dates the dates and the number of records differ.
-* `hw up due/3` shows the homework due from today to 3 days after today. For example, with the sample students on 2026-10-27, the result is:
+* `hw up due/3` shows the homework due from today to 3 days after today. For example, with the sample students on 2026-11-06, the result is:
 
   ```
-  Found 2 homework records due from 2026-10-27 to 2026-10-30.
-  Student 1: Ethan Lim; Kinematics practice set; PHYSICS; Due: 2026-10-28; Score: Not recorded; Status: ASSIGNED
-  Student 3: Marcus Tan; Algebraic expansion worksheet; MATH; Due: 2026-10-30; Score: Not recorded; Status: ASSIGNED
+  Found 1 homework record due from 2026-11-06 to 2026-11-09.
+  Student 2: Priya Nair (82345671); Organic reaction pathways map; CHEMISTRY; Due: 2026-11-09; Score: Not recorded; Status: ASSIGNED
   ```
 
   On other dates the dates and the number of records differ.
@@ -445,25 +444,25 @@ Format: `homework|hw edit|e STUDENT_INDEX HOMEWORK_INDEX [title/|t/TITLE] [s/SUB
 * On success, the result shows the edited homework, followed by the student's upcoming homework in the format of `homework list STUDENT_INDEX`.
 
 Examples:
-* `hw e 1 2 t/Kinematics practice set B` changes the title of the 2nd homework of the 1st student. The upcoming homework listed depends on today's date. For example, with the sample students on 2026-10-27, the result is:
+* `hw e 1 2 t/Kinematics practice set B` changes the title of the 2nd homework of the 1st student. The upcoming homework listed depends on today's date. For example, with the sample students on 2026-11-06, the result is:
 
   ```
   Edited homework:
-  Ethan Lim; Title: Kinematics practice set B; Subject: PHYSICS; Due: 2026-10-28
-  Listed 1 upcoming homework record for Ethan Lim (1 record due before today not shown; use homework list 1 all to see it).
-  Homework for Ethan Lim:
-  2. Kinematics practice set B (PHYSICS) - due 2026-10-28 - score Not recorded - status ASSIGNED
+  Ethan Lim (91234567); Title: Kinematics practice set B; Subject: PHYSICS; Due: 2026-11-11
+  Listed 1 upcoming homework record for Ethan Lim (91234567) (1 record due before today not shown; use homework list 1 all to see it).
+  Homework for Ethan Lim (91234567):
+  2. Kinematics practice set B (PHYSICS) - due 2026-11-11 - score Not recorded - status ASSIGNED
   ```
-* `hw e 2 1 due/2026-11-05` changes the due date of the 1st homework of the 2nd student. For example, with the sample students on 2026-10-27, the result is:
+* `hw e 2 1 due/2026-12-05` changes the due date of the 1st homework of the 2nd student. For example, with the sample students on 2026-11-06, the result is:
 
   ```
   Edited homework:
-  Priya Nair; Title: Integration by parts exercise; Subject: MATH; Due: 2026-11-05
-  Listed 3 upcoming homework records for Priya Nair.
-  Homework for Priya Nair:
-  2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-02 - score Not recorded - status ASSIGNED
-  1. Integration by parts exercise (MATH) - due 2026-11-05 - score Not recorded - status ASSIGNED
-  3. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-09 - score Not recorded - status ASSIGNED
+  Priya Nair (82345671); Title: Integration by parts exercise; Subject: MATH; Due: 2026-12-05
+  Listed 3 upcoming homework records for Priya Nair (82345671).
+  Homework for Priya Nair (82345671):
+  2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-09 - score Not recorded - status ASSIGNED
+  3. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-23 - score Not recorded - status ASSIGNED
+  1. Integration by parts exercise (MATH) - due 2026-12-05 - score Not recorded - status ASSIGNED
   ```
 * `hw edit 1 2 t/Revise mechanics s/PHYSICS due/2026-11-10` changes the title, subject and due date together.
 * `hw e 1 2 t/"Speed in km/h"` changes the title to `Speed in km/h`.
@@ -483,8 +482,8 @@ Format: `homework|hw marks|m STUDENT_INDEX HOMEWORK_INDEX score/[SCORE]`
 * The score is kept and shown as you give it: `5/10` is not simplified to `1/2`, and `17` and `17/20` are different scores.
 * Recording the score that the homework already has is rejected with `No changes made; the homework already has this score.`
 * Homework without marks shows `Not recorded`, not `0`, in `homework list`.
-* On success, the result shows the homework with its new score, e.g. `Recorded homework marks:` followed by `Ethan Lim; Title: Kinematics practice set; Subject: PHYSICS; Due: 2026-10-28; Score: 5/10`.
-* Leaving `SCORE` empty (nothing or only spaces after `score/`) clears the recorded marks, so the homework shows `Not recorded` again. The result is `Cleared homework marks:` followed by the homework, e.g. `Ethan Lim; Title: Kinematics practice set; Subject: PHYSICS; Due: 2026-10-28; Score: Not recorded`. Clearing homework that has no marks is rejected with `No changes made; the homework has no recorded marks.`
+* On success, the result shows the homework with its new score, e.g. `Recorded homework marks:` followed by `Ethan Lim (91234567); Title: Kinematics practice set; Subject: PHYSICS; Due: 2026-11-11; Score: 5/10`.
+* Leaving `SCORE` empty (nothing or only spaces after `score/`) clears the recorded marks, so the homework shows `Not recorded` again. The result is `Cleared homework marks:` followed by the homework, e.g. `Ethan Lim (91234567); Title: Kinematics practice set; Subject: PHYSICS; Due: 2026-11-11; Score: Not recorded`. Clearing homework that has no marks is rejected with `No changes made; the homework has no recorded marks.`
 * The `score/` prefix is required even when clearing: `hw m 1 2` without it is rejected.
 * Recording or clearing marks does not change the homework's completion status. Use [`homework status`](#updating-homework-completion-homework-status) to mark it completed.
 
@@ -512,15 +511,15 @@ Format: `homework|hw delete|del STUDENT_INDEX HOMEWORK_INDEX`
 Examples:
 * `homework list 1` followed by `homework delete 1 2` deletes the 2nd homework of the 1st student.
 * `hw del 3 1`
-* For example, with the sample students on 2026-10-27, after `hw add 2 t/Vectors revision s/MATH due/2026-11-20`, `hw del 2 2` shows the following. On other dates, the upcoming homework listed differs.
+* For example, with the sample students on 2026-11-06, after `hw add 2 t/Vectors revision s/MATH due/2026-11-30`, `hw del 2 2` shows the following. On other dates, the upcoming homework listed differs.
 
   ```text
   Deleted homework:
-  2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-02 - score Not recorded - status ASSIGNED
-  Listed 2 upcoming homework records for Priya Nair (1 record due before today not shown; use homework list 2 all to see it).
-  Homework for Priya Nair:
-  2. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-09 - score Not recorded - status ASSIGNED
-  3. Vectors revision (MATH) - due 2026-11-20 - score Not recorded - status ASSIGNED
+  2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-09 - score Not recorded - status ASSIGNED
+  Listed 2 upcoming homework records for Priya Nair (82345671) (1 record due before today not shown; use homework list 2 all to see it).
+  Homework for Priya Nair (82345671):
+  2. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-23 - score Not recorded - status ASSIGNED
+  3. Vectors revision (MATH) - due 2026-11-30 - score Not recorded - status ASSIGNED
   ```
 
 ### Updating homework completion: `homework status`
@@ -696,7 +695,7 @@ The data file holds a list of `students`. Each student can hold `homeworks` and 
     "homeworks" : [ {
       "title" : "Quadratic equations worksheet",
       "subject" : "MATH",
-      "dueDate" : "2026-10-23",
+      "dueDate" : "2026-11-03",
       "score" : null,
       "status" : "ASSIGNED"
     } ],
@@ -717,7 +716,7 @@ When editing the file, follow these rules:
 * `homeworks` may be left out, or written as `[ ]`, for a student with no homework.
 * `lessons` may be left out, or written as `[ ]`, for a student with no regular lessons. Each lesson has `subject`, `dayOfWeek`, `startTime` and `endTime`, for example `{"subject":"MATH","dayOfWeek":"MONDAY","startTime":"16:00","endTime":"18:00"}`. The same subject, weekday, time and overlap rules as `lesson add` apply. Older files without `lessons` continue to work.
 * Each homework needs `title`, `subject` and `dueDate`. `title` follows the same rules as in [`homework add`](#adding-homework-to-a-student-homework-add), and `subject` must be one of the student's `subjects`.
-* `dueDate` must be a real calendar date in `YYYY-MM-DD` format with a year from 2000 to 2099, such as `2026-10-23`. The month and day may have 1 or 2 digits: `2026-1-5` loads as 2026-01-05. The short `MM-DD` form is not accepted in the data file, as TutorFlow never guesses the year of a saved date.
+* `dueDate` must be a real calendar date in `YYYY-MM-DD` format with a year from 2000 to 2099, such as `2026-11-03`. The month and day may have 1 or 2 digits: `2026-1-5` loads as 2026-01-05. The short `MM-DD` form is not accepted in the data file, as TutorFlow never guesses the year of a saved date.
 * `score` is text in the same format as `SCORE` in [`homework marks`](#recording-homework-marks-homework-marks): the marks on their own, such as `"17"`, or `MARKS_OBTAINED/TOTAL_MARKS`, such as `"5/10"`. Use `null` (or leave `score` out) if the homework has no score. A score saved by an older version of TutorFlow as a number without quotes, such as `85`, loads as the score `85` and is saved as `"85"` the next time TutorFlow saves. A number that is not a valid score, such as `85.5` or `-3`, is ignored: the homework loads with no score (`Not recorded`) and the rest of the file loads as usual. The next command that changes the data saves this homework with `"score" : null`, so the invalid number is removed from the file; back up the file first if you want to keep it. Invalid text, such as `"85.5"`, `"abc"` or the empty text `""`, makes the data file invalid.
 * A student cannot have two homework records with the same title (ignoring case), subject and due date.
 * Values such as `math` or `s3` are accepted in any case, and extra spaces in names and titles are removed, with each line break or tab in them read as a space. TutorFlow writes them in its own format the next time it saves.

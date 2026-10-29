@@ -101,7 +101,8 @@ public final class HelpContent {
                                     + HomeworkUpcomingCommandParser.MAX_DAYS + ", not a date, and is "
                                     + HomeworkUpcomingCommandParser.DEFAULT_DAYS + " if not given. The lines are not"
                                     + " numbered by HOMEWORK_INDEX; use homework list"
-                                    + " STUDENT_INDEX to find it.",
+                                    + " STUDENT_INDEX to find it. Like list, it shows all students again, clearing"
+                                    + " any search or filter and undoing any sort.",
                             "hw up due/3"),
                     new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_EDIT,
                             HomeworkEditCommand.MESSAGE_USAGE,

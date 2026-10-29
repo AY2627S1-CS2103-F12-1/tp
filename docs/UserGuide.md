@@ -384,7 +384,7 @@ Format: `homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|M
 
 * An accented letter counts as the same whether it is typed as one character (`é`) or as a letter followed by a combining accent. Letters that only look alike, such as a Cyrillic `а` and a Latin `a`, are different.
 * Each student card shows `Upcoming homework: N`, the number of the student's homework records due today or later (including scored or completed homework), and `Overdue homework: N`, the number of `ASSIGNED` homework records due before today, regardless of score.
-* On success, the result names the student and shows the new homework as `homework list` shows it, with its number. Use this number as `HOMEWORK_INDEX` in `homework edit`, `homework marks` and `homework delete`. For a due date in `MM-DD` form, a line such as `Inferred year: 2026` follows.
+* On success, the result names the student and shows the new homework as `homework list` shows it, with its number. Use this number as `HOMEWORK_INDEX` in `homework edit`, `homework marks`, `homework delete` and `homework status`. For a due date in `MM-DD` form, a line such as `Inferred year: 2026` follows.
 
 Examples:
 * `homework add 1 title/Complete algebra worksheet s/MATH due/2026-10-15` adds homework due before today. With the sample students, the result is:

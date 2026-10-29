@@ -93,6 +93,12 @@ TutorFlow is a **desktop application for private tutors to manage their students
 * A value whose opening `"` is never closed in this way is read as typed, as if it had no quotes.<br>
   For example, `t/"Speed" extra` gives the title `"Speed" extra`, and `hw add 1 t/"Speed in km/h s/PHYSICS due/2026-11-01` is rejected because the quote is not closed, so `km/` is read as a prefix.
 
+* In `homework add`, `homework edit`, `homework marks` and `homework upcoming`, a prefix of the command typed with capital letters, such as `S/` or `Due/`, is rejected instead of being kept in the value before it. For example, `hw add 1 t/X S/MATH due/2026-12-01` gives `S/ is not a prefix of this command; prefixes are lowercase (s/). To use it inside a value, wrap the whole value in straight double quotes, e.g. t/"X S/MATH".` Other commands keep such a word in the value, so a name such as `Ravi S/O Kumar` is accepted.
+
+* Homework subcommands and the word `all` must be typed in lowercase: `hw E 1 2 t/X` gives `Homework subcommands are lowercase: type e, not E.`, and `hw ls 1 ALL` gives `The word all is lowercase: type all, not ALL.`
+
+* In homework commands, a missing index or an extra word before the first prefix is rejected with what was expected and what was found. For example, `hw del 1 1 1` gives `Expected STUDENT_INDEX HOMEWORK_INDEX, but found 3 words (1 1 1).`, and `hw add 1 extra t/X s/MATH due/2026-12-01` gives `Expected STUDENT_INDEX before the first prefix, but found 2 words (1 extra).` These errors, like the ones above, show the command's usage on the next line.
+
 * Extraneous parameters for commands that take no parameters, such as `help`, `exit`, and `clear`, are ignored. The `list` command rejects extra parameters.<br>
   For example, `help 123` is interpreted as `help`.
 
@@ -341,10 +347,10 @@ Adds a homework record to the end of a student's homework list.
 Format: `homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD`
 
 * `homework` can be shortened to `hw`, and `title/` can be shortened to `t/`. Use either `title/` or `t/`, not both; giving both is rejected with `Use either title/ or t/, not both.`.
-* `STUDENT_INDEX` refers to the index number shown in the displayed student list. It **must be a positive whole number without leading zeroes**, such as 1, 2, 3, …​ The largest accepted value is 2147483647.
-* `TITLE` must be 1 to 100 characters long and may contain only letters, numbers, punctuation, symbols and spaces, such as `Café`, `x² + π ≈ 3.14`, `😀 quiz` or `Ch 3 Q1-10 (pg. 45)`. Extra spaces are removed, and capitalization is kept.
-* Invisible characters, such as a zero-width space (U+200B) or the variation selector U+FE0F at the end of some emoji, are rejected wherever they are in the title. So emoji that contain an invisible character, such as ❤️ (U+2764 followed by U+FE0F) or 👨‍👩‍👧 (joined by U+200D), are rejected.
-* Scripts that use combining vowel signs, such as Tamil, Hindi or Thai, are not supported, the same as in student names: a title that contains such a sign, e.g. `தமிழ்`, is rejected.
+* `STUDENT_INDEX` refers to the index number shown in the displayed student list. It **must be a positive whole number without leading zeroes**, such as 1, 2, 3, …​ A number above 2147483647 is rejected with `STUDENT_INDEX must be no greater than 2147483647.`
+* `TITLE` must be 1 to 100 characters long and may contain only letters, numbers, punctuation, symbols and spaces, such as `Café`, `x² + π ≈ 3.14`, `😀 quiz` or `Ch 3 Q1-10 (pg. 45)`. Extra spaces are removed, and capitalization is kept. A longer title is rejected with a message that gives its length, e.g. `Homework title must be at most 100 characters, but has 101.`
+* Invisible characters, such as a zero-width space (U+200B) or the variation selector U+FE0F at the end of some emoji, are rejected wherever they are in the title. So emoji that contain an invisible character, such as ❤️ (U+2764 followed by U+FE0F) or 👨‍👩‍👧 (joined by U+200D), are rejected. The error names the first such character by its code and name, e.g. `t/Love ❤️` gives `Homework title has an unsupported character: U+FE0F (VARIATION SELECTOR-16). Titles may contain only letters, numbers, punctuation, symbols and spaces.`
+* Scripts that use combining vowel signs, such as Tamil, Hindi or Thai, are not supported, the same as in student names: a title that contains such a sign, e.g. `தமிழ்`, is rejected with `Homework title has an unsupported character: U+0BBF (TAMIL VOWEL SIGN I). Titles may contain only letters, numbers, punctuation, symbols and spaces.`
 * A lowercase word directly followed by `/` in `TITLE` (such as `km/h` or `and/or`) is read as a prefix, so the command is rejected. Wrap the title in double quotes to keep such words, e.g. `t/"Speed in km/h"` (see the [notes about the command format](#features)).
 * `SUBJECT` must be `MATH`, `PHYSICS` or `CHEMISTRY` (in any case), and the student must take that subject.
 * The due date must be a real calendar date in `YYYY-MM-DD` format, with a year from 2000 to 2099. Past dates are accepted, so you can record homework that was assigned earlier.
@@ -436,8 +442,8 @@ Format: `homework|hw edit|e STUDENT_INDEX HOMEWORK_INDEX [title/|t/TITLE] [s/SUB
 
 * `homework` can be shortened to `hw`, `edit` can be shortened to `e`, and `title/` can be shortened to `t/`.
 * `STUDENT_INDEX` follows the same rules as in `homework add`.
-* `HOMEWORK_INDEX` refers to the number shown by `homework list STUDENT_INDEX` (or by `homework list STUDENT_INDEX all` for homework due before today). It **must be a positive whole number without leading zeroes**.
-* Give at least one of `title/` (or `t/`), `s/` and `due/`, in any order and each at most once. `title/` and `t/` cannot be used together (`Use either title/ or t/, not both.`). The details you do not give stay unchanged.
+* `HOMEWORK_INDEX` refers to the number shown by `homework list STUDENT_INDEX` (or by `homework list STUDENT_INDEX all` for homework due before today). It **must be a positive whole number without leading zeroes**. A number above 2147483647 is rejected with `HOMEWORK_INDEX must be no greater than 2147483647.`
+* Give at least one of `title/` (or `t/`), `s/` and `due/`, in any order and each at most once. Giving none is rejected with `Specify at least one field to edit: title/ (or t/), s/ or due/.` `title/` and `t/` cannot be used together (`Use either title/ or t/, not both.`). The details you do not give stay unchanged.
 * `TITLE`, `SUBJECT` and the due date follow the same rules as in [`homework add`](#adding-homework-to-a-student-homework-add). A due date in `MM-DD` form gets its year in the same way, and the result shows the year used.
 * The homework keeps its number, score and completion status. To change the score, use [`homework marks`](#recording-homework-marks-homework-marks).
 * The edit is rejected if it changes nothing (`No changes made; the supplied values are identical to the existing homework details.`), or if the edited homework would have the same title (ignoring case), subject and due date as another homework of the student (`This edit would make the homework a duplicate of an existing homework record.`).
@@ -478,7 +484,11 @@ Format: `homework|hw marks|m STUDENT_INDEX HOMEWORK_INDEX score/[SCORE]`
 * `STUDENT_INDEX` and `HOMEWORK_INDEX` follow the same rules as in `homework edit`.
 * `SCORE` is either the marks on their own, e.g. `17`, or `MARKS_OBTAINED/TOTAL_MARKS`, e.g. `5/10`, when the homework has a total.
 * Every number in `SCORE` is a whole number without a sign, decimals, spaces or leading zeroes, and no greater than 2147483647. So `0`, `17` and `150` are accepted, but `-1`, `+17`, `017` and `17.5` are not. A score with a leading zero in any number, such as `05/10` or `017`, is rejected with `Marks must not have leading zeroes. Enter whole numbers such as 5/10, not 05/10.`
-* With a total, `TOTAL_MARKS` must be at least 1, and `MARKS_OBTAINED` must be from 0 to `TOTAL_MARKS`. So `0/10` and `10/10` are accepted, but `11/10`, `5/0`, `5.5/10` and `5 / 10` are not.
+* With a total, `TOTAL_MARKS` must be at least 1, and `MARKS_OBTAINED` must be from 0 to `TOTAL_MARKS`. So `0/10` and `10/10` are accepted, but `11/10`, `5/0`, `5.5/10` and `5 / 10` are not. The error names the rule that failed:
+  * `score/11/10` gives `Marks obtained (11) must not be more than the total marks (10).`
+  * `score/5/0` gives `Total marks must be at least 1.`
+  * A number above 2147483647, e.g. `score/2147483648`, gives `Marks are too large. Enter whole numbers no greater than 2147483647.`
+  * A score in neither form, e.g. `score/5.5/10` or `score/17.5`, gives `Score must be whole marks such as 17, or marks out of a total such as 5/10, with no signs, decimals, spaces or other characters.`
 * The score is kept and shown as you give it: `5/10` is not simplified to `1/2`, and `17` and `17/20` are different scores.
 * Recording the score that the homework already has is rejected with `No changes made; the homework already has this score.`
 * Homework without marks shows `Not recorded`, not `0`, in `homework list`.
@@ -502,7 +512,7 @@ Format: `homework|hw delete|del STUDENT_INDEX HOMEWORK_INDEX`
 
 * `homework` can be shortened to `hw`, and `delete` can be shortened to `del`.
 * `STUDENT_INDEX` follows the same rules as in `homework add`.
-* `HOMEWORK_INDEX` refers to the number shown by `homework list STUDENT_INDEX` (or by `homework list STUDENT_INDEX all` for homework due before today). It **must be a positive whole number without leading zeroes**.
+* `HOMEWORK_INDEX` refers to the number shown by `homework list STUDENT_INDEX` (or by `homework list STUDENT_INDEX all` for homework due before today). It **must be a positive whole number without leading zeroes**. A number above 2147483647 is rejected with `HOMEWORK_INDEX must be no greater than 2147483647.`
 * If the student has no homework, the result is `The selected student has no homework to delete.` If `HOMEWORK_INDEX` is larger than the student's number of homework records, it is `The homework index provided is invalid.`
 * The remaining homework keeps its order and is renumbered.
 * The result shows the deleted record as `homework list` shows it, with the number it had, its score and its status. Below it is the student's upcoming homework with the new numbers, in the format of `homework list STUDENT_INDEX`. Use these numbers for the next command, as the numbers shown before the deletion may now point to different homework.

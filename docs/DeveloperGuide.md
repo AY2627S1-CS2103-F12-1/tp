@@ -765,7 +765,7 @@ Priorities: High (must-have) - `* * *`, Medium (should-have) - `* *`, Low (nice-
 | US07 | `* * *` | independent tutor | view all regular lessons in weekday-and-time order | understand my overall teaching schedule |
 | US08 | `* * *` | independent tutor | delete a regular lesson | remove lessons that no longer take place |
 | US09 | `* * *` | independent tutor | be prevented from adding an overlapping regular lesson | avoid double-booking myself |
-| US10 | `* * *` | independent tutor | reopen TutorFlow and recover my student and lesson records | avoid entering them again |
+| US10 | `* * *` | independent tutor | reopen TutorFlow and find my students, their homework and their regular lessons as I left them | avoid entering them again |
 | US11 | `* *` | independent tutor | search for a student by name | find the student's record quickly |
 | US12 | `* *` | independent tutor | filter students by academic level | focus on students at a particular stage of study |
 | US13 | `* *` | independent tutor | filter students by subject | find the students whom I teach a particular subject |
@@ -858,15 +858,21 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
 1. Tutor requests to list a student's homework.
 2. TutorFlow displays the student's upcoming homework, each with its homework index.
 3. Tutor requests to edit one homework record of the student using its homework index, specifying a new title, subject or due date.
-4. TutorFlow updates the homework record, keeping its homework index and score, and displays it together with the student's upcoming homework.
+4. TutorFlow updates the homework record, keeping its homework index, score and completion status, and displays it together with the student's upcoming homework.
 5. Use case ends.
 
 **Extensions**
 
-* 2a. The homework to edit is overdue, so it is not displayed.
+* 1a. The supplied student index does not identify a displayed student.
+  * 1a1. TutorFlow displays an error.
+  * 1a2. Use case resumes at step 1.
+* 2a. The homework to edit is due before today, so it is not displayed.
   * 2a1. Tutor requests to list all of the student's homework.
-  * 2a2. TutorFlow displays all of the student's homework, including overdue homework, each with its homework index.
+  * 2a2. TutorFlow displays all of the student's homework, including homework due before today, each with its homework index.
   * 2a3. Use case resumes at step 3.
+* 2b. The student has no homework.
+  * 2b1. TutorFlow informs the tutor that the student has no homework.
+  * 2b2. Use case ends.
 * 3a. The supplied student index or homework index does not identify a homework record.
   * 3a1. TutorFlow displays an error.
   * 3a2. Use case resumes at step 3.
@@ -881,7 +887,7 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
   * 3d2. Use case ends.
 * 3e. The edited homework would duplicate another homework record of the student.
   * 3e1. TutorFlow rejects the edit and informs the tutor.
-  * 3e2. Use case ends.
+  * 3e2. Use case resumes at step 3.
 * 4a. TutorFlow cannot save the updated data.
   * 4a1. TutorFlow leaves the homework unchanged.
   * 4a2. TutorFlow informs the tutor that no homework data was changed, naming the data file and the likely cause.
@@ -891,7 +897,7 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
 
 **MSS**
 
-1. Tutor finds the homework index of the homework record, as in steps 1 and 2 of UC03 (including extension 2a for overdue homework).
+1. Tutor finds the homework index of the homework record, as in steps 1 and 2 of UC03 (including extension 2a for homework due before today).
 2. Tutor requests to record the marks of one homework record of the student using its homework index, specifying the marks obtained, optionally together with the total marks.
 3. TutorFlow records the score, replacing any score recorded before, and displays the homework record with its score.
 4. Use case ends.
@@ -902,7 +908,7 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
   * 2a1. TutorFlow displays an error.
   * 2a2. Use case resumes at step 2.
 * 2b. The score is invalid, for example the marks obtained exceed the total marks.
-  * 2b1. TutorFlow displays the score format and its rules.
+  * 2b1. TutorFlow displays an error that says what is wrong with the score.
   * 2b2. Use case resumes at step 2.
 * 2c. The homework already has this score.
   * 2c1. TutorFlow informs the tutor that no changes were made.
@@ -910,6 +916,9 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
 * 2d. The tutor leaves the score empty to remove the recorded marks.
   * 2d1. TutorFlow clears the score and displays the homework record with its score shown as not recorded.
   * 2d2. Use case ends.
+* 2d1a. TutorFlow cannot save the updated data.
+  * 2d1a1. TutorFlow leaves the score unchanged and informs the tutor that no homework data was changed, naming the data file and the likely cause.
+  * 2d1a2. Use case ends.
 * 2e. The tutor leaves the score empty, but the homework has no recorded marks.
   * 2e1. TutorFlow informs the tutor that no changes were made.
   * 2e2. Use case ends.
@@ -923,7 +932,7 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
 **MSS**
 
 1. Tutor requests to list the homework of all students that is due within a number of days from today.
-2. TutorFlow displays that homework, earliest due date first, with each record's student index and name, title, subject, due date, score and status, and shows all students in the student list again.
+2. TutorFlow displays that homework, earliest due date first, with each record's student index and name, title, subject, due date, score and status, and resets the student list to all students so that the student indices match.
 3. Use case ends.
 
 **Extensions**
@@ -938,10 +947,75 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
   * 2a1. TutorFlow informs the tutor that no homework is due in that period.
   * 2a2. Use case ends.
 * 2b. The tutor wants to edit, score or delete one of the displayed records.
-  * 2b1. Tutor requests to list the homework of the student with the displayed student index to find the record's homework index, as the displayed order is not the homework index (see UC03 and UC04).
+  * 2b1. Tutor requests to list the homework of the student with the displayed student index to find the record's homework index, as the displayed order is not the homework index (see UC03, UC04 and UC07).
   * 2b2. Use case ends.
 
-#### Use case: UC06 - Delete a student
+#### Use case: UC06 - Add homework to a student
+
+**MSS**
+
+1. Tutor requests to list students.
+2. TutorFlow displays the students with their displayed indices.
+3. Tutor requests to add homework to one displayed student, specifying the title, subject and due date.
+4. TutorFlow adds the homework to the end of the student's homework list and confirms its details.
+5. Use case ends.
+
+**Extensions**
+
+* 2a. The student roster is empty.
+  * 2a1. TutorFlow informs the tutor that no students were found.
+  * 2a2. Use case ends.
+* 3a. The supplied student index does not identify a displayed student.
+  * 3a1. TutorFlow displays an error.
+  * 3a2. Use case resumes at step 3.
+* 3b. A detail is missing or invalid, for example the due date is not a real calendar date.
+  * 3b1. TutorFlow displays the relevant error.
+  * 3b2. Use case resumes at step 3.
+* 3c. The due date is given without a year.
+  * 3c1. TutorFlow uses this year, or next year if the date has already passed this year, and states the year it used.
+  * 3c2. Use case resumes at step 4.
+* 3d. The student does not take the subject.
+  * 3d1. TutorFlow rejects the homework and displays an error.
+  * 3d2. Use case resumes at step 3.
+* 3e. The student already has homework with the same title (ignoring case), subject and due date.
+  * 3e1. TutorFlow informs the tutor that the homework already exists.
+  * 3e2. Use case resumes at step 3.
+* 4a. TutorFlow cannot save the updated data.
+  * 4a1. TutorFlow leaves the student's homework unchanged.
+  * 4a2. TutorFlow informs the tutor that no homework data was changed, naming the data file and the likely cause.
+  * 4a3. Use case ends.
+
+#### Use case: UC07 - Delete a homework record
+
+**MSS**
+
+1. Tutor requests to list a student's homework.
+2. TutorFlow displays the student's upcoming homework, each with its homework index.
+3. Tutor requests to delete one homework record of the student using its homework index.
+4. TutorFlow deletes the homework record, displays it with the homework index it had, and displays the student's upcoming homework with the updated homework indices.
+5. Use case ends.
+
+**Extensions**
+
+* 1a. The supplied student index does not identify a displayed student.
+  * 1a1. TutorFlow displays an error.
+  * 1a2. Use case resumes at step 1.
+* 2a. The student has no homework.
+  * 2a1. TutorFlow informs the tutor that the student has no homework.
+  * 2a2. Use case ends.
+* 2b. The homework to delete is due before today, so it is not displayed.
+  * 2b1. Tutor requests to list all of the student's homework.
+  * 2b2. TutorFlow displays all of the student's homework, including homework due before today, each with its homework index.
+  * 2b3. Use case resumes at step 3.
+* 3a. The supplied student index or homework index does not identify a homework record.
+  * 3a1. TutorFlow displays an error.
+  * 3a2. Use case resumes at step 3.
+* 4a. TutorFlow cannot save the updated data.
+  * 4a1. TutorFlow keeps the homework record.
+  * 4a2. TutorFlow informs the tutor that no homework data was changed, naming the data file and the likely cause.
+  * 4a3. Use case ends.
+
+#### Use case: UC08 - Delete a student
 
 **MSS**
 
@@ -964,7 +1038,7 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
   * 4a2. TutorFlow reports that no student data was changed and explains the save error.
   * 4a3. Use case ends.
 
-#### Use case: UC07 - Edit a student
+#### Use case: UC09 - Edit a student
 
 **MSS**
 

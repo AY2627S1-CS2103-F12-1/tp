@@ -459,9 +459,10 @@ public class HomeworkAddCommandParserTest {
 
     @Test
     public void parse_unsupportedSubject_failure() {
-        // s/ follows the title, so it may be part of it
+        // one word after the title, so more likely a mistyped subject than part of the title
         assertParseFailure(parser, "1 title/Complete algebra worksheet s/BIOLOGY due/2026-10-15",
-                notSubject("BIOLOGY") + titleQuoteHint("s/", TITLE_EXAMPLE_SUBJECT_PREFIX));
+                notSubject("BIOLOGY"));
+        assertParseFailure(parser, "1 t/Read s/o due/2026-10-15", notSubject("o"));
         // s/ does not follow the title
         assertParseFailure(parser, "1 s/BIOLOGY t/Essay due/2026-10-15", notSubject("BIOLOGY"));
         assertParseFailure(parser, "1 t/\"Essay\" s/biology due/2026-10-15", notSubject("biology"));
@@ -580,6 +581,6 @@ public class HomeworkAddCommandParserTest {
     @Test
     public void parse_invalidSubjectAndInvalidDueDate_reportsSubject() {
         assertParseFailure(parser, "1 title/Complete algebra worksheet s/BIOLOGY due/2026-02-30",
-                notSubject("BIOLOGY") + titleQuoteHint("s/", TITLE_EXAMPLE_SUBJECT_PREFIX));
+                notSubject("BIOLOGY"));
     }
 }

@@ -121,7 +121,7 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
      *
      * @param isInTitle Whether {@code s/} directly follows an unquoted title, so may be part of it.
      * @throws ParseException If {@code rawSubject} is empty, or names no subject, naming it and, if
-     *     {@code isInTitle}, with a hint to quote the title.
+     *     {@code isInTitle} and it has more than one word, with a hint to quote the title.
      */
     static TuitionSubject parseSubject(String rawSubject, boolean isInTitle) throws ParseException {
         String trimmedSubject = rawSubject.strip();
@@ -132,7 +132,9 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
         try {
             return TuitionSubject.parse(trimmedSubject);
         } catch (IllegalArgumentException exception) {
-            String quoteHint = isInTitle ? buildTitleQuoteHint(PREFIX_SUBJECT) : "";
+            // one word, e.g. BIOLOGY, is more likely a mistyped subject than the rest of a title
+            boolean isRestOfTitle = isInTitle && ParserUtil.splitWords(trimmedSubject).length > 1;
+            String quoteHint = isRestOfTitle ? buildTitleQuoteHint(PREFIX_SUBJECT) : "";
             throw new ParseException(String.format(MESSAGE_NOT_SUBJECT, trimmedSubject) + quoteHint, exception);
         }
     }

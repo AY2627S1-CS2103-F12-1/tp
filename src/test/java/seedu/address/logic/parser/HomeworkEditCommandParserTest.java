@@ -321,6 +321,8 @@ public class HomeworkEditCommandParserTest {
         String quoteHint = titleQuoteHint("s/", TITLE_EXAMPLE_SUBJECT_PREFIX);
         assertParseFailure(parser, "1 2 t/Read s/o notes", notSubject("o notes") + quoteHint);
         assertParseFailure(parser, "1 2 t/Physics s/w set", notSubject("w set") + quoteHint);
+        // one word, so more likely a mistyped subject than part of the title
+        assertParseFailure(parser, "1 2 t/Essay s/BIOLOGY", notSubject("BIOLOGY"));
     }
 
     @Test

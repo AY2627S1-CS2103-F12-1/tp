@@ -105,6 +105,16 @@ public class HomeworkMessagesIntegrationTest {
     }
 
     @Test
+    public void execute_unknownOrMissingSubcommand_listsSubcommands() throws Exception {
+        String subcommands = "Use add, list|ls, upcoming|up, edit|e, marks|m, delete|del, filter or status.";
+        assertParseFailure("hw rm 1 1", "rm is not a homework subcommand. " + subcommands);
+        assertParseFailure("hw upcomming", "upcomming is not a homework subcommand. " + subcommands);
+        assertParseFailure("hw ls3", "ls3 is not a homework subcommand. " + subcommands);
+        assertParseFailure("hw", "Missing homework subcommand. " + subcommands);
+        assertParseFailure("homework", "Missing homework subcommand. " + subcommands);
+    }
+
+    @Test
     public void execute_wrongWordsOrCase_specificMessage() throws Exception {
         assertParseFailure("hw e 1 2", "Specify at least one field to edit: title/ (or t/), s/ or due/.\nUsage: "
                 + HomeworkEditCommand.MESSAGE_USAGE);

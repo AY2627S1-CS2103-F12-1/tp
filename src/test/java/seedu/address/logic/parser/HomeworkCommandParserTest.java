@@ -27,16 +27,8 @@ public class HomeworkCommandParserTest {
     /** Fixed clock at 2026-10-05, so short-form due dates always infer the same year and today never changes. */
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-05T00:00:00Z"), ZoneOffset.UTC);
     private static final LocalDate TODAY = LocalDate.of(2026, 10, 5);
-    private static final String MESSAGE_INVALID_FORMAT = "Invalid command format.\n"
-            + "Usage: homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD\n"
-            + "homework|hw list|ls STUDENT_INDEX [all]\n"
-            + "homework|hw upcoming|up [due/DAYS]\n"
-            + "homework|hw edit|e STUDENT_INDEX HOMEWORK_INDEX [title/|t/TITLE] [s/SUBJECT] "
-            + "[due/YYYY-MM-DD|MM-DD]\n"
-            + "homework|hw marks|m STUDENT_INDEX HOMEWORK_INDEX score/[SCORE]\n"
-            + "homework|hw delete|del STUDENT_INDEX HOMEWORK_INDEX\n"
-            + "homework|hw filter [STUDENT_INDEX] [s/SUBJECT] [due/DATE] [status/STATUS]\n"
-            + "homework|hw status STUDENT_INDEX HOMEWORK_INDEX status/STATUS";
+    private static final String SUBCOMMANDS =
+            "Use add, list|ls, upcoming|up, edit|e, marks|m, delete|del, filter or status.";
 
     private final HomeworkCommandParser parser = new HomeworkCommandParser(CLOCK);
 
@@ -110,12 +102,19 @@ public class HomeworkCommandParserTest {
 
     @Test
     public void parse_missingSubcommand_failure() {
-        assertParseFailure(parser, "   ", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "", "Missing homework subcommand. " + SUBCOMMANDS);
+        assertParseFailure(parser, "   ", "Missing homework subcommand. " + SUBCOMMANDS);
     }
 
     @Test
     public void parse_unknownSubcommand_failure() {
-        assertParseFailure(parser, " remove 1 2", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, " remove 1 2", "remove is not a homework subcommand. " + SUBCOMMANDS);
+        assertParseFailure(parser, " rm 1 1", "rm is not a homework subcommand. " + SUBCOMMANDS);
+        assertParseFailure(parser, " d 1 1", "d is not a homework subcommand. " + SUBCOMMANDS);
+        assertParseFailure(parser, " upcomming", "upcomming is not a homework subcommand. " + SUBCOMMANDS);
+        assertParseFailure(parser, " 1", "1 is not a homework subcommand. " + SUBCOMMANDS);
+        // not a subcommand in any case
+        assertParseFailure(parser, " Rm 1 1", "Rm is not a homework subcommand. " + SUBCOMMANDS);
     }
 
     @Test
@@ -134,9 +133,12 @@ public class HomeworkCommandParserTest {
 
     @Test
     public void parse_subcommandJoinedToArgument_failure() {
-        assertParseFailure(parser, " list1", MESSAGE_INVALID_FORMAT);
-        assertParseFailure(parser, " ls3", MESSAGE_INVALID_FORMAT);
-        assertParseFailure(parser, " del3 1", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, " list1", "list1 is not a homework subcommand. " + SUBCOMMANDS);
+        assertParseFailure(parser, " ls3", "ls3 is not a homework subcommand. " + SUBCOMMANDS);
+        assertParseFailure(parser, " del3 1", "del3 is not a homework subcommand. " + SUBCOMMANDS);
+        assertParseFailure(parser, " add1 t/A s/MATH due/2026-12-01", "add1 is not a homework subcommand. "
+                + SUBCOMMANDS);
+        assertParseFailure(parser, " up7", "up7 is not a homework subcommand. " + SUBCOMMANDS);
     }
 
     @Test

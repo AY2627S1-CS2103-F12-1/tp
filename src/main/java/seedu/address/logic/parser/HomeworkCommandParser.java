@@ -5,7 +5,6 @@ import static java.util.Objects.requireNonNull;
 import java.time.Clock;
 import java.util.Locale;
 
-import seedu.address.logic.Messages;
 import seedu.address.logic.commands.Command;
 import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
@@ -37,11 +36,11 @@ public class HomeworkCommandParser implements Parser<Command> {
     public static final String SUBCOMMAND_MARKS_ALIAS = "m";
     public static final String SUBCOMMAND_DELETE = "delete";
     public static final String SUBCOMMAND_DELETE_ALIAS = "del";
-    public static final String MESSAGE_INVALID_FORMAT = String.format(Messages.MESSAGE_INVALID_FORMAT_WITH_USAGE,
-            String.join("\n", HomeworkAddCommand.MESSAGE_USAGE, HomeworkListCommand.MESSAGE_USAGE,
-                    HomeworkUpcomingCommand.MESSAGE_USAGE, HomeworkEditCommand.MESSAGE_USAGE,
-                    HomeworkMarksCommand.MESSAGE_USAGE, HomeworkDeleteCommand.MESSAGE_USAGE,
-                    HomeworkFilterCommand.MESSAGE_USAGE, HomeworkStatusCommand.MESSAGE_USAGE));
+    /** The subcommands and their aliases, named when the subcommand is missing or unknown. */
+    public static final String MESSAGE_SUBCOMMANDS =
+            "Use add, list|ls, upcoming|up, edit|e, marks|m, delete|del, filter or status.";
+    public static final String MESSAGE_MISSING_SUBCOMMAND = "Missing homework subcommand. " + MESSAGE_SUBCOMMANDS;
+    public static final String MESSAGE_UNKNOWN_SUBCOMMAND = "%s is not a homework subcommand. " + MESSAGE_SUBCOMMANDS;
     public static final String MESSAGE_SUBCOMMAND_NOT_LOWERCASE =
             "Homework subcommands are lowercase: type %s, not %s.\nUsage: %s";
 
@@ -81,10 +80,14 @@ public class HomeworkCommandParser implements Parser<Command> {
     }
 
     /**
-     * Returns the error for {@code subcommand}, which is not a subcommand: if it is one in another case, a hint to
-     * type it in lowercase and the usage of that subcommand, otherwise the usage of every subcommand.
+     * Returns the error for {@code subcommand}, which is not a subcommand: if it is empty, that a subcommand is
+     * missing; if it is one in another case, a hint to type it in lowercase and the usage of that subcommand;
+     * otherwise that it is not a subcommand. A missing or unknown subcommand error names every subcommand.
      */
     private static String buildUnknownSubcommandMessage(String subcommand) {
+        if (subcommand.isEmpty()) {
+            return MESSAGE_MISSING_SUBCOMMAND;
+        }
         String lowercaseSubcommand = subcommand.toLowerCase(Locale.ROOT);
         String usage = switch (lowercaseSubcommand) {
             case SUBCOMMAND_STATUS -> HomeworkStatusCommand.MESSAGE_USAGE;
@@ -97,7 +100,7 @@ public class HomeworkCommandParser implements Parser<Command> {
             case SUBCOMMAND_DELETE, SUBCOMMAND_DELETE_ALIAS -> HomeworkDeleteCommand.MESSAGE_USAGE;
             default -> null;
         };
-        return usage == null ? MESSAGE_INVALID_FORMAT
+        return usage == null ? String.format(MESSAGE_UNKNOWN_SUBCOMMAND, subcommand)
                 : String.format(MESSAGE_SUBCOMMAND_NOT_LOWERCASE, lowercaseSubcommand, subcommand, usage);
     }
 }

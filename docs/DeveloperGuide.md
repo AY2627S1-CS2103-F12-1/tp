@@ -1342,8 +1342,10 @@ testers are expected to do more *exploratory* testing.
 
 1. Saving fails
 
-   1. Make `data/tutorflow.json` read-only, then run `hw e 1 1 t/Changed title` and `hw m 1 1 score/9/10`.<br>
-      Expected: Each shows that the homework could not be edited, or that its marks could not be recorded, and that no homework data was changed. `hw ls 1 all` is unchanged.
+   1. Prerequisites: Start with the sample students (delete `data/tutorflow.json` first) and run `hw m 1 1 score/5/10`, which creates the data file.
+
+   1. Make `data/tutorflow.json` read-only (e.g. `chmod 444 data/tutorflow.json` on macOS or Linux), then run `hw e 1 1 t/Changed title`, `hw m 1 1 score/9/10` and `hw del 1 1`.<br>
+      Expected: Each shows that the homework could not be edited, that its marks could not be recorded, or that it could not be deleted, and that no homework data was changed, e.g. `The homework could not be deleted because TutorFlow could not save data/tutorflow.json: the file is read-only. No homework data was changed.` `hw ls 1 all` is unchanged. Restore the file's write permission afterwards.
 
 ### Quoting values
 
@@ -1495,13 +1497,15 @@ The automated smoke check is `./gradlew test --tests '*LessonEditUiTest' --tests
 
 1. Saving students, homework and lessons
 
+   1. Prerequisites: Start with the sample students (delete `data/tutorflow.json` first).
+
    1. Add a student with `add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777`. With the sample students, Aaron Koh is student 7, so run `homework add 7 t/Algebra worksheet s/MATH due/2026-12-01` and `lesson add 7 s/MATH d/SUNDAY st/20:00 et/21:00` (use Aaron Koh's index if it is not 7). Close the app and launch it again.<br>
       Expected: The student, the homework and the lesson are still shown: `homework list 7 all` shows `Listed 1 homework record for Aaron Koh.`, `Homework for Aaron Koh:` and `1. Algebra worksheet (MATH) - due 2026-12-01 - score Not recorded - status ASSIGNED`, and `lesson list` shows the lesson as `Aaron Koh (91112222); MATH; SUN; 20:00-21:00`.
 
 1. Dealing with a missing data file
 
    1. Close the app and delete `data/tutorflow.json`. Launch the app.<br>
-      Expected: The app shows the sample students. A new data file is created after the first command that changes the data, e.g. `clear`.
+      Expected: The app shows the sample students. A new data file is created after the first command that changes the data, e.g. `hw m 1 1 score/5/10`.
 
 1. Dealing with a corrupted data file
 
@@ -1530,20 +1534,25 @@ The automated smoke check is `./gradlew test --tests '*LessonEditUiTest' --tests
 
 1. Dealing with a data file that cannot be written
 
-   1. Make `data/tutorflow.json` read-only, then run `homework add 1 t/Test s/MATH due/2026-12-01` (the 1st student must take MATH).<br>
-      Expected: `The homework could not be added because TutorFlow could not save data/tutorflow.json: the file is read-only. No homework data was changed.` `homework list 1` does not show the homework.
+   1. Prerequisites: Start with the sample students (delete `data/tutorflow.json` first) and run `hw m 1 1 score/5/10`, which creates the data file.
+
+   1. Make `data/tutorflow.json` read-only (e.g. `chmod 444 data/tutorflow.json` on macOS or Linux), then run `homework add 1 t/Test s/MATH due/2026-12-01` (the 1st student must take MATH).<br>
+      Expected: `The homework could not be added because TutorFlow could not save data/tutorflow.json: the file is read-only. No homework data was changed.` `homework list 1` does not show the homework. Restore the file's write permission afterwards.
 
    1. Make the `data` folder read-only instead (e.g. `chmod 555 data` on macOS or Linux), then run `delete 1`.<br>
-      Expected: `Could not save data/tutorflow.json: the data folder is read-only. Nothing was changed.` Restore the folder's write permission afterwards.
+      Expected: `The student could not be deleted because TutorFlow could not save data/tutorflow.json: the data folder is read-only. No student data was changed.` Restore the folder's write permission afterwards.
 
    1. In a fresh folder with no `data` folder, launch the app, make the folder read-only (e.g. `chmod 555 .`), then run `delete 1`.<br>
-      Expected: `Could not save data/tutorflow.json: the home folder is read-only. Nothing was changed.` Restore the folder's write permission afterwards.
+      Expected: `The student could not be deleted because TutorFlow could not save data/tutorflow.json: the home folder is read-only. No student data was changed.` Restore the folder's write permission afterwards.
 
-   1. Close the app, move `data/tutorflow.json` away and create a folder named `tutorflow.json` in `data` in its place. Launch the app and run `delete 1`.<br>
-      Expected: `Could not save data/tutorflow.json: it is a folder, not a file. Nothing was changed.` and Ethan Lim is still student 1.
+   1. In a fresh folder with no `data` folder, launch the app with the sample students. While it is open, create a folder named `data` next to the JAR and, inside it, a folder named `tutorflow.json`. Run `delete 1`.<br>
+      Expected: `The student could not be deleted because TutorFlow could not save data/tutorflow.json: it is a folder, not a file. No student data was changed.` and Ethan Lim is still student 1.
+
+   1. Close the app and launch it again with the `tutorflow.json` folder still there.<br>
+      Expected: The loading error dialog appears and the app does not open. The folder is unchanged. Delete the `data` folder afterwards.
 
    1. In a fresh folder, create an empty file named `data` next to the JAR. Launch the app and run `add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777`.<br>
       Expected: `Could not save data/tutorflow.json: a file named data is in the way of the data folder. Nothing was changed.` `list` shows 6 students.
 
    1. In a fresh folder, launch the app with the sample students and run `add n/Temp Student l/S1 s/MATH p/90000000 gn/Temp Parent gp/90000001`, then `delete 7`, to create the data file. Make `data/tutorflow.json` read-only, then run `sort by/level o/desc` and `delete 1`.<br>
-      Expected: `Could not save data/tutorflow.json: the file is read-only. Nothing was changed.` Daniel Wong is still student 1, and the order (Daniel Wong, Priya Nair, Nurul Aisyah, Ethan Lim, Chloe Chua, Marcus Tan) is the same as after the sort. Run `filter s/MATH`, `sort by/level o/desc` and `add n/John Tan l/S3 s/MATH p/91234567 gn/Mary Tan gp/98765432`: the addition fails and the same 5 MATH students stay displayed in the sorted order. Restore the file's write permission afterwards.
+      Expected: `The student could not be deleted because TutorFlow could not save data/tutorflow.json: the file is read-only. No student data was changed.` Daniel Wong is still student 1, and the order (Daniel Wong, Priya Nair, Nurul Aisyah, Ethan Lim, Chloe Chua, Marcus Tan) is the same as after the sort. Run `filter s/MATH`, `sort by/level o/desc` and `add n/John Tan l/S3 s/MATH p/91234567 gn/Mary Tan gp/98765432`: the addition fails and the same 5 MATH students stay displayed in the sorted order. Restore the file's write permission afterwards.

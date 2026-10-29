@@ -88,8 +88,9 @@ public final class HelpContent {
                             HomeworkListCommand.MESSAGE_USAGE,
                             "Lists the homework of the student at STUDENT_INDEX that is due today or later, earliest"
                                     + " first, with its score and status. Add all to list homework due before today"
-                                    + " too. Each homework"
-                                    + " keeps its number, the HOMEWORK_INDEX used by the other homework commands.",
+                                    + " too. The number before each homework is its HOMEWORK_INDEX for the other"
+                                    + " homework commands. Hiding homework due before today does not change these"
+                                    + " numbers, but deleting a homework renumbers the homework after it.",
                             "hw ls 1"),
                     new Entry(HomeworkCommandParser.COMMAND_WORD + " " + HomeworkCommandParser.SUBCOMMAND_UPCOMING,
                             HomeworkUpcomingCommand.MESSAGE_USAGE,

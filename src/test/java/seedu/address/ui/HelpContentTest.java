@@ -82,6 +82,17 @@ public class HelpContentTest {
     }
 
     @Test
+    public void getSections_homeworkListDescription_explainsWhenNumbersChange() {
+        HelpContent.Entry listEntry = getEntries().stream()
+                .filter(entry -> entry.commandWord().equals("homework list")).findFirst().orElseThrow();
+        assertEquals("Lists the homework of the student at STUDENT_INDEX that is due today or later, earliest first,"
+                + " with its score and status. Add all to list homework due before today too. The number before each"
+                + " homework is its HOMEWORK_INDEX for the other homework commands. Hiding homework due before today"
+                + " does not change these numbers, but deleting a homework renumbers the homework after it.",
+                listEntry.description());
+    }
+
+    @Test
     public void getSections_homeworkAddExample_notDueBeforeTodayOnExamDays() throws Exception {
         HelpContent.Entry addEntry = getEntries().stream()
                 .filter(entry -> entry.commandWord().equals("homework add")).findFirst().orElseThrow();

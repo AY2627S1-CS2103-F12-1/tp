@@ -85,7 +85,8 @@ deactivate HomeworkCommandUtil
 
 note right of HomeworkDeleteCommand
   updatedStudent is a copy of student without
-  homework. Immutable-copy interactions are omitted.
+  the deleted homework. Immutable-copy
+  interactions are omitted.
 end note
 HomeworkDeleteCommand -> Model : setStudent(student, updatedStudent)
 activate Model

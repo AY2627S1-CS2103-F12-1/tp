@@ -185,8 +185,17 @@ public class JsonAdaptedStudentTest {
         homeworks.add(null);
         JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
                 VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, homeworks);
-        assertThrows(IllegalValueException.class, JsonAdaptedStudent.MESSAGE_EMPTY_HOMEWORK_ENTRY,
-                student::toModelType);
+        // PE round 2: the reason did not say which entry is empty
+        assertThrows(IllegalValueException.class, "Homework 2 is empty (null).", student::toModelType);
+    }
+
+    @Test
+    public void toModelType_emptyLessonEntry_throwsIllegalValueException() {
+        List<JsonAdaptedLesson> lessons = Arrays.asList(new JsonAdaptedLesson("MATH", "MONDAY", "16:00", "18:00"),
+                null);
+        JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, VALID_SUBJECTS,
+                VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, VALID_HOMEWORKS, lessons);
+        assertThrows(IllegalValueException.class, "Lesson 2 is empty (null).", student::toModelType);
     }
 
     @Test

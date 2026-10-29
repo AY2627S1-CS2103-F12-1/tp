@@ -25,7 +25,8 @@ import seedu.address.model.student.TuitionSubjects;
 class JsonAdaptedStudent {
 
     public static final String MISSING_FIELD_MESSAGE_FORMAT = "Student's %s field is missing!";
-    public static final String MESSAGE_EMPTY_HOMEWORK_ENTRY = "Student's homeworks list contains an empty entry.";
+    /** Message for a null entry of a list in the data file, e.g. "Homework 2", without the name it lacks. */
+    public static final String MESSAGE_EMPTY_ENTRY = "%s is empty (null).";
     public static final String MESSAGE_SUBJECT_NOT_TAKEN = "Homework subject must be one of the student's subjects.";
     public static final String MESSAGE_LESSON_SUBJECT_NOT_TAKEN =
             "Lesson subject must be one of the student's subjects.";
@@ -134,7 +135,8 @@ class JsonAdaptedStudent {
         for (int i = 0; i < lessons.size(); i++) {
             JsonAdaptedLesson adapted = lessons.get(i);
             if (adapted == null) {
-                throw new IllegalValueException("Student's lessons list contains an empty entry.");
+                throw new IllegalValueException(String.format(MESSAGE_EMPTY_ENTRY, describeEntry("Lesson", i + 1,
+                        null)));
             }
             String shownLesson = describeEntry("Lesson", i + 1, adapted.getTimeSlot());
             RegularLesson lesson = toModelEntry(adapted::toModelType, shownLesson);
@@ -164,7 +166,8 @@ class JsonAdaptedStudent {
         for (int i = 0; i < homeworks.size(); i++) {
             JsonAdaptedHomework jsonAdaptedHomework = homeworks.get(i);
             if (jsonAdaptedHomework == null) {
-                throw new IllegalValueException(MESSAGE_EMPTY_HOMEWORK_ENTRY);
+                throw new IllegalValueException(String.format(MESSAGE_EMPTY_ENTRY, describeEntry("Homework", i + 1,
+                        null)));
             }
             String shownHomework = describeEntry("Homework", i + 1, jsonAdaptedHomework.getTitle());
             Homework homework = toModelEntry(jsonAdaptedHomework::toModelType, shownHomework);

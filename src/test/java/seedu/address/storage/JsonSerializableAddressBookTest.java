@@ -207,9 +207,24 @@ public class JsonSerializableAddressBookTest {
     }
 
     @Test
-    public void toModelType_emptyStudentEntry_throwsIllegalValueException() {
-        JsonSerializableAddressBook data = new JsonSerializableAddressBook(Arrays.asList((JsonAdaptedStudent) null));
-        assertThrows(IllegalValueException.class, JsonSerializableAddressBook.MESSAGE_EMPTY_STUDENT_ENTRY,
+    public void toModelType_emptyStudentEntry_throwsIllegalValueException() throws Exception {
+        // PE round 2: the reason did not say which entry is empty
+        JsonSerializableAddressBook data = JsonUtil.fromJsonString("{\"students\":[null]}",
+                JsonSerializableAddressBook.class);
+        assertThrows(IllegalValueException.class, "Student 1 is empty (null).", data::toModelType);
+
+        JsonSerializableAddressBook laterEntry = new JsonSerializableAddressBook(Arrays.asList(
+                new JsonAdaptedStudent(TypicalStudents.ALICE), null));
+        assertThrows(IllegalValueException.class, "Student 2 is empty (null).", laterEntry::toModelType);
+    }
+
+    @Test
+    public void toModelType_emptyHomeworkEntry_namesStudentAndHomework() throws Exception {
+        JsonSerializableAddressBook data = JsonUtil.fromJsonString("{\"students\":[{\"name\":\"John Tan\","
+                + "\"academicLevel\":\"S3\",\"subjects\":[\"MATH\"],\"phone\":\"91234567\","
+                + "\"guardianName\":\"Mary Tan\",\"guardianPhone\":\"98765432\",\"homeworks\":[null]}]}",
+                JsonSerializableAddressBook.class);
+        assertThrows(IllegalValueException.class, "Student 1 (John Tan): Homework 1 is empty (null).",
                 data::toModelType);
     }
 

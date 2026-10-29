@@ -21,7 +21,6 @@ import seedu.address.model.student.Student;
 class JsonSerializableAddressBook {
 
     public static final String MESSAGE_MISSING_STUDENTS = "The students field is missing!";
-    public static final String MESSAGE_EMPTY_STUDENT_ENTRY = "Students list contains an empty entry.";
     /** Message for a duplicate student, e.g. "Student 3 (Alex Yeoh)", and the position of the earlier student. */
     public static final String MESSAGE_DUPLICATE_STUDENT = "%s has the same name and phone number as student %d.";
     /**
@@ -66,7 +65,8 @@ class JsonSerializableAddressBook {
         for (int i = 0; i < students.size(); i++) {
             JsonAdaptedStudent jsonAdaptedStudent = students.get(i);
             if (jsonAdaptedStudent == null) {
-                throw new IllegalValueException(MESSAGE_EMPTY_STUDENT_ENTRY);
+                throw new IllegalValueException(String.format(JsonAdaptedStudent.MESSAGE_EMPTY_ENTRY,
+                        JsonAdaptedStudent.describeEntry("Student", i + 1, null)));
             }
             String shownStudent = JsonAdaptedStudent.describeEntry("Student", i + 1, jsonAdaptedStudent.getName());
             Student student = JsonAdaptedStudent.toModelEntry(jsonAdaptedStudent::toModelType, shownStudent);

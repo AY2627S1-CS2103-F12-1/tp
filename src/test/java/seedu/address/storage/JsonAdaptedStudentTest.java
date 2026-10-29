@@ -105,6 +105,12 @@ public class JsonAdaptedStudentTest {
         assertInvalidSubjects(List.of("MATH", "math")); // repeated subject
         assertInvalidSubjects(List.of("MATH, PHYSICS")); // two subjects in one entry
         assertInvalidSubjects(Arrays.asList("MATH", null)); // empty entry
+
+        // the exact text shown in the load error
+        JsonAdaptedStudent student = new JsonAdaptedStudent(VALID_NAME, VALID_ACADEMIC_LEVEL, List.of("BIOLOGY"),
+                VALID_PHONE, VALID_GUARDIAN_NAME, VALID_GUARDIAN_PHONE, VALID_HOMEWORKS);
+        assertThrows(IllegalValueException.class, "Subjects must contain one or more of: MATH, PHYSICS, CHEMISTRY, "
+                + "separated by commas.", student::toModelType);
     }
 
     @Test

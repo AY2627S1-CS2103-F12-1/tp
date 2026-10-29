@@ -72,6 +72,9 @@ TutorFlow is a **desktop application for private tutors to manage their students
 * Parameters with a prefix can be in any order. Indices such as `STUDENT_INDEX` and `HOMEWORK_INDEX` have no prefix and must come first, right after the command word.<br>
   For example, if the command specifies `n/NAME p/PHONE_NUMBER`, `p/PHONE_NUMBER n/NAME` is also acceptable.
 
+* A prefix counts only when it comes right after a space. Text glued to the end of a word stays in the value, even if it looks like a prefix.<br>
+  For example, `hw add 1 t/Xs/MATH s/MATH due/2026-12-01` adds homework titled `Xs/MATH`, as the first `s/` follows `X` without a space.
+
 * A lowercase word directly followed by `/` after a space (such as `km/h` or `and/or`) is read as a prefix. To use such a word in a value, wrap the whole value in double quotes (`"`). The outer quotes are removed before the value is checked. This works for every value that follows a prefix.<br>
   For example, `hw add 1 t/"Speed in km/h" s/PHYSICS due/2026-12-01` adds homework titled `Speed in km/h`, while `hw add 1 t/Speed in km/h s/PHYSICS due/2026-12-01` is rejected because `km/` is not a prefix of `hw add`:
 
@@ -413,6 +416,7 @@ Format: `homework|hw upcoming|up [due/DAYS]`
 * Like [`list`](#listing-all-students-list), this command shows all students again in stored roster order, even when no homework is due. It clears any `search` or `filter` and undoes any `sort` of the student list, so `Student N` always matches the student list shown afterwards. Run `sort` again if you want the sorted order back.
 * Homework is sorted by due date, earliest first. Homework due on the same date is shown in the order of the students in the student list, and then in the order it was added.
 * The result starts with `Found N homework records due from START to END.` (`record` when there is only one), followed by one line per homework with the student's `STUDENT_INDEX`, name and phone, title, subject, due date, score and status, e.g. `Student 1: Ethan Lim (91234567); Kinematics practice set; PHYSICS; Due: 2026-11-11; Score: 5/10; Status: ASSIGNED`. Homework without marks shows `Score: Not recorded`.
+* The title is shown as typed, so a `;` in a title also appears in the line, e.g. a homework titled `Quiz; part 2` is shown as `...; Quiz; part 2; MATH; Due: ...`.
 * `Student N` is the index of the student in the displayed student list, the `STUDENT_INDEX` that other commands take. It tells apart students with the same name. Like the numbers in `homework list`, it is always written with the digits 0 to 9.
 * If no homework is due in that period, the result is `No homework due from START to END.`
 * The lines are not numbered, and their order is not the `HOMEWORK_INDEX` used by other homework commands. To edit, score or delete a record shown here, find its number with [`homework list STUDENT_INDEX`](#listing-a-students-homework-homework-list), using the student index shown after `Student`.

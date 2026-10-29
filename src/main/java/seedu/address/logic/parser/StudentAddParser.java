@@ -26,7 +26,9 @@ public final class StudentAddParser {
 
     private static final List<String> REQUIRED_PREFIXES = List.of("n/", "l/", "s/", "p/", "gn/", "gp/");
 
-    /** Creates a parser for Add Student arguments. */
+    /**
+     * Creates a parser for Add Student arguments.
+     */
     public StudentAddParser() {
     }
 

@@ -4,7 +4,9 @@ import static java.util.Objects.requireNonNull;
 
 import java.util.Locale;
 
-/** Represents one of the academic levels supported by TutorFlow. */
+/**
+ * Represents one of the academic levels supported by TutorFlow.
+ */
 public enum AcademicLevel {
     S1, S2, S3, S4, S5, J1, J2;
 

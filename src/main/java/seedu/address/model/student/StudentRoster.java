@@ -19,7 +19,9 @@ public final class StudentRoster {
     private final ObservableList<Student> students = FXCollections.observableArrayList();
     private final ObservableList<Student> unmodifiableStudents = FXCollections.unmodifiableObservableList(students);
 
-    /** Returns true if the roster already contains a student with the same name and student phone. */
+    /**
+     * Returns true if the roster already contains a student with the same name and student phone.
+     */
     public boolean hasStudent(Student student) {
         requireNonNull(student);
         return students.stream().anyMatch(existing -> existing.isSameStudent(student));

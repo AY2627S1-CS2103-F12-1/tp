@@ -77,11 +77,13 @@ TutorFlow is a **desktop application for private tutors to manage their students
   For example, `hw add 1 t/"Speed in km/h" s/PHYSICS due/2026-12-01` adds homework titled `Speed in km/h`, while `hw add 1 t/Speed in km/h s/PHYSICS due/2026-12-01` is rejected because `km/` is not a prefix of `hw add`:
 
   ```text
-  km/ is not a prefix of this command. To use it inside a value, wrap the whole value in straight double quotes, e.g. t/"Speed in km/h".
+  km/ is not a prefix of this command. If km/ is part of the title, put the whole title in straight double quotes, e.g. t/"Pg 5 w/ answers".
   Usage: homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD
   ```
 
-* The error for such a word names it and shows the command's usage on the next line. The example is built from the value the word is in, up to the next prefix of the command. It is left out when the text before the word is only digits, date or time punctuation and spaces: `hw add 1 t/A s/PHYSICS due/2026-12-01 x/y` gives `x/ is not a prefix of this command. To use it inside a value, wrap the whole value in straight double quotes.` A word that is not inside any value, such as `score/` in `hw e 1 2 score/5/10`, gets only `score/ is not a prefix of this command.` and the usage.
+* The error for such a word names it and shows the command's usage on the next line. In `homework add` and `homework edit`, if the word comes right after a title without quotes, with no other prefix in between, the error also says to put the whole title in double quotes, as above. The example in this hint is always one of three fixed titles, not your own title: `t/"True t/f quiz"` for `t/` or `title/`, `t/"Read s/o notes"` for `s/`, and `t/"Pg 5 w/ answers"` for any other word. A word after another value gets no hint: `hw add 1 t/A s/PHYSICS due/2026-12-01 x/y` gives `x/ is not a prefix of this command.` and the usage. Neither does a word in `homework marks` or `homework upcoming`, which have no title, e.g. `hw m 1 2 score/5 t/X` gives `t/ is not a prefix of this command.`, or a word that is not inside any value, such as `score/` in `hw e 1 2 score/5/10`.
+
+* In the other commands, such as `filter` and `lesson add`, the hint is given for a word inside any value, and its example is that value, up to the next prefix of the command, in quotes: `filter l/S4 p/123` gives `p/ is not a prefix of this command. To use it inside a value, wrap the whole value in straight double quotes, e.g. l/"S4 p/123".` The example is left out when the text before the word is only digits, date or time punctuation and spaces: `lesson add 1 s/MATH d/MONDAY st/16:00 et/18:00 x/y` gives `x/ is not a prefix of this command. To use it inside a value, wrap the whole value in straight double quotes.`
 
 * Only straight double quotes (`"`) can wrap a value. Curly quotes (`“ ”`), which some editors type automatically, are read as part of the value, so `hw add 1 t/“Speed in km/h” s/PHYSICS due/2026-12-01` is rejected, with `Use straight quotes ("), not curly quotes (“ ”).` on its own line before the usage.
 
@@ -94,16 +96,16 @@ TutorFlow is a **desktop application for private tutors to manage their students
 * A value whose opening `"` is never closed in this way is read as typed, as if it had no quotes.<br>
   For example, `t/"Speed" extra` gives the title `"Speed" extra`, and `hw add 1 t/"Speed in km/h s/PHYSICS due/2026-12-01` is rejected because the quote is not closed, so `km/` is read as a prefix.
 
-* In `homework add`, `homework edit`, `homework marks` and `homework upcoming`, a prefix of the command typed with capital letters, such as `S/` or `Due/`, is rejected instead of being kept in the value before it. For example, `hw add 1 t/X S/MATH due/2026-12-01` gives `S/ is not a prefix of this command; prefixes are lowercase (s/). To use it inside a value, wrap the whole value in straight double quotes, e.g. t/"X S/MATH".` Other commands keep such a word in the value, so a name such as `Ravi S/O Kumar` is accepted.
+* In `homework add`, `homework edit`, `homework marks` and `homework upcoming`, a prefix of the command typed with capital letters, such as `S/` or `Due/`, is rejected instead of being kept in the value before it. For example, `hw add 1 t/X S/MATH due/2026-12-01` gives `S/ is not a prefix of this command; prefixes are lowercase (s/). If S/ is part of the title, put the whole title in straight double quotes, e.g. t/"Pg 5 w/ answers".`, and `hw add 1 t/Essay s/MATH Due/2026-12-01`, where `Due/` comes after the subject, gives `Due/ is not a prefix of this command; prefixes are lowercase (due/).` Other commands keep such a word in the value, so a name such as `Ravi S/O Kumar` is accepted.
 
-* In `homework add`, `homework edit`, `homework marks` and `homework upcoming`, each prefix can be given only once. A repeated prefix is rejected with `Prefix t/ can be given only once.` (naming the repeated prefix) and the command's usage on the next line. This often happens when a title contains a word such as `t/f` or `s/o`. In that case the error also shows how to keep the word in the title by quoting it. For example, `hw add 1 t/Revise t/f questions s/MATH due/2026-12-01` gives:
+* In `homework add`, `homework edit`, `homework marks` and `homework upcoming`, each prefix can be given only once. A repeated prefix is rejected with `Prefix t/ can be given only once.` (naming the repeated prefix) and the command's usage on the next line. This often happens when a title contains a word such as `t/f` or `s/o`. If either copy of the prefix comes right after a title without quotes, the error also says to quote the title, with a fixed example as described above. For example, `hw add 1 t/Revise t/f questions s/MATH due/2026-12-01` gives:
 
   ```text
-  Prefix t/ can be given only once. To use it inside a value, wrap the whole value in straight double quotes, e.g. t/"Revise t/f questions".
+  Prefix t/ can be given only once. If t/ is part of the title, put the whole title in straight double quotes, e.g. t/"True t/f quiz".
   Usage: homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD
   ```
 
-  `hw add 1 t/Read s/o notes s/MATH due/2026-12-01` gives `Prefix s/ can be given only once.` with the example `t/"Read s/o notes"`, and `hw m 1 2 score/1 score/2` gives `Prefix score/ can be given only once.` and the usage only. Other commands keep their own messages for a repeated prefix.
+  `hw add 1 t/Read s/o notes s/MATH due/2026-12-01` gives `Prefix s/ can be given only once. If s/ is part of the title, put the whole title in straight double quotes, e.g. t/"Read s/o notes".`, and `hw m 1 2 score/1 score/2` gives `Prefix score/ can be given only once.` and the usage only. Other commands keep their own messages for a repeated prefix.
 
 * The command words `homework` and `hw`, homework subcommands and the word `all` must be typed in lowercase: `HW e 1 2 t/X` gives `Command words are lowercase: type hw, not HW.`, `hw E 1 2 t/X` gives `Homework subcommands are lowercase: type e, not E.`, and `hw ls 1 ALL` gives `The word all is lowercase: type all, not ALL.`
 
@@ -358,7 +360,7 @@ Adds a homework record to the end of a student's homework list.
 
 Format: `homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD`
 
-* `homework` can be shortened to `hw`, and `title/` can be shortened to `t/`. Use either `title/` or `t/`, not both; giving both is rejected with `Use either title/ or t/, not both.` and the usage. If the second one is in the title, e.g. `hw add 1 t/Read title/abstract s/MATH due/2026-12-01`, the error also shows how to quote the title: `Use either title/ or t/, not both. To use it inside a value, wrap the whole value in straight double quotes, e.g. t/"Read title/abstract".`
+* `homework` can be shortened to `hw`, and `title/` can be shortened to `t/`. Use either `title/` or `t/`, not both; giving both is rejected with `Use either title/ or t/, not both.` and the usage. If the second one is in the title, e.g. `hw add 1 t/Read title/abstract s/MATH due/2026-12-01`, the error also says to quote the title: `Use either title/ or t/, not both. If title/ is part of the title, put the whole title in straight double quotes, e.g. t/"True t/f quiz".`
 * All three of the title, `s/` and `due/` are required. A missing one is named in the error, followed by the usage, e.g. `hw add 1 s/MATH due/2026-12-01` gives `Missing required prefix(es): title/ (or t/)`.
 * `STUDENT_INDEX` refers to the index number shown in the displayed student list. It **must be a positive whole number without leading zeroes**, such as 1, 2, 3, …​ A number above 2147483647 is rejected with `STUDENT_INDEX must be no greater than 2147483647.`
 * `TITLE` must be 1 to 100 characters long and may contain only letters, numbers, punctuation, symbols and spaces, such as `Café`, `x² + π ≈ 3.14`, `😀 quiz` or `Ch 3 Q1-10 (pg. 45)`. Extra spaces are removed, and capitalization is kept. A longer title is rejected with a message that gives its length, e.g. `Homework title must be at most 100 characters, but has 101.`

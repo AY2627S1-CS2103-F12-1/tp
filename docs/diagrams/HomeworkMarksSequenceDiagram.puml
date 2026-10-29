@@ -5,12 +5,11 @@ skinparam ArrowFontStyle plain
 box Logic LOGIC_COLOR_T1
 participant ":LogicManager" as LogicManager LOGIC_COLOR
 participant "marksCommand:HomeworkMarksCommand" as HomeworkMarksCommand LOGIC_COLOR
-participant "HomeworkCommandUtil" as HomeworkCommandUtil LOGIC_COLOR
+participant "<<class>>\nHomeworkCommandUtil" as HomeworkCommandUtil LOGIC_COLOR
 end box
 
 box Model MODEL_COLOR_T1
 participant "model:Model" as Model MODEL_COLOR
-participant "homework:Homework" as Homework MODEL_COLOR
 end box
 
 [-> LogicManager : execute("hw m 2 1 score/8/10")
@@ -48,11 +47,11 @@ note right of HomeworkMarksCommand
   and stops here.
 end note
 
-HomeworkMarksCommand -> Homework : withScore(8/10)
-activate Homework
+HomeworkMarksCommand -> HomeworkMarksCommand : homework.withScore(8/10)
+activate HomeworkMarksCommand
 
-Homework --> HomeworkMarksCommand : scored
-deactivate Homework
+HomeworkMarksCommand --> HomeworkMarksCommand : scored
+deactivate HomeworkMarksCommand
 
 note right of HomeworkMarksCommand
   scored is a copy of homework with the score 8/10
@@ -69,10 +68,10 @@ deactivate Model
 HomeworkMarksCommand --> LogicManager : result
 deactivate HomeworkMarksCommand
 
-ref over LogicManager, Homework
-  Save the data, or restore it if saving fails
-  (see Saving after a command)
-end ref
+note over LogicManager, Model
+  LogicManager then saves the data, or restores it
+  if saving fails (see Saving after a command).
+end note
 
 [<-- LogicManager : result
 deactivate LogicManager

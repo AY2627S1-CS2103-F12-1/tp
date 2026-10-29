@@ -24,6 +24,9 @@ end note
 LogicManager -> HomeworkUpcomingCommand : execute(model)
 activate HomeworkUpcomingCommand
 
+HomeworkUpcomingCommand -> HomeworkUpcomingCommand : listUpcomingHomework(model)
+activate HomeworkUpcomingCommand
+
 HomeworkUpcomingCommand -> Model : getAddressBook()
 activate Model
 
@@ -36,11 +39,14 @@ activate AddressBook
 AddressBook --> HomeworkUpcomingCommand : students
 deactivate AddressBook
 
-loop for each student in students
-  HomeworkUpcomingCommand -> HomeworkUpcomingCommand : keep homework due\nfrom today to today + 3
-end
+note right of HomeworkUpcomingCommand
+  Keeps each student's homework due from
+  today to today + 3, sorts it by due date
+  and builds one line per homework.
+end note
 
-HomeworkUpcomingCommand -> HomeworkUpcomingCommand : sort the kept homework\nby due date
+HomeworkUpcomingCommand --> HomeworkUpcomingCommand : message
+deactivate HomeworkUpcomingCommand
 
 HomeworkUpcomingCommand -> Model : updateFilteredStudentList(PREDICATE_SHOW_ALL_STUDENTS)
 activate Model

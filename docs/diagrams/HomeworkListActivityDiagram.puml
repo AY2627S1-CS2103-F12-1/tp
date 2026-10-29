@@ -9,6 +9,11 @@ skinparam ArrowFontStyle plain
 start
 :Find the student at STUDENT_INDEX
 in the displayed list;
+if () then ([not found])
+  :Show the error;
+  stop
+else ([found])
+endif
 if () then ([student has homework])
   if () then ([all given])
     :Keep every record;

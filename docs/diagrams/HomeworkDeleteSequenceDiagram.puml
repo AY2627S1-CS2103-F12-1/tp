@@ -98,6 +98,6 @@ Storage --> LogicManager
 deactivate Storage
 end
 
-[<--LogicManager
+[<-- LogicManager : r
 deactivate LogicManager
 @enduml

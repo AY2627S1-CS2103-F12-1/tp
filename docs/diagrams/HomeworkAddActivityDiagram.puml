@@ -22,8 +22,9 @@ if () then ([valid])
         :Add the homework to the end
         of a copy of the homework list,
         then replace the student;
-        :Save the data, or restore
-        it if saving fails;
+        :Save the data
+        (see Saving after a command);
+        :Show the new homework;
         stop
       else ([same homework exists])
         :Show the error;

@@ -38,12 +38,12 @@ object "<u>h2:Homework</u>" as h2After {
 }
 }
 
-priya --> h1 : index 1
-priya --> h2 : index 2
-priya --> h3 : index 3
+priya -- h1 : index 1
+priya -- h2 : index 2
+priya -- h3 : index 3
 
-updated --> h2After : index 1
-updated --> h3After : index 2
+updated -- h2After : index 1
+updated -- h3After : index 2
 
 After -[hidden]right- Before
 

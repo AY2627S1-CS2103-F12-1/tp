@@ -176,6 +176,48 @@ public class JsonAddressBookStorageTest {
     }
 
     @Test
+    public void saveAddressBook_fileDeletedAfterLoad_recreatesFile() throws Exception {
+        Path filePath = testFolder.resolve("TempAddressBook.json");
+        new JsonAddressBookStorage(filePath).saveAddressBook(getTypicalAddressBook());
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(filePath);
+        AddressBook data = new AddressBook(storage.readAddressBook().orElseThrow());
+        Files.delete(filePath);
+
+        data.deleteStudent(ALICE);
+        storage.saveAddressBook(data);
+
+        assertEquals(data, new AddressBook(new JsonAddressBookStorage(filePath).readAddressBook().orElseThrow()));
+    }
+
+    @Test
+    public void saveAddressBook_fileDeletedAfterSave_recreatesFile() throws Exception {
+        Path filePath = testFolder.resolve("TempAddressBook.json");
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(filePath);
+        AddressBook data = getTypicalAddressBook();
+        storage.saveAddressBook(data);
+        Files.delete(filePath);
+
+        data.deleteStudent(ALICE);
+        storage.saveAddressBook(data);
+
+        assertEquals(data, new AddressBook(new JsonAddressBookStorage(filePath).readAddressBook().orElseThrow()));
+    }
+
+    @Test
+    public void saveAddressBook_fileChangedByAnotherCopyAfterLoad_throwsChangedConflict() throws Exception {
+        Path filePath = testFolder.resolve("TempAddressBook.json");
+        new JsonAddressBookStorage(filePath).saveAddressBook(getTypicalAddressBook());
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(filePath);
+        storage.readAddressBook();
+        new JsonAddressBookStorage(filePath).saveAddressBook(new AddressBook());
+        byte[] fileBefore = Files.readAllBytes(filePath);
+
+        assertThrows(DataFileConflictException.class, DataFileConflictException.MESSAGE_CHANGED, () ->
+                storage.saveAddressBook(getTypicalAddressBook()));
+        assertArrayEquals(fileBefore, Files.readAllBytes(filePath));
+    }
+
+    @Test
     public void saveAddressBook_typicalAddressBook_writesHumanEditableJson() throws Exception {
         Path filePath = testFolder.resolve("TempAddressBook.json");
         new JsonAddressBookStorage(filePath).saveAddressBook(getTypicalAddressBook());

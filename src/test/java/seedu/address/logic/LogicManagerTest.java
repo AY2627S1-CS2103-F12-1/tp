@@ -834,6 +834,23 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_dataFileDeletedWhileOpen_recreatesFileWithAllData() throws Exception {
+        setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
+        logic.execute("hw add 1 t/Precious s/MATH due/2026-12-01");
+        logic.execute(ADD_SAMPLE_STUDENT_COMMAND);
+        Files.delete(dataFilePath);
+
+        logic.execute("hw add 1 t/Another s/MATH due/2026-12-02");
+
+        ReadOnlyAddressBook saved = new JsonAddressBookStorage(dataFilePath).readAddressBook().orElseThrow();
+        assertEquals(model.getAddressBook(), new AddressBook(saved));
+        assertEquals(7, saved.getStudentList().size());
+        assertEquals(List.of("Precious", "Another"), saved.getStudentList().getFirst().getHomeworks().stream()
+                .map(homework -> homework.getTitle().toString())
+                .filter(title -> title.equals("Precious") || title.equals("Another")).toList());
+    }
+
+    @Test
     public void execute_dataFileConflict_keepsConflictMessage() {
         setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(
                 new DataFileConflictException(DataFileConflictException.MESSAGE_CHANGED)));

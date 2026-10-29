@@ -101,8 +101,10 @@ public class JsonAddressBookStorage {
         Path lockFile = normalized.resolveSibling(normalized.getFileName() + ".lock");
         try (FileChannel channel = FileChannel.open(lockFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
                 FileLock lock = acquireWriteLock(channel)) {
-            if (knownVersions.containsKey(normalized)
-                    && !Arrays.equals(knownVersions.get(normalized), readVersion(normalized))) {
+            byte[] currentVersion = readVersion(normalized);
+            // A data file deleted since it was loaded or saved is written again from the data in memory
+            if (knownVersions.containsKey(normalized) && currentVersion != null
+                    && !Arrays.equals(knownVersions.get(normalized), currentVersion)) {
                 throw new DataFileConflictException(DataFileConflictException.MESSAGE_CHANGED);
             }
             String json = JsonUtil.toJsonString(new JsonSerializableAddressBook(addressBook));

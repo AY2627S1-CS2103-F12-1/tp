@@ -1,6 +1,7 @@
 package seedu.address.logic.parser;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
 import static seedu.address.logic.parser.CommandParserTestUtil.unexpectedWords;
@@ -15,12 +16,14 @@ import java.time.ZoneOffset;
 import org.junit.jupiter.api.Test;
 
 import seedu.address.commons.core.index.Index;
+import seedu.address.logic.Messages;
 import seedu.address.logic.commands.HomeworkAddCommand;
 import seedu.address.logic.commands.HomeworkDeleteCommand;
 import seedu.address.logic.commands.HomeworkEditCommand;
 import seedu.address.logic.commands.HomeworkEditCommand.EditHomeworkDescriptor;
 import seedu.address.logic.commands.HomeworkListCommand;
 import seedu.address.logic.commands.HomeworkMarksCommand;
+import seedu.address.logic.commands.HomeworkStatusCommand;
 import seedu.address.logic.commands.HomeworkUpcomingCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.homework.Score;
@@ -163,6 +166,25 @@ public class HomeworkCommandParserTest {
     public void parse_invalidSubcommandArguments_reportsSubcommandError() {
         assertParseFailure(parser, " list", unexpectedWords("STUDENT_INDEX, optionally followed by all", "none",
                 HomeworkListCommand.MESSAGE_USAGE));
+    }
+
+    @Test
+    public void parse_unicodeSpacesInArguments_readAsSpaces() throws Exception {
+        // r3-ald-07: no-break space (U+00A0)
+        assertEquals(parser.parse(" del 1 2"), parser.parse(" del 1\u00A02"));
+        assertEquals(parser.parse(" add 1 t/A s/MATH due/12-02"), parser.parse(" add 1\u00A0t/A s/MATH due/12-02"));
+        // figure space (U+2007), narrow no-break space (U+202F) and ideographic space (U+3000)
+        assertEquals(parser.parse(" e 1 2 t/A s/MATH"), parser.parse(" e 1\u20072\u202Ft/A\u3000s/MATH"));
+        assertEquals(parser.parse(" ls 1 all"), parser.parse(" ls 1\u00A0all"));
+        assertEquals(parser.parse(" m 1 2 score/5"), parser.parse(" m 1\u00A02\u00A0score/5"));
+        assertEquals(parser.parse(" up due/3"), parser.parse(" up\u0020\u00A0due/3"));
+    }
+
+    @Test
+    public void parse_unicodeSpacesInStatusArguments_readAsTyped() {
+        // status belongs to another feature, which reads its arguments as typed
+        assertParseFailure(parser, " status 1\u00A02 status/COMPLETED",
+                String.format(Messages.MESSAGE_INVALID_FORMAT_WITH_USAGE, HomeworkStatusCommand.MESSAGE_USAGE));
     }
 
     @Test

@@ -133,6 +133,17 @@ public class HomeworkMessagesIntegrationTest {
     }
 
     @Test
+    public void execute_noBreakSpaceInArguments_readAsSpace() throws Exception {
+        // r3-ald-07
+        execute("hw add 1\u00A0t/Essay s/MATH due/12-02");
+        assertEquals("Essay", model.getStudentList().getFirst().getHomeworks().get(2).getTitle().toString());
+        execute("hw del 1\u00A03");
+        assertEquals(2, model.getStudentList().getFirst().getHomeworks().size());
+        // the command word is read as typed
+        assertParseFailure("hw\u00A0add 1 t/Essay s/MATH due/12-02", Messages.MESSAGE_UNKNOWN_COMMAND);
+    }
+
+    @Test
     public void execute_titleQuoteHintExample_addsExampleTitle() throws Exception {
         // the example in the hint, typed as shown, gives the title in it
         execute("hw add 1 " + TITLE_EXAMPLE_TITLE_PREFIX + " s/MATH due/2026-12-01");

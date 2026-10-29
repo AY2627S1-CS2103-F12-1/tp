@@ -4,6 +4,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.time.Clock;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 import seedu.address.logic.commands.Command;
 import seedu.address.logic.commands.HomeworkAddCommand;
@@ -45,6 +46,9 @@ public class HomeworkCommandParser implements Parser<Command> {
     public static final String MESSAGE_SUBCOMMAND_NOT_LOWERCASE =
             "Homework subcommands are lowercase: type %s, not %s.\nUsage: %s";
 
+    /** A Unicode space separator, such as a no-break space (U+00A0), which is read as an ordinary space. */
+    private static final Pattern UNICODE_SPACE = Pattern.compile("\\p{Zs}");
+
     private final Clock clock;
 
     /** Creates a parser whose subcommands take today's date from {@code clock}. */
@@ -54,6 +58,8 @@ public class HomeworkCommandParser implements Parser<Command> {
 
     /**
      * Returns the command for the subcommand named by the first word of {@code args}.
+     * In the arguments of the subcommands other than {@code filter} and {@code status}, a Unicode space separator is
+     * read as an ordinary space.
      *
      * @throws ParseException If the subcommand is missing or unknown, or its arguments are invalid.
      */
@@ -62,20 +68,21 @@ public class HomeworkCommandParser implements Parser<Command> {
         requireNonNull(args);
         String[] subcommandAndArguments = args.strip().split("\\s+", 2);
         String subcommandArguments = subcommandAndArguments.length > 1 ? subcommandAndArguments[1] : "";
+        String homeworkArguments = UNICODE_SPACE.matcher(subcommandArguments).replaceAll(" ");
         return switch (subcommandAndArguments[0]) {
             case SUBCOMMAND_STATUS -> new HomeworkStatusCommandParser().parse(subcommandArguments);
             case SUBCOMMAND_FILTER -> new HomeworkFilterCommandParser(clock).parse(subcommandArguments);
-            case SUBCOMMAND_ADD -> new HomeworkAddCommandParser(clock).parse(subcommandArguments);
+            case SUBCOMMAND_ADD -> new HomeworkAddCommandParser(clock).parse(homeworkArguments);
             case SUBCOMMAND_LIST, SUBCOMMAND_LIST_ALIAS ->
-                new HomeworkListCommandParser(clock).parse(subcommandArguments);
+                new HomeworkListCommandParser(clock).parse(homeworkArguments);
             case SUBCOMMAND_UPCOMING, SUBCOMMAND_UPCOMING_ALIAS ->
-                new HomeworkUpcomingCommandParser(clock).parse(subcommandArguments);
+                new HomeworkUpcomingCommandParser(clock).parse(homeworkArguments);
             case SUBCOMMAND_EDIT, SUBCOMMAND_EDIT_ALIAS ->
-                new HomeworkEditCommandParser(clock).parse(subcommandArguments);
+                new HomeworkEditCommandParser(clock).parse(homeworkArguments);
             case SUBCOMMAND_MARKS, SUBCOMMAND_MARKS_ALIAS ->
-                new HomeworkMarksCommandParser().parse(subcommandArguments);
+                new HomeworkMarksCommandParser().parse(homeworkArguments);
             case SUBCOMMAND_DELETE, SUBCOMMAND_DELETE_ALIAS ->
-                new HomeworkDeleteCommandParser(clock).parse(subcommandArguments);
+                new HomeworkDeleteCommandParser(clock).parse(homeworkArguments);
             default -> throw new ParseException(buildUnknownSubcommandMessage(subcommandAndArguments[0]));
         };
     }

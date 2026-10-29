@@ -24,8 +24,20 @@ if () then ([valid])
         then replace the student;
         :Save the data
         (see Saving after a command);
-        :Show the new homework;
-        stop
+        if () then ([saved])
+          if () then ([due today or later])
+            :Show the new homework;
+          else ([due before today])
+            :Show the new homework and a Note
+            that homework list shows it
+            only with all;
+          endif
+          stop
+        else ([save failed])
+          :Restore the data and show
+          the save error;
+          stop
+        endif
       else ([same homework exists])
         :Show the error;
         stop

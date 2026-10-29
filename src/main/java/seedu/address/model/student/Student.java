@@ -101,14 +101,6 @@ public final class Student {
     }
 
     /**
-     * Returns true if this student already has homework with the same identity as {@code homework}, as defined by
-     * {@link Homework#isSameHomework(Homework)}.
-     */
-    public boolean hasHomework(Homework homework) {
-        return homeworks.stream().anyMatch(existing -> existing.isSameHomework(homework));
-    }
-
-    /**
      * Returns a copy of this student with the same six profile fields and lessons, and {@code homeworks} as the
      * homework list.
      *

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.logic.parser.CommandParserTestUtil.MESSAGE_SUBJECT_EMPTY;
 import static seedu.address.logic.parser.CommandParserTestUtil.MESSAGE_TITLE_AND_ALIAS;
 import static seedu.address.logic.parser.CommandParserTestUtil.TITLE_EXAMPLE_OTHER_PREFIX;
 import static seedu.address.logic.parser.CommandParserTestUtil.TITLE_EXAMPLE_SUBJECT_PREFIX;
@@ -130,6 +131,9 @@ public class HomeworkMessagesIntegrationTest {
         assertParseFailure("hw add 1 t/Read s/o notes due/2026-12-01", expectedMessage);
         assertParseFailure("hw e 1 2 t/Physics s/w set", notSubject("w set")
                 + titleQuoteHint("s/", TITLE_EXAMPLE_SUBJECT_PREFIX));
+        // one word or empty, so a mistyped or missing subject: no hint
+        assertParseFailure("hw add 1 t/Essay s/BIOLOGY due/2026-12-01", notSubject("BIOLOGY"));
+        assertParseFailure("hw add 1 t/Essay s/ due/2026-12-01", MESSAGE_SUBJECT_EMPTY);
     }
 
     @Test

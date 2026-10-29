@@ -9,7 +9,6 @@ end box
 
 box Model MODEL_COLOR_T1
 participant "model:Model" as Model MODEL_COLOR
-participant "addressBook:ReadOnlyAddressBook" as AddressBook MODEL_COLOR
 end box
 
 [-> LogicManager : execute("hw up due/3")
@@ -33,16 +32,11 @@ activate Model
 Model --> HomeworkUpcomingCommand : addressBook
 deactivate Model
 
-HomeworkUpcomingCommand -> AddressBook : getStudentList()
-activate AddressBook
-
-AddressBook --> HomeworkUpcomingCommand : students
-deactivate AddressBook
-
 note right of HomeworkUpcomingCommand
-  Keeps each student's homework due from
-  today to today + 3, sorts it by due date
-  and builds one line per homework.
+  Reads every student in addressBook, not only
+  the displayed ones. Keeps each student's
+  homework due from today to today + 3, sorts
+  it by due date and builds one line per homework.
 end note
 
 HomeworkUpcomingCommand --> HomeworkUpcomingCommand : message

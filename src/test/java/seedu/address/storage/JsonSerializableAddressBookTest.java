@@ -163,6 +163,25 @@ public class JsonSerializableAddressBookTest {
     }
 
     @Test
+    public void toModelType_overlappingLessonsInOtherCase_showsLessonsAsWritten() throws Exception {
+        // PE round 3: the reason showed " monday " as MONDAY, unlike the reason for a duplicate lesson
+        JsonAdaptedStudent john = new JsonAdaptedStudent("John Tan", "S3", List.of("MATH"), "91234567", "Mary Tan",
+                "98765432", List.of(), List.of(new JsonAdaptedLesson("MATH", "Monday", "16:00", "18:00")));
+        JsonAdaptedStudent mary = new JsonAdaptedStudent("Mary Lim", "S3", List.of("MATH"), "91234568", "Mary Tan",
+                "98765432", List.of(), List.of(new JsonAdaptedLesson("MATH", " monday ", "17:00", "19:00")));
+        JsonSerializableAddressBook acrossStudents = new JsonSerializableAddressBook(List.of(john, mary));
+        assertThrows(IllegalValueException.class, "Student 2 (Mary Lim): Lesson 1 (monday 17:00-19:00) overlaps "
+                + "lesson 1 (Monday 16:00-18:00) of student 1 (John Tan).", acrossStudents::toModelType);
+
+        JsonAdaptedStudent johnWithTwoLessons = new JsonAdaptedStudent("John Tan", "S3", List.of("MATH"), "91234567",
+                "Mary Tan", "98765432", List.of(), List.of(new JsonAdaptedLesson("MATH", "Monday", "16:00", "18:00"),
+                        new JsonAdaptedLesson("MATH", " monday ", "17:00", "19:00")));
+        JsonSerializableAddressBook ownLessons = new JsonSerializableAddressBook(List.of(johnWithTwoLessons));
+        assertThrows(IllegalValueException.class, "Student 1 (John Tan): Lesson 1 (Monday 16:00-18:00) overlaps "
+                + "lesson 2 (monday 17:00-19:00).", ownLessons::toModelType);
+    }
+
+    @Test
     public void toModelType_invalidLessonInSampleData_namesLesson() throws Exception {
         // PE round 2: the reasons for a lesson named the student but not the lesson
         assertSampleDataReason("\"dayOfWeek\" : \"MONDAY\"", "\"dayOfWeek\" : \"MOONDAY\"",

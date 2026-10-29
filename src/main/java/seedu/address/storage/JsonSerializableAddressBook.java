@@ -77,7 +77,7 @@ class JsonSerializableAddressBook {
                     throw new IllegalValueException(String.format(MESSAGE_DUPLICATE_STUDENT, shownStudent, j + 1));
                 }
             }
-            checkNoOverlappingLessons(student, shownStudent, earlierStudents);
+            checkNoOverlappingLessons(student, jsonAdaptedStudent, shownStudent, earlierStudents);
             addressBook.addStudent(student);
         }
         return addressBook;
@@ -87,28 +87,30 @@ class JsonSerializableAddressBook {
      * Checks that no lesson of {@code student} overlaps another of their lessons or a lesson of
      * {@code earlierStudents}. A student's lessons are in the order of the data file.
      *
+     * @param adaptedStudent The student as read from the data file, whose lessons are shown as written there.
      * @param shownStudent Name of the student as the user can find them in the data file, e.g.
      *         "Student 2 (Priya Nair)".
      * @throws IllegalValueException If two lessons overlap. The message names both lessons, and the other student.
      */
-    private static void checkNoOverlappingLessons(Student student, String shownStudent, List<Student> earlierStudents)
-            throws IllegalValueException {
+    private void checkNoOverlappingLessons(Student student, JsonAdaptedStudent adaptedStudent, String shownStudent,
+            List<Student> earlierStudents) throws IllegalValueException {
         List<RegularLesson> lessons = student.getLessons();
         for (int i = 0; i < lessons.size(); i++) {
             RegularLesson lesson = lessons.get(i);
-            String shownLesson = describeLesson("Lesson", i + 1, lesson);
+            String shownLesson = describeLesson("Lesson", i + 1, adaptedStudent);
             for (int j = 0; j < lessons.size(); j++) {
                 if (j != i && lesson.clashesWith(lessons.get(j))) {
                     throw new IllegalValueException(String.format(JsonAdaptedStudent.ENTRY_PREFIX_FORMAT, shownStudent)
                             + String.format(MESSAGE_OVERLAPPING_LESSON, shownLesson,
-                                    describeLesson("lesson", j + 1, lessons.get(j))));
+                                    describeLesson("lesson", j + 1, adaptedStudent)));
                 }
             }
             for (int j = 0; j < earlierStudents.size(); j++) {
                 List<RegularLesson> otherLessons = earlierStudents.get(j).getLessons();
                 for (int k = 0; k < otherLessons.size(); k++) {
                     if (lesson.clashesWith(otherLessons.get(k))) {
-                        String otherLesson = describeLesson("lesson", k + 1, otherLessons.get(k)) + " of "
+                        // Every earlier student was added, so their place in the list is their place in the file
+                        String otherLesson = describeLesson("lesson", k + 1, students.get(j)) + " of "
                                 + JsonAdaptedStudent.describeEntry("student", j + 1,
                                         earlierStudents.get(j).getName().toString());
                         throw new IllegalValueException(String.format(JsonAdaptedStudent.ENTRY_PREFIX_FORMAT,
@@ -119,9 +121,12 @@ class JsonSerializableAddressBook {
         }
     }
 
-    /** Returns the name of a lesson as the user can find it in the data file, e.g. "Lesson 1 (MONDAY 17:00-18:30)". */
-    private static String describeLesson(String kind, int position, RegularLesson lesson) {
-        return JsonAdaptedStudent.describeEntry(kind, position, new JsonAdaptedLesson(lesson).getTimeSlot());
+    /**
+     * Returns the name of the lesson at {@code position} of {@code student}, counting from 1, as the user can find it
+     * in the data file, with its day and times as written there, e.g. "Lesson 1 (MONDAY 17:00-18:30)".
+     */
+    private static String describeLesson(String kind, int position, JsonAdaptedStudent student) {
+        return JsonAdaptedStudent.describeEntry(kind, position, student.getLessonTimeSlot(position - 1));
     }
 
 }

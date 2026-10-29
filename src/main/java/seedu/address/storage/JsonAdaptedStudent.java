@@ -216,6 +216,14 @@ class JsonAdaptedStudent {
     }
 
     /**
+     * Returns the weekday and times of the lesson at {@code index} of the lessons list, counting from 0, as written
+     * in the data file, e.g. "MONDAY 17:00-18:30", or null if any of them is missing.
+     */
+    String getLessonTimeSlot(int index) {
+        return lessons.get(index).getTimeSlot();
+    }
+
+    /**
      * Converts an entry of the data file into a model object.
      */
     @FunctionalInterface

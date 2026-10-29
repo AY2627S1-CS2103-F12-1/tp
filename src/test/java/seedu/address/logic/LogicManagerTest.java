@@ -927,6 +927,55 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_linkedDataFileInReadOnlyFolder_namesThatFolder() throws Exception {
+        // PE round 3: the cause was the bare path of the data file
+        Path targetFolder = Files.createDirectories(temporaryFolder.resolve("synced"));
+        Path target = targetFolder.resolve("tutorflow.json");
+        new JsonAddressBookStorage(target).saveAddressBook(getSampleAddressBook());
+        Path link = Files.createDirectories(temporaryFolder.resolve("data")).resolve("tutorflow.json");
+        createSymbolicLinkOrSkip(link, target);
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(link);
+        setUpLogic(storage.readAddressBook().orElseThrow(), storage, SAMPLE_CLOCK);
+        byte[] fileBefore = Files.readAllBytes(target);
+        makeFolderReadOnly(targetFolder);
+        try {
+            assertSaveFailureRestores(ADD_SAMPLE_STUDENT_COMMAND,
+                    getGeneralSaveFailureMessage(SHOWN_DATA_FILE_NAME, "the folder synced is read-only"));
+            assertArrayEquals(fileBefore, Files.readAllBytes(target));
+            assertTrue(Files.isSymbolicLink(link));
+        } finally {
+            makeFolderWritable(targetFolder);
+        }
+    }
+
+    @Test
+    public void execute_linkedDataFileInMissingFolder_namesThatFolder() throws Exception {
+        Path link = Files.createDirectories(temporaryFolder.resolve("data")).resolve("tutorflow.json");
+        createSymbolicLinkOrSkip(link, temporaryFolder.resolve("gone").resolve("tutorflow.json"));
+        setUpLogic(getSampleAddressBook(), new JsonAddressBookStorage(link), SAMPLE_CLOCK);
+
+        assertSaveFailureRestores(ADD_SAMPLE_STUDENT_COMMAND,
+                getGeneralSaveFailureMessage(SHOWN_DATA_FILE_NAME, "the folder gone does not exist"));
+        assertTrue(Files.isSymbolicLink(link));
+        assertFalse(Files.exists(temporaryFolder.resolve("gone")));
+    }
+
+    @Test
+    public void execute_dataFolderLinksToMissingFolder_reportsBrokenLink() throws Exception {
+        // PE round 3: data as a link to a folder that was moved or deleted gave the bare path of data as the cause
+        Path dataFolderLink = temporaryFolder.resolve("data");
+        createSymbolicLinkOrSkip(dataFolderLink, temporaryFolder.resolve("gone"));
+        setUpLogic(getSampleAddressBook(), new JsonAddressBookStorage(dataFolderLink.resolve("tutorflow.json")),
+                SAMPLE_CLOCK);
+
+        assertSaveFailureRestores(ADD_SAMPLE_STUDENT_COMMAND,
+                getGeneralSaveFailureMessage(SHOWN_DATA_FILE_NAME, "data links to a folder that does not exist"));
+        assertSaveFailureRestores("delete 1", getCommandSaveFailureMessage("student could not be deleted",
+                "data links to a folder that does not exist", "student"));
+        assertTrue(Files.isSymbolicLink(dataFolderLink));
+    }
+
+    @Test
     public void execute_dataFileIsFolder_reportsFolderAndRestores() throws Exception {
         Path dataFile = temporaryFolder.resolve("data").resolve("tutorflow.json");
         Files.createDirectories(dataFile);

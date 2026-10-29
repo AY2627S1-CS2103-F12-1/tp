@@ -809,6 +809,7 @@ Edit the data file only if you are confident that you can update it correctly: a
 
 1. **When using multiple screens**, if you move the application to a secondary screen, and later switch to using only the primary screen, the GUI will open off-screen. The remedy is to delete the `preferences.json` file created by the application before running the application again.
 2. **If you minimize the Help Window** and then run the `help` command (or use the `Help` menu, or the keyboard shortcut `F1`) again, the original Help Window will remain minimized, and no new Help Window will appear. The remedy is to manually restore the minimized Help Window.
+3. **If `tutorflow.jar` is in a folder whose name ends with `!`**, such as `TutorFlow!`, or inside such a folder at any depth, such as `Work!/TutorFlow`, TutorFlow cannot start: no window opens, and an error is shown if it was launched from a terminal. This is a limit of Java on JAR file paths. The remedy is to move `tutorflow.jar`, together with its `data` folder and `preferences.json`, to a folder with no `!` at the end of its name or of any folder above it.
 
 --------------------------------------------------------------------------------------------------------------------
 

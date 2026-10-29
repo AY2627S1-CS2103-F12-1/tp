@@ -135,7 +135,7 @@ public final class HelpContent {
                             "lesson add 1 s/MATH d/TUESDAY st/16:00 et/18:00"),
                     new Entry(LessonCommandParser.COMMAND_WORD + " " + LessonCommandParser.SUBCOMMAND_LIST,
                             LessonListCommand.MESSAGE_USAGE,
-                            "Lists all lessons, or one displayed student's lessons."
+                            "Lists all lessons in weekly chronological order, or one displayed student's lessons."
                                     + " Numbers remain global for edit/delete.",
                             "lesson list 1"),
                     new Entry(LessonCommandParser.COMMAND_WORD + " " + LessonCommandParser.SUBCOMMAND_DELETE,

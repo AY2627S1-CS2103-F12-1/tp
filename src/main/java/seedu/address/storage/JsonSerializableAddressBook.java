@@ -87,9 +87,11 @@ class JsonSerializableAddressBook {
      * Checks that no lesson of {@code student} overlaps another of their lessons or a lesson of
      * {@code earlierStudents}. A student's lessons are in the order of the data file.
      *
+     * @param student The student to check, built from {@code adaptedStudent}.
      * @param adaptedStudent The student as read from the data file, whose lessons are shown as written there.
      * @param shownStudent Name of the student as the user can find them in the data file, e.g.
      *         "Student 2 (Priya Nair)".
+     * @param earlierStudents Students before {@code student} in the data file, in the order of the file.
      * @throws IllegalValueException If two lessons overlap. The message names both lessons, and the other student.
      */
     private void checkNoOverlappingLessons(Student student, JsonAdaptedStudent adaptedStudent, String shownStudent,

@@ -147,6 +147,7 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
     /**
      * Returns the subject in {@code rawSubject}, ignoring surrounding whitespace and case.
      *
+     * @param rawSubject Value of {@code s/} as typed.
      * @param isInTitle Whether {@code s/} directly follows an unquoted title and does not start with a subject, so
      *     may be part of it.
      * @throws ParseException If {@code rawSubject} is empty, or names no subject, naming it and, if

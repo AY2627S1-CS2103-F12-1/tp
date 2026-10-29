@@ -281,8 +281,14 @@ public final class StrictArgumentTokenizer {
      * to quote the value it is in if there is one, a hint to use straight quotes if {@code arguments} has curly
      * quotes, and the usage text of {@code invalidFormatMessage}.
      *
+     * @param firstSentence First sentence of the error.
+     * @param arguments Arguments being tokenized.
+     * @param matcher Matcher that has just found the prefix.
      * @param previousPrefix Prefix of the value the prefix found is in, or null if there is none.
      * @param valueStart Start of the value of {@code previousPrefix} in {@code arguments}.
+     * @param allowedPrefixes Prefixes that may appear.
+     * @param valueTokenFilter Decides which prefix-shaped tokens belong to the preceding value.
+     * @param invalidFormatMessage Message whose usage text ends the error.
      */
     private static String buildPrefixErrorMessage(String firstSentence, String arguments, Matcher matcher,
             String previousPrefix, int valueStart, List<String> allowedPrefixes, ValueTokenFilter valueTokenFilter,

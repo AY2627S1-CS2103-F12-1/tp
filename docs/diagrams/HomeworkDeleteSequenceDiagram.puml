@@ -65,7 +65,7 @@ deactivate AddressBookParser
 LogicManager -> HomeworkDeleteCommand : execute(m)
 activate HomeworkDeleteCommand
 
-HomeworkDeleteCommand -> HomeworkCommandUtil : getDisplayedStudent(m, 1)
+HomeworkDeleteCommand -> HomeworkCommandUtil : getDisplayedStudent(m, studentIndex)
 activate HomeworkCommandUtil
 
 HomeworkCommandUtil -> Model : getStudentList()
@@ -77,13 +77,15 @@ deactivate Model
 HomeworkCommandUtil --> HomeworkDeleteCommand : student
 deactivate HomeworkCommandUtil
 
-HomeworkDeleteCommand -> HomeworkCommandUtil : getHomework(student, 2, ...)
+HomeworkDeleteCommand -> HomeworkCommandUtil : getHomework(student, homeworkIndex, ...)
 activate HomeworkCommandUtil
 
 HomeworkCommandUtil --> HomeworkDeleteCommand : homework
 deactivate HomeworkCommandUtil
 
 note right of HomeworkDeleteCommand
+  studentIndex and homeworkIndex are Index objects
+  with one-based values 1 and 2, respectively.
   updatedStudent is a copy of student without
   the deleted homework. Immutable-copy
   interactions are omitted.

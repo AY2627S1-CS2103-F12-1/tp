@@ -4,6 +4,7 @@ skinparam arrowColor MODEL_COLOR
 skinparam classBackgroundColor MODEL_COLOR
 skinparam nodesep 30
 skinparam ranksep 35
+skinparam genericDisplay old
 
 class "<<interface>>\nModel" as Model
 class ModelManager
@@ -12,18 +13,21 @@ class StudentRoster
 class "<<interface>>\nObservableList<Student>" as RosterList
 class "FilteredList<Student>" as FilteredStudents
 class StudentDisplayList
+class "ReadOnlyObjectWrapper" as PredicateState
 class "<<interface>>\nPredicate<Student>" as Predicate
 class StudentFilterPredicate
 
 ModelManager .up.|> Model
 ModelManager --> "1" AddressBook
 AddressBook *--> "1" StudentRoster
-StudentRoster --> "1" RosterList : roster view
+StudentRoster -down-> "1" RosterList : roster view
 ModelManager --> "1" FilteredStudents : filteredStudents
 ModelManager --> "1" StudentDisplayList : displayedStudents
+ModelManager --> "1" PredicateState : studentListPredicate
 StudentDisplayList --> "1" FilteredStudents : source
 FilteredStudents --> "1" RosterList : source
-FilteredStudents --> "0..1" Predicate : predicate
+PredicateState --> "1" Predicate : value
+FilteredStudents --> "1" Predicate : predicate
 StudentFilterPredicate .up.|> Predicate
 
 note bottom of RosterList
@@ -32,19 +36,28 @@ note bottom of RosterList
 end note
 
 note bottom of StudentFilterPredicate
-  Optional level and subject criteria use AND.
+  Optional level, subject and day criteria use AND.
+  Day matches any regular lesson; subject matches registration.
   Search can supply a different predicate.
+end note
+
+note right of PredicateState
+  FilteredList.predicateProperty() is bound to this wrapper.
+  Logic exposes its read-only property to the panel.
+  Criteria changes update the active-filter description
+  even when the matching students stay the same.
 end note
 
 note bottom of StudentDisplayList
   Keeps a permutation of filtered occurrences.
   Model#getStudentList() returns an unmodifiable view.
-  A new predicate resets the display order.
+  Each updateFilteredStudentList() call resets display order.
   Sorting changes neither records nor roster order.
 end note
 
 legend bottom
   Partial view of ModelManager's list wiring.
+  State after ModelManager construction; predicates are non-null.
   Inherited library source references are shown directly.
 endlegend
 @enduml

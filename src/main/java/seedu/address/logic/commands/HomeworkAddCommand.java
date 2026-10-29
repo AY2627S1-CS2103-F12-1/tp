@@ -25,7 +25,8 @@ import seedu.address.model.student.Student;
 public class HomeworkAddCommand extends Command {
     public static final String MESSAGE_USAGE =
             "homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|MM-DD";
-    public static final String MESSAGE_SUCCESS = "New homework added:\n%s";
+    /** Header naming the owner, then the new homework's line in the format of {@code homework list}. */
+    public static final String MESSAGE_SUCCESS = "New homework added for %s:%s";
     public static final String MESSAGE_INFERRED_YEAR = "\nInferred year: %d";
     public static final String MESSAGE_SUBJECT_NOT_TAKEN = "The selected student does not take this subject.";
     public static final String MESSAGE_DUPLICATE_HOMEWORK = "This homework already exists for the selected student.";
@@ -84,7 +85,9 @@ public class HomeworkAddCommand extends Command {
 
         List<Homework> updatedHomeworks = new ArrayList<>(student.getHomeworks());
         updatedHomeworks.add(homework);
-        String message = String.format(Locale.ROOT, MESSAGE_SUCCESS, Messages.format(student, homework));
+        // the new homework is last in insertion order, so its number lets the user edit or delete it right away
+        String message = String.format(Locale.ROOT, MESSAGE_SUCCESS, Messages.formatLessonOwner(student),
+                HomeworkListCommand.formatHomeworkLine(updatedHomeworks.size(), homework));
         if (isYearInferred) {
             // Locale.ROOT prints the year in ASCII digits in every locale, like the due date before it
             message += String.format(Locale.ROOT, MESSAGE_INFERRED_YEAR, homework.getDueDate().getDate().getYear());

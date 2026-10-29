@@ -145,7 +145,8 @@ public class HomeworkMessagesIntegrationTest {
         execute("add n/Ethan Lim l/S1 s/MATH p/81234567 gn/Lim Mei gp/81234568");
         execute("add n/Ethan Lim l/S1 s/MATH p/81234569 gn/Lim Mei gp/81234568");
 
-        assertEquals("New homework added:\nEthan Lim (81234569); Title: Algebra drill; Subject: MATH; Due: 2026-11-20",
+        assertEquals("New homework added for Ethan Lim (81234569):\n"
+                + "1. Algebra drill (MATH) - due 2026-11-20 - score Not recorded - status ASSIGNED",
                 execute("hw add 3 t/Algebra drill s/MATH due/2026-11-20"));
         assertEquals("No homework found for Ethan Lim (81234567).", execute("hw ls 2"));
         assertEquals("Recorded homework marks:\n"

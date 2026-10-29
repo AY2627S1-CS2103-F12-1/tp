@@ -327,8 +327,8 @@ public class LogicManagerTest {
             assertParseException("hw add 1 t/X s/MATH due/2-29", leapDayMessage(2028));
             String feedback = assertDoesNotThrow(() -> logic.execute("hw add 1 t/X s/MATH due/2028-02-29"))
                     .getFeedbackToUser();
-            assertEquals("New homework added:\nEthan Lim (91234567); Title: X; Subject: MATH; Due: 2028-02-29",
-                    feedback);
+            assertEquals("New homework added for Ethan Lim (91234567):\n"
+                    + "3. X (MATH) - due 2028-02-29 - score Not recorded - status ASSIGNED", feedback);
         });
     }
 
@@ -336,7 +336,8 @@ public class LogicManagerTest {
     public void execute_pastDueDateInRange_addsAndSaves() throws Exception {
         setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
 
-        assertEquals("New homework added:\nEthan Lim (91234567); Title: X; Subject: MATH; Due: 2001-01-01",
+        assertEquals("New homework added for Ethan Lim (91234567):\n"
+                + "3. X (MATH) - due 2001-01-01 - score Not recorded - status ASSIGNED",
                 logic.execute("hw add 1 t/X s/MATH due/2001-01-01").getFeedbackToUser());
 
         Student savedStudent = addressBookStorage.readAddressBook().orElseThrow().getStudentList().getFirst();

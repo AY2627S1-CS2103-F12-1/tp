@@ -48,8 +48,8 @@ public class HomeworkAddCommandTest {
     public void execute_studentWithoutHomework_addsHomework() {
         // ALICE already has ALGEBRA; the same homework may be assigned to another student
         HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(2), ALGEBRA, false);
-        String expectedMessage = "New homework added:\n"
-                + "Benson Lim (92222222); Title: Complete algebra worksheet; Subject: MATH; Due: 2026-10-15";
+        String expectedMessage = "New homework added for Benson Lim (92222222):\n"
+                + "1. Complete algebra worksheet (MATH) - due 2026-10-15 - score Not recorded - status ASSIGNED";
         Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON.withHomeworks(List.of(ALGEBRA)), CARL));
 
         assertCommandSuccess(command, model, expectedMessage, expectedModel);
@@ -60,8 +60,8 @@ public class HomeworkAddCommandTest {
         Homework trigonometry = new HomeworkBuilder().withTitle("Trigonometry practice").withDueDate("2026-11-01")
                 .build();
         HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(1), trigonometry, false);
-        String expectedMessage = "New homework added:\n"
-                + "Alice Tan (91111111); Title: Trigonometry practice; Subject: MATH; Due: 2026-11-01";
+        String expectedMessage = "New homework added for Alice Tan (91111111):\n"
+                + "4. Trigonometry practice (MATH) - due 2026-11-01 - score Not recorded - status ASSIGNED";
         Model expectedModel = getModelWithStudents(List.of(
                 ALICE.withHomeworks(List.of(ALGEBRA, MECHANICS, ATOMIC_STRUCTURE, trigonometry)), BENSON, CARL));
 
@@ -72,8 +72,8 @@ public class HomeworkAddCommandTest {
     public void execute_lastStudentIndex_addsHomework() {
         Homework optics = new HomeworkBuilder().withTitle("Optics worksheet").withSubject("PHYSICS").build();
         HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(3), optics, false);
-        String expectedMessage = "New homework added:\n"
-                + "Carl Ng (93333333); Title: Optics worksheet; Subject: PHYSICS; Due: 2026-10-15";
+        String expectedMessage = "New homework added for Carl Ng (93333333):\n"
+                + "2. Optics worksheet (PHYSICS) - due 2026-10-15 - score Not recorded - status ASSIGNED";
         Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON,
                 CARL.withHomeworks(List.of(MECHANICS, optics))));
 
@@ -83,8 +83,8 @@ public class HomeworkAddCommandTest {
     @Test
     public void execute_yearInferred_showsInferredYear() {
         HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(2), ALGEBRA, true);
-        String expectedMessage = "New homework added:\n"
-                + "Benson Lim (92222222); Title: Complete algebra worksheet; Subject: MATH; Due: 2026-10-15\n"
+        String expectedMessage = "New homework added for Benson Lim (92222222):\n"
+                + "1. Complete algebra worksheet (MATH) - due 2026-10-15 - score Not recorded - status ASSIGNED\n"
                 + "Inferred year: 2026";
         Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON.withHomeworks(List.of(ALGEBRA)), CARL));
 
@@ -92,12 +92,14 @@ public class HomeworkAddCommandTest {
     }
 
     @Test
-    public void execute_yearInferredArabicDigitsLocale_showsAsciiYear() {
+    public void execute_yearInferredArabicDigitsLocale_showsAsciiDigits() {
         HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(2), ALGEBRA, true);
 
         runWithFormatLocale(ARABIC_EGYPT, () -> {
             String feedback = assertDoesNotThrow(() -> command.execute(model)).getFeedbackToUser();
-            assertTrue(feedback.endsWith("Due: 2026-10-15\nInferred year: 2026"), feedback);
+            assertEquals("New homework added for Benson Lim (92222222):\n"
+                    + "1. Complete algebra worksheet (MATH) - due 2026-10-15 - score Not recorded - status ASSIGNED\n"
+                    + "Inferred year: 2026", feedback);
         });
     }
 
@@ -105,8 +107,8 @@ public class HomeworkAddCommandTest {
     public void execute_sameTitleDifferentDueDate_addsHomework() {
         Homework laterAlgebra = new HomeworkBuilder(ALGEBRA).withDueDate("2026-10-16").build();
         HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(1), laterAlgebra, false);
-        String expectedMessage = "New homework added:\n"
-                + "Alice Tan (91111111); Title: Complete algebra worksheet; Subject: MATH; Due: 2026-10-16";
+        String expectedMessage = "New homework added for Alice Tan (91111111):\n"
+                + "4. Complete algebra worksheet (MATH) - due 2026-10-16 - score Not recorded - status ASSIGNED";
         Model expectedModel = getModelWithStudents(List.of(
                 ALICE.withHomeworks(List.of(ALGEBRA, MECHANICS, ATOMIC_STRUCTURE, laterAlgebra)), BENSON, CARL));
 
@@ -117,8 +119,8 @@ public class HomeworkAddCommandTest {
     public void execute_sameTitleDifferentSubject_addsHomework() {
         Homework physicsAlgebra = new HomeworkBuilder(ALGEBRA).withSubject("PHYSICS").build();
         HomeworkAddCommand command = new HomeworkAddCommand(Index.fromOneBased(1), physicsAlgebra, false);
-        String expectedMessage = "New homework added:\n"
-                + "Alice Tan (91111111); Title: Complete algebra worksheet; Subject: PHYSICS; Due: 2026-10-15";
+        String expectedMessage = "New homework added for Alice Tan (91111111):\n"
+                + "4. Complete algebra worksheet (PHYSICS) - due 2026-10-15 - score Not recorded - status ASSIGNED";
         Model expectedModel = getModelWithStudents(List.of(
                 ALICE.withHomeworks(List.of(ALGEBRA, MECHANICS, ATOMIC_STRUCTURE, physicsAlgebra)), BENSON, CARL));
 
@@ -137,8 +139,8 @@ public class HomeworkAddCommandTest {
         // CARL is third in the roster but first in the displayed list
         model.updateFilteredStudentList(CARL::equals);
         Homework optics = new HomeworkBuilder().withTitle("Optics worksheet").withSubject("PHYSICS").build();
-        String expectedMessage = "New homework added:\n"
-                + "Carl Ng (93333333); Title: Optics worksheet; Subject: PHYSICS; Due: 2026-10-15";
+        String expectedMessage = "New homework added for Carl Ng (93333333):\n"
+                + "2. Optics worksheet (PHYSICS) - due 2026-10-15 - score Not recorded - status ASSIGNED";
         Model expectedModel = getModelWithStudents(List.of(ALICE, BENSON,
                 CARL.withHomeworks(List.of(MECHANICS, optics))));
 

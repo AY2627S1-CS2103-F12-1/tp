@@ -122,6 +122,8 @@ current display date. `StudentListPanel` calls that factory and caches each root
 displayed position. Cells render only nonempty entries with a non-null student and a nonnegative index; reusing
 a cached root also requires the same student reference at that position. The panel observes the displayed
 student list; the [sort recovery activity](#sorting-students) explains how the previous view is retained during sorting.
+After execution, `MainWindow` checks `CommandResult#shouldShowStudentList()` and calls
+`StudentListPanel#showFromTop()` when the command requests it.
 
 ### Logic component
 

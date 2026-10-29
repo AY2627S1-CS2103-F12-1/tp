@@ -24,7 +24,7 @@ public class SampleDataUtilTest {
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-05T00:00:00Z"), ZoneOffset.UTC);
     /** Date of the documented {@code homework upcoming} results. */
     private static final Clock UPCOMING_EXAMPLE_CLOCK =
-            Clock.fixed(Instant.parse("2026-10-17T00:00:00Z"), ZoneOffset.UTC);
+            Clock.fixed(Instant.parse("2026-11-06T00:00:00Z"), ZoneOffset.UTC);
 
     private final Student[] sampleStudents = SampleDataUtil.getSampleStudents();
 
@@ -127,10 +127,10 @@ public class SampleDataUtilTest {
                 + "Priya Nair (82345671); Title: Integration by parts exercise; Subject: MATH; Due: 2026-11-05\n"
                 + "Listed 3 upcoming homework records for Priya Nair (82345671).\n"
                 + "Homework for Priya Nair (82345671):\n"
-                + "2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-02 - score Not recorded"
-                + " - status ASSIGNED\n"
                 + "1. Integration by parts exercise (MATH) - due 2026-11-05 - score Not recorded - status ASSIGNED\n"
-                + "3. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-09 - score Not recorded"
+                + "2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-09 - score Not recorded"
+                + " - status ASSIGNED\n"
+                + "3. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-23 - score Not recorded"
                 + " - status ASSIGNED";
         Model model = getModelWithStudents(List.of(sampleStudents));
 
@@ -143,12 +143,17 @@ public class SampleDataUtilTest {
         AddressBookParser parser = new AddressBookParser(UPCOMING_EXAMPLE_CLOCK);
         Model model = getModelWithStudents(List.of(sampleStudents));
 
-        assertEquals("Found 1 homework record due from 2026-10-17 to 2026-10-24.\n"
-                + "Student 1: Ethan Lim (91234567); Quadratic equations worksheet; MATH; Due: 2026-10-23; "
-                + "Score: Not recorded"
-                + "; Status: ASSIGNED",
+        assertEquals("Found 3 homework records due from 2026-11-06 to 2026-11-13.\n"
+                + "Student 2: Priya Nair (82345671); Organic reaction pathways map; CHEMISTRY; Due: 2026-11-09"
+                + "; Score: Not recorded; Status: ASSIGNED\n"
+                + "Student 1: Ethan Lim (91234567); Kinematics practice set; PHYSICS; Due: 2026-11-11"
+                + "; Score: Not recorded; Status: ASSIGNED\n"
+                + "Student 3: Marcus Tan (87654329); Algebraic expansion worksheet; MATH; Due: 2026-11-12"
+                + "; Score: Not recorded; Status: ASSIGNED",
                 parser.parseCommand("hw up").execute(model).getFeedbackToUser());
-        assertEquals("No homework due from 2026-10-17 to 2026-10-20.",
+        assertEquals("Found 1 homework record due from 2026-11-06 to 2026-11-09.\n"
+                + "Student 2: Priya Nair (82345671); Organic reaction pathways map; CHEMISTRY; Due: 2026-11-09"
+                + "; Score: Not recorded; Status: ASSIGNED",
                 parser.parseCommand("hw up due/3").execute(model).getFeedbackToUser());
     }
 }

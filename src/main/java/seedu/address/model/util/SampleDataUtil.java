@@ -29,28 +29,28 @@ public class SampleDataUtil {
         return new Student[] {
             new Student(new StudentName("Ethan Lim"), AcademicLevel.S3, new TuitionSubjects("MATH, PHYSICS"),
                 new StudentPhone("91234567"), new StudentName("Grace Lim"), new StudentPhone("98765432"),
-                List.of(getHomework("Quadratic equations worksheet", TuitionSubject.MATH, "2026-10-23"),
-                    getHomework("Kinematics practice set", TuitionSubject.PHYSICS, "2026-10-28")),
+                List.of(getHomework("Quadratic equations worksheet", TuitionSubject.MATH, "2026-11-03"),
+                    getHomework("Kinematics practice set", TuitionSubject.PHYSICS, "2026-11-11")),
                 List.of(getRegularLesson(TuitionSubject.MATH, DayOfWeek.MONDAY, "17:00", "18:30"))),
             new Student(new StudentName("Priya Nair"), AcademicLevel.J1, new TuitionSubjects("MATH, CHEMISTRY"),
                 new StudentPhone("82345671"), new StudentName("Ravi Nair"), new StudentPhone("96543218"),
-                List.of(getHomework("Integration by parts exercise", TuitionSubject.MATH, "2026-10-26"),
-                    getHomework("Organic reaction pathways map", TuitionSubject.CHEMISTRY, "2026-11-02"),
-                    getHomework("Chemical equilibrium past paper", TuitionSubject.CHEMISTRY, "2026-11-09")),
+                List.of(getHomework("Integration by parts exercise", TuitionSubject.MATH, "2026-11-02"),
+                    getHomework("Organic reaction pathways map", TuitionSubject.CHEMISTRY, "2026-11-09"),
+                    getHomework("Chemical equilibrium past paper", TuitionSubject.CHEMISTRY, "2026-11-23")),
                 List.of(getRegularLesson(TuitionSubject.CHEMISTRY, DayOfWeek.SATURDAY, "15:00", "16:30"))),
             new Student(new StudentName("Marcus Tan"), AcademicLevel.S1, new TuitionSubjects("MATH"),
                 new StudentPhone("87654329"), new StudentName("Tan Mei Ling"), new StudentPhone("91827364"),
-                List.of(getHomework("Algebraic expansion worksheet", TuitionSubject.MATH, "2026-10-30"))),
+                List.of(getHomework("Algebraic expansion worksheet", TuitionSubject.MATH, "2026-11-12"))),
             new Student(new StudentName("Nurul Aisyah"), AcademicLevel.S4, new TuitionSubjects("PHYSICS, CHEMISTRY"),
                 new StudentPhone("93456782"), new StudentName("Rahman bin Ismail"), new StudentPhone("81234569"),
-                List.of(getHomework("Electromagnetism practice questions", TuitionSubject.PHYSICS, "2026-11-04"),
-                    getHomework("Mole concept worksheet", TuitionSubject.CHEMISTRY, "2026-11-11"))),
+                List.of(getHomework("Electromagnetism practice questions", TuitionSubject.PHYSICS, "2026-11-18"),
+                    getHomework("Mole concept worksheet", TuitionSubject.CHEMISTRY, "2026-11-25"))),
             new Student(new StudentName("Daniel Wong"), AcademicLevel.J2,
                 new TuitionSubjects("MATH, PHYSICS, CHEMISTRY"), new StudentPhone("96781234"),
                 new StudentName("Wong Siew Lan"), new StudentPhone("62345678")),
             new Student(new StudentName("Chloe Chua"), AcademicLevel.S2, new TuitionSubjects("MATH"),
                 new StudentPhone("88812345"), new StudentName("Chua Boon Huat"), new StudentPhone("97771234"),
-                List.of(getHomework("Linear graphs practice", TuitionSubject.MATH, "2026-11-16")))
+                List.of(getHomework("Linear graphs practice", TuitionSubject.MATH, "2026-12-02")))
         };
     }
 

@@ -91,11 +91,11 @@ public class LogicManagerTest {
     private static final String ADD_SAMPLE_STUDENT_COMMAND =
             "add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777";
     private static final String ADD_STUDENT_COMMAND = "add n/John Tan l/S3 s/MATH p/91234567 gn/Mary Tan gp/98765432";
-    /** Fixed clock at 2026-10-27, the day the sample students were alpha-tested. */
-    private static final Clock SAMPLE_CLOCK = Clock.fixed(Instant.parse("2026-10-27T00:00:00Z"), ZoneOffset.UTC);
-    /** Fixed clock at 2026-10-28, the day the note about homework left out of the list was alpha-tested. */
+    /** Fixed clock at 2026-11-06, a day on which each sample student with homework has some upcoming. */
+    private static final Clock SAMPLE_CLOCK = Clock.fixed(Instant.parse("2026-11-06T00:00:00Z"), ZoneOffset.UTC);
+    /** Fixed clock at 2026-11-07, the day after the sample clock; the sample homework lists the same. */
     private static final Clock HIDDEN_NOTE_CLOCK =
-            Clock.fixed(Instant.parse("2026-10-28T00:00:00Z"), ZoneOffset.UTC);
+            Clock.fixed(Instant.parse("2026-11-07T00:00:00Z"), ZoneOffset.UTC);
 
     @TempDir
     public Path temporaryFolder;
@@ -312,7 +312,7 @@ public class LogicManagerTest {
         assertParseException("hw add 1 t/X s/MATH due/30-10-2026", wrongFormatMessage("30-10-2026"));
         assertParseException("hw add 1 t/X s/MATH due/2026-13-01", notRealDateMessage("2026-13-01"));
         assertParseException("hw add 1 t/X s/MATH due/2026-02-30", notRealDateMessage("2026-02-30"));
-        // today is 2026-10-27, and neither 2026 nor 2027 is a leap year
+        // today is 2026-11-06, and neither 2026 nor 2027 is a leap year
         assertParseException("hw add 1 t/X s/MATH due/2-29", leapDayMessage(2028));
         assertParseException("hw add 1 t/Typo year s/MATH due/2206-10-30", MESSAGE_YEAR_OUT_OF_RANGE);
         assertFalse(Files.exists(dataFilePath));
@@ -323,7 +323,7 @@ public class LogicManagerTest {
         setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
 
         runWithFormatLocale(ARABIC_EGYPT, () -> {
-            // today is 2026-10-27, so the example is 2028-02-29, which the user may type back in
+            // today is 2026-11-06, so the example is 2028-02-29, which the user may type back in
             assertParseException("hw add 1 t/X s/MATH due/2-29", leapDayMessage(2028));
             String feedback = assertDoesNotThrow(() -> logic.execute("hw add 1 t/X s/MATH due/2028-02-29"))
                     .getFeedbackToUser();
@@ -358,7 +358,7 @@ public class LogicManagerTest {
                 .getHomeworks().get(1);
         assertEquals("Kinematics practice set B", savedHomework.getTitle().toString());
         assertEquals(TuitionSubject.PHYSICS, savedHomework.getSubject());
-        assertEquals("2026-10-28", savedHomework.getDueDate().toString());
+        assertEquals("2026-11-11", savedHomework.getDueDate().toString());
     }
 
     @Test
@@ -476,18 +476,18 @@ public class LogicManagerTest {
     @Test
     public void execute_twoDeletesFromShownNumbers_deletesIntendedRecords() throws Exception {
         setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
-        logic.execute("hw add 2 t/Vectors revision s/MATH due/2026-11-20");
+        logic.execute("hw add 2 t/Vectors revision s/MATH due/2026-11-30");
 
-        // the overdue integration homework (due 2026-10-26) is not listed
+        // the overdue integration homework (due 2026-11-02) is not listed
         assertEquals("Deleted homework:\n"
-                + formatHomeworkLine(2, "Organic reaction pathways map", "CHEMISTRY", "2026-11-02", "Not recorded",
+                + formatHomeworkLine(2, "Organic reaction pathways map", "CHEMISTRY", "2026-11-09", "Not recorded",
                         "ASSIGNED")
                 + "\nListed 2 upcoming homework records for Priya Nair (82345671)"
                 + " (1 record due before today not shown; use homework list 2 all to see it).\n"
                 + "Homework for Priya Nair (82345671):\n"
-                + formatHomeworkLine(2, "Chemical equilibrium past paper", "CHEMISTRY", "2026-11-09", "Not recorded",
+                + formatHomeworkLine(2, "Chemical equilibrium past paper", "CHEMISTRY", "2026-11-23", "Not recorded",
                         "ASSIGNED") + "\n"
-                + formatHomeworkLine(3, "Vectors revision", "MATH", "2026-11-20", "Not recorded", "ASSIGNED"),
+                + formatHomeworkLine(3, "Vectors revision", "MATH", "2026-11-30", "Not recorded", "ASSIGNED"),
                 logic.execute("hw del 2 2").getFeedbackToUser());
 
         // 2 is the number just shown for the chemical equilibrium homework
@@ -499,17 +499,17 @@ public class LogicManagerTest {
 
     @Test
     public void execute_editEarlierSampleHomework_hintsHiddenRecord() throws Exception {
-        // Priya Nair's homework 1 is due 2026-10-26, so on 2026-10-28 the list after the edit starts at 2
+        // Priya Nair's homework 1 is due 2026-11-02, so on 2026-11-07 the list after the edit starts at 2
         setUpLogic(getSampleAddressBook(), addressBookStorage, HIDDEN_NOTE_CLOCK);
 
         assertEquals("Edited homework:\n"
-                + "Priya Nair (82345671); Title: Research Organic pathways; Subject: MATH; Due: 2026-10-26\n"
+                + "Priya Nair (82345671); Title: Research Organic pathways; Subject: MATH; Due: 2026-11-02\n"
                 + "Listed 2 upcoming homework records for Priya Nair (82345671)"
                 + " (1 record due before today not shown; use homework list 2 all to see it).\n"
                 + "Homework for Priya Nair (82345671):\n"
-                + formatHomeworkLine(2, "Organic reaction pathways map", "CHEMISTRY", "2026-11-02", "Not recorded",
+                + formatHomeworkLine(2, "Organic reaction pathways map", "CHEMISTRY", "2026-11-09", "Not recorded",
                         "ASSIGNED") + "\n"
-                + formatHomeworkLine(3, "Chemical equilibrium past paper", "CHEMISTRY", "2026-11-09", "Not recorded",
+                + formatHomeworkLine(3, "Chemical equilibrium past paper", "CHEMISTRY", "2026-11-23", "Not recorded",
                         "ASSIGNED"),
                 logic.execute("hw e 2 1 t/Research Organic pathways").getFeedbackToUser());
     }
@@ -525,7 +525,7 @@ public class LogicManagerTest {
                 + " Priya Nair (82345671) (1 record due before today not shown; use " + hintedCommand
                 + " to see it).\n"));
         assertTrue(logic.execute(hintedCommand).getFeedbackToUser().contains("\n"
-                + formatHomeworkLine(1, "Integration by parts exercise", "MATH", "2026-10-26", "Not recorded",
+                + formatHomeworkLine(1, "Integration by parts exercise", "MATH", "2026-11-02", "Not recorded",
                         "ASSIGNED")));
     }
 
@@ -537,12 +537,12 @@ public class LogicManagerTest {
         String hintedCommand = "homework list 1 all";
 
         assertTrue(logic.execute("hw e 1 2 t/Pathways map v2").getFeedbackToUser().startsWith("Edited homework:\n"
-                + "Priya Nair (82345671); Title: Pathways map v2; Subject: CHEMISTRY; Due: 2026-11-02\n"
+                + "Priya Nair (82345671); Title: Pathways map v2; Subject: CHEMISTRY; Due: 2026-11-09\n"
                 + "Listed 2 upcoming homework records for Priya Nair (82345671) (1 record due before today not "
                 + "shown; use "
                 + hintedCommand + " to see it).\n"));
         assertTrue(logic.execute(hintedCommand).getFeedbackToUser().contains("\n"
-                + formatHomeworkLine(1, "Integration by parts exercise", "MATH", "2026-10-26", "Not recorded",
+                + formatHomeworkLine(1, "Integration by parts exercise", "MATH", "2026-11-02", "Not recorded",
                         "ASSIGNED")));
     }
 
@@ -554,46 +554,46 @@ public class LogicManagerTest {
         String hintedCommand = "homework list 4 all";
 
         assertEquals("Deleted homework:\n"
-                + formatHomeworkLine(2, "Kinematics practice set", "PHYSICS", "2026-10-28", "Not recorded",
+                + formatHomeworkLine(2, "Kinematics practice set", "PHYSICS", "2026-11-11", "Not recorded",
                         "ASSIGNED")
                 + "\nNo upcoming homework found for Ethan Lim (91234567) (1 record due before today not shown; use "
                 + hintedCommand + " to see it).",
                 logic.execute("hw del 4 2").getFeedbackToUser());
         assertTrue(logic.execute(hintedCommand).getFeedbackToUser().contains("\n"
-                + formatHomeworkLine(1, "Quadratic equations worksheet", "MATH", "2026-10-23", "Not recorded",
+                + formatHomeworkLine(1, "Quadratic equations worksheet", "MATH", "2026-11-03", "Not recorded",
                         "ASSIGNED")));
     }
 
     @Test
     public void execute_deleteOnlyEarlierSampleHomework_removesHiddenNote() throws Exception {
-        // Priya Nair's homework 1 (due 2026-10-26) is her only record due before today, so after deleting it
+        // Priya Nair's homework 1 (due 2026-11-02) is her only record due before today, so after deleting it
         // none is hidden
         setUpLogic(getSampleAddressBook(), addressBookStorage, HIDDEN_NOTE_CLOCK);
 
         assertEquals("Deleted homework:\n"
-                + formatHomeworkLine(1, "Integration by parts exercise", "MATH", "2026-10-26", "Not recorded",
+                + formatHomeworkLine(1, "Integration by parts exercise", "MATH", "2026-11-02", "Not recorded",
                         "ASSIGNED")
                 + "\nListed 2 upcoming homework records for Priya Nair (82345671).\nHomework for Priya Nair "
                 + "(82345671):\n"
-                + formatHomeworkLine(1, "Organic reaction pathways map", "CHEMISTRY", "2026-11-02", "Not recorded",
+                + formatHomeworkLine(1, "Organic reaction pathways map", "CHEMISTRY", "2026-11-09", "Not recorded",
                         "ASSIGNED") + "\n"
-                + formatHomeworkLine(2, "Chemical equilibrium past paper", "CHEMISTRY", "2026-11-09", "Not recorded",
+                + formatHomeworkLine(2, "Chemical equilibrium past paper", "CHEMISTRY", "2026-11-23", "Not recorded",
                         "ASSIGNED"),
                 logic.execute("hw del 2 1").getFeedbackToUser());
     }
 
     @Test
     public void execute_editEarlierSampleDueDateToFuture_removesHiddenNote() throws Exception {
-        // Priya Nair's homework 1 (due 2026-10-26) is her only record due before today until the edit moves it
+        // Priya Nair's homework 1 (due 2026-11-02) is her only record due before today until the edit moves it
         // to December
         setUpLogic(getSampleAddressBook(), addressBookStorage, HIDDEN_NOTE_CLOCK);
 
         assertEquals("Edited homework:\n"
                 + "Priya Nair (82345671); Title: Integration by parts exercise; Subject: MATH; Due: 2026-12-01\n"
                 + "Listed 3 upcoming homework records for Priya Nair (82345671).\nHomework for Priya Nair (82345671):\n"
-                + formatHomeworkLine(2, "Organic reaction pathways map", "CHEMISTRY", "2026-11-02", "Not recorded",
+                + formatHomeworkLine(2, "Organic reaction pathways map", "CHEMISTRY", "2026-11-09", "Not recorded",
                         "ASSIGNED") + "\n"
-                + formatHomeworkLine(3, "Chemical equilibrium past paper", "CHEMISTRY", "2026-11-09", "Not recorded",
+                + formatHomeworkLine(3, "Chemical equilibrium past paper", "CHEMISTRY", "2026-11-23", "Not recorded",
                         "ASSIGNED") + "\n"
                 + formatHomeworkLine(1, "Integration by parts exercise", "MATH", "2026-12-01", "Not recorded",
                         "ASSIGNED"),
@@ -606,12 +606,12 @@ public class LogicManagerTest {
         logic.execute("hw m 2 1 score/5/10");
 
         assertEquals("Deleted homework:\n"
-                + formatHomeworkLine(1, "Integration by parts exercise", "MATH", "2026-10-26", "5/10", "ASSIGNED")
+                + formatHomeworkLine(1, "Integration by parts exercise", "MATH", "2026-11-02", "5/10", "ASSIGNED")
                 + "\nListed 2 upcoming homework records for Priya Nair (82345671).\nHomework for Priya Nair "
                 + "(82345671):\n"
-                + formatHomeworkLine(1, "Organic reaction pathways map", "CHEMISTRY", "2026-11-02", "Not recorded",
+                + formatHomeworkLine(1, "Organic reaction pathways map", "CHEMISTRY", "2026-11-09", "Not recorded",
                         "ASSIGNED") + "\n"
-                + formatHomeworkLine(2, "Chemical equilibrium past paper", "CHEMISTRY", "2026-11-09", "Not recorded",
+                + formatHomeworkLine(2, "Chemical equilibrium past paper", "CHEMISTRY", "2026-11-23", "Not recorded",
                         "ASSIGNED"),
                 logic.execute("hw del 2 1").getFeedbackToUser());
     }

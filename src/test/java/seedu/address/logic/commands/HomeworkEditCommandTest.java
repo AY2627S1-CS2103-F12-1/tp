@@ -191,7 +191,7 @@ public class HomeworkEditCommandTest {
 
     @Test
     public void execute_earlierSampleHomework_hintsHiddenRecord() {
-        // hw e 2 1 t/Research Organic pathways on 2026-10-28: Priya Nair's homework 1 (due 2026-10-26) is left
+        // hw e 2 1 t/Research Organic pathways on 2026-11-06: Priya Nair's homework 1 (due 2026-11-02) is left
         // out, so the list starts at 2 and the header says why
         Student priya = getSampleStudents()[1];
         List<Homework> homeworks = priya.getHomeworks();
@@ -201,18 +201,18 @@ public class HomeworkEditCommandTest {
         expectedModel.setStudent(priya, priya.withHomeworks(List.of(editedHomework, homeworks.get(1),
                 homeworks.get(2))));
         String expectedMessage = "Edited homework:\n"
-                + "Priya Nair (82345671); Title: Research Organic pathways; Subject: MATH; Due: 2026-10-26\n"
+                + "Priya Nair (82345671); Title: Research Organic pathways; Subject: MATH; Due: 2026-11-02\n"
                 + "Listed 2 upcoming homework records for Priya Nair (82345671)"
                 + " (1 record due before today not shown; use homework list 2 all to see it).\n"
                 + "Homework for Priya Nair (82345671):\n"
-                + "2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-02 - score Not recorded"
+                + "2. Organic reaction pathways map (CHEMISTRY) - due 2026-11-09 - score Not recorded"
                 + " - status ASSIGNED\n"
-                + "3. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-09 - score Not recorded"
+                + "3. Chemical equilibrium past paper (CHEMISTRY) - due 2026-11-23 - score Not recorded"
                 + " - status ASSIGNED";
         EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(new Title("Research Organic pathways"),
                 null, null);
 
-        assertCommandSuccess(new HomeworkEditCommand(SECOND, FIRST, descriptor, false, LocalDate.of(2026, 10, 28)),
+        assertCommandSuccess(new HomeworkEditCommand(SECOND, FIRST, descriptor, false, LocalDate.of(2026, 11, 6)),
                 sampleModel, expectedMessage, expectedModel);
     }
 

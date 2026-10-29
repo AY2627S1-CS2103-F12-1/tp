@@ -367,7 +367,7 @@ Format: `homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|M
 * Invisible characters, such as a zero-width space (U+200B) or the variation selector U+FE0F at the end of some emoji, are rejected wherever they are in the title. So emoji that contain an invisible character, such as ❤️ (U+2764 followed by U+FE0F) or 👨‍👩‍👧 (joined by U+200D), are rejected. The error names the first such character by its code and name, e.g. `t/Love ❤️` gives `Homework title has an unsupported character: U+FE0F (VARIATION SELECTOR-16). Titles may contain only letters, numbers, punctuation, symbols and spaces.`
 * Scripts that use combining vowel signs, such as Tamil, Hindi or Thai, are not supported, the same as in student names: a title that contains such a sign, e.g. `தமிழ்`, is rejected with `Homework title has an unsupported character: U+0BBF (TAMIL VOWEL SIGN I). Titles may contain only letters, numbers, punctuation, symbols and spaces.`
 * A lowercase word directly followed by `/` in `TITLE` (such as `km/h` or `and/or`) is read as a prefix, so the command is rejected. Wrap the title in double quotes to keep such words, e.g. `t/"Speed in km/h"` (see the [notes about the command format](#features)).
-* `SUBJECT` must be `MATH`, `PHYSICS` or `CHEMISTRY` (in any case), and the student must take that subject.
+* `SUBJECT` must be `MATH`, `PHYSICS` or `CHEMISTRY` (in any case), and the student must take that subject. Otherwise the error names the student and the subjects they take, e.g. with the sample students, `hw add 1 t/Stoichiometry s/CHEMISTRY due/2026-12-01` gives `Ethan Lim (91234567) does not take CHEMISTRY. They take MATH, PHYSICS.`
 * The due date must be a real calendar date in `YYYY-MM-DD` format, with a year from 2000 to 2099. Past dates are accepted, so you can record homework that was assigned earlier. If the due date is before today, the result ends with a note that `homework list` shows the homework only with `all`.
 * The due date can also be given as `MM-DD`. The year is then this year, or next year if that date has already passed this year, and the result shows the year used.
 * For 29 February (`02-29` or `2-29`), the year is this year only if this year is a leap year and 29 February has not passed yet. Otherwise it is next year, and if next year is not a leap year, the date is rejected with a message that names the next leap year. For example, `due/2-29` gives `2028-02-29` throughout 2027, and throughout 2026 it is rejected with `29 February does not occur in the next 12 months. Enter the full date, e.g. 2028-02-29.`
@@ -377,6 +377,13 @@ Format: `homework|hw add STUDENT_INDEX title/|t/TITLE s/SUBJECT due/YYYY-MM-DD|M
   * `due/2026-02-30` gives `2026-02-30 is not a real calendar date.`
   * `due/2206-10-30` gives `The due date's year must be from 2000 to 2099.` An `MM-DD` date whose year would be after 2099 gets the same message.
 * A student cannot have two homework records with the same title (ignoring case), subject and due date. The same homework can be added to different students. New homework starts as `ASSIGNED` with no recorded score.
+* Adding such a duplicate is rejected, and the error shows the record that already exists, with its number. For example, with the sample students, `hw add 1 t/quadratic equations worksheet s/MATH due/2026-11-03` gives:
+
+  ```text
+  This homework already exists for Ethan Lim (91234567):
+  1. Quadratic equations worksheet (MATH) - due 2026-11-03 - score Not recorded - status ASSIGNED
+  ```
+
 * An accented letter counts as the same whether it is typed as one character (`é`) or as a letter followed by a combining accent. Letters that only look alike, such as a Cyrillic `а` and a Latin `a`, are different.
 * Each student card shows `Upcoming homework: N`, the number of the student's homework records due today or later (including scored or completed homework), and `Overdue homework: N`, the number of `ASSIGNED` homework records due before today, regardless of score.
 * On success, the result names the student and shows the new homework as `homework list` shows it, with its number. Use this number as `HOMEWORK_INDEX` in `homework edit`, `homework marks` and `homework delete`. For a due date in `MM-DD` form, a line such as `Inferred year: 2026` follows.
@@ -468,11 +475,18 @@ Format: `homework|hw edit|e STUDENT_INDEX HOMEWORK_INDEX [title/|t/TITLE] [s/SUB
 * `STUDENT_INDEX` follows the same rules as in `homework add`.
 * `HOMEWORK_INDEX` refers to the number shown by `homework list STUDENT_INDEX` (or by `homework list STUDENT_INDEX all` for homework due before today). It **must be a positive whole number without leading zeroes**. A number above 2147483647 is rejected with `HOMEWORK_INDEX must be no greater than 2147483647.`
 * If the student has no homework, the result is `The selected student has no homework to edit.` If `HOMEWORK_INDEX` is larger than the student's number of homework records, it is `The homework index provided is invalid.`
-* Give at least one of `title/` (or `t/`), `s/` and `due/`, in any order and each at most once. Giving none is rejected with `Specify at least one field to edit: title/ (or t/), s/ or due/.` `title/` and `t/` cannot be used together (`Use either title/ or t/, not both.`). The details you do not give stay unchanged.
+* Give at least one of `title/` (or `t/`), `s/` and `due/`, in any order and each at most once. Giving none is rejected with `Specify at least one field to edit: title/ (or t/), s/ or due/.` A repeated prefix, or `title/` and `t/` together, is rejected as in [`homework add`](#adding-homework-to-a-student-homework-add). The details you do not give stay unchanged.
 * `TITLE`, `SUBJECT` and the due date follow the same rules as in [`homework add`](#adding-homework-to-a-student-homework-add). A due date in `MM-DD` form gets its year in the same way, and the result shows the year used.
 * The homework keeps its number, score and completion status. To change the score, use [`homework marks`](#recording-homework-marks-homework-marks).
-* The edit is rejected if it changes nothing (`No changes made; the supplied values are identical to the existing homework details.`), or if the edited homework would have the same title (ignoring case), subject and due date as another homework of the student (`This edit would make the homework a duplicate of an existing homework record.`).
+* The edit is rejected if it changes nothing (`No changes made; the supplied values are identical to the existing homework details.`), if the student does not take the new subject (the same error as in `homework add`), or if the edited homework would have the same title (ignoring case), subject and due date as another homework of the student. The last error shows that other record, e.g. with the sample students, `hw e 1 2 t/Quadratic equations worksheet s/MATH due/2026-11-03` gives:
+
+  ```text
+  This edit would make the homework the same as another homework for Ethan Lim (91234567):
+  1. Quadratic equations worksheet (MATH) - due 2026-11-03 - score Not recorded - status ASSIGNED
+  ```
+
 * On success, the result shows the edited homework, followed by the student's upcoming homework in the format of `homework list STUDENT_INDEX`.
+* If the new due date is before today, the result ends with a note that `homework list` shows the homework only with `all`, as in `homework add`, e.g. `Note: this homework is due before today, so homework list 1 shows it only with all.` The note is not shown when `due/` is not given, or gives today or a later date.
 
 Examples:
 * `hw e 1 2 t/Kinematics practice set B` changes the title of the 2nd homework of the 1st student. The upcoming homework listed depends on today's date. For example, with the sample students on 2026-11-06, the result is:
@@ -498,6 +512,14 @@ Examples:
 * `hw edit 1 2 t/Revise mechanics s/PHYSICS due/2026-11-10` changes the title, subject and due date together.
 * `hw e 1 2 t/"Speed in km/h"` changes the title to `Speed in km/h`.
 * `hw e 3 1 due/10-5` moves the due date to 5 October of this year, or of next year if 5 October has passed.
+* `hw e 1 2 due/2026-11-01` moves the due date of the 2nd homework of the 1st student to a date before today. For example, with the sample students on 2026-11-06, the result is:
+
+  ```text
+  Edited homework:
+  Ethan Lim (91234567); Title: Kinematics practice set; Subject: PHYSICS; Due: 2026-11-01
+  No upcoming homework found for Ethan Lim (91234567) (2 records due before today not shown; use homework list 1 all to see them).
+  Note: this homework is due before today, so homework list 1 shows it only with all.
+  ```
 
 ### Recording homework marks: `homework marks`
 

@@ -544,8 +544,11 @@ Two records are the same (`Homework#isSameHomework`) if they have the same title
 
 ```
 hw add 2 t/Rates of reaction s/CHEMISTRY due/11-20         → added, due 2026-11-20
-hw add 2 t/rates of REACTION s/CHEMISTRY due/2026-11-20    → This homework already exists for the selected student.
+hw add 2 t/rates of REACTION s/CHEMISTRY due/2026-11-20    → This homework already exists for Priya Nair (82345671):
+                                                             4. Rates of reaction (CHEMISTRY) - due 2026-11-20 - score Not recorded - status ASSIGNED
 ```
+
+`HomeworkCommandUtil#requireSubjectTaken` and `HomeworkCommandUtil#requireNoSameHomework` make these checks for both `homework add` and `homework edit`. The errors name the student, and the subjects the student takes (e.g. `Priya Nair (82345671) does not take PHYSICS. They take MATH, CHEMISTRY.`) or the existing record with its homework index, so the tutor can see what to change without listing the homework first.
 
 **Title.** `Title` tidies the text before checking it. It converts the text to Unicode NFC, turns each run of whitespace into one space and trims both ends. NFC stores characters that look the same in one way: `é` can be typed as one character or as `e` plus an accent, and NFC makes both the same. So the duplicate check treats them as one title, and the title is saved in NFC. The title must then have 1 to 100 characters, each a letter, number, punctuation mark, symbol or space. The error names the rule that failed: `Title#MESSAGE_TOO_LONG` gives the length, and `Title#MESSAGE_UNSUPPORTED_CHARACTER` names the first unsupported character by its code and Unicode name, e.g. `U+FE0F (VARIATION SELECTOR-16)`, as an invisible character cannot be seen. An empty title, and an invalid title in the data file, get `Title#MESSAGE_CONSTRAINTS`.
 
@@ -621,7 +624,7 @@ For how a homework command runs through the `Logic`, `Model` and `Storage` compo
 
 ### Editing homework and recording marks
 
-`homework|hw edit|e STUDENT_INDEX HOMEWORK_INDEX [title/|t/TITLE] [s/SUBJECT] [due/YYYY-MM-DD|MM-DD]` changes any of a record's title, subject and due date (`HomeworkEditCommand.EditHomeworkDescriptor#applyTo`). Fields that are not given keep their values, and the record keeps its homework index, score and status. Like `homework add`, it rejects a subject the student does not take and a record that would be the same as another of the student's records. It also rejects an edit that changes nothing: running `hw e 2 2 due/11-05` a second time gives `No changes made; the supplied values are identical to the existing homework details.`
+`homework|hw edit|e STUDENT_INDEX HOMEWORK_INDEX [title/|t/TITLE] [s/SUBJECT] [due/YYYY-MM-DD|MM-DD]` changes any of a record's title, subject and due date (`HomeworkEditCommand.EditHomeworkDescriptor#applyTo`). Fields that are not given keep their values, and the record keeps its homework index, score and status. Like `homework add`, it rejects a subject the student does not take and a record that would be the same as another of the student's records (`This edit would make the homework the same as another homework for NAME (PHONE):` followed by that record). If `due/` sets a date before today, the result ends with the same note as `homework add` (`HomeworkAddCommand#MESSAGE_DUE_BEFORE_TODAY`), as the list of upcoming homework shown after the edit leaves the record out. It also rejects an edit that changes nothing: running `hw e 2 2 due/11-05` a second time gives `No changes made; the supplied values are identical to the existing homework details.`
 
 `homework|hw marks|m STUDENT_INDEX HOMEWORK_INDEX score/[SCORE]` records a score, or clears it when `SCORE` is left empty. It does not change the status, so a record with a score can still be `ASSIGNED`.
 
@@ -889,18 +892,21 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
   * 3b1. TutorFlow displays the relevant error.
   * 3b2. Use case resumes at step 3.
 * 3c. The student does not take the new subject.
-  * 3c1. TutorFlow rejects the edit and displays an error.
+  * 3c1. TutorFlow rejects the edit and displays an error that lists the subjects the student takes.
   * 3c2. Use case resumes at step 3.
 * 3d. The new details are identical to the existing details.
   * 3d1. TutorFlow informs the tutor that no changes were made.
   * 3d2. Use case ends.
 * 3e. The edited homework would duplicate another homework record of the student.
-  * 3e1. TutorFlow rejects the edit and informs the tutor.
+  * 3e1. TutorFlow rejects the edit and displays the other homework record with its homework index.
   * 3e2. Use case resumes at step 3.
 * 4a. TutorFlow cannot save the updated data.
   * 4a1. TutorFlow leaves the homework unchanged.
   * 4a2. TutorFlow informs the tutor that no homework data was changed, naming the data file and the likely cause.
   * 4a3. Use case ends.
+* 4b. The new due date is before today.
+  * 4b1. TutorFlow also notes that the student's homework list shows this homework only when all of the student's homework is listed.
+  * 4b2. Use case ends.
 
 #### Use case: UC04 - Record homework marks
 
@@ -984,10 +990,10 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
   * 3c1. TutorFlow uses this year, or next year if the date has already passed this year, and states the year it used.
   * 3c2. Use case resumes at step 4.
 * 3d. The student does not take the subject.
-  * 3d1. TutorFlow rejects the homework and displays an error.
+  * 3d1. TutorFlow rejects the homework and displays an error that lists the subjects the student takes.
   * 3d2. Use case resumes at step 3.
 * 3e. The student already has homework with the same title (ignoring case), subject and due date.
-  * 3e1. TutorFlow informs the tutor that the homework already exists.
+  * 3e1. TutorFlow informs the tutor that the homework already exists and displays it with its homework index.
   * 3e2. Use case resumes at step 3.
 * 4a. TutorFlow cannot save the updated data.
   * 4a1. TutorFlow leaves the student's homework unchanged.
@@ -1391,10 +1397,10 @@ testers are expected to do more *exploratory* testing.
       Expected: `New homework added for Ethan Lim (91234567):`, then `3. Algebra drill (MATH) - due YEAR-12-01 - score Not recorded - status ASSIGNED` and `Inferred year: YEAR`, where `YEAR` is this year, or next year from 2 December on. For example, on 2026-11-06 it is `2026`.
 
    1. Test case: `hw add 1 t/ALGEBRA DRILL s/MATH due/12-01`<br>
-      Expected: `This homework already exists for the selected student.`, as titles are compared ignoring case.
+      Expected: `This homework already exists for Ethan Lim (91234567):` followed by `3. Algebra drill (MATH) - due YEAR-12-01 - score Not recorded - status ASSIGNED`, as titles are compared ignoring case.
 
    1. Test case: `hw add 1 t/Algebra drill s/CHEMISTRY due/12-01`<br>
-      Expected: `The selected student does not take this subject.`
+      Expected: `Ethan Lim (91234567) does not take CHEMISTRY. They take MATH, PHYSICS.`
 
    1. Test case: `hw add 1 t/Algebra drill s/MATH due/2026-02-30`<br>
       Expected: `2026-02-30 is not a real calendar date.`
@@ -1441,7 +1447,10 @@ testers are expected to do more *exploratory* testing.
       Expected: `No changes made; the supplied values are identical to the existing homework details.`
 
    1. Test case: `hw e 1 2 t/quadratic EQUATIONS worksheet s/MATH due/2026-11-03`<br>
-      Expected: `This edit would make the homework a duplicate of an existing homework record.`
+      Expected: `This edit would make the homework the same as another homework for Ethan Lim (91234567):` followed by `1. Quadratic equations worksheet (MATH) - due 2026-11-03 - score Not recorded - status ASSIGNED`.
+
+   1. Test case: `hw e 1 2 due/2026-11-01`<br>
+      Expected: The result shows the edited homework, then `No upcoming homework found for Ethan Lim (91234567) (2 records due before today not shown; use homework list 1 all to see them).` and `Note: this homework is due before today, so homework list 1 shows it only with all.`
 
    1. Other incorrect edit commands to try: `hw e 1 2` (no field, `Specify at least one field to edit: title/ (or t/), s/ or due/.`), `hw e 1 1 t/A title/B`, `hw e 6 1 s/PHYSICS` (subject not taken), `hw e 1 1 score/5/10`<br>
       Expected: An error message each time; `hw ls 1 all` and `hw ls 2` are unchanged.

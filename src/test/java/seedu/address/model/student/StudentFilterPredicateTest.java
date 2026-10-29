@@ -57,6 +57,50 @@ public class StudentFilterPredicateTest {
     }
 
     @Test
+    public void test_levelAndDay_requiresBothMatchesWithoutRestrictingSubject() {
+        StudentFilterPredicate predicate = new StudentFilterPredicate(
+                Optional.of(AcademicLevel.S4), Optional.empty(), Optional.of(DayOfWeek.MONDAY));
+        for (TuitionSubject subject : List.of(TuitionSubject.MATH, TuitionSubject.PHYSICS)) {
+            Student matching = new StudentBuilder().withAcademicLevel("S4").withSubjects(subject.name())
+                    .withLessons(lessonOn(subject, DayOfWeek.MONDAY)).build();
+            assertTrue(predicate.test(matching));
+        }
+
+        Student matchesLevel = new StudentBuilder().withAcademicLevel("S4").withSubjects("MATH")
+                .withLessons(lessonOn(TuitionSubject.MATH, DayOfWeek.TUESDAY)).build();
+        Student matchesDay = new StudentBuilder().withAcademicLevel("J1").withSubjects("CHEMISTRY")
+                .withLessons(lessonOn(TuitionSubject.CHEMISTRY, DayOfWeek.MONDAY)).build();
+        Student matchesNeither = new StudentBuilder().withAcademicLevel("J1").withSubjects("PHYSICS")
+                .withLessons(lessonOn(TuitionSubject.PHYSICS, DayOfWeek.TUESDAY)).build();
+
+        assertFalse(predicate.test(matchesLevel));
+        assertFalse(predicate.test(matchesDay));
+        assertFalse(predicate.test(matchesNeither));
+    }
+
+    @Test
+    public void test_subjectAndDay_requiresBothMatchesWithoutRestrictingLevel() {
+        StudentFilterPredicate predicate = new StudentFilterPredicate(
+                Optional.empty(), Optional.of(TuitionSubject.MATH), Optional.of(DayOfWeek.MONDAY));
+        for (String level : List.of("S4", "J1")) {
+            Student matching = new StudentBuilder().withAcademicLevel(level).withSubjects("MATH,PHYSICS")
+                    .withLessons(lessonOn(TuitionSubject.PHYSICS, DayOfWeek.MONDAY)).build();
+            assertTrue(predicate.test(matching));
+        }
+
+        Student matchesSubject = new StudentBuilder().withAcademicLevel("S4").withSubjects("MATH")
+                .withLessons(lessonOn(TuitionSubject.MATH, DayOfWeek.TUESDAY)).build();
+        Student matchesDay = new StudentBuilder().withAcademicLevel("J1").withSubjects("PHYSICS")
+                .withLessons(lessonOn(TuitionSubject.PHYSICS, DayOfWeek.MONDAY)).build();
+        Student matchesNeither = new StudentBuilder().withAcademicLevel("S4").withSubjects("CHEMISTRY")
+                .withLessons(lessonOn(TuitionSubject.CHEMISTRY, DayOfWeek.TUESDAY)).build();
+
+        assertFalse(predicate.test(matchesSubject));
+        assertFalse(predicate.test(matchesDay));
+        assertFalse(predicate.test(matchesNeither));
+    }
+
+    @Test
     public void test_filteredSource_preservesOrderAndDuplicateEntries() {
         StudentFilterPredicate predicate = new StudentFilterPredicate(
                 Optional.empty(), Optional.of(TuitionSubject.MATH));
@@ -168,5 +212,9 @@ public class StudentFilterPredicateTest {
         assertTrue(dayOnlyDescription.contains("academicLevel=Optional.empty"));
         assertTrue(dayOnlyDescription.contains("subject=Optional.empty"));
         assertTrue(dayOnlyDescription.contains("day=Optional[TUESDAY]"));
+    }
+
+    private static RegularLesson lessonOn(TuitionSubject subject, DayOfWeek day) {
+        return new RegularLesson(subject, day, LocalTime.of(9, 0), LocalTime.of(10, 0));
     }
 }

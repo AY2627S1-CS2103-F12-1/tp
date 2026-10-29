@@ -181,6 +181,11 @@ implementation details and the unmodifiable wrapper returned by `getStudentList(
 
 <img src="images/StudentViewClassDiagram.png" width="900" alt="Stored roster, filter predicate and transient displayed order" />
 
+`ModelManager` retains the active predicate in a `ReadOnlyObjectWrapper`; the `FilteredList` predicate is bound to
+that wrapper. The panel observes its read-only property through `Logic`, so the active-filter description can
+change even when the matching students do not. `StudentFilterPredicate` combines optional level, subject and
+meeting-day criteria with AND; the subject matches registration and the day matches any regular lesson independently.
+
 `StudentDisplayList` refers to the filtered occurrences rather than copying student records. A new search or filter
 replaces the predicate and resets the permutation; a sort changes only the permutation. Both operations leave
 the stored roster and data file unchanged. The UI and student-index commands use the displayed view.
@@ -419,7 +424,8 @@ the previous view is captured before execution and rendering is verified before 
 
 <img src="images/SortSequenceDiagram.png" width="900" alt="Compute and publish a display-only student sort" />
 
-`StudentSorter` stable-sorts a copy of the immediately preceding displayed list. Level uses the academic enum's
+`StudentSorter` stable-sorts a copy of the immediately preceding displayed list using `SortKey#getComparator(order)`.
+Each `SortKey` owns its comparator factory, and `SortOrder` applies the requested direction. Level uses the academic enum's
 school order, subject uses the alphabetically smallest subject name, and day uses the smallest weekday.
 For descending days, only the weekday comparator is reversed before applying `nullsLast`; reversing the complete
 result would incorrectly move missing meetings first and reverse ties.
@@ -493,7 +499,7 @@ sorting, edits and deletions retain the active criteria. The description wraps a
 at narrow widths. Save-failure recovery restores the exact predicate, preserving its typed criteria along with
 the previous roster and displayed order. Filter state remains in memory and is not written to the data file.
 
-The sequence below shows `filter l/S4 s/MATH` with successful rendering. Model updates notify the panel through
+The sequence below shows `filter l/S4 s/MATH d/MONDAY` with successful rendering. Model updates notify the panel through
 the observable displayed list; those callbacks and parsing details are summarized. The result requests
 `showFromTop()` after execution. An invalid command is rejected before the predicate or display order changes.
 

@@ -35,10 +35,11 @@ MainWindow *-down->  "1" CommandBox
 MainWindow *-down-> "1" ResultDisplay
 MainWindow *-down-> "1" StudentListPanel
 MainWindow *-down-> "1" UpcomingPanel
-MainWindow *-down-> "1" StatusBarFooter
+MainWindow .down.> StatusBarFooter : <<create>>
 MainWindow --> "1" HelpWindow
 
 StudentListPanel .down.> StudentCard : <<create>>
+MainWindow ..> StudentCard : <<create>>
 
 MainWindow -left-|> UiPart
 
@@ -51,7 +52,7 @@ StatusBarFooter --|> UiPart
 HelpWindow --|> UiPart
 
 StudentCard .down.> Student
-UpcomingPanel .down.> Student
+UpcomingPanel -down-> "*" Student : full roster
 UiManager -up-> "1" Logic
 MainWindow -up-> "1" Logic
 
@@ -61,4 +62,11 @@ CommandBox -[hidden]left- ResultDisplay
 ResultDisplay -[hidden]left- StatusBarFooter
 
 MainWindow -[hidden]-|> UiPart
+
+legend bottom
+  Partial view after successful startup; library classes are omitted.
+  UpcomingPanel retains students through its observable roster list.
+  MainWindow creates the card factory used by StudentListPanel.
+  StatusBarFooter is local to fillInnerParts(); only its root is added to the scene.
+endlegend
 @enduml

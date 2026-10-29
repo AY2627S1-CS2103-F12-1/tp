@@ -5,6 +5,7 @@ skinparam ArrowFontStyle plain
 participant ":LogicManager" as Logic LOGIC_COLOR
 participant ":SortCommand" as Command LOGIC_COLOR
 participant "<<class>>\nStudentSorter" as Sorter MODEL_COLOR
+participant "key:SortKey" as Key MODEL_COLOR
 participant ":ModelManager" as Model MODEL_COLOR
 
 note over Logic, Command
@@ -21,8 +22,14 @@ deactivate Model
 note left of Command : Copy the displayed list\nas previousStudents.
 Command -> Sorter : sort(previousStudents,\nkey, order)
 activate Sorter
-note over Sorter, Model
+Sorter -> Key : getComparator(order)
+activate Key
+Key --> Sorter : comparator
+deactivate Key
+note over Sorter, Key
   Stable-sort a copy.
+  SortKey owns the comparator factory;
+  SortOrder applies the requested direction.
   Missing meeting days stay last.
 end note
 Sorter --> Command : sortedStudents

@@ -10,7 +10,7 @@ box Logic LOGIC_COLOR_T1
 participant ":LogicManager" as LogicManager LOGIC_COLOR
 participant ":AddressBookParser" as AddressBookParser LOGIC_COLOR
 participant ":DeleteCommandParser" as DeleteCommandParser LOGIC_COLOR
-participant "ParserUtil" as ParserUtil LOGIC_COLOR
+participant "<<class>>\nParserUtil" as ParserUtil LOGIC_COLOR
 participant "d:DeleteCommand" as DeleteCommand LOGIC_COLOR
 end box
 
@@ -51,7 +51,10 @@ LogicManager -> ModelManager : getAddressBook()
 activate ModelManager
 ModelManager --> LogicManager : current roster
 deactivate ModelManager
-LogicManager -> LogicManager : dataBeforeCommand = new AddressBook(current roster)
+note right of LogicManager
+  Copy current roster as dataBeforeCommand.
+  Predicate and display-order snapshots are omitted.
+end note
 
 LogicManager -> DeleteCommand : execute(model)
 activate DeleteCommand
@@ -71,23 +74,22 @@ deactivate ModelManager
 
 DeleteCommand --> LogicManager : CommandResult
 deactivate DeleteCommand
-destroy DeleteCommand
 
 LogicManager -> ModelManager : getAddressBook()
 activate ModelManager
 ModelManager --> LogicManager : updated roster
 deactivate ModelManager
-LogicManager -> LogicManager : updated roster.equals(dataBeforeCommand)?
 note right of LogicManager
-  Only changed roster data is saved.
+  Compare updated roster with dataBeforeCommand.
+  The command remains available for save-failure feedback.
 end note
 
-alt Roster changed
+alt roster changed
   LogicManager -> Storage : saveAddressBook(updated roster)
   activate Storage
   Storage --> LogicManager
   deactivate Storage
-else Roster unchanged
+else roster unchanged
   note right of LogicManager
     Skip the data-file write.
   end note
@@ -99,5 +101,7 @@ deactivate LogicManager
 note over ModelManager, AddressBook
   Deleting from the roster also updates
   the displayed student list.
+  Valid displayed index and successful save are assumed.
+  Save-failure rollback is shown in the saving activity.
 end note
 @enduml

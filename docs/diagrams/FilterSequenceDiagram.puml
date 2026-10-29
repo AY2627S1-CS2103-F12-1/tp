@@ -7,7 +7,7 @@ participant ":FilterCommand" as Command LOGIC_COLOR
 participant ":ModelManager" as Model MODEL_COLOR
 
 note over Logic, Command
-  filter l/S4 s/MATH: execution after parsing.
+  filter l/S4 s/MATH d/MONDAY: execution after parsing.
   FilterCommand and its predicate already exist;
   the LogicManager activation is omitted.
 end note
@@ -16,10 +16,13 @@ activate Command
 Command -> Model : updateFilteredStudentList(predicate)
 activate Model
 note over Command, Model
-  Set the predicate on the full roster's FilteredList.
+  Set studentListPredicate; the bound FilteredList updates.
+  The panel's bound active-filter description also updates.
   Reset StudentDisplayList to filtered source order.
   Observable changes refresh the panel
   (listener and cell callbacks omitted).
+  All supplied criteria must match; the day can match
+  any lesson, independently of the registered subject.
 end note
 Model --> Command
 deactivate Model

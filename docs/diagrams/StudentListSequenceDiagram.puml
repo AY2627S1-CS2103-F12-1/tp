@@ -15,7 +15,7 @@ end box
 
 box Model MODEL_COLOR_T1
 participant ":ModelManager" as ModelManager MODEL_COLOR
-participant "students:FilteredList<Student>" as FilteredStudents MODEL_COLOR
+participant "studentListPredicate:ReadOnlyObjectWrapper" as PredicateState MODEL_COLOR
 participant "displayed:StudentDisplayList" as DisplayedStudents MODEL_COLOR
 end box
 
@@ -41,7 +41,15 @@ LogicManager -> ListCommand : execute(model)
 activate ListCommand
 ListCommand -> ModelManager : updateFilteredStudentList(showAll)
 activate ModelManager
-ModelManager -> FilteredStudents : setPredicate(showAll)
+ModelManager -> PredicateState : set(showAll)
+activate PredicateState
+note right of PredicateState
+  The bound FilteredList updates its predicate.
+  The panel's bound filter description is cleared.
+  Binding and list-observer callbacks are omitted.
+end note
+PredicateState --> ModelManager
+deactivate PredicateState
 ModelManager -> DisplayedStudents : resetOrder()
 ModelManager --> ListCommand
 deactivate ModelManager
@@ -63,7 +71,8 @@ LogicManager --> MainWindow : CommandResult
 deactivate LogicManager
 
 note over ModelManager, DisplayedStudents
-  The student list panel observes the StudentDisplayList.
+  The panel observes an unmodifiable view of StudentDisplayList.
   Its roster order discards any previous sort.
+  MainWindow calls showFromTop() after execution.
 end note
 @enduml

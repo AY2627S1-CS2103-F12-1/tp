@@ -4,13 +4,14 @@ skinparam activityBackgroundColor UI_COLOR
 skinparam activityFontColor #FFFFFF
 skinparam activityDiamondBackgroundColor #FFFFFF
 skinparam activityDiamondFontColor #000000
+skinparam conditionStyle InsideDiamond
 skinparam ArrowFontStyle plain
 
 start
 :Capture previous cards, selection,\nfocus and scroll positions;
 :Execute a valid, nonempty sort\nand publish its display order;
 :Verify candidate cards\nand visible cell layout;
-if (Rendering outcome) then ([rendering succeeded])
+if (Rendered?) then ([rendering succeeded])
   :End the sort boundary;
   :Show success feedback;
 else ([rendering failed])
@@ -23,7 +24,7 @@ else ([rendering failed])
     Steps 1 and 3 belong to StudentListPanel.
     Stop and retain the cause if a step fails.
   end note
-  if (Recovery outcome) then ([restoration succeeded])
+  if (Restored?) then ([restoration succeeded])
     :Log rendering failure at WARNING;
   else ([restoration failed])
     :Log rendering and recovery failures\nat SEVERE;

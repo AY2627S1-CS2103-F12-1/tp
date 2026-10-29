@@ -145,6 +145,14 @@ public class HomeworkMessagesIntegrationTest {
     }
 
     @Test
+    public void execute_homeworkWordInCapitals_hintsLowercase() throws Exception {
+        assertParseFailure("HW e 1 2 t/X", "Command words are lowercase: type hw, not HW.");
+        assertParseFailure("Homework add 1 t/A s/MATH due/2026-12-01",
+                "Command words are lowercase: type homework, not Homework.");
+        assertParseFailure("LIST", Messages.MESSAGE_UNKNOWN_COMMAND);
+    }
+
+    @Test
     public void execute_wrongWordsOrCase_specificMessage() throws Exception {
         assertParseFailure("hw e 1 2", "Specify at least one field to edit: title/ (or t/), s/ or due/.\nUsage: "
                 + HomeworkEditCommand.MESSAGE_USAGE);

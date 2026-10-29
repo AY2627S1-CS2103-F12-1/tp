@@ -41,6 +41,7 @@ public class HomeworkCommandParser implements Parser<Command> {
             "Use add, list|ls, upcoming|up, edit|e, marks|m, delete|del, filter or status.";
     public static final String MESSAGE_MISSING_SUBCOMMAND = "Missing homework subcommand. " + MESSAGE_SUBCOMMANDS;
     public static final String MESSAGE_UNKNOWN_SUBCOMMAND = "%s is not a homework subcommand. " + MESSAGE_SUBCOMMANDS;
+    public static final String MESSAGE_COMMAND_WORD_NOT_LOWERCASE = "Command words are lowercase: type %s, not %s.";
     public static final String MESSAGE_SUBCOMMAND_NOT_LOWERCASE =
             "Homework subcommands are lowercase: type %s, not %s.\nUsage: %s";
 
@@ -77,6 +78,19 @@ public class HomeworkCommandParser implements Parser<Command> {
                 new HomeworkDeleteCommandParser(clock).parse(subcommandArguments);
             default -> throw new ParseException(buildUnknownSubcommandMessage(subcommandAndArguments[0]));
         };
+    }
+
+    /**
+     * Checks that {@code commandWord}, which is not a command word, is not {@code homework} or {@code hw} typed in
+     * another case.
+     *
+     * @throws ParseException If it is, with a hint to type it in lowercase.
+     */
+    public static void checkCommandWordCase(String commandWord) throws ParseException {
+        if (commandWord.equalsIgnoreCase(COMMAND_WORD) || commandWord.equalsIgnoreCase(COMMAND_ALIAS)) {
+            throw new ParseException(String.format(MESSAGE_COMMAND_WORD_NOT_LOWERCASE,
+                    commandWord.toLowerCase(Locale.ROOT), commandWord));
+        }
     }
 
     /**

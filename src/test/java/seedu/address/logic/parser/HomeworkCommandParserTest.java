@@ -1,8 +1,10 @@
 package seedu.address.logic.parser;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
 import static seedu.address.logic.parser.CommandParserTestUtil.unexpectedWords;
+import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 
 import java.time.Clock;
@@ -20,6 +22,7 @@ import seedu.address.logic.commands.HomeworkEditCommand.EditHomeworkDescriptor;
 import seedu.address.logic.commands.HomeworkListCommand;
 import seedu.address.logic.commands.HomeworkMarksCommand;
 import seedu.address.logic.commands.HomeworkUpcomingCommand;
+import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.homework.Score;
 import seedu.address.model.student.TuitionSubject;
 
@@ -129,6 +132,21 @@ public class HomeworkCommandParserTest {
                 + "Usage: " + HomeworkDeleteCommand.MESSAGE_USAGE);
         assertParseFailure(parser, " Upcoming", "Homework subcommands are lowercase: type upcoming, not Upcoming.\n"
                 + "Usage: " + HomeworkUpcomingCommand.MESSAGE_USAGE);
+    }
+
+    @Test
+    public void checkCommandWordCase_homeworkWordInOtherCase_throwsParseException() {
+        assertThrows(ParseException.class, "Command words are lowercase: type hw, not hW.", () ->
+                HomeworkCommandParser.checkCommandWordCase("hW"));
+        assertThrows(ParseException.class, "Command words are lowercase: type homework, not HomeWork.", () ->
+                HomeworkCommandParser.checkCommandWordCase("HomeWork"));
+    }
+
+    @Test
+    public void checkCommandWordCase_otherWord_doesNotThrow() {
+        assertDoesNotThrow(() -> HomeworkCommandParser.checkCommandWordCase("LIST"));
+        assertDoesNotThrow(() -> HomeworkCommandParser.checkCommandWordCase("homeworks"));
+        assertDoesNotThrow(() -> HomeworkCommandParser.checkCommandWordCase("H"));
     }
 
     @Test

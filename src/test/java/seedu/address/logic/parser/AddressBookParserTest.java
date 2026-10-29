@@ -167,6 +167,25 @@ public class AddressBookParserTest {
     }
 
     @Test
+    public void parseCommand_homeworkWordInOtherCase_hintsLowercase() {
+        assertThrows(ParseException.class, "Command words are lowercase: type hw, not HW.", () ->
+                parser.parseCommand("HW e 1 2 t/X"));
+        assertThrows(ParseException.class, "Command words are lowercase: type hw, not Hw.", () ->
+                parser.parseCommand("Hw ls 1"));
+        assertThrows(ParseException.class, "Command words are lowercase: type homework, not HOMEWORK.", () ->
+                parser.parseCommand("HOMEWORK edit 1 2 t/X"));
+        assertThrows(ParseException.class, "Command words are lowercase: type homework, not Homework.", () ->
+                parser.parseCommand("Homework add"));
+    }
+
+    @Test
+    public void parseCommand_otherCommandWordInOtherCase_unknownCommand() {
+        for (String userInput : List.of("LIST", "ADD n/A", "Lesson add 1", "HWK", "hw1")) {
+            assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand(userInput));
+        }
+    }
+
+    @Test
     public void parseCommand_removedAddressBookCommands_throwsParseException() {
         for (String userInput : List.of("find Alice")) {
             assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand(userInput));

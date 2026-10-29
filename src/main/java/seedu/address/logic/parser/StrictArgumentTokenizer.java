@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiPredicate;
 import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -190,7 +191,8 @@ public final class StrictArgumentTokenizer {
         while (hasNextPrefix) {
             String prefix = matcher.group(1);
             boolean isInText = repeatedPrefixRules != null && previousPrefix != null && !isPreviousValueQuoted
-                    && repeatedPrefixRules.textPrefixes().contains(previousPrefix);
+                    && repeatedPrefixRules.textPrefixes().contains(previousPrefix)
+                    && !repeatedPrefixRules.startsOwnValue().test(prefix, arguments.substring(matcher.end()));
             String quoteHint = isInText ? repeatedPrefixRules.quoteHint().apply(prefix) : "";
             if (!isLowercase(prefix)) {
                 // only commands with rules reject a wrong-case prefix
@@ -437,26 +439,29 @@ public final class StrictArgumentTokenizer {
 
     /**
      * Describes how a command explains a repeated prefix, and a prefix-shaped word that may be part of a free-text
-     * value. Such a word directly follows an unquoted value of one of {@code textPrefixes}, and its error gets the
-     * hint {@code quoteHint} gives for it; an error about any other word gets no hint.
+     * value. Such a word directly follows an unquoted value of one of {@code textPrefixes}, and the text after it
+     * does not start a valid value of its own, as {@code startsOwnValue} decides. Its error gets the hint
+     * {@code quoteHint} gives for it; an error about any other word gets no hint.
      *
      * @param textPrefixes Prefixes whose values are free text, which may contain prefix-shaped words when quoted.
      * @param aliasPrefixes Prefixes that name the same field, at most one of which may be given.
      * @param aliasMessage First sentence of the error for giving more than one of {@code aliasPrefixes}.
      * @param quoteHint Returns the hint, starting with a space, to quote the free-text value that holds the given
      *     prefix-shaped word.
+     * @param startsOwnValue Returns true if the given text, which follows the given prefix-shaped word up to the end
+     *     of the arguments, starts with a valid value of that prefix, so the word is not part of a free-text value.
      */
     public record RepeatedPrefixRules(List<String> textPrefixes, List<String> aliasPrefixes, String aliasMessage,
-            UnaryOperator<String> quoteHint) {
+            UnaryOperator<String> quoteHint, BiPredicate<String, String> startsOwnValue) {
         /** Rules for a command whose values are not free text and whose prefixes have no aliases. */
         public static final RepeatedPrefixRules NO_TEXT_OR_ALIAS_PREFIXES =
-                new RepeatedPrefixRules(List.of(), List.of(), "", prefix -> "");
+                new RepeatedPrefixRules(List.of(), List.of(), "", prefix -> "", (prefix, text) -> false);
 
         /**
          * Creates rules holding unmodifiable copies of {@code textPrefixes} and {@code aliasPrefixes}.
          */
         public RepeatedPrefixRules {
-            requireAllNonNull(textPrefixes, aliasPrefixes, aliasMessage, quoteHint);
+            requireAllNonNull(textPrefixes, aliasPrefixes, aliasMessage, quoteHint, startsOwnValue);
             textPrefixes = List.copyOf(textPrefixes);
             aliasPrefixes = List.copyOf(aliasPrefixes);
         }
@@ -471,7 +476,8 @@ public final class StrictArgumentTokenizer {
 
     /**
      * Holds the result of tokenizing: the stripped preamble, each prefix's stripped value in the order the
-     * prefixes appear, and the prefixes that directly follow an unquoted free-text value, so may be part of it.
+     * prefixes appear, and the prefixes that directly follow an unquoted free-text value and do not start a valid
+     * value of their own, so may be part of it.
      * A prefix that is present with no value maps to an empty string. Only a command with
      * {@link RepeatedPrefixRules} has free-text values.
      */

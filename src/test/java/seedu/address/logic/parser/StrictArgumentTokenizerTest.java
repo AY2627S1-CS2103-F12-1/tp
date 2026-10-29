@@ -28,9 +28,13 @@ public class StrictArgumentTokenizerTest {
     private static final String USAGE_LINE = "\nUsage: cmd n/N t/T due/D";
     private static final String MESSAGE_INVALID_FORMAT = "Invalid format." + USAGE_LINE;
     private static final String MESSAGE_N_AND_T = "Use either n/ or t/, not both.";
-    /** Rules where n/ and t/ take free text and name the same field. */
+    /**
+     * Rules where n/ and t/ take free text and name the same field, and a due/ value starting with 2026 is a valid
+     * value of its own.
+     */
     private static final RepeatedPrefixRules TEXT_RULES = new RepeatedPrefixRules(List.of("n/", "t/"),
-            List.of("n/", "t/"), MESSAGE_N_AND_T, StrictArgumentTokenizerTest::textHint);
+            List.of("n/", "t/"), MESSAGE_N_AND_T, StrictArgumentTokenizerTest::textHint, (prefix, text) ->
+                    "due/".equals(prefix) && text.startsWith("2026"));
     private static final ValueTokenFilter ACCEPT_X_PREFIX = (arguments, prefixEnd, previousPrefix, prefix) ->
             "x/".equals(prefix);
 
@@ -397,6 +401,8 @@ public class StrictArgumentTokenizerTest {
         assertEquals(Set.of("due/"), tokenizeRejectingWrongCase("1 t/Read due/3").prefixesInText());
         // after a quoted value, so not in it
         assertEquals(Set.of(), tokenizeRejectingWrongCase("1 t/\"Read\" due/3").prefixesInText());
+        // starts with a valid value of its own, so not in it
+        assertEquals(Set.of(), tokenizeRejectingWrongCase("1 t/Read due/2026").prefixesInText());
         // commands without rules have no free-text values
         assertEquals(Set.of(), StrictArgumentTokenizer.tokenizeWithPreamble("1 t/Read due/3", PREFIXES,
                 MESSAGE_INVALID_FORMAT).prefixesInText());
@@ -447,6 +453,12 @@ public class StrictArgumentTokenizerTest {
         // after a quoted value, so not in it
         assertThrows(ParseException.class, givenOnce("t/") + USAGE_LINE, () ->
                 tokenizeRejectingWrongCase("1 t/\"A\" t/B"));
+        // the first due/ follows a text value, but starts with a valid value of its own
+        assertThrows(ParseException.class, givenOnce("due/") + USAGE_LINE, () ->
+                tokenizeRejectingWrongCase("1 t/A due/2026 due/4"));
+        // the second due/ follows a text value, but starts with a valid value of its own
+        assertThrows(ParseException.class, givenOnce("due/") + USAGE_LINE, () ->
+                tokenizeRejectingWrongCase("1 due/4 t/A due/2026"));
     }
 
     @Test

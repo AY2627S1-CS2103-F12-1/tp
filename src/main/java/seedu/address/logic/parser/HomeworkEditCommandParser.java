@@ -6,7 +6,7 @@ import static seedu.address.logic.parser.HomeworkAddCommandParser.PREFIX_DUE_DAT
 import static seedu.address.logic.parser.HomeworkAddCommandParser.PREFIX_SUBJECT;
 import static seedu.address.logic.parser.HomeworkAddCommandParser.PREFIX_TITLE;
 import static seedu.address.logic.parser.HomeworkAddCommandParser.PREFIX_TITLE_ALIAS;
-import static seedu.address.logic.parser.HomeworkAddCommandParser.REPEATED_PREFIX_RULES;
+import static seedu.address.logic.parser.HomeworkAddCommandParser.buildRepeatedPrefixRules;
 
 import java.time.Clock;
 import java.time.LocalDate;
@@ -54,9 +54,10 @@ public class HomeworkEditCommandParser implements Parser<HomeworkEditCommand> {
     @Override
     public HomeworkEditCommand parse(String args) throws ParseException {
         requireNonNull(args);
+        LocalDate today = LocalDate.now(clock);
         StrictArgumentTokenizer.TokenizedArguments tokenizedArguments =
                 StrictArgumentTokenizer.tokenizeWithPreambleRejectingWrongCase(args, ALLOWED_PREFIXES,
-                        MESSAGE_INVALID_FORMAT, REPEATED_PREFIX_RULES);
+                        MESSAGE_INVALID_FORMAT, buildRepeatedPrefixRules(today));
         Map<String, String> values = tokenizedArguments.values();
 
         String[] indices = ParserUtil.splitWords(tokenizedArguments.preamble());
@@ -76,7 +77,6 @@ public class HomeworkEditCommandParser implements Parser<HomeworkEditCommand> {
         String rawSubject = values.get(PREFIX_SUBJECT);
         String rawDueDate = values.get(PREFIX_DUE_DATE);
         boolean isSubjectInTitle = tokenizedArguments.prefixesInText().contains(PREFIX_SUBJECT);
-        LocalDate today = LocalDate.now(clock);
         try {
             EditHomeworkDescriptor descriptor = new EditHomeworkDescriptor(
                     rawTitle == null ? null : new Title(rawTitle),

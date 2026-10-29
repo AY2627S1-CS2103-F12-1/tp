@@ -186,6 +186,12 @@ public class HomeworkEditCommandParserTest {
     public void parse_repeatedPrefix_failure() {
         assertParseFailure(parser, "1 2 s/MATH s/PHYSICS", givenOnce("s/") + USAGE_LINE);
         assertParseFailure(parser, "1 2 due/11-05 due/11-06", givenOnce("due/") + USAGE_LINE);
+        // r4-01: the first copy follows the title, but starts with a valid value, so is not part of it
+        assertParseFailure(parser, "1 2 t/Essay s/MATH s/PHYSICS", givenOnce("s/") + USAGE_LINE);
+        assertParseFailure(parser, "1 2 t/Essay due/11-05 due/11-06", givenOnce("due/") + USAGE_LINE);
+        // the first s/ is in the title
+        assertParseFailure(parser, "1 2 t/Read s/o notes s/MATH", givenOnce("s/")
+                + titleQuoteHint("s/", TITLE_EXAMPLE_SUBJECT_PREFIX) + USAGE_LINE);
         assertParseFailure(parser, "1 2 t/X t/Y", givenOnce("t/") + titleQuoteHint("t/", TITLE_EXAMPLE_TITLE_PREFIX)
                 + USAGE_LINE);
         // r3-emu-01: two prefix-shaped words in the title
@@ -323,6 +329,8 @@ public class HomeworkEditCommandParserTest {
         assertParseFailure(parser, "1 2 t/Physics s/w set", notSubject("w set") + quoteHint);
         // one word, so more likely a mistyped subject than part of the title
         assertParseFailure(parser, "1 2 t/Essay s/BIOLOGY", notSubject("BIOLOGY"));
+        // r4-02: starts with a subject, so not the rest of the title
+        assertParseFailure(parser, "1 2 t/Essay s/MATH PHYSICS", notSubject("MATH PHYSICS"));
     }
 
     @Test

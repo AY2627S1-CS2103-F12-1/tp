@@ -7,6 +7,8 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiPredicate;
+import java.util.regex.Pattern;
 
 import seedu.address.commons.core.index.Index;
 import seedu.address.logic.Messages;
@@ -47,20 +49,14 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
     static final List<String> ALLOWED_PREFIXES = List.of(PREFIX_TITLE, PREFIX_TITLE_ALIAS, PREFIX_SUBJECT,
             PREFIX_DUE_DATE);
 
-    /**
-     * How {@code homework add} and {@code homework edit} explain a repeated prefix: titles are free text, and
-     * {@code title/} and {@code t/} name the same field.
-     */
-    static final RepeatedPrefixRules REPEATED_PREFIX_RULES = new RepeatedPrefixRules(
-            List.of(PREFIX_TITLE, PREFIX_TITLE_ALIAS), List.of(PREFIX_TITLE, PREFIX_TITLE_ALIAS),
-            MESSAGE_TITLE_AND_ALIAS, HomeworkAddCommandParser::buildTitleQuoteHint);
-
     private static final String MESSAGE_INVALID_FORMAT = String.format(Messages.MESSAGE_INVALID_FORMAT_WITH_USAGE,
             HomeworkAddCommand.MESSAGE_USAGE);
     // Example titles in the quoting hint, each typed as shown giving the title in its quotes
     private static final String EXAMPLE_TITLE_WITH_TITLE_PREFIX = "t/\"True t/f quiz\"";
     private static final String EXAMPLE_TITLE_WITH_SUBJECT_PREFIX = "t/\"Read s/o notes\"";
     private static final String EXAMPLE_TITLE_WITH_OTHER_PREFIX = "t/\"Pg 5 w/ answers\"";
+    /** Whitespace or commas, which end the first word of a value. */
+    private static final Pattern WORD_SEPARATOR_PATTERN = Pattern.compile("[\\s,]+");
 
     private final Clock clock;
 
@@ -79,9 +75,10 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
     @Override
     public HomeworkAddCommand parse(String args) throws ParseException {
         requireNonNull(args);
+        LocalDate today = LocalDate.now(clock);
         StrictArgumentTokenizer.TokenizedArguments tokenizedArguments =
                 StrictArgumentTokenizer.tokenizeWithPreambleRejectingWrongCase(args, ALLOWED_PREFIXES,
-                        MESSAGE_INVALID_FORMAT, REPEATED_PREFIX_RULES);
+                        MESSAGE_INVALID_FORMAT, buildRepeatedPrefixRules(today));
         Map<String, String> values = tokenizedArguments.values();
         String preamble = tokenizedArguments.preamble();
         validateStudentIndexStructure(preamble);
@@ -94,12 +91,43 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
         String rawDueDate = values.get(PREFIX_DUE_DATE);
         boolean isSubjectInTitle = tokenizedArguments.prefixesInText().contains(PREFIX_SUBJECT);
         try {
-            LocalDate today = LocalDate.now(clock);
             Homework homework = new Homework(new Title(rawTitle),
                     parseSubject(values.get(PREFIX_SUBJECT), isSubjectInTitle), DueDate.parse(rawDueDate, today));
             return new HomeworkAddCommand(studentIndex, homework, DueDate.isShortForm(rawDueDate), today);
         } catch (IllegalArgumentException exception) {
             throw new ParseException(exception.getMessage(), exception);
+        }
+    }
+
+    /**
+     * Returns how {@code homework add} and {@code homework edit} explain a repeated prefix: titles are free text,
+     * {@code title/} and {@code t/} name the same field, and {@code s/} or {@code due/} starting with a valid value
+     * is not part of a title. Short-form due dates are read with {@code today}.
+     */
+    static RepeatedPrefixRules buildRepeatedPrefixRules(LocalDate today) {
+        BiPredicate<String, String> startsOwnValue = (prefix, text) -> startsWithValidValue(prefix, text, today);
+        return new RepeatedPrefixRules(List.of(PREFIX_TITLE, PREFIX_TITLE_ALIAS),
+                List.of(PREFIX_TITLE, PREFIX_TITLE_ALIAS), MESSAGE_TITLE_AND_ALIAS,
+                HomeworkAddCommandParser::buildTitleQuoteHint, startsOwnValue);
+    }
+
+    /**
+     * Returns true if the first word of {@code text}, which ends at whitespace or a comma, is a subject when
+     * {@code prefix} is {@code s/}, or a due date read with {@code today} when it is {@code due/}.
+     * Such a prefix starts its own value, so is not part of the title before it, e.g. {@code s/MATH} in
+     * {@code t/A s/MATH due/2026-12-01 s/PHYSICS}.
+     */
+    static boolean startsWithValidValue(String prefix, String text, LocalDate today) {
+        String firstWord = WORD_SEPARATOR_PATTERN.split(text.strip(), 2)[0];
+        try {
+            // each parse throws if the word is not valid
+            return switch (prefix) {
+                case PREFIX_SUBJECT -> TuitionSubject.parse(firstWord) != null;
+                case PREFIX_DUE_DATE -> DueDate.parse(firstWord, today) != null;
+                default -> false;
+            };
+        } catch (IllegalArgumentException exception) {
+            return false;
         }
     }
 
@@ -119,7 +147,8 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
     /**
      * Returns the subject in {@code rawSubject}, ignoring surrounding whitespace and case.
      *
-     * @param isInTitle Whether {@code s/} directly follows an unquoted title, so may be part of it.
+     * @param isInTitle Whether {@code s/} directly follows an unquoted title and does not start with a subject, so
+     *     may be part of it.
      * @throws ParseException If {@code rawSubject} is empty, or names no subject, naming it and, if
      *     {@code isInTitle} and it has more than one word, with a hint to quote the title.
      */

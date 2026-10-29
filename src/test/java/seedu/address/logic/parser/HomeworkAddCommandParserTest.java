@@ -327,11 +327,28 @@ public class HomeworkAddCommandParserTest {
 
     @Test
     public void parse_repeatedSubjectPrefix_failure() {
-        // the first s/ follows the title, so it may be part of it
-        assertParseFailure(parser, "1" + VALID_FIELDS + " s/PHYSICS", givenOnce("s/")
-                + titleQuoteHint("s/", TITLE_EXAMPLE_SUBJECT_PREFIX) + USAGE_LINE);
+        // r4-01: the first s/ follows the title, but starts with a subject, so is not part of it
+        assertParseFailure(parser, "1" + VALID_FIELDS + " s/PHYSICS", givenOnce("s/") + USAGE_LINE);
+        assertParseFailure(parser, "1 t/A s/MATH due/2026-12-01 s/PHYSICS", givenOnce("s/") + USAGE_LINE);
+        // in any case, as the subject is read
+        assertParseFailure(parser, "1 t/A s/math, more due/2026-12-01 s/PHYSICS", givenOnce("s/") + USAGE_LINE);
+        // the second s/ follows the title, but starts with a subject
+        assertParseFailure(parser, "1 s/PHYSICS t/A s/MATH due/2026-12-01", givenOnce("s/") + USAGE_LINE);
         // neither s/ follows the title
         assertParseFailure(parser, "1 s/MATH t/Essay due/2026-10-15 s/PHYSICS", givenOnce("s/") + USAGE_LINE);
+    }
+
+    @Test
+    public void parse_repeatedDueDatePrefix_failure() {
+        // r4-01: the first due/ follows the title, but starts with a due date, so is not part of it
+        assertParseFailure(parser, "1 t/Essay due/2026-12-01 s/MATH due/2026-12-02", givenOnce("due/")
+                + USAGE_LINE);
+        assertParseFailure(parser, "1 t/Essay due/12-01 s/MATH due/12-02", givenOnce("due/") + USAGE_LINE);
+        // not a due date the command accepts, so may be part of the title
+        assertParseFailure(parser, "1 t/Essay due/2026-02-30 s/MATH due/2026-12-02", givenOnce("due/")
+                + titleQuoteHint("due/", TITLE_EXAMPLE_OTHER_PREFIX) + USAGE_LINE);
+        assertParseFailure(parser, "1 t/Essay due/02-29 s/MATH due/2026-12-02", givenOnce("due/")
+                + titleQuoteHint("due/", TITLE_EXAMPLE_OTHER_PREFIX) + USAGE_LINE);
     }
 
     @Test
@@ -358,6 +375,9 @@ public class HomeworkAddCommandParserTest {
         assertParseFailure(parser, "1 t/Revise due/dates s/MATH due/2026-12-02", givenOnce("due/")
                 + titleQuoteHint("due/", TITLE_EXAMPLE_OTHER_PREFIX) + USAGE_LINE);
         assertParseFailure(parser, "1 t/Revise s/o notes due/12-02 s/MATH", givenOnce("s/")
+                + titleQuoteHint("s/", TITLE_EXAMPLE_SUBJECT_PREFIX) + USAGE_LINE);
+        // the second s/ is in the title
+        assertParseFailure(parser, "1 s/MATH t/Read s/o notes due/12-02", givenOnce("s/")
                 + titleQuoteHint("s/", TITLE_EXAMPLE_SUBJECT_PREFIX) + USAGE_LINE);
     }
 
@@ -477,8 +497,19 @@ public class HomeworkAddCommandParserTest {
 
     @Test
     public void parse_multipleSubjects_failure() {
+        // r4-02: starts with a subject, so is not the rest of the title
         assertParseFailure(parser, "1 title/Complete algebra worksheet s/MATH, PHYSICS due/2026-10-15",
-                notSubject("MATH, PHYSICS") + titleQuoteHint("s/", TITLE_EXAMPLE_SUBJECT_PREFIX));
+                notSubject("MATH, PHYSICS"));
+        assertParseFailure(parser, "1 t/Essay s/MATH PHYSICS due/2026-12-01", notSubject("MATH PHYSICS"));
+        assertParseFailure(parser, "1 t/Essay s/MATH,PHYSICS due/2026-12-01", notSubject("MATH,PHYSICS"));
+        assertParseFailure(parser, "1 t/Essay s/MATH 1 due/2026-12-01", notSubject("MATH 1"));
+    }
+
+    @Test
+    public void parse_subjectStartingWithNonSubject_hintsToQuoteTitle() {
+        // r4-02: Bio is not a subject, so s/ may be part of the title
+        assertParseFailure(parser, "1 t/Essay s/Bio logy due/2026-12-01", notSubject("Bio logy")
+                + titleQuoteHint("s/", TITLE_EXAMPLE_SUBJECT_PREFIX));
     }
 
     @Test
@@ -541,8 +572,7 @@ public class HomeworkAddCommandParserTest {
 
     @Test
     public void parse_repeatedPrefixAndTitleAliasConflict_reportsRepeatedPrefix() {
-        assertParseFailure(parser, "1 t/Algebra title/Mechanics s/MATH s/PHYSICS", givenOnce("s/")
-                + titleQuoteHint("s/", TITLE_EXAMPLE_SUBJECT_PREFIX) + USAGE_LINE);
+        assertParseFailure(parser, "1 t/Algebra title/Mechanics s/MATH s/PHYSICS", givenOnce("s/") + USAGE_LINE);
     }
 
     @Test

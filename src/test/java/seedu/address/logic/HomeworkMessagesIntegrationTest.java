@@ -110,6 +110,11 @@ public class HomeworkMessagesIntegrationTest {
         // r3-ald-03: the first due/ is in the title, though the second does not follow it
         assertParseFailure("hw add 1 t/Revise due/dates s/MATH due/2026-12-02", givenOnce("due/")
                 + titleQuoteHint("due/", TITLE_EXAMPLE_OTHER_PREFIX) + addUsage);
+        // r4-01: the first copy follows the title, but starts with a valid value, so is not part of it
+        assertParseFailure("hw add 1 t/A s/MATH due/2026-12-01 s/PHYSICS", givenOnce("s/") + addUsage);
+        assertParseFailure("hw add 1 t/Essay due/2026-12-01 s/MATH due/2026-12-02", givenOnce("due/") + addUsage);
+        assertParseFailure("hw e 1 2 t/Essay s/MATH s/PHYSICS", givenOnce("s/") + "\nUsage: "
+                + HomeworkEditCommand.MESSAGE_USAGE);
         assertParseFailure("hw m 1 2 score/1 score/2", givenOnce("score/") + "\nUsage: "
                 + HomeworkMarksCommand.MESSAGE_USAGE);
         assertParseFailure("hw up due/3 due/7", givenOnce("due/") + "\nUsage: "
@@ -134,6 +139,12 @@ public class HomeworkMessagesIntegrationTest {
         // one word or empty, so a mistyped or missing subject: no hint
         assertParseFailure("hw add 1 t/Essay s/BIOLOGY due/2026-12-01", notSubject("BIOLOGY"));
         assertParseFailure("hw add 1 t/Essay s/ due/2026-12-01", MESSAGE_SUBJECT_EMPTY);
+        // r4-02: starts with a subject, so not the rest of the title: no hint
+        assertParseFailure("hw add 1 t/Essay s/MATH PHYSICS due/2026-12-01", notSubject("MATH PHYSICS"));
+        assertParseFailure("hw add 1 t/Essay s/MATH, PHYSICS due/2026-12-01", notSubject("MATH, PHYSICS"));
+        assertParseFailure("hw add 1 t/Essay s/MATH 1 due/2026-12-01", notSubject("MATH 1"));
+        assertParseFailure("hw add 1 t/Essay s/Bio logy due/2026-12-01", notSubject("Bio logy")
+                + titleQuoteHint("s/", TITLE_EXAMPLE_SUBJECT_PREFIX));
     }
 
     @Test

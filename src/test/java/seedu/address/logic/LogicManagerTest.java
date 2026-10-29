@@ -32,10 +32,13 @@ import static seedu.address.testutil.TypicalStudents.getModelWithTypicalStudents
 import static seedu.address.testutil.TypicalStudents.getTypicalAddressBook;
 
 import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Clock;
 import java.time.Instant;
@@ -869,8 +872,35 @@ public class LogicManagerTest {
         setUpLogic(getTypicalAddressBook(), getStorageThatFailsToSave(
                 new DataFileConflictException(DataFileConflictException.MESSAGE_CHANGED)));
 
-        assertCommandFailure("hw del 1 2", CommandException.class, DataFileConflictException.MESSAGE_CHANGED,
-                getModelWithTypicalStudents());
+        assertCommandFailure("hw del 1 2", CommandException.class, String.format(
+                DataFileConflictException.MESSAGE_CHANGED, SET_UP_DATA_FILE_NAME), getModelWithTypicalStudents());
+    }
+
+    @Test
+    public void execute_dataFileChangedAfterOwnSave_namesFileAndKeepsData() throws Exception {
+        setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
+        logic.execute(ADD_SAMPLE_STUDENT_COMMAND);
+        // another program changes the file after this copy saved it
+        new JsonAddressBookStorage(dataFilePath).saveAddressBook(getTypicalAddressBook());
+        byte[] fileBefore = Files.readAllBytes(dataFilePath);
+
+        // PE round 2: the message named no file and said "since it was loaded", though this copy saved it since
+        assertSaveFailureRestores("hw del 1 1", "Another program or copy of TutorFlow changed "
+                + SET_UP_DATA_FILE_NAME + " after this copy last loaded or saved it. Restart TutorFlow before making"
+                + " changes. No data was changed.");
+        assertArrayEquals(fileBefore, Files.readAllBytes(dataFilePath));
+    }
+
+    @Test
+    public void execute_dataFileBeingSaved_namesFileAndCopy() throws Exception {
+        setUpLogic(getSampleAddressBook(), addressBookStorage, SAMPLE_CLOCK);
+        Path lockFile = temporaryFolder.resolve("tutorflow.json.lock");
+        // another copy of TutorFlow holds the lock while it saves
+        try (FileChannel channel = FileChannel.open(lockFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+                FileLock lock = channel.lock()) {
+            assertSaveFailureRestores(ADD_SAMPLE_STUDENT_COMMAND, "Another copy of TutorFlow is saving "
+                    + SET_UP_DATA_FILE_NAME + ". Try again. No data was changed.");
+        }
     }
 
     @Test

@@ -507,7 +507,7 @@ Format: `homework|hw edit|e STUDENT_INDEX HOMEWORK_INDEX [title/|t/TITLE] [s/SUB
   1. Quadratic equations worksheet (MATH) - due 2026-11-03 - score Not recorded - status ASSIGNED
   ```
 
-* On success, the result shows the edited homework, followed by the student's upcoming homework in the format of `homework list STUDENT_INDEX`.
+* On success, the result shows the edited homework, followed by the student's upcoming homework in the format of `homework list STUDENT_INDEX`. The edited homework is shown with its student, title, subject and due date only, without its number, score or status; the list below it shows those in the `homework list` layout.
 * If the new due date is before today, the result ends with a note that `homework list` shows the homework only with `all`, as in `homework add`, e.g. `Note: this homework is due before today, so homework list 1 shows it only with all.` The note is not shown when `due/` is not given, or gives today or a later date.
 
 Examples:
@@ -562,7 +562,7 @@ Format: `homework|hw marks|m STUDENT_INDEX HOMEWORK_INDEX score/[SCORE]`
 * The score is kept and shown as you give it: `5/10` is not simplified to `1/2`, and `17` and `17/20` are different scores.
 * Recording the score that the homework already has is rejected with `No changes made; the homework already has this score.`
 * Homework without marks shows `Not recorded`, not `0`, in `homework list`.
-* On success, the result shows the homework with its new score, e.g. `Recorded homework marks:` followed by `Ethan Lim (91234567); Title: Kinematics practice set; Subject: PHYSICS; Due: 2026-11-11; Score: 5/10`.
+* On success, the result shows the homework with its new score, e.g. `Recorded homework marks:` followed by `Ethan Lim (91234567); Title: Kinematics practice set; Subject: PHYSICS; Due: 2026-11-11; Score: 5/10`. It shows the homework without its number or status, unlike `homework list`; use `homework list STUDENT_INDEX all` to see them.
 * Leaving `SCORE` empty (nothing or only spaces after `score/`) clears the recorded marks, so the homework shows `Not recorded` again. The result is `Cleared homework marks:` followed by the homework, e.g. `Ethan Lim (91234567); Title: Kinematics practice set; Subject: PHYSICS; Due: 2026-11-11; Score: Not recorded`. Clearing homework that has no marks is rejected with `No changes made; the homework has no recorded marks.`
 * The `score/` prefix is required even when clearing: `hw m 1 2` without it is rejected.
 * Recording or clearing marks does not change the homework's completion status. Use [`homework status`](#updating-homework-completion-homework-status) to mark it completed.

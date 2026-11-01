@@ -10,6 +10,7 @@ title: Developer Guide
 ## **Acknowledgements**
 
 * TutorFlow adapts the architecture, shared utilities, and documentation of the [AddressBook-Level3 project](https://github.com/se-edu/addressbook-level3), created by the [SE-EDU initiative](https://se-education.org).
+* TutorFlow uses [OpenJFX Monocle, packaged by TestFX](https://github.com/TestFX/Monocle), to run JavaFX UI tests in headless continuous integration environments.
 
 --------------------------------------------------------------------------------------------------------------------
 

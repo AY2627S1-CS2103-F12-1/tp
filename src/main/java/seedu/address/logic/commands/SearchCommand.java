@@ -2,6 +2,7 @@ package seedu.address.logic.commands;
 
 import static java.util.Objects.requireNonNull;
 
+import java.text.Normalizer;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -57,10 +58,11 @@ public class SearchCommand extends Command {
      * Updates only the displayed student view; the stored roster is unchanged.
      */
     private CommandResult searchStudents(Model model) {
-        Predicate<Student> matchesKeyword = student -> matches(student.getName().toString(), keyword)
-                || matches(student.getPhone().toString(), keyword)
-                || matches(student.getGuardianName().toString(), keyword)
-                || matches(student.getGuardianPhone().toString(), keyword);
+        String normalizedKeyword = Normalizer.normalize(keyword, Normalizer.Form.NFC);
+        Predicate<Student> matchesKeyword = student -> matches(student.getName().toString(), normalizedKeyword)
+                || matches(student.getPhone().toString(), normalizedKeyword)
+                || matches(student.getGuardianName().toString(), normalizedKeyword)
+                || matches(student.getGuardianPhone().toString(), normalizedKeyword);
         model.updateFilteredStudentList(matchesKeyword);
 
         int count = model.getStudentList().size();
@@ -79,8 +81,9 @@ public class SearchCommand extends Command {
      * Returns whether {@code value} contains {@code keyword}, ignoring case.
      */
     private static boolean matches(String value, String keyword) {
-        for (int start = 0; start <= value.length() - keyword.length(); start++) {
-            if (value.regionMatches(true, start, keyword, 0, keyword.length())) {
+        String normalizedValue = Normalizer.normalize(value, Normalizer.Form.NFC);
+        for (int start = 0; start <= normalizedValue.length() - keyword.length(); start++) {
+            if (normalizedValue.regionMatches(true, start, keyword, 0, keyword.length())) {
                 return true;
             }
         }

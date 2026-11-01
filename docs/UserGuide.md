@@ -208,6 +208,7 @@ ignores letter case. Matches stay in roster order and are numbered from 1 in the
 Format: `search KEYWORD`
 
 * `KEYWORD` must not be blank; it can contain spaces. Repeated and Unicode whitespace is treated as one space.
+  Equivalent Unicode forms of an accented letter also match, such as `é` and `e` followed by a combining accent.
   For example, `search Mary Tan` searches for that full phrase.
 * `search 9123` can find a student by part of their phone number. `search Tan` may match a student or a guardian.
 * The feedback repeats the keyword used, e.g. `Found 2 students for "Tan".` If nothing matches, TutorFlow shows

@@ -173,6 +173,35 @@ public class JsonAddressBookStorageTest {
     }
 
     @Test
+    public void readAddressBook_misspelledHomeworksKey_reasonNamesKeyAndPosition() throws Exception {
+        // Beta bug SAV-01 B: Ethan Lim's "homeworks" renamed to "homework"
+        String content = getSavedSampleData().replaceFirst("\"homeworks\"", "\"homework\"");
+        Path file = Files.writeString(testFolder.resolve("data.json"), content);
+
+        assertEquals("The key \"homework\" near line 9, column 5 is not a key TutorFlow uses. Check its spelling.",
+                getLoadingReasonOfFile(file));
+        assertEquals(content, Files.readString(file));
+    }
+
+    @Test
+    public void readAddressBook_unknownKeys_reasonNamesKeyAndPosition() throws Exception {
+        String sampleData = getSavedSampleData();
+
+        // at the top level, before the students
+        assertEquals("The key \"extra\" near line 2, column 3 is not a key TutorFlow uses. Check its spelling.",
+                getLoadingReason(sampleData.replaceFirst("\\{", "{\n  \"extra\" : 1,")));
+
+        // in Priya Nair's second homework, in another case than a key that is used
+        assertEquals("The key \"Scroe\" near line 43, column 7 is not a key TutorFlow uses. Check its spelling.",
+                getLoadingReason(sampleData.replace("\"Organic reaction pathways map\",",
+                        "\"Organic reaction pathways map\",\n      \"Scroe\" : \"5/10\",")));
+
+        // in Ethan Lim's lesson
+        assertEquals("The key \"day\" near line 24, column 7 is not a key TutorFlow uses. Check its spelling.",
+                getLoadingReason(sampleData.replaceFirst("\"dayOfWeek\"", "\"day\"")));
+    }
+
+    @Test
     public void readAddressBook_repeatedStudentsKeyInSampleData_reasonNamesKeyAndPosition() throws Exception {
         // a second, empty student list after the sample data, as in the developer guide's manual test
         String content = Files.readString(TEST_DATA_FOLDER.resolve("duplicateStudentsKeyAddressBook.json"));

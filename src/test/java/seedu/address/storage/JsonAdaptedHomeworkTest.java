@@ -1,7 +1,6 @@
 package seedu.address.storage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.model.homework.DueDateTest.MESSAGE_YEAR_OUT_OF_RANGE;
 import static seedu.address.model.homework.DueDateTest.fullDateFormatMessage;
@@ -12,6 +11,7 @@ import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalHomeworks.ATOMIC_STRUCTURE;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Handler;
@@ -69,13 +69,10 @@ public class JsonAdaptedHomeworkTest {
     }
 
     @Test
-    public void toModelType_misspelledStatusKey_loadsAssigned() throws Exception {
-        // an unknown key is ignored, so the homework loads as assigned and the next save drops the key
-        Homework homework = JsonUtil.fromJsonString(toJson(", \"stauts\": \"COMPLETED\""), JsonAdaptedHomework.class)
-                .toModelType();
-
-        assertEquals(HomeworkStatus.ASSIGNED, homework.getStatus());
-        assertFalse(JsonUtil.toJsonString(new JsonAdaptedHomework(homework)).contains("stauts"));
+    public void fromJsonString_misspelledStatusKey_rejected() {
+        // an unknown key in the data file is rejected, instead of being dropped at the next save
+        assertThrows(IOException.class, () -> JsonUtil.fromJsonString(toJson(", \"stauts\": \"COMPLETED\""),
+                JsonAdaptedHomework.class, true));
     }
 
     @Test

@@ -68,8 +68,9 @@ public class JsonAddressBookStorage {
 
         try {
             byte[] before = readVersion(filePath);
+            // a key that no adapter uses would be lost at the next save
             Optional<JsonSerializableAddressBook> jsonAddressBook = JsonUtil.readJsonFile(
-                    filePath, JsonSerializableAddressBook.class);
+                    filePath, JsonSerializableAddressBook.class, true);
             Optional<ReadOnlyAddressBook> result = jsonAddressBook.isPresent()
                     ? Optional.of(jsonAddressBook.get().toModelType()) : Optional.empty();
             if (!Arrays.equals(before, readVersion(filePath))) {

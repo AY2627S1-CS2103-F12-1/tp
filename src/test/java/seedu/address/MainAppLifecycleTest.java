@@ -78,12 +78,19 @@ public class MainAppLifecycleTest {
     }
 
     @Test
-    public void invalidData_missingStudentField_dialogShowsReason() throws Exception {
-        // unknown keys are ignored, so the renamed key reads as missing
+    public void invalidData_misspelledStudentKey_dialogShowsReason() throws Exception {
         String content = getRecoveryDialogContent(getTypicalDataReplacing("\"guardianPhone\"",
-                "\"unknownGuardianPhone\""));
-        assertTrue(getReason(content).startsWith("Student 1 (Alice Tan): Student's guardianPhone field is missing!"),
-                content);
+                "\"guardianPhon\""));
+        assertEquals("The key \"guardianPhon\" near line 8, column 5 is not a key TutorFlow uses. Check its spelling.",
+                getReason(content));
+    }
+
+    @Test
+    public void invalidData_misspelledHomeworksKey_dialogShowsReason() throws Exception {
+        // Beta bug SAV-01 B: the misspelled key stops loading, instead of the homework being dropped at the next save
+        String content = getRecoveryDialogContent(getTypicalDataReplacing("\"homeworks\"", "\"homework\""));
+        assertEquals("The key \"homework\" near line 9, column 5 is not a key TutorFlow uses. Check its spelling.",
+                getReason(content));
     }
 
     /**

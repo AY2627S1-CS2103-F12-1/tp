@@ -9,8 +9,10 @@ import static seedu.address.logic.commands.CommandTestUtil.SHOWN_DATA_FILE_NAME;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -30,6 +32,19 @@ import seedu.address.testutil.StudentBuilder;
 public class HomeworkStatusCommandTest {
     private final AddressBookParser parser = new AddressBookParser(
             Clock.fixed(Instant.parse("2026-10-20T00:00:00Z"), ZoneOffset.UTC));
+
+    @Test
+    public void equals_equivalentStatusChanges_areFoundInHashSet() throws Exception {
+        for (String indicesAndStatus : List.of("1 1 status/ASSIGNED", "1 2 status/COMPLETED",
+                "2 1 status/COMPLETED")) {
+            Command first = parser.parseCommand("hw status " + indicesAndStatus);
+            Command equal = parser.parseCommand("homework status " + indicesAndStatus);
+            Set<Command> commands = new HashSet<>();
+            commands.add(first);
+            assertEquals(first, equal);
+            assertTrue(commands.contains(equal), indicesAndStatus);
+        }
+    }
 
     @Test
     public void execute_completeAndReopen_preserveScoreAndOtherStudentData() throws Exception {

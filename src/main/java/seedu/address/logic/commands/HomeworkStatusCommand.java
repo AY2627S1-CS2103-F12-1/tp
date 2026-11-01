@@ -5,6 +5,7 @@ import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -96,5 +97,10 @@ public class HomeworkStatusCommand extends Command {
         return other == this || other instanceof HomeworkStatusCommand command
                 && studentIndex.equals(command.studentIndex) && homeworkIndex.equals(command.homeworkIndex)
                 && status == command.status;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(studentIndex.getZeroBased(), homeworkIndex.getZeroBased(), status);
     }
 }

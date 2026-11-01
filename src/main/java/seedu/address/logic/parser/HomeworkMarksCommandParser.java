@@ -15,8 +15,8 @@ import seedu.address.model.homework.Score;
 /**
  * Parses the arguments of {@code homework marks} into a {@link HomeworkMarksCommand}.
  * Errors are checked in this order, and only the first one found is reported:
- * unknown or repeated prefix, indices that are missing or not exactly two words, a missing {@code score/} prefix,
- * student index syntax, homework index syntax, and the score.
+ * unknown or repeated prefix, indices that are missing or not exactly two words, student index syntax, homework
+ * index syntax, a missing {@code score/} prefix, and the score.
  * An empty {@code score/} value clears the recorded marks.
  */
 public class HomeworkMarksCommandParser implements Parser<HomeworkMarksCommand> {
@@ -45,16 +45,15 @@ public class HomeworkMarksCommandParser implements Parser<HomeworkMarksCommand> 
                     HomeworkMarksCommand.MESSAGE_USAGE));
         }
 
+        Index studentIndex = ParserUtil.parseStrictIndex(indices[0], Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX,
+                Messages.MESSAGE_STUDENT_INDEX_TOO_LARGE);
+        Index homeworkIndex = ParserUtil.parseStrictIndex(indices[1], Messages.MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX,
+                Messages.MESSAGE_HOMEWORK_INDEX_TOO_LARGE);
         Map<String, String> values = tokenizedArguments.values();
         if (!values.containsKey(PREFIX_SCORE)) {
             throw new ParseException(String.format(Messages.MESSAGE_MISSING_PREFIXES_WITH_USAGE, PREFIX_SCORE,
                     HomeworkMarksCommand.MESSAGE_USAGE));
         }
-
-        Index studentIndex = ParserUtil.parseStrictIndex(indices[0], Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX,
-                Messages.MESSAGE_STUDENT_INDEX_TOO_LARGE);
-        Index homeworkIndex = ParserUtil.parseStrictIndex(indices[1], Messages.MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX,
-                Messages.MESSAGE_HOMEWORK_INDEX_TOO_LARGE);
         if (values.get(PREFIX_SCORE).isBlank()) {
             return new HomeworkMarksCommand(studentIndex, homeworkIndex);
         }

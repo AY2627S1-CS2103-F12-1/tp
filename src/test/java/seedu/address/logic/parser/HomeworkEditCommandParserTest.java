@@ -138,6 +138,13 @@ public class HomeworkEditCommandParserTest {
     }
 
     @Test
+    public void parse_invalidIndexAndNoField_reportsIndexFirst() {
+        // Beta bug EMU-02: the invalid index is reported before the missing field
+        assertParseFailure(parser, "0 2", Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
+        assertParseFailure(parser, "1 0", Messages.MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX);
+    }
+
+    @Test
     public void parse_unknownPrefix_failure() {
         assertParseFailure(parser, "1 2 t/Algebra x/extra", notPrefix("x/")
                 + titleQuoteHint("x/", TITLE_EXAMPLE_OTHER_PREFIX) + USAGE_LINE);

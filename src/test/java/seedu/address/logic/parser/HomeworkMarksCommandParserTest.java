@@ -139,9 +139,16 @@ public class HomeworkMarksCommandParserTest {
     }
 
     @Test
-    public void parse_prefixGluedToIndex_reportsMissingScore() {
-        // a prefix only counts after a space, so 2score/5 is not read as the score
-        assertParseFailure(parser, "1 2score/5", MESSAGE_MISSING_SCORE);
+    public void parse_invalidIndexAndMissingScore_reportsIndexFirst() {
+        // Beta bug EMU-02: the invalid index is reported before the missing score/
+        assertParseFailure(parser, "0 1", Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
+        assertParseFailure(parser, "1 0", Messages.MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX);
+    }
+
+    @Test
+    public void parse_prefixGluedToIndex_reportsHomeworkIndex() {
+        // a prefix only counts after a space, so 2score/5 is read as the homework index
+        assertParseFailure(parser, "1 2score/5", Messages.MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX);
     }
 
     @Test

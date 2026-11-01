@@ -29,7 +29,7 @@ import seedu.address.model.student.TuitionSubject;
  * The {@code title/} and {@code t/} conflict is reported only after all prefixes are checked, so an unknown or
  * repeated prefix anywhere in the input is reported first (e.g. {@code t/A title/B x/C} reports {@code x/}).
  * An unknown, wrong-case or repeated prefix, or the conflict, in a title gets a hint to quote the title, with a fixed
- * example title that never contains the user's text.
+ * example title that never contains the user's text, except {@code subject/}, which gets a hint to use {@code s/}.
  */
 public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
     public static final String PREFIX_TITLE = "title/";
@@ -40,6 +40,8 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
     /** Hint to quote a title that holds the given prefix-shaped word, with an example title holding such a word. */
     public static final String MESSAGE_TITLE_QUOTE_HINT = " If %s is part of the title, put the whole title in "
             + "straight double quotes, e.g. %s.";
+    /** Hint for {@code subject/}, which a user may guess from {@code title/} as the long form of {@code s/}. */
+    public static final String MESSAGE_USE_SUBJECT_PREFIX = " Use s/ for the subject.";
     public static final String MESSAGE_SUBJECT_EMPTY = "The subject is empty. " + TuitionSubject.MESSAGE_CONSTRAINTS;
     public static final String MESSAGE_NOT_SUBJECT = "%s is not a subject. " + TuitionSubject.MESSAGE_CONSTRAINTS;
     /** What the command expects before its prefixes, named when other words are found. */
@@ -133,9 +135,13 @@ public class HomeworkAddCommandParser implements Parser<HomeworkAddCommand> {
 
     /**
      * Returns the hint to quote a title that holds {@code word}, with a fixed example title that holds {@code t/} if
-     * {@code word} is a title prefix, {@code s/} if it is the subject prefix, or {@code w/} otherwise.
+     * {@code word} is a title prefix, {@code s/} if it is the subject prefix, or {@code w/} otherwise, or the hint to
+     * use {@code s/} if {@code word} is {@code subject/}.
      */
     static String buildTitleQuoteHint(String word) {
+        if (word.equals("subject/")) {
+            return MESSAGE_USE_SUBJECT_PREFIX;
+        }
         String example = switch (word) {
             case PREFIX_TITLE, PREFIX_TITLE_ALIAS -> EXAMPLE_TITLE_WITH_TITLE_PREFIX;
             case PREFIX_SUBJECT -> EXAMPLE_TITLE_WITH_SUBJECT_PREFIX;

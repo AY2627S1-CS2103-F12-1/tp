@@ -246,6 +246,16 @@ public class HomeworkAddCommandParserTest {
     }
 
     @Test
+    public void parse_subjectLongPrefix_pointsToSubjectPrefix() {
+        // Beta bug ALD-06: subject/ guessed from title/ gets no hint to quote the title
+        assertParseFailure(parser, "1 title/Essay subject/MATH due/2026-12-01",
+                "subject/ is not a prefix of this command. Use s/ for the subject." + USAGE_LINE);
+
+        // not after a title, so there is no hint
+        assertParseFailure(parser, "1 subject/MATH t/Essay due/2026-12-01", notPrefix("subject/") + USAGE_LINE);
+    }
+
+    @Test
     public void parse_titleWithLowercaseSlashWord_failure() {
         // km/ is read as an unknown prefix
         assertParseFailure(parser, "1 title/Speed in km/h s/MATH due/2026-10-15", notPrefix("km/")

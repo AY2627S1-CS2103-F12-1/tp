@@ -151,6 +151,16 @@ public class HomeworkEditCommandParserTest {
     }
 
     @Test
+    public void parse_subjectLongPrefix_pointsToSubjectPrefix() {
+        // Beta bug ALD-06: the same error as homework add
+        assertParseFailure(parser, "1 2 t/Essay subject/MATH",
+                "subject/ is not a prefix of this command. Use s/ for the subject." + USAGE_LINE);
+
+        // not after a title, so there is no hint
+        assertParseFailure(parser, "1 2 subject/MATH", notPrefix("subject/") + USAGE_LINE);
+    }
+
+    @Test
     public void parse_uppercasePrefix_failure() {
         assertParseFailure(parser, "1 2 T/Algebra", wrongCasePrefix("T/", "t/") + USAGE_LINE);
         assertParseFailure(parser, "1 2 Title/Algebra", wrongCasePrefix("Title/", "title/") + USAGE_LINE);

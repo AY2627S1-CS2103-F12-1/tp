@@ -585,7 +585,7 @@ Format: `homework|hw delete|del STUDENT_INDEX HOMEWORK_INDEX`
 * `HOMEWORK_INDEX` refers to the number shown by `homework list STUDENT_INDEX` (or by `homework list STUDENT_INDEX all` for homework due before today). It **must be a positive whole number without leading zeroes**. A number above 2147483647 is rejected with `HOMEWORK_INDEX must be no greater than 2147483647.`
 * If the student has no homework, the result is `The selected student has no homework to delete.` If `HOMEWORK_INDEX` is larger than the student's number of homework records, it is `The homework index provided is invalid.`
 * The remaining homework keeps its order and is renumbered.
-* The result shows the deleted record as `homework list` shows it, with the number it had, its score and its status. Below it is the student's upcoming homework with the new numbers, in the format of `homework list STUDENT_INDEX`. Use these numbers for the next command, as the numbers shown before the deletion may now point to different homework.
+* The result shows the deleted record as `homework list` shows it, with the number it had, its score and its status. Below it is the student's upcoming homework with the new numbers, in the format of `homework list STUDENT_INDEX`. If the deleted record was due before today, all of the student's homework is listed instead, as `homework list STUDENT_INDEX all` shows it, so the new numbers of the other overdue homework are shown too. Use these numbers for the next command, as the numbers shown before the deletion may now point to different homework.
 * Deletion cannot be undone.
 
 Examples:

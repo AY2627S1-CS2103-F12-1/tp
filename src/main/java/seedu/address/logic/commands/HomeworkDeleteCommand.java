@@ -22,7 +22,8 @@ import seedu.address.model.student.Student;
 /**
  * Deletes one homework record, identified by its index in the homework list of a student identified by its
  * displayed index. The other homework keeps its relative order. The result shows the deleted record in the
- * {@code homework list} layout, followed by the student's upcoming homework with its new numbers.
+ * {@code homework list} layout, followed by the student's upcoming homework with its new numbers, or all of it if
+ * the deleted record was due before today.
  */
 public class HomeworkDeleteCommand extends Command {
     public static final String MESSAGE_USAGE = "homework|hw delete|del STUDENT_INDEX HOMEWORK_INDEX";
@@ -82,7 +83,9 @@ public class HomeworkDeleteCommand extends Command {
         Student editedStudent = student.withHomeworks(remainingHomeworks);
         String message = String.format(Locale.ROOT, MESSAGE_SUCCESS,
                 HomeworkListCommand.formatHomeworkLine(homeworkIndex.getOneBased(), homeworkToDelete),
-                HomeworkListCommand.formatHomeworkList(editedStudent, studentIndex, today, false));
+                // the tutor deleting overdue homework needs the new numbers of the other overdue homework
+                HomeworkListCommand.formatHomeworkList(editedStudent, studentIndex, today,
+                        !homeworkToDelete.isUpcoming(today)));
 
         model.setStudent(student, editedStudent);
         return new CommandResult(message);

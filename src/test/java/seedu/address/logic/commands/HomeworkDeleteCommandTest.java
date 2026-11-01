@@ -117,30 +117,32 @@ public class HomeworkDeleteCommandTest {
     }
 
     @Test
-    public void execute_onlyEarlierHomeworkDeleted_removesHiddenNote() {
-        // on 2026-10-16 only the algebra homework (due 2026-10-15) is due before today, so nothing is left out
+    public void execute_overdueHomeworkDeleted_listsAllHomework() {
+        // on 2026-10-19 the deleted algebra homework (due 2026-10-15) is overdue, so the overdue atomic structure
+        // homework (due 2026-10-18) is listed with its new number too
         String expectedMessage = "Deleted homework:\n"
                 + formatHomeworkLine(1, ALGEBRA_TITLE, "MATH", "2026-10-15", "Not recorded", "ASSIGNED")
-                + "\nListed 2 upcoming homework records for Alice Tan (91111111).\nHomework for Alice Tan (91111111):\n"
+                + "\nListed 2 homework records for Alice Tan (91111111).\nHomework for Alice Tan (91111111):\n"
                 + formatHomeworkLine(2, ATOMIC_STRUCTURE_TITLE, "CHEMISTRY", "2026-10-18", "17/20", "ASSIGNED") + "\n"
                 + formatHomeworkLine(1, MECHANICS_TITLE, "PHYSICS", "2026-10-20", "Not recorded", "ASSIGNED");
         Model expectedModel = getModelWithStudents(List.of(
                 ALICE.withHomeworks(List.of(MECHANICS, ATOMIC_STRUCTURE)), BENSON, CARL));
 
-        assertCommandSuccess(deleteCommand(1, 1, LocalDate.of(2026, 10, 16)), model, expectedMessage,
+        assertCommandSuccess(deleteCommand(1, 1, LocalDate.of(2026, 10, 19)), model, expectedMessage,
                 expectedModel);
     }
 
     @Test
     public void execute_onlyOverdueHomeworkLeft_showsNoUpcomingHomework() {
+        // on 2026-10-19 the deleted mechanics homework (due 2026-10-20) is upcoming and the rest is overdue
         String expectedMessage = "Deleted homework:\n"
-                + formatHomeworkLine(3, ATOMIC_STRUCTURE_TITLE, "CHEMISTRY", "2026-10-18", "17/20", "ASSIGNED")
+                + formatHomeworkLine(2, MECHANICS_TITLE, "PHYSICS", "2026-10-20", "Not recorded", "ASSIGNED")
                 + "\nNo upcoming homework found for Alice Tan (91111111)"
                 + " (2 records due before today not shown; use homework list 1 all to see them).";
         Model expectedModel = getModelWithStudents(List.of(
-                ALICE.withHomeworks(List.of(ALGEBRA, MECHANICS)), BENSON, CARL));
+                ALICE.withHomeworks(List.of(ALGEBRA, ATOMIC_STRUCTURE)), BENSON, CARL));
 
-        assertCommandSuccess(deleteCommand(1, 3, LocalDate.of(2026, 10, 21)), model, expectedMessage,
+        assertCommandSuccess(deleteCommand(1, 2, LocalDate.of(2026, 10, 19)), model, expectedMessage,
                 expectedModel);
     }
 

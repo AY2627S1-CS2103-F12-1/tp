@@ -7,7 +7,9 @@ import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.model.lesson.RegularLesson;
 import seedu.address.model.student.TuitionSubject;
 
-/** Stores the subject, weekday and minute-precision times of a weekly lesson as readable JSON. */
+/**
+ * Stores the subject, weekday and minute-precision times of a weekly lesson as readable JSON.
+ */
 class JsonAdaptedLesson {
     public static final String MISSING_FIELD_MESSAGE_FORMAT = "Lesson's %s field is missing!";
 
@@ -16,7 +18,9 @@ class JsonAdaptedLesson {
     private final String startTime;
     private final String endTime;
 
-    /** Creates an adapter from JSON fields. */
+    /**
+     * Creates an adapter from JSON fields.
+     */
     @JsonCreator
     public JsonAdaptedLesson(@JsonProperty("subject") String subject, @JsonProperty("dayOfWeek") String dayOfWeek,
             @JsonProperty("startTime") String startTime, @JsonProperty("endTime") String endTime) {
@@ -26,7 +30,9 @@ class JsonAdaptedLesson {
         this.endTime = endTime;
     }
 
-    /** Creates an adapter for a validated lesson. */
+    /**
+     * Creates an adapter for a validated lesson.
+     */
     public JsonAdaptedLesson(RegularLesson lesson) {
         this(lesson.getSubject().name(), lesson.getDayOfWeek().name(), lesson.getStartTime().toString(),
                 lesson.getEndTime().toString());
@@ -43,7 +49,9 @@ class JsonAdaptedLesson {
         return dayOfWeek.strip() + " " + startTime.strip() + "-" + endTime.strip();
     }
 
-    /** Returns the validated lesson, rejecting missing fields or invalid values. */
+    /**
+     * Returns the validated lesson, rejecting missing fields or invalid values.
+     */
     public RegularLesson toModelType() throws IllegalValueException {
         requireField("subject", subject);
         requireField("dayOfWeek", dayOfWeek);

@@ -76,7 +76,9 @@ class JsonAdaptedStudent {
         this(name, academicLevel, subjects, phone, guardianName, guardianPhone, homeworks, null);
     }
 
-    /** Creates a student adapter, treating an absent lessons field as an empty list for older data files. */
+    /**
+     * Creates a student adapter, treating an absent lessons field as an empty list for older data files.
+     */
     @JsonCreator
     public JsonAdaptedStudent(@JsonProperty("name") String name, @JsonProperty("academicLevel") String academicLevel,
             @JsonProperty("subjects") List<String> subjects, @JsonProperty("phone") String phone,

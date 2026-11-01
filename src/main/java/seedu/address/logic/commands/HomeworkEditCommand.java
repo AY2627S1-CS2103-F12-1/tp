@@ -178,7 +178,9 @@ public class HomeworkEditCommand extends Command {
      * @param dueDate New due date, or null to keep the due date.
      */
     public record EditHomeworkDescriptor(Title title, TuitionSubject subject, DueDate dueDate) {
-        /** Returns a copy with edited fields replaced, preserving score and completion status. */
+        /**
+         * Returns a copy with edited fields replaced, preserving score and completion status.
+         */
         public Homework applyTo(Homework homework) {
             requireNonNull(homework);
             return new Homework(Objects.requireNonNullElse(title, homework.getTitle()),

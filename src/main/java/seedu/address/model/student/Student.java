@@ -44,7 +44,9 @@ public final class Student {
         this(name, academicLevel, subjects, phone, guardianName, guardianPhone, homeworks, List.of());
     }
 
-    /** Creates a student with homework and weekly lessons in insertion order. */
+    /**
+     * Creates a student with homework and weekly lessons in insertion order.
+     */
     public Student(StudentName name, AcademicLevel academicLevel, TuitionSubjects subjects, StudentPhone phone,
             StudentName guardianName, StudentPhone guardianPhone, List<Homework> homeworks,
             List<RegularLesson> lessons) {
@@ -110,12 +112,16 @@ public final class Student {
         return new Student(name, academicLevel, subjects, phone, guardianName, guardianPhone, homeworks, lessons);
     }
 
-    /** Returns this student's unmodifiable weekly lesson list. */
+    /**
+     * Returns this student's unmodifiable weekly lesson list.
+     */
     public List<RegularLesson> getLessons() {
         return lessons;
     }
 
-    /** Returns a copy with the given lessons, preserving all profile fields and homework. */
+    /**
+     * Returns a copy with the given lessons, preserving all profile fields and homework.
+     */
     public Student withLessons(List<RegularLesson> lessons) {
         return new Student(name, academicLevel, subjects, phone, guardianName, guardianPhone, homeworks, lessons);
     }

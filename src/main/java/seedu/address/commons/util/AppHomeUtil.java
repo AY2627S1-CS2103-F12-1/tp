@@ -4,7 +4,9 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-/** Resolves the folder in which the application may keep its local files. */
+/**
+ * Resolves the folder in which the application may keep its local files.
+ */
 public class AppHomeUtil {
 
     /**
@@ -20,7 +22,9 @@ public class AppHomeUtil {
         }
     }
 
-    /** Resolves a code location without changing the process working directory. */
+    /**
+     * Resolves a code location without changing the process working directory.
+     */
     static Path resolveHomeDirectory(Path codeLocation, Path workingDirectory) {
         return (Files.isDirectory(codeLocation) ? workingDirectory : codeLocation.toAbsolutePath().getParent())
                 .toAbsolutePath().normalize();

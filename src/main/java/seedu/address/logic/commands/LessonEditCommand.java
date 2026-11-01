@@ -74,6 +74,7 @@ public class LessonEditCommand extends Command {
         }
         LessonSchedule.Entry original = schedule.get(lessonIndex.getZeroBased());
         Student owner = original.student();
+        assert owner.getLessons().contains(original.lesson()) : "The scheduled lesson must belong to its owner";
         RegularLesson replacement;
         try {
             replacement = descriptor.applyTo(original.lesson());

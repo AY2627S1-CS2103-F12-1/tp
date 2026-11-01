@@ -75,6 +75,17 @@ public class SearchCommandTest {
     }
 
     @Test
+    public void execute_partialDecomposedHangul_matchesOriginalName() throws Exception {
+        Student student = new StudentBuilder().withName("\u1100\u1161").build();
+        ModelManager model = new ModelManager();
+        model.addStudent(student);
+
+        new SearchCommand("\u1100").execute(model);
+
+        assertEquals(List.of(student), model.getStudentList());
+    }
+
+    @Test
     public void execute_repeatedWhitespace_matchesNormalizedName() throws Exception {
         ModelManager model = model();
 

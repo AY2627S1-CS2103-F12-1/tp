@@ -1001,8 +1001,9 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
 **MSS**
 
 1. Tutor requests to list the homework of all students that is due within a number of days from today.
-2. TutorFlow displays that homework, earliest due date first, with each record's student index and name, title, subject, due date, score and status.
-3. Use case ends.
+2. TutorFlow shows all students again in roster order, clearing any search, filter or sort, so that each record's student index matches the student list.
+3. TutorFlow displays that homework, earliest due date first, with each record's student index and name, title, subject, due date, score and status.
+4. Use case ends.
 
 **Extensions**
 
@@ -1015,12 +1016,12 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
 * 1c. The tutor gives a date instead of a number of days.
   * 1c1. TutorFlow displays an error that says the value is a number of days, not a date.
   * 1c2. Use case resumes at step 1.
-* 2a. No homework is due in that period.
-  * 2a1. TutorFlow informs the tutor that no homework is due in that period.
-  * 2a2. Use case ends.
-* 2b. The tutor wants to edit, score or delete one of the displayed records.
-  * 2b1. Tutor requests to list the homework of the student with the displayed student index to find the record's homework index, as the displayed order is not the homework index (see UC03, UC04 and UC07).
-  * 2b2. Use case ends.
+* 3a. No homework is due in that period.
+  * 3a1. TutorFlow informs the tutor that no homework is due in that period.
+  * 3a2. Use case ends.
+* 3b. The tutor wants to edit, score or delete one of the displayed records.
+  * 3b1. Tutor requests to list the homework of the student with the displayed student index to find the record's homework index, as the displayed order is not the homework index (see UC03, UC04 and UC07).
+  * 3b2. Use case ends.
 
 #### Use case: UC06 - Add homework to a student
 

@@ -14,7 +14,7 @@ import seedu.address.logic.parser.exceptions.ParseException;
 /**
  * Parses the arguments of {@code homework list} into a {@link HomeworkListCommand}.
  * The arguments must be one word that is not a prefix, optionally followed by the word {@code all}; the index
- * syntax is checked afterwards.
+ * syntax is checked before the second word, so {@code all 1} reports the index.
  */
 public class HomeworkListCommandParser implements Parser<HomeworkListCommand> {
     public static final String KEYWORD_ALL = "all";
@@ -48,11 +48,6 @@ public class HomeworkListCommandParser implements Parser<HomeworkListCommand> {
         String preamble = StrictArgumentTokenizer.tokenizeWithPreamble(args, List.of(), MESSAGE_INVALID_FORMAT)
                 .preamble();
         String[] words = ParserUtil.splitWords(preamble);
-        boolean isAllShown = words.length == 2 && words[1].equals(KEYWORD_ALL);
-        if (words.length == 2 && !isAllShown) {
-            throw new ParseException(String.format(words[1].equalsIgnoreCase(KEYWORD_ALL) ? MESSAGE_ALL_NOT_LOWERCASE
-                    : MESSAGE_SECOND_WORD_NOT_ALL, words[1]));
-        }
         if (words.length == 0 || words.length > 2) {
             throw new ParseException(ParserUtil.formatUnexpectedWords(EXPECTED_WORDS, words,
                     HomeworkListCommand.MESSAGE_USAGE));
@@ -60,6 +55,11 @@ public class HomeworkListCommandParser implements Parser<HomeworkListCommand> {
 
         Index studentIndex = ParserUtil.parseStrictIndex(words[0], Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX,
                 Messages.MESSAGE_STUDENT_INDEX_TOO_LARGE);
+        boolean isAllShown = words.length == 2 && words[1].equals(KEYWORD_ALL);
+        if (words.length == 2 && !isAllShown) {
+            throw new ParseException(String.format(words[1].equalsIgnoreCase(KEYWORD_ALL) ? MESSAGE_ALL_NOT_LOWERCASE
+                    : MESSAGE_SECOND_WORD_NOT_ALL, words[1]));
+        }
         return new HomeworkListCommand(studentIndex, LocalDate.now(clock), isAllShown);
     }
 }

@@ -22,6 +22,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
@@ -47,6 +48,8 @@ public class JsonUtil {
     private static ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules()
             .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            // Reads a hand-edited key such as "Score" as "score", instead of ignoring it
+            .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true)
             // Rejects a repeated key, whose last value would otherwise silently replace the earlier ones
             .configure(JsonParser.Feature.STRICT_DUPLICATE_DETECTION, true)
             .setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE)
@@ -68,7 +71,13 @@ public class JsonUtil {
             throw new IOException(MESSAGE_EMPTY_FILE);
         }
         try {
-            return fromJsonString(json, classOfObjectToDeserialize);
+            T instance = fromJsonString(json, classOfObjectToDeserialize);
+            // Jackson accepts a key repeated in another case, and keeps only one of the values
+            IOException repeatedKeyError = findRepeatedKey(json, null);
+            if (repeatedKeyError != null) {
+                throw repeatedKeyError;
+            }
+            return instance;
         } catch (JsonProcessingException e) {
             throw describeJsonError(json, e);
         }
@@ -107,8 +116,8 @@ public class JsonUtil {
     }
 
     /**
-     * Returns an exception naming the first key in {@code json} that is repeated in one object and the line and
-     * column where it is repeated, caused by {@code exception}, or null if no such key is found.
+     * Returns an exception naming the first key in {@code json} that is repeated in one object, in any case, and the
+     * line and column where it is repeated, caused by {@code exception}, or null if no such key is found.
      * Jackson reports such a key without its position, so {@code json} is read again here, up to that key.
      */
     private static IOException findRepeatedKey(String json, JsonProcessingException exception) {
@@ -120,7 +129,8 @@ public class JsonUtil {
                     keysOfOpenObjects.push(new HashSet<>());
                 } else if (token == JsonToken.END_OBJECT) {
                     keysOfOpenObjects.pop();
-                } else if (token == JsonToken.FIELD_NAME && !keysOfOpenObjects.peek().add(parser.getCurrentName())) {
+                } else if (token == JsonToken.FIELD_NAME
+                        && !keysOfOpenObjects.peek().add(parser.getCurrentName().toLowerCase(Locale.ROOT))) {
                     JsonLocation location = parser.getTokenLocation();
                     return new IOException(String.format(Locale.ROOT, MESSAGE_REPEATED_KEY, parser.getCurrentName(),
                             location.getLineNr(), location.getColumnNr()), exception);

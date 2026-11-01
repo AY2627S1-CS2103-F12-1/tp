@@ -146,6 +146,20 @@ public class JsonUtilTest {
     }
 
     @Test
+    public void readJsonFile_keyRepeatedInOtherCase_reasonNamesKeyAndSecondPosition() throws IOException {
+        // keys are read in any case, so both are the name
+        assertEquals("The key \"Name\" is repeated near line 1, column 20.",
+                getLoadingReason("{\"name\" : \"First\", \"Name\" : \"Second\"}"));
+    }
+
+    @Test
+    public void readJsonFile_keyInOtherCase_readsValue() throws Exception {
+        Path file = Files.writeString(testFolder.resolve("serialize.json"), "{\"NAME\" : \"Other case\"}");
+
+        assertEquals("Other case", JsonUtil.readJsonFile(file, SerializableTestClass.class).orElseThrow().getName());
+    }
+
+    @Test
     public void fromJsonString_trailingJsonObject_throwsIoException() {
         assertThrows(IOException.class, () -> JsonUtil.fromJsonString("{} {}", SerializableTestClass.class));
     }

@@ -215,7 +215,7 @@ The app data is saved in `data/tutorflow.json`. `JsonSerializableAddressBook` ho
 * Homework fields: `title`, `subject`, `dueDate`, `score`, and `status`.
 * Lesson fields: `subject`, `dayOfWeek`, `startTime`, and `endTime`.
 
-`JsonUtil#readJsonFile` reads both `data/tutorflow.json` and `preferences.json`. It rejects a file that is not valid UTF-8 (`FileUtil#MESSAGE_INVALID_UTF8`, which gives the line and column of the first invalid byte, counted in characters as an editor counts them, e.g. `The file is not valid UTF-8 text near line 3, column 22. Save the file as UTF-8.`), has anything but whitespace after its JSON value, or repeats a key within one JSON object. Loading only part of such a file would be unsafe: the next save would overwrite the part that was not loaded. An invalid `preferences.json`, including one whose `guiSettings` is `null`, is replaced with the default preferences (see `MainApp#initPrefs`); the data file is not affected.
+`JsonUtil#readJsonFile` reads both `data/tutorflow.json` and `preferences.json`. It rejects a file that is not valid UTF-8 (`FileUtil#MESSAGE_INVALID_UTF8`, which gives the line and column of the first invalid byte, counted in characters as an editor counts them, e.g. `The file is not valid UTF-8 text near line 3, column 22. Save the file as UTF-8.`), has anything but whitespace after its JSON value, or repeats a key within one JSON object. Keys are read in any case (`MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES`), so a hand-edited `"Score"` is read as `score` instead of being dropped at the next save. A key repeated in another case, such as `"score"` and `"Score"`, is rejected as repeated too: Jackson itself accepts it and keeps one of the values, so `JsonUtil#findRepeatedKey`, which compares keys in lower case, checks the file again after Jackson has read it. Loading only part of such a file would be unsafe: the next save would overwrite the part that was not loaded. An invalid `preferences.json`, including one whose `guiSettings` is `null`, is replaced with the default preferences (see `MainApp#initPrefs`); the data file is not affected.
 
 Contact and academic fields, homework titles, dates and completion statuses, and lesson fields are strings. `subjects` is a list of strings, `homeworks` and `lessons` are lists of objects, and `score` is a `MARKS` or `MARKS_OBTAINED/TOTAL_MARKS` string such as `"17"` or `"5/10"`, or `null`. Homework status is `ASSIGNED` or `COMPLETED`; missing or null status defaults to `ASSIGNED`, independently of scores. Lessons store weekdays by name and times in `HH:mm` format.
 
@@ -1794,6 +1794,14 @@ The automated smoke check is `./gradlew test --tests '*LessonEditUiTest' --tests
 
    1. Change the `score` to `"85.5"` (text, with quotes), or to `true`, instead. Launch the app.<br>
       Expected: The loading error dialog appears with `Reason: Student 1 (Ethan Lim): Homework 1 (Quadratic equations worksheet): Score must be whole marks such as 17, or marks out of a total such as 5/10, with no signs, decimals, spaces or other characters.`, the roster does not open, and the data file is unchanged, as for corrupted data above.
+
+1. Dealing with keys in another case
+
+   1. Start with the sample students and run `hw m 1 1 score/5/10`, so that the data file is created. Close the app. In `data/tutorflow.json`, change the `"score" : "5/10"` of Ethan Lim's first homework to `"Score" : "9/10"` and its `"status" : "ASSIGNED"` to `"Status" : "COMPLETED"`. Launch the app.<br>
+      Expected: `homework list 1 all` shows `1. Quadratic equations worksheet (MATH) - due 2026-11-03 - score 9/10 - status COMPLETED`.
+
+   1. Close the app. Add the line `"score" : null,` just above the `"Score"` line, so that the homework has both keys. Launch the app.<br>
+      Expected: The loading error dialog appears with `Reason: The key "Score" is repeated near line 14, column 7.`, the roster does not open, and the data file is unchanged.
 
 1. Dealing with a data file that cannot be written
 

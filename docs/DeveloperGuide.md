@@ -1633,13 +1633,36 @@ testers are expected to do more *exploratory* testing.
       ```
 
    1. Test case: `homework delete 1 0`<br>
-      Expected: No homework is deleted. The result display shows an error message.
+      Expected: No homework is deleted. The result display shows `HOMEWORK_INDEX must be a positive whole number without leading zeroes.`
+
+   1. Test case: Start again with the sample students and run `hw del 3 2`, `hw del 5 1` and `hw del 1`, one at a time.<br>
+      Expected: No homework is deleted. The result display shows `The homework index provided is invalid.` (Marcus Tan has 1 homework record), then `The selected student has no homework to delete.` (Daniel Wong has none), then `Expected STUDENT_INDEX HOMEWORK_INDEX, but found 1 word (1).` followed by `Usage: homework|hw delete|del STUDENT_INDEX HOMEWORK_INDEX`.
 
    1. Other incorrect delete commands to try: `homework delete`, `homework delete 1`, `homework delete 1 x` (where x is larger than the number of homework of the student)<br>
       Expected: Similar to previous.
 
    1. Test case: Start again with the sample students and run `hw del 1 2` with a no-break space (U+00A0, e.g. pasted from a web page) instead of the space between `1` and `2`.<br>
       Expected: The same result as `homework delete 1 2` above, as the no-break space is read as an ordinary space.
+
+1. Deleting homework due before today
+
+   1. Prerequisites: Start with the sample students on a date after 2026-10-15, and run `hw add 6 t/Old one s/MATH due/2026-10-01`, `hw add 6 t/Old two s/MATH due/2026-10-08` and `hw add 6 t/Old three s/MATH due/2026-10-15`. `hw ls 6 all` shows them as homework 2, 3 and 4 of Chloe Chua.
+
+   1. Test case: `hw del 6 2`<br>
+      Expected: `Old one` is deleted. As it was due before today, all of Chloe Chua's homework is listed with the new numbers, not only the upcoming homework:
+
+      ```
+      Deleted homework:
+      2. Old one (MATH) - due 2026-10-01 - score Not recorded - status ASSIGNED
+      Listed 3 homework records for Chloe Chua (88812345).
+      Homework for Chloe Chua (88812345):
+      2. Old two (MATH) - due 2026-10-08 - score Not recorded - status ASSIGNED
+      3. Old three (MATH) - due 2026-10-15 - score Not recorded - status ASSIGNED
+      1. Linear graphs practice (MATH) - due 2026-12-02 - score Not recorded - status ASSIGNED
+      ```
+
+   1. Test case: `hw del 6 2` again<br>
+      Expected: `Old two`, which the list above numbers 2, is deleted. `hw ls 6 all` then lists `2. Old three` and `1. Linear graphs practice`.
 
 ### Adding a regular lesson
 

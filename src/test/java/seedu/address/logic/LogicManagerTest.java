@@ -508,6 +508,31 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_twoOverdueDeletesFromShownNumbers_deletesIntendedRecords() throws Exception {
+        // Beta bug ALD-01: after deleting overdue homework, the other overdue records must be listed with their
+        // new numbers, so the next delete removes the record the tutor sees
+        setUpLogic(getSampleAddressBook(), addressBookStorage,
+                Clock.fixed(Instant.parse("2026-11-01T00:00:00Z"), ZoneOffset.UTC));
+        logic.execute("hw add 6 t/Old one s/MATH due/2026-10-01");
+        logic.execute("hw add 6 t/Old two s/MATH due/2026-10-08");
+        logic.execute("hw add 6 t/Old three s/MATH due/2026-10-15");
+
+        assertEquals("Deleted homework:\n"
+                + formatHomeworkLine(2, "Old one", "MATH", "2026-10-01", "Not recorded", "ASSIGNED")
+                + "\nListed 3 homework records for Chloe Chua (88812345).\nHomework for Chloe Chua (88812345):\n"
+                + formatHomeworkLine(2, "Old two", "MATH", "2026-10-08", "Not recorded", "ASSIGNED") + "\n"
+                + formatHomeworkLine(3, "Old three", "MATH", "2026-10-15", "Not recorded", "ASSIGNED") + "\n"
+                + formatHomeworkLine(1, "Linear graphs practice", "MATH", "2026-12-02", "Not recorded", "ASSIGNED"),
+                logic.execute("hw del 6 2").getFeedbackToUser());
+
+        // 2 is the number just shown for "Old two"
+        logic.execute("hw del 6 2");
+        Student savedStudent = addressBookStorage.readAddressBook().orElseThrow().getStudentList().get(5);
+        assertEquals(List.of("Linear graphs practice", "Old three"), savedStudent.getHomeworks()
+                .stream().map(homework -> homework.getTitle().toString()).toList());
+    }
+
+    @Test
     public void execute_editEarlierSampleHomework_hintsHiddenRecord() throws Exception {
         // Priya Nair's homework 1 is due 2026-11-02, so on 2026-11-07 the list after the edit starts at 2
         setUpLogic(getSampleAddressBook(), addressBookStorage, HIDDEN_NOTE_CLOCK);
@@ -575,15 +600,15 @@ public class LogicManagerTest {
     }
 
     @Test
-    public void execute_deleteOnlyEarlierSampleHomework_removesHiddenNote() throws Exception {
-        // Priya Nair's homework 1 (due 2026-11-02) is her only record due before today, so after deleting it
-        // none is hidden
+    public void execute_deleteOverdueSampleHomework_listsAllHomework() throws Exception {
+        // Priya Nair's homework 1 (due 2026-11-02) is due before today, so the list after deleting it has no
+        // hidden note
         setUpLogic(getSampleAddressBook(), addressBookStorage, HIDDEN_NOTE_CLOCK);
 
         assertEquals("Deleted homework:\n"
                 + formatHomeworkLine(1, "Integration by parts exercise", "MATH", "2026-11-02", "Not recorded",
                         "ASSIGNED")
-                + "\nListed 2 upcoming homework records for Priya Nair (82345671).\nHomework for Priya Nair "
+                + "\nListed 2 homework records for Priya Nair (82345671).\nHomework for Priya Nair "
                 + "(82345671):\n"
                 + formatHomeworkLine(1, "Organic reaction pathways map", "CHEMISTRY", "2026-11-09", "Not recorded",
                         "ASSIGNED") + "\n"
@@ -617,7 +642,7 @@ public class LogicManagerTest {
 
         assertEquals("Deleted homework:\n"
                 + formatHomeworkLine(1, "Integration by parts exercise", "MATH", "2026-11-02", "5/10", "ASSIGNED")
-                + "\nListed 2 upcoming homework records for Priya Nair (82345671).\nHomework for Priya Nair "
+                + "\nListed 2 homework records for Priya Nair (82345671).\nHomework for Priya Nair "
                 + "(82345671):\n"
                 + formatHomeworkLine(1, "Organic reaction pathways map", "CHEMISTRY", "2026-11-09", "Not recorded",
                         "ASSIGNED") + "\n"

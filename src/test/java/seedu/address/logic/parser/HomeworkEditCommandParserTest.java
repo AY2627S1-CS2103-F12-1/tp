@@ -138,6 +138,13 @@ public class HomeworkEditCommandParserTest {
     }
 
     @Test
+    public void parse_invalidIndexAndNoField_reportsIndexFirst() {
+        // Beta bug EMU-02: the invalid index is reported before the missing field
+        assertParseFailure(parser, "0 2", Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
+        assertParseFailure(parser, "1 0", Messages.MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX);
+    }
+
+    @Test
     public void parse_unknownPrefix_failure() {
         assertParseFailure(parser, "1 2 t/Algebra x/extra", notPrefix("x/")
                 + titleQuoteHint("x/", TITLE_EXAMPLE_OTHER_PREFIX) + USAGE_LINE);
@@ -148,6 +155,16 @@ public class HomeworkEditCommandParserTest {
 
         // score is recorded with homework marks, not edited here; it is not inside any value
         assertParseFailure(parser, "1 2 score/5/10", notPrefix("score/") + USAGE_LINE);
+    }
+
+    @Test
+    public void parse_subjectLongPrefix_pointsToSubjectPrefix() {
+        // Beta bug ALD-06: the same error as homework add
+        assertParseFailure(parser, "1 2 t/Essay subject/MATH",
+                "subject/ is not a prefix of this command. Use s/ for the subject." + USAGE_LINE);
+
+        // not after a title, so there is no hint
+        assertParseFailure(parser, "1 2 subject/MATH", notPrefix("subject/") + USAGE_LINE);
     }
 
     @Test

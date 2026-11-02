@@ -216,7 +216,7 @@ The app data is saved in `data/tutorflow.json`. `JsonSerializableAddressBook` ho
 * Homework fields: `title`, `subject`, `dueDate`, `score`, and `status`.
 * Lesson fields: `subject`, `dayOfWeek`, `startTime`, and `endTime`.
 
-`JsonUtil#readJsonFile` reads both `data/tutorflow.json` and `preferences.json`. It rejects a file that is not valid UTF-8 (`FileUtil#MESSAGE_INVALID_UTF8`, which gives the line and column of the first invalid byte, counted in characters as an editor counts them, e.g. `The file is not valid UTF-8 text near line 3, column 22. Save the file as UTF-8.`), has anything but whitespace after its JSON value, or repeats a key within one JSON object. Loading only part of such a file would be unsafe: the next save would overwrite the part that was not loaded. An invalid `preferences.json`, including one whose `guiSettings` is `null`, is replaced with the default preferences (see `MainApp#initPrefs`); the data file is not affected.
+`JsonUtil#readJsonFile` reads both `data/tutorflow.json` and `preferences.json`. It rejects a file that is not valid UTF-8 (`FileUtil#MESSAGE_INVALID_UTF8`, which gives the line and column of the first invalid byte, counted in characters as an editor counts them, e.g. `The file is not valid UTF-8 text near line 3, column 22. Save the file as UTF-8.`), has anything but whitespace after its JSON value, or repeats a key within one JSON object. Keys are read in any case (`MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES`), so a hand-edited `"Score"` is read as `score` instead of being dropped at the next save. A key repeated in another case, such as `"score"` and `"Score"`, is rejected as repeated too: Jackson itself accepts it and keeps one of the values, so `JsonUtil#findRepeatedKey`, which compares keys in lower case, checks the file again after Jackson has read it. For the data file, `JsonAddressBookStorage` also has it reject a key that no adapter uses (`DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES` for that read only), such as a misspelled `homework`, which would otherwise be ignored and removed at the next save. Jackson reports such a key at the end of its object, so `JsonUtil#describeUnknownKey` follows the exception's path of keys and list positions to give the key's own position, e.g. `The key "homework" near line 9, column 5 is not a key TutorFlow uses. Check its spelling.` `preferences.json` still ignores keys it does not use, as in AB3. Loading only part of such a file would be unsafe: the next save would overwrite the part that was not loaded. An invalid `preferences.json`, including one whose `guiSettings` is `null`, is replaced with the default preferences (see `MainApp#initPrefs`); the data file is not affected.
 
 Contact and academic fields, homework titles, dates and completion statuses, and lesson fields are strings. `subjects` is a list of strings, `homeworks` and `lessons` are lists of objects, and `score` is a `MARKS` or `MARKS_OBTAINED/TOTAL_MARKS` string such as `"17"` or `"5/10"`, or `null`. Homework status is `ASSIGNED` or `COMPLETED`; missing or null status defaults to `ASSIGNED`, independently of scores. Lessons store weekdays by name and times in `HH:mm` format.
 
@@ -295,7 +295,7 @@ For example, with the allowed prefixes `title/`, `t/`, `s/` and `due/` of `hw ad
 
 **Unknown prefixes.** An unknown prefix is named, and the text of the caller's format message from `Usage:` on follows on a new line, so the user sees which word is wrong and the command's format. If the arguments contain a curly quote (`“` or `”`), a line `Use straight quotes ("), not curly quotes (“ ”).` comes before the usage, as curly quotes never wrap a value. The hint to quote a value depends on the caller:
 
-1. A command with `RepeatedPrefixRules` (the homework commands above) gives the hint of its rules, and only for a word in `prefixesInText`. In `homework add` and `homework edit`, `HomeworkAddCommandParser#buildTitleQuoteHint` gives `MESSAGE_TITLE_QUOTE_HINT` with a fixed example title that holds such a word: `t/"True t/f quiz"` for `t/` or `title/`, `t/"Read s/o notes"` for `s/`, and `t/"Pg 5 w/ answers"` otherwise. So `hw add 1 t/Speed in km/h s/PHYSICS due/2026-12-01` gives `km/ is not a prefix of this command. If km/ is part of the title, put the whole title in straight double quotes, e.g. t/"Pg 5 w/ answers".`, and `hw add 1 t/A s/PHYSICS due/2026-12-01 x/y` gives `x/ is not a prefix of this command.` and the usage only.
+1. A command with `RepeatedPrefixRules` (the homework commands above) gives the hint of its rules, and only for a word in `prefixesInText`. In `homework add` and `homework edit`, `HomeworkAddCommandParser#buildTitleQuoteHint` gives `MESSAGE_TITLE_QUOTE_HINT` with a fixed example title that holds such a word: `t/"True t/f quiz"` for `t/` or `title/`, `t/"Read s/o notes"` for `s/`, and `t/"Pg 5 w/ answers"` otherwise, except that `subject/`, which a user may guess from `title/`, gets `MESSAGE_USE_SUBJECT_PREFIX` (` Use s/ for the subject.`) instead. So `hw add 1 t/Speed in km/h s/PHYSICS due/2026-12-01` gives `km/ is not a prefix of this command. If km/ is part of the title, put the whole title in straight double quotes, e.g. t/"Pg 5 w/ answers".`, and `hw add 1 t/A s/PHYSICS due/2026-12-01 x/y` gives `x/ is not a prefix of this command.` and the usage only.
 1. Any other command uses `StrictArgumentTokenizer#buildPrefixErrorMessage`, which adds a hint whenever the word is inside the value of an earlier prefix. Its example is that prefix and its text up to the next allowed prefix (after whitespace or directly after a quote) or the end, with the straight or curly quotes at both ends removed so they are not doubled: `filter l/S4 p/123` gives `e.g. l/"S4 p/123".` The example is left out when the value's text before the word is only digits, date or time punctuation (`- / : . +`) and spaces, such as `et/18:00 x/y`, as quoting a time with a word after it is never what the user meant.
 1. If the word comes before any prefix (e.g. `score/` in `hw e 1 2 score/5/10`), there is no quote hint.
 
@@ -658,7 +658,7 @@ The sequence diagram below shows how `hw up due/3` builds this result.
 
 After `hw del 2 1`, the map is homework 1 and the past paper is homework 2. If the tutor then types `hw del 2 2` to delete the map, reading from the old list, the past paper is deleted instead.
 
-To make this easy to notice, the result shows the deleted record with the number it had, its score and its status, in the `homework list` layout (`HomeworkListCommand#formatHomeworkLine`). It then shows the student's upcoming homework with the new numbers (`HomeworkListCommand#formatHomeworkList`), as `homework edit` does. `HomeworkDeleteCommand` gets today's date for that list from its parser's `Clock`. `homework add` shows the new record in the same layout, so the user sees its homework index, and `homework edit` and `homework marks` show the changed record in their own layouts.
+To make this easy to notice, the result shows the deleted record with the number it had, its score and its status, in the `homework list` layout (`HomeworkListCommand#formatHomeworkLine`). It then shows the student's upcoming homework with the new numbers (`HomeworkListCommand#formatHomeworkList`), as `homework edit` does. If the deleted record was due before today, it shows all of the student's homework instead, as `homework list STUDENT_INDEX all` does, because a tutor deleting overdue homework next needs the new numbers of the other overdue records. `HomeworkDeleteCommand` gets today's date for that list from its parser's `Clock`. `homework add` shows the new record in the same layout, so the user sees its homework index, and `homework edit` and `homework marks` show the changed record in their own layouts.
 
 The object diagrams below show the same `hw del 2 1`. Before the delete, Priya Nair's homework list holds three records:
 
@@ -1002,8 +1002,9 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
 **MSS**
 
 1. Tutor requests to list the homework of all students that is due within a number of days from today.
-2. TutorFlow displays that homework, earliest due date first, with each record's student index and name, title, subject, due date, score and status.
-3. Use case ends.
+2. TutorFlow shows all students again in roster order, clearing any search, filter or sort, so that each record's student index matches the student list.
+3. TutorFlow displays that homework, earliest due date first, with each record's student index and name, title, subject, due date, score and status.
+4. Use case ends.
 
 **Extensions**
 
@@ -1016,12 +1017,12 @@ For all use cases below, the **System** is `TutorFlow` and the **Actor** is the 
 * 1c. The tutor gives a date instead of a number of days.
   * 1c1. TutorFlow displays an error that says the value is a number of days, not a date.
   * 1c2. Use case resumes at step 1.
-* 2a. No homework is due in that period.
-  * 2a1. TutorFlow informs the tutor that no homework is due in that period.
-  * 2a2. Use case ends.
-* 2b. The tutor wants to edit, score or delete one of the displayed records.
-  * 2b1. Tutor requests to list the homework of the student with the displayed student index to find the record's homework index, as the displayed order is not the homework index (see UC03, UC04 and UC07).
-  * 2b2. Use case ends.
+* 3a. No homework is due in that period.
+  * 3a1. TutorFlow informs the tutor that no homework is due in that period.
+  * 3a2. Use case ends.
+* 3b. The tutor wants to edit, score or delete one of the displayed records.
+  * 3b1. Tutor requests to list the homework of the student with the displayed student index to find the record's homework index, as the displayed order is not the homework index (see UC03, UC04 and UC07).
+  * 3b2. Use case ends.
 
 #### Use case: UC06 - Add homework to a student
 
@@ -1634,13 +1635,36 @@ testers are expected to do more *exploratory* testing.
       ```
 
    1. Test case: `homework delete 1 0`<br>
-      Expected: No homework is deleted. The result display shows an error message.
+      Expected: No homework is deleted. The result display shows `HOMEWORK_INDEX must be a positive whole number without leading zeroes.`
+
+   1. Test case: Start again with the sample students and run `hw del 3 2`, `hw del 5 1` and `hw del 1`, one at a time.<br>
+      Expected: No homework is deleted. The result display shows `The homework index provided is invalid.` (Marcus Tan has 1 homework record), then `The selected student has no homework to delete.` (Daniel Wong has none), then `Expected STUDENT_INDEX HOMEWORK_INDEX, but found 1 word (1).` followed by `Usage: homework|hw delete|del STUDENT_INDEX HOMEWORK_INDEX`.
 
    1. Other incorrect delete commands to try: `homework delete`, `homework delete 1`, `homework delete 1 x` (where x is larger than the number of homework of the student)<br>
       Expected: Similar to previous.
 
    1. Test case: Start again with the sample students and run `hw del 1 2` with a no-break space (U+00A0, e.g. pasted from a web page) instead of the space between `1` and `2`.<br>
       Expected: The same result as `homework delete 1 2` above, as the no-break space is read as an ordinary space.
+
+1. Deleting homework due before today
+
+   1. Prerequisites: Start with the sample students on a date after 2026-10-15, and run `hw add 6 t/Old one s/MATH due/2026-10-01`, `hw add 6 t/Old two s/MATH due/2026-10-08` and `hw add 6 t/Old three s/MATH due/2026-10-15`. `hw ls 6 all` shows them as homework 2, 3 and 4 of Chloe Chua.
+
+   1. Test case: `hw del 6 2`<br>
+      Expected: `Old one` is deleted. As it was due before today, all of Chloe Chua's homework is listed with the new numbers, not only the upcoming homework:
+
+      ```
+      Deleted homework:
+      2. Old one (MATH) - due 2026-10-01 - score Not recorded - status ASSIGNED
+      Listed 3 homework records for Chloe Chua (88812345).
+      Homework for Chloe Chua (88812345):
+      2. Old two (MATH) - due 2026-10-08 - score Not recorded - status ASSIGNED
+      3. Old three (MATH) - due 2026-10-15 - score Not recorded - status ASSIGNED
+      1. Linear graphs practice (MATH) - due 2026-12-02 - score Not recorded - status ASSIGNED
+      ```
+
+   1. Test case: `hw del 6 2` again<br>
+      Expected: `Old two`, which the list above numbers 2, is deleted. `hw ls 6 all` then lists `2. Old three` and `1. Linear graphs practice`.
 
 ### Adding a regular lesson
 
@@ -1756,8 +1780,8 @@ The automated smoke check is `./gradlew test --tests '*LessonEditUiTest' --tests
    1. Close the app. In `data/tutorflow.json`, change the `dueDate` of Ethan Lim's first homework (`Quadratic equations worksheet`) to `10-15` (no year), delete the closing `}`, add a second object such as `{"students":[]}` after the closing `}`, or change a homework title to `Révision` and save the file in the Windows-1252 (Western) encoding instead of UTF-8. Launch the app.<br>
       Expected: An error dialog shows the absolute data path, a `Reason:` line and recovery instructions; the roster does not open. For `10-15`, the reason is `Student 1 (Ethan Lim): Homework 1 (Quadratic equations worksheet): 10-15 is not in YYYY-MM-DD format, e.g. 2026-10-30.`; for a missing closing `}`, it is `The file is not valid JSON near line L, column C.` where `L` and `C` are the line and column of the last character in the file that is not a space or line break (with the sample data, `line 120, column 5`); for a second object, it is `The file has unexpected content after the JSON data near line L, column C.`; for the Windows-1252 title, it is `The file is not valid UTF-8 text near line L, column C. Save the file as UTF-8.`, where `L` and `C` give the position of `é`. Dismiss the dialog and verify that the file bytes are unchanged. Restore the valid backup and relaunch: the original records appear.
 
-   1. Close the app. In `data/tutorflow.json`, change the `dueDate` of Ethan Lim's first homework to `2206-10-23`, or rename Ethan Lim's `guardianPhone` key to `guardianPhon`. Launch the app.<br>
-      Expected: The same error dialog as above, with `Reason: Student 1 (Ethan Lim): Homework 1 (Quadratic equations worksheet): The due date's year must be from 2000 to 2099.` or `Reason: Student 1 (Ethan Lim): Student's guardianPhone field is missing!`.
+   1. Close the app. In `data/tutorflow.json`, change the `dueDate` of Ethan Lim's first homework to `2206-10-23`, rename Ethan Lim's `guardianPhone` key to `guardianPhon`, or rename his `homeworks` key to `homework`. Launch the app.<br>
+      Expected: The same error dialog as above, with `Reason: Student 1 (Ethan Lim): Homework 1 (Quadratic equations worksheet): The due date's year must be from 2000 to 2099.`, `Reason: The key "guardianPhon" near line 8, column 5 is not a key TutorFlow uses. Check its spelling.` or `Reason: The key "homework" near line 9, column 5 is not a key TutorFlow uses. Check its spelling.`, and the file bytes are unchanged.
 
    1. Close the app. In `data/tutorflow.json`, change Ethan Lim's `subjects` to `[ "MATH, PHYSICS" ]`, or add a second lesson to Priya Nair's `lessons`: `{"subject":"MATH","dayOfWeek":"MONDAY","startTime":"18:00","endTime":"19:00"}`. Launch the app.<br>
       Expected: The same error dialog as above, with `Reason: Student 1 (Ethan Lim): subjects: "MATH, PHYSICS" holds more than one subject. Subjects must be a list of one or more of MATH, PHYSICS and CHEMISTRY, each in its own quotes and listed once, e.g. ["MATH", "PHYSICS"].` or `Reason: Student 2 (Priya Nair): Lesson 2 (MONDAY 18:00-19:00) overlaps lesson 1 (MONDAY 17:00-18:30) of student 1 (Ethan Lim).`
@@ -1795,6 +1819,14 @@ The automated smoke check is `./gradlew test --tests '*LessonEditUiTest' --tests
 
    1. Change the `score` to `"85.5"` (text, with quotes), or to `true`, instead. Launch the app.<br>
       Expected: The loading error dialog appears with `Reason: Student 1 (Ethan Lim): Homework 1 (Quadratic equations worksheet): Score must be whole marks such as 17, or marks out of a total such as 5/10, with no signs, decimals, spaces or other characters.`, the roster does not open, and the data file is unchanged, as for corrupted data above.
+
+1. Dealing with keys in another case
+
+   1. Start with the sample students and run `hw m 1 1 score/5/10`, so that the data file is created. Close the app. In `data/tutorflow.json`, change the `"score" : "5/10"` of Ethan Lim's first homework to `"Score" : "9/10"` and its `"status" : "ASSIGNED"` to `"Status" : "COMPLETED"`. Launch the app.<br>
+      Expected: `homework list 1 all` shows `1. Quadratic equations worksheet (MATH) - due 2026-11-03 - score 9/10 - status COMPLETED`.
+
+   1. Close the app. Add the line `"score" : null,` just above the `"Score"` line, so that the homework has both keys. Launch the app.<br>
+      Expected: The loading error dialog appears with `Reason: The key "Score" is repeated near line 14, column 7.`, the roster does not open, and the data file is unchanged.
 
 1. Dealing with a data file that cannot be written
 

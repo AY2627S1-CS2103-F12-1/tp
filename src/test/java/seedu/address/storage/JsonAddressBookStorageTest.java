@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static seedu.address.model.util.SampleDataUtil.getSampleAddressBook;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TestUtil.ARABIC_EGYPT;
 import static seedu.address.testutil.TestUtil.createSymbolicLinkOrSkip;
@@ -36,6 +37,8 @@ import org.junit.jupiter.api.io.TempDir;
 import seedu.address.commons.exceptions.DataLoadingException;
 import seedu.address.model.AddressBook;
 import seedu.address.model.ReadOnlyAddressBook;
+import seedu.address.model.homework.Homework;
+import seedu.address.model.homework.HomeworkStatus;
 import seedu.address.testutil.StudentBuilder;
 
 public class JsonAddressBookStorageTest {
@@ -147,6 +150,58 @@ public class JsonAddressBookStorageTest {
     }
 
     @Test
+    public void readAddressBook_keysInOtherCase_readsValues() throws Exception {
+        // Beta bug SAV-01 A: "Score" and "Status" in every homework of the sample data are read, not ignored
+        String content = getSavedSampleData().replace("\"score\" : null", "\"Score\" : \"9/10\"")
+                .replace("\"status\" : \"ASSIGNED\"", "\"Status\" : \"COMPLETED\"");
+        Path file = Files.writeString(testFolder.resolve("data.json"), content);
+
+        List<Homework> homeworks = new JsonAddressBookStorage(file).readAddressBook().orElseThrow().getStudentList()
+                .stream().flatMap(student -> student.getHomeworks().stream()).toList();
+
+        assertEquals(9, homeworks.size());
+        assertTrue(homeworks.stream().allMatch(homework -> homework.getScore().orElseThrow().toString().equals("9/10")
+                && homework.getStatus() == HomeworkStatus.COMPLETED));
+    }
+
+    @Test
+    public void readAddressBook_keyRepeatedInOtherCase_reasonNamesKeyAndPosition() throws Exception {
+        // both keys are read as the score, so one value would be lost
+        String content = getSavedSampleData().replaceFirst("\"score\" : null",
+                "\"score\" : null, \"Score\" : \"9/10\"");
+        assertEquals("The key \"Score\" is repeated near line 13, column 23.", getLoadingReason(content));
+    }
+
+    @Test
+    public void readAddressBook_misspelledHomeworksKey_reasonNamesKeyAndPosition() throws Exception {
+        // Beta bug SAV-01 B: Ethan Lim's "homeworks" renamed to "homework"
+        String content = getSavedSampleData().replaceFirst("\"homeworks\"", "\"homework\"");
+        Path file = Files.writeString(testFolder.resolve("data.json"), content);
+
+        assertEquals("The key \"homework\" near line 9, column 5 is not a key TutorFlow uses. Check its spelling.",
+                getLoadingReasonOfFile(file));
+        assertEquals(content, Files.readString(file));
+    }
+
+    @Test
+    public void readAddressBook_unknownKeys_reasonNamesKeyAndPosition() throws Exception {
+        String sampleData = getSavedSampleData();
+
+        // at the top level, before the students
+        assertEquals("The key \"extra\" near line 2, column 3 is not a key TutorFlow uses. Check its spelling.",
+                getLoadingReason(sampleData.replaceFirst("\\{", "{\n  \"extra\" : 1,")));
+
+        // in Priya Nair's second homework, in another case than a key that is used
+        assertEquals("The key \"Scroe\" near line 43, column 7 is not a key TutorFlow uses. Check its spelling.",
+                getLoadingReason(sampleData.replace("\"Organic reaction pathways map\",",
+                        "\"Organic reaction pathways map\",\n      \"Scroe\" : \"5/10\",")));
+
+        // in Ethan Lim's lesson
+        assertEquals("The key \"day\" near line 24, column 7 is not a key TutorFlow uses. Check its spelling.",
+                getLoadingReason(sampleData.replaceFirst("\"dayOfWeek\"", "\"day\"")));
+    }
+
+    @Test
     public void readAddressBook_repeatedStudentsKeyInSampleData_reasonNamesKeyAndPosition() throws Exception {
         // a second, empty student list after the sample data, as in the developer guide's manual test
         String content = Files.readString(TEST_DATA_FOLDER.resolve("duplicateStudentsKeyAddressBook.json"));
@@ -202,6 +257,15 @@ public class JsonAddressBookStorageTest {
         } finally {
             Files.setPosixFilePermissions(file.getParent(), PosixFilePermissions.fromString("rwx------"));
         }
+    }
+
+    /**
+     * Returns the sample data as TutorFlow saves it.
+     */
+    private String getSavedSampleData() throws IOException {
+        Path file = testFolder.resolve("sample.json");
+        new JsonAddressBookStorage(file).saveAddressBook(getSampleAddressBook());
+        return Files.readString(file);
     }
 
     /**

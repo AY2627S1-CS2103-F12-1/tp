@@ -24,7 +24,7 @@ import seedu.address.model.homework.Title;
  * Parses the arguments of {@code homework edit} into a {@link HomeworkEditCommand}.
  * Errors are checked in this order, and only the first one found is reported:
  * unknown or repeated prefix (in the order the prefixes appear), both {@code title/} and {@code t/} given,
- * indices that are missing or not exactly two words, no field to edit, student index syntax, homework index syntax,
+ * indices that are missing or not exactly two words, student index syntax, homework index syntax, no field to edit,
  * title, subject, and due date.
  */
 public class HomeworkEditCommandParser implements Parser<HomeworkEditCommand> {
@@ -65,14 +65,14 @@ public class HomeworkEditCommandParser implements Parser<HomeworkEditCommand> {
             throw new ParseException(ParserUtil.formatUnexpectedWords(EXPECTED_WORDS, indices,
                     HomeworkEditCommand.MESSAGE_USAGE));
         }
-        if (values.isEmpty()) {
-            throw new ParseException(MESSAGE_NO_FIELDS);
-        }
 
         Index studentIndex = ParserUtil.parseStrictIndex(indices[0], Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX,
                 Messages.MESSAGE_STUDENT_INDEX_TOO_LARGE);
         Index homeworkIndex = ParserUtil.parseStrictIndex(indices[1], Messages.MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX,
                 Messages.MESSAGE_HOMEWORK_INDEX_TOO_LARGE);
+        if (values.isEmpty()) {
+            throw new ParseException(MESSAGE_NO_FIELDS);
+        }
         String rawTitle = values.getOrDefault(PREFIX_TITLE, values.get(PREFIX_TITLE_ALIAS));
         String rawSubject = values.get(PREFIX_SUBJECT);
         String rawDueDate = values.get(PREFIX_DUE_DATE);

@@ -22,8 +22,12 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.exceptions.DataLoadingException;
@@ -39,6 +43,8 @@ public class JsonUtil {
     public static final String MESSAGE_CONTENT_AFTER_DATA =
             "The file has unexpected content after the JSON data near line %d, column %d.";
     public static final String MESSAGE_REPEATED_KEY = "The key \"%s\" is repeated near line %d, column %d.";
+    public static final String MESSAGE_UNKNOWN_KEY =
+            "The key \"%s\" near line %d, column %d is not a key TutorFlow uses. Check its spelling.";
 
     private static final Logger logger = LogsCenter.getLogger(JsonUtil.class);
     /** Start of Jackson's message for a key repeated in one object, which gives no position. */
@@ -47,6 +53,8 @@ public class JsonUtil {
     private static ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules()
             .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            // Reads a hand-edited key such as "Score" as "score", instead of ignoring it
+            .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true)
             // Rejects a repeated key, whose last value would otherwise silently replace the earlier ones
             .configure(JsonParser.Feature.STRICT_DUPLICATE_DETECTION, true)
             .setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE)
@@ -56,8 +64,8 @@ public class JsonUtil {
         FileUtil.writeToFile(jsonFile, toJsonString(objectToSerialize));
     }
 
-    static <T> T deserializeObjectFromJsonFile(Path jsonFile, Class<T> classOfObjectToDeserialize)
-            throws IOException {
+    static <T> T deserializeObjectFromJsonFile(Path jsonFile, Class<T> classOfObjectToDeserialize,
+            boolean isUnknownKeyRejected) throws IOException {
         String json = FileUtil.readFromFile(jsonFile);
         // Editors may add a UTF-8 signature. It is an encoding marker, not JSON content.
         if (json.startsWith("\ufeff")) {
@@ -68,7 +76,13 @@ public class JsonUtil {
             throw new IOException(MESSAGE_EMPTY_FILE);
         }
         try {
-            return fromJsonString(json, classOfObjectToDeserialize);
+            T instance = fromJsonString(json, classOfObjectToDeserialize, isUnknownKeyRejected);
+            // Jackson accepts a key repeated in another case, and keeps only one of the values
+            IOException repeatedKeyError = findRepeatedKey(json, null);
+            if (repeatedKeyError != null) {
+                throw repeatedKeyError;
+            }
+            return instance;
         } catch (JsonProcessingException e) {
             throw describeJsonError(json, e);
         }
@@ -80,6 +94,9 @@ public class JsonUtil {
      * or {@code exception} itself if no position is known.
      */
     private static IOException describeJsonError(String json, JsonProcessingException exception) {
+        if (exception instanceof UnrecognizedPropertyException unknownKeyError) {
+            return describeUnknownKey(json, unknownKeyError);
+        }
         JsonParseException syntaxError = findSyntaxError(exception);
         if (syntaxError != null && syntaxError.getOriginalMessage().startsWith(JACKSON_REPEATED_KEY_PREFIX)) {
             IOException repeatedKeyError = findRepeatedKey(json, exception);
@@ -107,8 +124,8 @@ public class JsonUtil {
     }
 
     /**
-     * Returns an exception naming the first key in {@code json} that is repeated in one object and the line and
-     * column where it is repeated, caused by {@code exception}, or null if no such key is found.
+     * Returns an exception naming the first key in {@code json} that is repeated in one object, in any case, and the
+     * line and column where it is repeated, caused by {@code exception}, or null if no such key is found.
      * Jackson reports such a key without its position, so {@code json} is read again here, up to that key.
      */
     private static IOException findRepeatedKey(String json, JsonProcessingException exception) {
@@ -120,7 +137,8 @@ public class JsonUtil {
                     keysOfOpenObjects.push(new HashSet<>());
                 } else if (token == JsonToken.END_OBJECT) {
                     keysOfOpenObjects.pop();
-                } else if (token == JsonToken.FIELD_NAME && !keysOfOpenObjects.peek().add(parser.getCurrentName())) {
+                } else if (token == JsonToken.FIELD_NAME
+                        && !keysOfOpenObjects.peek().add(parser.getCurrentName().toLowerCase(Locale.ROOT))) {
                     JsonLocation location = parser.getTokenLocation();
                     return new IOException(String.format(Locale.ROOT, MESSAGE_REPEATED_KEY, parser.getCurrentName(),
                             location.getLineNr(), location.getColumnNr()), exception);
@@ -131,6 +149,41 @@ public class JsonUtil {
             logger.warning("Could not find the repeated key: " + e);
         }
         return null;
+    }
+
+    /**
+     * Returns an exception naming the key that {@code exception} found in {@code json} but no class uses, and its
+     * line and column, found by following the path to it, as Jackson gives only the end of its object.
+     */
+    private static IOException describeUnknownKey(String json, UnrecognizedPropertyException exception) {
+        try (JsonParser parser = new JsonFactory().createParser(json)) {
+            JsonLocation keyLocation = null;
+            parser.nextToken();
+            for (JsonMappingException.Reference reference : exception.getPath()) {
+                if (reference.getFieldName() == null) {
+                    // moves to the start of the list item at that index
+                    parser.nextToken();
+                    for (int i = 0; i < reference.getIndex(); i++) {
+                        parser.skipChildren();
+                        parser.nextToken();
+                    }
+                    continue;
+                }
+                // keys are read in any case
+                while (parser.nextToken() == JsonToken.FIELD_NAME
+                        && !parser.getCurrentName().equalsIgnoreCase(reference.getFieldName())) {
+                    parser.nextToken();
+                    parser.skipChildren();
+                }
+                keyLocation = parser.getTokenLocation();
+                parser.nextToken();
+            }
+            return new IOException(String.format(Locale.ROOT, MESSAGE_UNKNOWN_KEY, exception.getPropertyName(),
+                    keyLocation.getLineNr(), keyLocation.getColumnNr()), exception);
+        } catch (IOException e) {
+            // Jackson has read the file up to the key, so this is not expected
+            return exception;
+        }
     }
 
     /**
@@ -158,6 +211,15 @@ public class JsonUtil {
      */
     public static <T> Optional<T> readJsonFile(
             Path filePath, Class<T> classOfObjectToDeserialize) throws DataLoadingException {
+        return readJsonFile(filePath, classOfObjectToDeserialize, false);
+    }
+
+    /**
+     * Returns the JSON object from the given file as {@link #readJsonFile(Path, Class)} does, also rejecting a key
+     * that the classes of the object do not use, which would be lost at the next save, if {@code isUnknownKeyRejected}.
+     */
+    public static <T> Optional<T> readJsonFile(Path filePath, Class<T> classOfObjectToDeserialize,
+            boolean isUnknownKeyRejected) throws DataLoadingException {
         requireNonNull(filePath);
 
         if (!Files.exists(filePath)) {
@@ -168,7 +230,7 @@ public class JsonUtil {
         T jsonFile;
 
         try {
-            jsonFile = deserializeObjectFromJsonFile(filePath, classOfObjectToDeserialize);
+            jsonFile = deserializeObjectFromJsonFile(filePath, classOfObjectToDeserialize, isUnknownKeyRejected);
             if (jsonFile == null) {
                 // Jackson reads a file that holds only the JSON value null as a null object
                 throw new IOException("The file holds null instead of a JSON object.");
@@ -203,8 +265,19 @@ public class JsonUtil {
      * @throws IOException If the string is not one JSON value of that class, or anything but whitespace follows it.
      */
     public static <T> T fromJsonString(String json, Class<T> instanceClass) throws IOException {
+        return fromJsonString(json, instanceClass, false);
+    }
+
+    /**
+     * Converts {@code json} as {@link #fromJsonString(String, Class)} does, also rejecting a key that the classes of
+     * the instance do not use if {@code isUnknownKeyRejected}.
+     */
+    public static <T> T fromJsonString(String json, Class<T> instanceClass, boolean isUnknownKeyRejected)
+            throws IOException {
         try (JsonParser parser = objectMapper.getFactory().createParser(json)) {
-            T instance = objectMapper.readValue(parser, instanceClass);
+            ObjectReader reader = objectMapper.readerFor(instanceClass);
+            T instance = (isUnknownKeyRejected ? reader.with(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                    : reader).readValue(parser);
             // Jackson stops after the first value, so content after it would be ignored and lost at the next save
             if (parser.nextToken() != null) {
                 JsonLocation location = parser.getTokenLocation();

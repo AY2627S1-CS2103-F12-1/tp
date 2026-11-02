@@ -42,7 +42,7 @@ public class JsonUtilTest {
         FileUtil.writeToFile(SERIALIZATION_FILE, SerializableTestClass.JSON_STRING_REPRESENTATION);
 
         SerializableTestClass serializableTestClass = JsonUtil
-                .deserializeObjectFromJsonFile(SERIALIZATION_FILE, SerializableTestClass.class);
+                .deserializeObjectFromJsonFile(SERIALIZATION_FILE, SerializableTestClass.class, false);
 
         assertEquals(serializableTestClass.getName(), SerializableTestClass.getNameTestValue());
         assertEquals(serializableTestClass.getListOfLocalDateTimes(), SerializableTestClass.getListTestValues());
@@ -143,6 +143,39 @@ public class JsonUtilTest {
         // the first "1" in the inner object only repeats a key of the outer object, which is allowed
         assertEquals("The key \"1\" is repeated near line 1, column 52.",
                 getLoadingReason("{\"1\" : \"x\", \"mapOfIntegerToString\" : {\"1\" : \"One\", \"1\" : \"Uno\"}}"));
+    }
+
+    @Test
+    public void readJsonFile_keyRepeatedInOtherCase_reasonNamesKeyAndSecondPosition() throws IOException {
+        // keys are read in any case, so both are the name
+        assertEquals("The key \"Name\" is repeated near line 1, column 20.",
+                getLoadingReason("{\"name\" : \"First\", \"Name\" : \"Second\"}"));
+    }
+
+    @Test
+    public void readJsonFile_keyInOtherCase_readsValue() throws Exception {
+        Path file = Files.writeString(testFolder.resolve("serialize.json"), "{\"NAME\" : \"Other case\"}");
+
+        assertEquals("Other case", JsonUtil.readJsonFile(file, SerializableTestClass.class).orElseThrow().getName());
+    }
+
+    @Test
+    public void readJsonFile_unknownKeyNotRejected_ignoresKey() throws Exception {
+        Path file = Files.writeString(testFolder.resolve("serialize.json"), "{\"name\" : \"A\", \"nmae\" : \"B\"}");
+
+        assertEquals("A", JsonUtil.readJsonFile(file, SerializableTestClass.class).orElseThrow().getName());
+    }
+
+    @Test
+    public void readJsonFile_unknownKeyRejected_reasonNamesKeyAndPosition() throws IOException {
+        Path file = Files.writeString(testFolder.resolve("serialize.json"), "{\"name\" : \"A\",\n \"nmae\" : \"B\"}");
+        try {
+            JsonUtil.readJsonFile(file, SerializableTestClass.class, true);
+            throw new AssertionError("The file was read");
+        } catch (DataLoadingException e) {
+            assertEquals("The key \"nmae\" near line 2, column 2 is not a key TutorFlow uses. Check its spelling.",
+                    e.getCause().getMessage());
+        }
     }
 
     @Test

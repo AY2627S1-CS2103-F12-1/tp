@@ -66,8 +66,15 @@ public class HomeworkListCommandParserTest {
         assertParseFailure(parser, "1 alll", "The word after STUDENT_INDEX can only be all, but found alll."
                 + USAGE_LINE);
         assertParseFailure(parser, "1 2", "The word after STUDENT_INDEX can only be all, but found 2." + USAGE_LINE);
-        assertParseFailure(parser, "all 1", "The word after STUDENT_INDEX can only be all, but found 1."
-                + USAGE_LINE);
+    }
+
+    @Test
+    public void parse_allBeforeIndex_reportsIndexSyntax() {
+        // Beta bug ALD-03: all typed first is not a STUDENT_INDEX, as for hw ls all
+        assertParseFailure(parser, "all 1", Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
+
+        // invalid index followed by all in another case
+        assertParseFailure(parser, "0 ALL", Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
     }
 
     @Test

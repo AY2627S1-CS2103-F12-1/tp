@@ -1,8 +1,12 @@
 package seedu.address.ui;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
+import java.time.DayOfWeek;
+import java.time.LocalTime;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -16,6 +20,8 @@ import javafx.scene.layout.Region;
 import javafx.stage.Stage;
 import seedu.address.logic.LogicManager;
 import seedu.address.model.ModelManager;
+import seedu.address.model.lesson.RegularLesson;
+import seedu.address.model.student.TuitionSubject;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
 import seedu.address.storage.StorageManager;
@@ -51,17 +57,29 @@ public class LessonCardLayoutTest {
                 content.setDividerPositions(0.5);
                 assertSeparatedRows(stage);
 
-                for (String command : new String[]{"lesson edit 1 st/08:00",
-                    "lesson add 1 s/MATH d/FRIDAY st/09:00 et/10:00", "lesson delete 2"}) {
-                    TextField input = (TextField) stage.getScene().lookup("#commandTextField");
-                    input.setText(command);
-                    input.fireEvent(new ActionEvent());
-                    assertSeparatedRows(stage);
-                }
+                RegularLesson editedLesson = new RegularLesson(TuitionSubject.MATH, DayOfWeek.MONDAY,
+                        LocalTime.of(8, 0), LocalTime.of(10, 0));
+                RegularLesson addedLesson = new RegularLesson(TuitionSubject.MATH, DayOfWeek.FRIDAY,
+                        LocalTime.of(9, 0), LocalTime.of(10, 0));
+                assertMutationLayout(stage, logic, "lesson edit 1 st/08:00", List.of(editedLesson));
+                assertMutationLayout(stage, logic, "lesson add 1 s/MATH d/FRIDAY st/09:00 et/10:00",
+                        List.of(editedLesson, addedLesson));
+                assertMutationLayout(stage, logic, "lesson delete 2", List.of(editedLesson));
             } finally {
                 stage.hide();
             }
         });
+    }
+
+    private static void assertMutationLayout(Stage stage, LogicManager logic, String command,
+            List<RegularLesson> expectedLessons) {
+        TextField input = (TextField) stage.getScene().lookup("#commandTextField");
+        input.setText(command);
+        input.fireEvent(new ActionEvent());
+        assertEquals("", input.getText(), "Command must succeed before testing layout: " + command);
+        assertEquals(expectedLessons, logic.getAllStudentList().getFirst().getLessons(), command);
+        assertTrue(logic.getAllStudentList().get(1).getLessons().isEmpty(), "Beta must remain unchanged");
+        assertSeparatedRows(stage);
     }
 
     private static void assertSeparatedRows(Stage stage) {

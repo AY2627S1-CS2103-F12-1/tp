@@ -193,7 +193,9 @@ public class StudentListPanel extends UiPart<Region> {
         return state;
     }
 
-    /** Captures navigation and rendered cards before a command can replace the roster. */
+    /**
+     * Captures navigation and rendered cards before a command can replace the roster.
+     */
     ViewState captureViewState() {
         Map<Orientation, Double> scrollPositions = new EnumMap<>(Orientation.class);
         for (Node node : studentListView.lookupAll(".scroll-bar")) {

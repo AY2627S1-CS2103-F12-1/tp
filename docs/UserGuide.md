@@ -156,13 +156,18 @@ Adds a student to the end of the student list.
 Format: `add n/STUDENT_NAME l/ACADEMIC_LEVEL s/SUBJECTS p/STUDENT_PHONE gn/GUARDIAN_NAME gp/GUARDIAN_PHONE`
 
 * All six fields are required, and each prefix must appear exactly once.
-* `STUDENT_NAME` and `GUARDIAN_NAME` must be 1 to 70 characters long and may contain letters, numbers, spaces, apostrophes, hyphens, periods, parentheses and `/`. Letters and numbers from non-English languages are accepted. Spaces at both ends are removed, and repeated whitespace between words becomes one space before the length is checked. Capitalization is kept.
+* `STUDENT_NAME` and `GUARDIAN_NAME` must be 1 to 70 Unicode code points long and may contain letters, combining marks, numbers, spaces, apostrophes, hyphens, periods, parentheses and `/`. Non-English names such as `अनिल` and accented names are accepted; a combining mark counts separately towards the length limit. Spaces at both ends are removed, and repeated whitespace between words becomes one space before the length is checked. Capitalization is kept.
 * A name may contain words such as `s/o` and `d/o`, but not this command's other prefixes (such as `p/` or `gn/`) after a space, unless the whole name is wrapped in double quotes (see the [notes about the command format](#features)).
 * `ACADEMIC_LEVEL` must be one of `S1`, `S2`, `S3`, `S4`, `S5`, `J1` or `J2` (in any case).
 * `SUBJECTS` is one or more of `MATH`, `PHYSICS` and `CHEMISTRY` (in any case), separated by commas, with no subject repeated. The student card shows the subjects in the order you type them.
 * `STUDENT_PHONE` and `GUARDIAN_PHONE` must each be an 8-digit Singapore number starting with 6, 8 or 9, or an international number written as `+` followed by 8 to 15 digits, without spaces within the number. Spaces at both ends are removed.
 * A student cannot be added if a student with the same name (ignoring case and extra whitespace) and the same student phone number is already in the roster, including students hidden by a search or filter. A local number and the same number prefixed by `+65` count as the same phone: `91234567` and `+6591234567` are equivalent. Academic details and guardian contacts do not affect this duplicate check.
 * A successful addition shows the full roster in stored order, clearing any earlier search, filter or sort.
+
+Accented names that look identical can use different underlying characters, such as `é` and `e` followed by a
+combining accent. Duplicate checks can treat these as different names even with the same phone number.
+Reuse the same spelling and input method when adding or editing a student, and check the roster before adding
+an apparent duplicate. Search can find either representation (see [Searching for students](#searching-for-students-search)).
 
 Examples:
 * `add n/Aaron Koh l/S2 s/MATH p/91112222 gn/Koh Mei Hua gp/98887777`
@@ -211,6 +216,8 @@ Format: `search KEYWORD`
   Equivalent Unicode forms of an accented letter also match, such as `é` and `e` followed by a combining accent.
   For example, `search Mary Tan` searches for that full phrase.
 * `search 9123` can find a student by part of their phone number. `search Tan` may match a student or a guardian.
+* Search also matches equivalent Unicode forms of accented names: `search José` can find a name entered with
+  `e` followed by a combining accent. This does not change the stored name or the duplicate-check rules.
 * The feedback repeats the keyword used, e.g. `Found 2 students for "Tan".` If nothing matches, TutorFlow shows
   `No students found for "Nobody".` and displays no student cards. In both cases, the feedback reminds you to type
   `list` to show all students again.
@@ -235,7 +242,10 @@ Format: `filter [l/LEVEL] [s/SUBJECT] [d/DAY]`
   Supply only one day; abbreviations such as `MON` are not accepted.
 * Values ignore letter case and surrounding whitespace, so `s/Math` matches `MATH`.
 * A student must match **every supplied criterion**. Subject checks registration independently of the lesson
-  that matches the day: a student taking MATH with a PHYSICS lesson on Monday matches `s/MATH d/MONDAY`.
+  that matches the day: `filter s/MATH d/MONDAY` finds students registered for MATH who have any Monday lesson.
+  For example, a student with PHYSICS on Monday and MATH on Tuesday matches. To check the lesson subjects and
+  days of a result, use `lesson list STUDENT_INDEX` with its displayed index
+  (see [Listing regular lessons](#listing-regular-lessons-lesson-list)).
   Matches return to stored roster order, discarding an earlier sort, and receive displayed indexes starting at 1.
   Subsequent student-index commands use these displayed indexes. A successful filter clears the selection and scrolls
   the student list to the top.
@@ -317,6 +327,11 @@ Key | Ascending order | Value used per student
 
 Descending uses the same value in reverse order. Students without regular meetings stay last in both directions.
 Students with equal values, including those without meetings, retain their order immediately before this command.
+
+After `filter d/FRIDAY`, `sort by/day` still uses each displayed student's earliest lesson day across the whole week.
+A student with Monday and Friday lessons sorts before one with Tuesday and Friday lessons in ascending order.
+Lesson start times do not affect this order. Use [Listing regular lessons](#listing-regular-lessons-lesson-list)
+(`lesson list`) to view the full weekly schedule ordered by weekday and start time; it includes students hidden by a filter.
 
 Examples:
 

@@ -21,7 +21,7 @@ public class LessonAddCommandParser implements Parser<LessonAddCommand> {
     public static final String MESSAGE_FORMAT = "Invalid command format.\nUsage: " + LessonAddCommand.MESSAGE_USAGE;
     public static final String MESSAGE_MISSING_PREFIXES = "Missing required prefix(es): %s\nUsage: "
             + LessonAddCommand.MESSAGE_USAGE;
-    public static final String MESSAGE_INDEX_TOO_LARGE = "STUDENT_INDEX must be no greater than 2147483647.";
+    public static final String MESSAGE_INDEX_TOO_LARGE = Messages.MESSAGE_STUDENT_INDEX_TOO_LARGE;
     private static final List<String> PREFIXES = List.of("s/", "d/", "st/", "et/");
 
     @Override
@@ -37,12 +37,8 @@ public class LessonAddCommandParser implements Parser<LessonAddCommand> {
         if (!missing.isEmpty()) {
             throw new ParseException(String.format(MESSAGE_MISSING_PREFIXES, String.join(", ", missing)));
         }
-        String studentIndex = tokenized.preamble();
-        if (studentIndex.matches("[1-9][0-9]*") && (studentIndex.length() > 10
-                || studentIndex.length() == 10 && studentIndex.compareTo("2147483647") > 0)) {
-            throw new ParseException(MESSAGE_INDEX_TOO_LARGE);
-        }
-        Index index = ParserUtil.parseStrictIndex(studentIndex, Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
+        Index index = ParserUtil.parseStrictIndex(tokenized.preamble(), Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX,
+                MESSAGE_INDEX_TOO_LARGE);
         try {
             TuitionSubject subject = TuitionSubject.parse(values.get("s/"));
             DayOfWeek day = RegularLesson.parseDay(values.get("d/"));

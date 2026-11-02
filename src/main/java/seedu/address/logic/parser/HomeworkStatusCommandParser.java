@@ -24,8 +24,10 @@ public class HomeworkStatusCommandParser implements Parser<HomeworkStatusCommand
         if (indices.length != 2 || !tokens.values().containsKey("status/")) {
             throw new ParseException(MESSAGE_FORMAT);
         }
-        var student = ParserUtil.parseStrictIndex(indices[0], Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX);
-        var homework = ParserUtil.parseStrictIndex(indices[1], Messages.MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX);
+        var student = ParserUtil.parseStrictIndex(indices[0], Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX,
+                Messages.MESSAGE_STUDENT_INDEX_TOO_LARGE);
+        var homework = ParserUtil.parseStrictIndex(indices[1], Messages.MESSAGE_INVALID_HOMEWORK_INDEX_SYNTAX,
+                Messages.MESSAGE_HOMEWORK_INDEX_TOO_LARGE);
         try {
             return new HomeworkStatusCommand(student, homework, HomeworkStatus.parse(tokens.values().get("status/")));
         } catch (IllegalArgumentException exception) {

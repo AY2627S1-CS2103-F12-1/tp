@@ -1,8 +1,11 @@
 package seedu.address.logic.commands;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.testutil.TestUtil.ARABIC_EGYPT;
+import static seedu.address.testutil.TestUtil.runWithFormatLocale;
 import static seedu.address.testutil.TypicalHomeworks.ALGEBRA;
 import static seedu.address.testutil.TypicalHomeworks.ATOMIC_STRUCTURE;
 import static seedu.address.testutil.TypicalHomeworks.MECHANICS;
@@ -10,7 +13,9 @@ import static seedu.address.testutil.TypicalHomeworks.MECHANICS;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -27,6 +32,35 @@ import seedu.address.testutil.StudentBuilder;
 public class HomeworkFilterCommandTest {
     private final AddressBookParser parser = new AddressBookParser(
             Clock.fixed(Instant.parse("2026-10-20T00:00:00Z"), ZoneOffset.UTC));
+
+    @Test
+    public void execute_arabicFormatLocale_indicesCanBeUsedForStatusCommand() throws Exception {
+        runWithFormatLocale(ARABIC_EGYPT, () -> {
+            ModelManager model = model();
+            String result = assertDoesNotThrow(() -> feedback(model, "hw filter 1 s/CHEMISTRY"));
+            assertTrue(result.startsWith("Found 1 matching homework record."), result);
+            assertTrue(result.contains("Student 1: John Tan; Homework 3:"), result);
+            String studentIndex = result.split("Student ")[1].split(":")[0];
+            String homeworkIndex = result.split("Homework ")[1].split(":")[0];
+            assertDoesNotThrow(() -> feedback(model,
+                    "hw status " + studentIndex + " " + homeworkIndex + " status/COMPLETED"));
+            assertEquals("COMPLETED", model.getStudentList().getFirst().getHomeworks().get(2)
+                    .getStatus().toString());
+        });
+    }
+
+    @Test
+    public void equals_equivalentFilters_areFoundInHashSet() throws Exception {
+        for (String criteria : List.of("1", "s/MATH", "due/2026-10-20", "status/COMPLETED",
+                "1 s/MATH due/2026-10-20 status/COMPLETED")) {
+            Command first = parser.parseCommand("hw filter " + criteria);
+            Command equal = parser.parseCommand("homework filter " + criteria);
+            Set<Command> commands = new HashSet<>();
+            commands.add(first);
+            assertEquals(first, equal);
+            assertTrue(commands.contains(equal), criteria);
+        }
+    }
 
     @Test
     public void execute_statusIntersectsOtherCriteria_andNeverInfersCompletionFromScores() throws Exception {

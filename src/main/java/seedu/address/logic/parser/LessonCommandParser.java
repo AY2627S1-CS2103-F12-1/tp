@@ -10,7 +10,9 @@ import seedu.address.logic.commands.LessonEditCommand;
 import seedu.address.logic.commands.LessonListCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 
-/** Routes lesson subcommands to their argument parsers. */
+/**
+ * Routes lesson subcommands to their argument parsers.
+ */
 public class LessonCommandParser implements Parser<Command> {
     public static final String COMMAND_WORD = "lesson";
     public static final String SUBCOMMAND_ADD = "add";

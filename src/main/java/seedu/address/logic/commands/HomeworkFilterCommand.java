@@ -4,6 +4,8 @@ import static java.util.Objects.requireNonNull;
 import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -87,13 +89,13 @@ public class HomeworkFilterCommand extends Command {
                     continue;
                 }
                 matches++;
-                lines.append(String.format(MESSAGE_LINE, i + 1, student.getName(), j + 1, homework.getTitle(),
-                        homework.getSubject(), homework.getDueDate(), Messages.formatScore(homework),
-                        homework.getStatus()));
+                lines.append(String.format(Locale.ROOT, MESSAGE_LINE, i + 1, student.getName(), j + 1,
+                        homework.getTitle(), homework.getSubject(), homework.getDueDate(),
+                        Messages.formatScore(homework), homework.getStatus()));
             }
         }
         return new CommandResult(matches == 0 ? MESSAGE_NO_MATCHES
-                : String.format(MESSAGE_SUCCESS, matches, matches == 1 ? "record" : "records") + lines);
+                : String.format(Locale.ROOT, MESSAGE_SUCCESS, matches, matches == 1 ? "record" : "records") + lines);
     }
 
     @Override
@@ -101,5 +103,10 @@ public class HomeworkFilterCommand extends Command {
         return other == this || other instanceof HomeworkFilterCommand command
                 && studentIndex.equals(command.studentIndex) && subject.equals(command.subject)
                 && dueDate.equals(command.dueDate) && status.equals(command.status);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(studentIndex.map(Index::getZeroBased), subject, dueDate, status);
     }
 }

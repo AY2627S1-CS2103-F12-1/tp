@@ -14,7 +14,9 @@ import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.lesson.RegularLesson;
 import seedu.address.model.student.TuitionSubject;
 
-/** Parses the required student index, subject, weekday and times for lesson add. */
+/**
+ * Parses the required student index, subject, weekday and times for lesson add.
+ */
 public class LessonAddCommandParser implements Parser<LessonAddCommand> {
     public static final String MESSAGE_FORMAT = "Invalid command format.\nUsage: " + LessonAddCommand.MESSAGE_USAGE;
     public static final String MESSAGE_MISSING_PREFIXES = "Missing required prefix(es): %s\nUsage: "

@@ -37,7 +37,7 @@ import seedu.address.ui.UiManager;
  */
 public class MainApp extends Application {
 
-    public static final String VERSION = "V1.5";
+    public static final String VERSION = "V1.6";
 
     private static final Logger logger = LogsCenter.getLogger(MainApp.class);
     private static final Path APP_HOME = AppHomeUtil.getHomeDirectory();
@@ -56,7 +56,9 @@ public class MainApp extends Application {
     /** Why the data file could not be loaded, shown in the startup dialog. */
     private String dataLoadingReason;
 
-    /** Creates the application using files in its home folder and the JavaFX shutdown action. */
+    /**
+     * Creates the application using files in its home folder and the JavaFX shutdown action.
+     */
     public MainApp() {
         this(APP_HOME, USER_PREFS_FILE_PATH, ADDRESS_BOOK_FILE_PATH, Platform::exit);
     }

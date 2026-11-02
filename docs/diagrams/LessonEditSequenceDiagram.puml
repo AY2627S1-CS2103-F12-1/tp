@@ -29,7 +29,7 @@ Logic -> Edit : execute(m)
 activate Edit
 Edit -> Model : getAddressBook().getStudentList()
 Model --> Edit : full roster
-Edit -> Schedule : from(students)
+Edit -> Schedule : buildSchedule(students)
 activate Schedule
 Schedule --> Edit : weekly schedule
 deactivate Schedule

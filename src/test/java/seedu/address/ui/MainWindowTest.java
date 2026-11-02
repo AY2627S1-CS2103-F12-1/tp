@@ -255,7 +255,16 @@ public class MainWindowTest {
 
         Stage[] stages = new Stage[1];
         CompletableFuture<Void> layoutReady = new CompletableFuture<>();
-        Runnable signalLayout = () -> layoutReady.complete(null);
+        Runnable signalLayout = () -> {
+            TextArea result = (TextArea) stages[0].getScene().lookup("#resultDisplay");
+            ScrollPane pane = (ScrollPane) result.lookup(".scroll-pane");
+            if (pane != null && pane.getContent() != null && pane.getViewportBounds().getHeight() > 0
+                    && pane.getContent().getLayoutBounds().getHeight() > pane.getViewportBounds().getHeight()) {
+                layoutReady.complete(null);
+            } else {
+                Platform.requestNextPulse();
+            }
+        };
         try {
             runOnFxThread(() -> {
                 Stage stage = new Stage();
@@ -270,7 +279,7 @@ public class MainWindowTest {
                 resultDisplay.setText("A command result with enough lines to scroll.\n".repeat(100));
                 commandBox.setText("homework ");
 
-                // TextArea's skin can defer its content size until a pulse, even after root.layout().
+                // Wait for actual overflow; TextArea's skin may need multiple pulses after root.layout().
                 stage.getScene().addPostLayoutPulseListener(signalLayout);
                 Platform.requestNextPulse();
             });

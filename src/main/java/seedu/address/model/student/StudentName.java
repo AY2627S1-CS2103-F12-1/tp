@@ -10,11 +10,11 @@ import java.util.regex.Pattern;
  */
 public final class StudentName {
     public static final String MESSAGE_CONSTRAINTS = "Names must be 1 to 70 characters and may contain "
-            + "letters, numbers, spaces, apostrophes, hyphens, periods, parentheses, or '/'.";
+            + "letters, combining marks, numbers, spaces, apostrophes, hyphens, periods, parentheses, or '/'.";
 
     private static final int MAX_LENGTH = 70;
     private static final Pattern WHITESPACE = Pattern.compile("\\s+", Pattern.UNICODE_CHARACTER_CLASS);
-    private static final Pattern VALID_CHARACTERS = Pattern.compile("[\\p{L}\\p{N} '()./\\-]+");
+    private static final Pattern VALID_CHARACTERS = Pattern.compile("[\\p{L}\\p{M}\\p{N} '()./\\-]+");
 
     private final String value;
 

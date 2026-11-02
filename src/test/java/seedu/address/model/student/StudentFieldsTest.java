@@ -72,6 +72,16 @@ public class StudentFieldsTest {
     }
 
     @Test
+    public void name_combiningMarks_preservesCharactersAndEnforcesLength() {
+        for (String name : new String[] {"\u0905\u0928\u093f\u0932", "Jose\u0301"}) {
+            assertEquals(name, new StudentName(name).toString());
+        }
+        String maximumName = "e\u0301".repeat(35);
+        assertEquals(maximumName, new StudentName(maximumName).toString());
+        assertThrows(IllegalArgumentException.class, () -> new StudentName(maximumName + "A"));
+    }
+
+    @Test
     public void name_supplementaryLetters_countsCodePointsAtLengthBoundary() {
         // U+10400 is a letter represented by two UTF-16 code units.
         String supplementaryLetter = "\uD801\uDC00";

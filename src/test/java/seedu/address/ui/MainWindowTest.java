@@ -342,10 +342,32 @@ public class MainWindowTest {
     }
 
     private static void assertResultScrolling(Stage stage, TextArea resultDisplay) {
+        for (ScrollEvent.VerticalTextScrollUnits units : List.of(ScrollEvent.VerticalTextScrollUnits.NONE,
+                ScrollEvent.VerticalTextScrollUnits.LINES)) {
+            assertResultScrolling(stage, resultDisplay, units);
+        }
+    }
+
+    private static void assertResultScrolling(Stage stage, TextArea resultDisplay,
+            ScrollEvent.VerticalTextScrollUnits units) {
+        double textDeltaY = units == ScrollEvent.VerticalTextScrollUnits.LINES ? -3 : 0;
+        Node viewport = resultDisplay.lookup(".scroll-pane > .viewport");
         resultDisplay.setScrollTop(0);
-        scroll(resultDisplay.getParent(), -80);
-        assertTrue(resultDisplay.getScrollTop() > 0, "results did not scroll from their surrounding panel");
-        assertCommandUnchanged(stage);
+        scroll(viewport, -80, units, textDeltaY);
+        double expectedScrollTop = resultDisplay.getScrollTop();
+        assertTrue(expectedScrollTop > 0, "viewport must scroll before comparing forwarded gestures");
+        Node outerPadding = stage.getScene().lookup("#resultDisplayPlaceholder");
+        for (Node target : List.of(outerPadding, resultDisplay.getParent(), resultDisplay)) {
+            resultDisplay.setScrollTop(0);
+            scroll(target, -80, units, textDeltaY);
+            assertEquals(expectedScrollTop, resultDisplay.getScrollTop(), 1,
+                    target.getId() + " must scroll exactly once for " + units);
+            assertCommandUnchanged(stage);
+            scroll(target, 80, units, -textDeltaY);
+            assertEquals(0, resultDisplay.getScrollTop(), 1,
+                    target.getId() + " must scroll back to the top for " + units);
+            assertCommandUnchanged(stage);
+        }
     }
 
     private static void assertEmptySectionScrolling(Stage stage, String[][] sections) {

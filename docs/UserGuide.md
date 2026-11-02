@@ -136,7 +136,10 @@ including completed records, and **Overdue homework**, counting only assigned re
 Recording or clearing a score does not change either count. The upcoming count can therefore differ from the
 number of that student's outstanding tasks in the sidebar.
 
-Drag the dividers to resize the command box, result display, student list and sidebar. You can scroll over a section's heading or padding as well as its entries while keeping the cursor in the command box.
+Drag the dividers to resize the command box, result display, student list and sidebar. When a section overflows,
+you can scroll over its heading or padding as well as its entries. For long command results, scroll inside the
+result display or over the padding around it, including the narrow left and bottom edges. Scrolling keeps the
+cursor in the command box and preserves any unfinished command.
 
 ### Viewing help: `help`
 

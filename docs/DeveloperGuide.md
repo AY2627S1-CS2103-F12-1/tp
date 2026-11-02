@@ -119,6 +119,13 @@ narrowest permitted widths, accounting for wrapped headings so the sidebar remai
 lists show entry counts and empty-state placeholders. `MainWindow.fxml` uses split panes to resize sections,
 and `ScrollSupport` lets users scroll over headings and padding while retaining command-box focus.
 
+`ResultDisplay` enables scroll forwarding on its own root. `MainWindow` also calls
+`ResultDisplay#enableScrollingFrom` with `resultDisplayPlaceholder`, covering the outer padding supplied by
+`MainWindow.fxml`. `ScrollSupport` forwards gestures to the control's viewport and consumes the original event;
+events already targeting that viewport or its descendants are not forwarded again. This prevents duplicate
+scrolling when the inner and outer handlers share an event path. The control's skin interprets wheel-line and
+pixel deltas without changing keyboard focus or the command draft.
+
 `MainWindow#createStudentListPanel` supplies a card factory that creates `StudentCard` roots using the window's
 current display date. `StudentListPanel` calls that factory and caches each root with its student reference and
 displayed position. Cells render only nonempty entries with a non-null student and a nonnegative index; reusing
@@ -1260,6 +1267,8 @@ testers are expected to do more *exploratory* testing.
       Expected: Algebra disappears from outstanding homework when completed, reappears when assigned and remains visible after receiving a score, without restarting. Zoe's upcoming-homework count remains 1 because the due date is in the future; this count is independent of completion and marks.
    1. Run `search Ben`, then resize the window and drag the split-pane dividers.<br>
       Expected: The student list shows Ben only, while the sidebar still shows Zoe's lesson and assigned Algebra homework with her name and phone. Entries remain readable; each section can be scrolled whenever its contents exceed its available space. Run `list` to restore the full roster.
+   1. Run `hw ls 1 all` and reduce the result section's height until its vertical scrollbar appears; add more homework to the test roster if needed. Leave `lesson ` in the command box without pressing Enter. Scroll up and down over the result text, then over the surrounding padding, including the narrow left and bottom edges.<br>
+      Expected: The result scrolls from each location. The unfinished command and keyboard focus remain in the command box. A single wheel notch scrolls by the same amount over padding as inside the text area, without an extra jump.
 
 ### Listing, searching, and deleting students
 

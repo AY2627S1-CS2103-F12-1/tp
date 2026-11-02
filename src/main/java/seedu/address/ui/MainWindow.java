@@ -149,6 +149,7 @@ public class MainWindow extends UiPart<Stage> {
     void fillInnerParts() {
         resultDisplay = new ResultDisplay();
         resultDisplayPlaceholder.getChildren().add(resultDisplay.getRoot());
+        resultDisplay.enableScrollingFrom(resultDisplayPlaceholder);
 
         studentListPanel = createStudentListPanel(logic.getStudentList(), this::handleStudentRenderingError);
         studentListPanel.bindStudentListPredicate(logic.studentListPredicateProperty());

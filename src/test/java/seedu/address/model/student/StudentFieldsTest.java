@@ -58,6 +58,15 @@ public class StudentFieldsTest {
     }
 
     @Test
+    public void name_onlyCombiningMarksAndSpaces_rejected() {
+        for (String invalidName : new String[] {"\u034F", "\uFE0F", "\u0301", "\uD834\uDD65",
+            " \u034F \uFE0F\t\u0301 "}) {
+            assertEquals(StudentName.MESSAGE_CONSTRAINTS,
+                    assertThrows(IllegalArgumentException.class, () -> new StudentName(invalidName)).getMessage());
+        }
+    }
+
+    @Test
     public void name_maximumLength_appliesAfterWhitespaceNormalization() {
         String maximumName = "A".repeat(70);
         String maximumSpacedName = "A".repeat(68) + " B";

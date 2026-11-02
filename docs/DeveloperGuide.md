@@ -338,7 +338,7 @@ unless saving fails: the rollback then restores them.
 All six prefixes are required exactly once, in any order. Structural checks run before field validation;
 `StudentAddParser` wraps a value-validation failure in a `ParseException`, preserving its message and cause.
 `StudentName` collapses Unicode whitespace and strips the ends before checking a length of 1 to 70 Unicode
-code points. It accepts Unicode letters, combining marks and numbers, spaces, apostrophes, hyphens, periods, parentheses and `/`,
+code points and requires at least one character other than a combining mark or space. It accepts Unicode letters, combining marks and numbers, spaces, apostrophes, hyphens, periods, parentheses and `/`,
 while preserving case for display. `StudentPhone` strips the ends and accepts eight-digit local numbers starting
 with 6, 8 or 9, or a `+` followed by 8 to 15 digits. `TuitionSubjects` rejects empty, unsupported and repeated
 subjects, and preserves the supplied order in its unmodifiable set and display text.

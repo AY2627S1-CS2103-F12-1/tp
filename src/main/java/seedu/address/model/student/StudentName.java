@@ -10,11 +10,13 @@ import java.util.regex.Pattern;
  */
 public final class StudentName {
     public static final String MESSAGE_CONSTRAINTS = "Names must be 1 to 70 characters and may contain "
-            + "letters, combining marks, numbers, spaces, apostrophes, hyphens, periods, parentheses, or '/'.";
+            + "letters, combining marks, numbers, spaces, apostrophes, hyphens, periods, parentheses, or '/'. "
+            + "At least one character must be neither a combining mark nor a space.";
 
     private static final int MAX_LENGTH = 70;
     private static final Pattern WHITESPACE = Pattern.compile("\\s+", Pattern.UNICODE_CHARACTER_CLASS);
     private static final Pattern VALID_CHARACTERS = Pattern.compile("[\\p{L}\\p{M}\\p{N} '()./\\-]+");
+    private static final Pattern NON_MARK_NON_SPACE = Pattern.compile("[^\\p{M} ]");
 
     private final String value;
 
@@ -29,7 +31,8 @@ public final class StudentName {
         requireNonNull(rawName);
         String normalizedName = WHITESPACE.matcher(rawName).replaceAll(" ").strip();
         int length = normalizedName.codePointCount(0, normalizedName.length());
-        if (length < 1 || length > MAX_LENGTH || !VALID_CHARACTERS.matcher(normalizedName).matches()) {
+        if (length < 1 || length > MAX_LENGTH || !VALID_CHARACTERS.matcher(normalizedName).matches()
+                || !NON_MARK_NON_SPACE.matcher(normalizedName).find()) {
             throw new IllegalArgumentException(MESSAGE_CONSTRAINTS);
         }
         value = normalizedName;

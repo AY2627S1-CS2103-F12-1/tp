@@ -58,6 +58,15 @@ public class StudentFieldsTest {
     }
 
     @Test
+    public void name_onlyCombiningMarksAndSpaces_rejected() {
+        for (String invalidName : new String[] {"\u034F", "\uFE0F", "\u0301", "\uD834\uDD65",
+            " \u034F \uFE0F\t\u0301 "}) {
+            assertEquals(StudentName.MESSAGE_CONSTRAINTS,
+                    assertThrows(IllegalArgumentException.class, () -> new StudentName(invalidName)).getMessage());
+        }
+    }
+
+    @Test
     public void name_maximumLength_appliesAfterWhitespaceNormalization() {
         String maximumName = "A".repeat(70);
         String maximumSpacedName = "A".repeat(68) + " B";
@@ -69,6 +78,16 @@ public class StudentFieldsTest {
     @Test
     public void name_nonAsciiLetters_preservesCharacters() {
         assertEquals("李明", new StudentName("李明").toString());
+    }
+
+    @Test
+    public void name_combiningMarks_preservesCharactersAndEnforcesLength() {
+        for (String name : new String[] {"\u0905\u0928\u093f\u0932", "Jose\u0301"}) {
+            assertEquals(name, new StudentName(name).toString());
+        }
+        String maximumName = "e\u0301".repeat(35);
+        assertEquals(maximumName, new StudentName(maximumName).toString());
+        assertThrows(IllegalArgumentException.class, () -> new StudentName(maximumName + "A"));
     }
 
     @Test

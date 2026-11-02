@@ -2,6 +2,7 @@ package seedu.address.logic.commands;
 
 import static java.util.Objects.requireNonNull;
 
+import java.text.Normalizer;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -79,6 +80,15 @@ public class SearchCommand extends Command {
      * Returns whether {@code value} contains {@code keyword}, ignoring case.
      */
     private static boolean matches(String value, String keyword) {
+        return containsIgnoringCase(value, keyword)
+                || containsIgnoringCase(Normalizer.normalize(value, Normalizer.Form.NFC),
+                        Normalizer.normalize(keyword, Normalizer.Form.NFC));
+    }
+
+    /**
+     * Returns whether {@code value} contains {@code keyword}, ignoring case without normalizing either string.
+     */
+    private static boolean containsIgnoringCase(String value, String keyword) {
         for (int start = 0; start <= value.length() - keyword.length(); start++) {
             if (value.regionMatches(true, start, keyword, 0, keyword.length())) {
                 return true;

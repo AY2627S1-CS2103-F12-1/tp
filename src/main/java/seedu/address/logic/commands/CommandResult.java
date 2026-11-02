@@ -29,7 +29,9 @@ public class CommandResult {
         this(feedbackToUser, showHelp, exit, false);
     }
 
-    /** Constructs a result that can request the student roster to be shown. */
+    /**
+     * Constructs a result that can request the student roster to be shown.
+     */
     public CommandResult(String feedbackToUser, boolean showHelp, boolean exit, boolean showStudentList) {
         this.feedbackToUser = requireNonNull(feedbackToUser);
         this.showHelp = showHelp;

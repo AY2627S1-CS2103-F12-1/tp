@@ -58,6 +58,34 @@ public class SearchCommandTest {
     }
 
     @Test
+    public void execute_decomposedAccents_matchesStudentAndGuardianNames() throws Exception {
+        Student student = new StudentBuilder().withName("Jos\u00e9 Tan").withGuardianName("Ren\u00e9 Tan").build();
+        ModelManager model = new ModelManager();
+        model.addStudent(student);
+        AddressBook before = new AddressBook(model.getAddressBook());
+
+        CommandResult result = new SearchCommand("JOSE\u0301").execute(model);
+        assertEquals(List.of(student), model.getStudentList());
+        assertEquals("Found 1 student for \"JOSE\u0301\".\nType list to show all students.",
+                result.getFeedbackToUser());
+
+        new SearchCommand("Rene\u0301").execute(model);
+        assertEquals(List.of(student), model.getStudentList());
+        assertEquals(before, model.getAddressBook());
+    }
+
+    @Test
+    public void execute_partialDecomposedHangul_matchesOriginalName() throws Exception {
+        Student student = new StudentBuilder().withName("\u1100\u1161").build();
+        ModelManager model = new ModelManager();
+        model.addStudent(student);
+
+        new SearchCommand("\u1100").execute(model);
+
+        assertEquals(List.of(student), model.getStudentList());
+    }
+
+    @Test
     public void execute_repeatedWhitespace_matchesNormalizedName() throws Exception {
         ModelManager model = model();
 

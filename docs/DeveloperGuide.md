@@ -12,6 +12,7 @@ title: Developer Guide
 * TutorFlow adapts the architecture, shared utilities, and documentation of the [AddressBook-Level3 project](https://github.com/se-edu/addressbook-level3), created by the [SE-EDU initiative](https://se-education.org).
 * TutorFlow uses [OpenJFX Monocle, packaged by TestFX](https://github.com/TestFX/Monocle), to run JavaFX UI tests in headless continuous integration environments.
 * Lim Jing Kai ([@Elljaykei](https://github.com/Elljaykei)) used OpenAI Codex for AI-assisted code review, regression-test development, fixes to homework filter/status commands, Java documentation cleanup, UML corrections, and final-submission checks.
+* Wee Wye Keong ([@wyekstudent](https://github.com/wyekstudent)) used OpenAI Codex to review student-management features against the practical-exam criteria, implement support for Unicode combining marks in student and guardian names, add regression tests, check test coverage, clarify the User Guide and Developer Guide, and check final-submission requirements.
 
 --------------------------------------------------------------------------------------------------------------------
 

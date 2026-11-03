@@ -353,8 +353,11 @@ while preserving case for display. `StudentPhone` strips the ends and accepts ei
 with 6, 8 or 9, or a `+` followed by 8 to 15 digits. `TuitionSubjects` rejects empty, unsupported and repeated
 subjects, and preserves the supplied order in its unmodifiable set and display text.
 
-`Student#isSameStudent` compares normalized names without case and treats an eight-digit local phone and its
+`Student#isSameStudent` compares whitespace-normalized names without case and treats an eight-digit local phone and its
 valid `+65` form as the same number. Academic details and guardian contacts do not affect duplicate identity.
+Names are not canonically normalized to Unicode NFC: precomposed and decomposed accented names can have
+different identities even when they look identical and share a phone number. Search handles canonical equivalence
+separately without changing stored names or duplicate identity.
 This differs from `Student#equals`, which compares all profile fields, homework and lessons using their stored
 values; name case, phone representation and subject order can therefore distinguish otherwise identical profiles.
 
@@ -386,7 +389,7 @@ The sequence diagram below shows how `list` restores the full student view witho
 
 ### Searching students
 
-**Parsing and matching.** `AddressBookParser` routes `search KEYWORD` to `SearchCommandParser`, which rejects a blank keyword. `SearchCommand` strips surrounding whitespace and performs a case-insensitive substring match against the student's name, the guardian's name, and both phone numbers. A numeric keyword can therefore find a student by either phone number; the command does not treat numbers as a separate search mode.
+**Parsing and matching.** `AddressBookParser` routes `search KEYWORD` to `SearchCommandParser`, which rejects a blank keyword. `SearchCommand` strips surrounding whitespace and performs a case-insensitive substring match against the student's name, the guardian's name, and both phone numbers. Matching first checks the stored text and then checks both strings in Unicode NFC, so canonically equivalent accented names match without rewriting stored values. A numeric keyword can therefore find a student by either phone number; the command does not treat numbers as a separate search mode.
 
 **Displayed view.** `SearchCommand` passes the matching predicate to `Model#updateFilteredStudentList`. `ModelManager` applies it to a `FilteredList<Student>` backed by the full roster, resets its `StudentDisplayList` to roster order, discarding any earlier `sort`, and exposes an unmodifiable view of the `StudentDisplayList` to the UI. Changing the predicate updates the visible cards and count; it does not remove students from the roster. A new search replaces any previous search or filter predicate and examines the full roster, even if the previous command showed no matches. The command returns a `CommandResult` that scrolls the list to the top.
 
@@ -463,6 +466,10 @@ the previous view is captured before execution and rendering is verified before 
 `StudentSorter` stable-sorts a copy of the immediately preceding displayed list using `SortKey#getComparator(order)`.
 Each `SortKey` owns its comparator factory, and `SortOrder` applies the requested direction. Level uses the academic enum's
 school order, subject uses the alphabetically smallest subject name, and day uses the smallest weekday.
+Filtering selects whole students; the comparator still reads their complete subject and lesson collections.
+For example, after filtering for Friday, ascending day sorting places a student with Monday and Friday lessons
+before one with Tuesday and Friday lessons. It does not restrict the sort key to Friday or compare start times.
+`LessonSchedule#buildSchedule`, used by `lesson list`, provides the separate chronological lesson view.
 For descending days, only the weekday comparator is reversed before applying `nullsLast`; reversing the complete
 result would incorrectly move missing meetings first and reverse ties.
 
@@ -523,7 +530,9 @@ Invalid input is rejected before the displayed list changes or a UI refresh is r
 **Matching and display.** `StudentFilterPredicate` combines the supplied criteria with AND: the student's level
 must match and their subjects must include the selected subject. An omitted criterion imposes no restriction.
 A supplied day must match at least one regular lesson, so students without lessons cannot match it. The subject
-criterion checks the student's registration independently of which lesson matches the day. Lesson changes replace
+criterion checks the student's registration independently of which lesson matches the day. A student registered
+for MATH and PHYSICS, with PHYSICS on Monday and MATH on Tuesday, therefore matches `s/MATH d/MONDAY`.
+The predicate selects a whole student and leaves their lesson collection intact. Lesson changes replace
 the immutable student, automatically re-evaluating membership under the active predicate.
 `FilterCommand` applies the predicate to the full stored roster, replacing any previous search or filter.
 Results retain roster order and receive displayed indices starting at 1; commands taking a student index use
@@ -610,7 +619,7 @@ hw add 2 t/rates of REACTION s/CHEMISTRY due/2026-11-20    → This homework alr
 
 **Title.** `Title` tidies the text before checking it. It converts the text to Unicode NFC, turns each run of whitespace into one space and trims both ends. NFC stores characters that look the same in one way: `é` can be typed as one character or as `e` plus an accent, and NFC makes both the same. So the duplicate check treats them as one title, and the title is saved in NFC. The title must then have 1 to 100 characters, each a letter, number, punctuation mark, symbol or space. The error names the rule that failed: `Title#MESSAGE_TOO_LONG` gives the length, and `Title#MESSAGE_UNSUPPORTED_CHARACTER` names the first unsupported character by its code and Unicode name, e.g. `U+FE0F (VARIATION SELECTOR-16)`, as an invisible character cannot be seen. An empty title gets `Title#MESSAGE_EMPTY` (`The homework title is empty. Enter 1 to 100 characters.`). The data file gives the same messages, except that an empty title there gets `Title#MESSAGE_CONSTRAINTS` (see [Storage component](#storage-component)).
 
-This allowlist works like the one in `StudentName`. It rejects invisible characters such as the zero-width space wherever they are. So a title made only of them is rejected (Issue #139), and `Alge<zero-width space>bra drill` is rejected instead of being saved next to `Algebra drill` as a different title. As a result, emoji built with invisible joining characters (e.g. ❤️ and 👨‍👩‍👧) and letters that need a separate combining mark (e.g. many Tamil and Hindi letters) are rejected, as in student names. Single emoji such as 😀 are accepted. A data file with a title that breaks the rule does not load.
+This allowlist works like the one in `StudentName`. It rejects invisible characters such as the zero-width space wherever they are. So a title made only of them is rejected (Issue #139), and `Alge<zero-width space>bra drill` is rejected instead of being saved next to `Algebra drill` as a different title. As a result, emoji built with invisible joining characters (e.g. ❤️ and 👨‍👩‍👧) and letters that still need a separate combining mark after NFC normalization (e.g. many Tamil and Hindi letters) are rejected in homework titles. Student names accept combining marks, so their allowlist differs here. Single emoji such as 😀 are accepted. A data file with a title that breaks the rule does not load.
 
 Alternatives considered:
 

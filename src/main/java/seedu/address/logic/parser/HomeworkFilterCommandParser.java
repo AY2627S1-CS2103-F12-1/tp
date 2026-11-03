@@ -42,7 +42,8 @@ public class HomeworkFilterCommandParser implements Parser<HomeworkFilterCommand
             throw new ParseException(MESSAGE_FORMAT);
         }
         Optional<Index> student = preamble.isBlank() ? Optional.empty()
-                : Optional.of(ParserUtil.parseStrictIndex(preamble, Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX));
+                : Optional.of(ParserUtil.parseStrictIndex(preamble, Messages.MESSAGE_INVALID_STUDENT_INDEX_SYNTAX,
+                        Messages.MESSAGE_STUDENT_INDEX_TOO_LARGE));
         try {
             Optional<TuitionSubject> subject = values.containsKey("s/")
                     ? Optional.of(TuitionSubject.parse(values.get("s/"))) : Optional.empty();

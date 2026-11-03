@@ -29,7 +29,8 @@ public class LessonEditCommandParser implements Parser<LessonEditCommand> {
         if (tokens.preamble().isBlank() || tokens.preamble().split("\\s+").length != 1 || values.isEmpty()) {
             throw new ParseException(MESSAGE_FORMAT);
         }
-        Index index = ParserUtil.parseStrictIndex(tokens.preamble(), Messages.MESSAGE_INVALID_LESSON_INDEX_SYNTAX);
+        Index index = ParserUtil.parseStrictIndex(tokens.preamble(), Messages.MESSAGE_INVALID_LESSON_INDEX_SYNTAX,
+                Messages.MESSAGE_LESSON_INDEX_TOO_LARGE);
         try {
             return new LessonEditCommand(index, new EditLessonDescriptor(
                     values.containsKey("s/") ? TuitionSubject.parse(values.get("s/")) : null,

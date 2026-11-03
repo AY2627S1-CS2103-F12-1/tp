@@ -243,102 +243,156 @@ public class MainWindowTest {
 
     @Test
     public void scrollOverSections_commandFocused_scrollsWithoutChangingFocus() throws Exception {
+        ModelManager model = createScrollingModel();
+        Logic logic = createScrollingLogic(model);
+        Stage[] stages = new Stage[1];
+        CompletableFuture<Void> layoutReady = new CompletableFuture<>();
+        Runnable signalLayout = () -> signalResultOverflow(stages[0], layoutReady);
+        try {
+            runOnFxThread(() -> {
+                stages[0] = new Stage();
+                prepareScrollingWindow(stages[0], logic, signalLayout);
+            });
+            layoutReady.get(10, TimeUnit.SECONDS);
+            runOnFxThread(() -> assertScrollingPreservesCommand(stages[0], model));
+        } finally {
+            runOnFxThread(() -> closeScrollingWindow(stages[0], signalLayout));
+        }
+    }
+
+    private static ModelManager createScrollingModel() {
         ModelManager model = new ModelManager();
         for (int i = 0; i < 30; i++) {
             model.addStudent(new StudentBuilder().withName("Student " + i).withPhone("9" + (1000000 + i))
                     .withLessons(MONDAY_MATH).withHomeworks(ALGEBRA).build());
         }
+        return model;
+    }
+
+    private Logic createScrollingLogic(ModelManager model) {
         StorageManager storage = new StorageManager(
                 new JsonAddressBookStorage(temporaryFolder.resolve("addressBook.json")),
                 new JsonUserPrefsStorage(temporaryFolder.resolve("userPrefs.json")));
-        Logic logic = new LogicManager(model, storage);
+        return new LogicManager(model, storage);
+    }
 
-        Stage[] stages = new Stage[1];
-        CompletableFuture<Void> layoutReady = new CompletableFuture<>();
-        Runnable signalLayout = () -> {
-            TextArea result = (TextArea) stages[0].getScene().lookup("#resultDisplay");
-            ScrollPane pane = (ScrollPane) result.lookup(".scroll-pane");
-            if (pane != null && pane.getContent() != null && pane.getViewportBounds().getHeight() > 0
-                    && pane.getContent().getLayoutBounds().getHeight() > pane.getViewportBounds().getHeight()) {
-                layoutReady.complete(null);
-            } else {
-                Platform.requestNextPulse();
-            }
+    private static void prepareScrollingWindow(Stage stage, Logic logic, Runnable signalLayout) {
+        new MainWindow(stage, logic, Path.of("data", "tutorflow.json")).fillInnerParts();
+        stage.show();
+        Region root = (Region) stage.getScene().getRoot();
+        root.applyCss();
+        root.layout();
+        TextField commandBox = (TextField) root.lookup("#commandTextField");
+        TextArea resultDisplay = (TextArea) root.lookup("#resultDisplay");
+        resultDisplay.setText("A command result with enough lines to scroll.\n".repeat(100));
+        commandBox.setText("homework ");
+
+        // Wait for actual overflow; TextArea's skin may need multiple pulses after root.layout().
+        stage.getScene().addPostLayoutPulseListener(signalLayout);
+        Platform.requestNextPulse();
+    }
+
+    private static void signalResultOverflow(Stage stage, CompletableFuture<Void> layoutReady) {
+        TextArea result = (TextArea) stage.getScene().lookup("#resultDisplay");
+        ScrollPane pane = (ScrollPane) result.lookup(".scroll-pane");
+        if (pane != null && pane.getContent() != null && pane.getViewportBounds().getHeight() > 0
+                && pane.getContent().getLayoutBounds().getHeight() > pane.getViewportBounds().getHeight()) {
+            layoutReady.complete(null);
+        } else {
+            Platform.requestNextPulse();
+        }
+    }
+
+    private static void assertScrollingPreservesCommand(Stage stage, ModelManager model) {
+        Region root = (Region) stage.getScene().getRoot();
+        TextField commandBox = (TextField) root.lookup("#commandTextField");
+        TextArea resultDisplay = (TextArea) root.lookup("#resultDisplay");
+        ScrollPane resultScrollPane = (ScrollPane) resultDisplay.lookup(".scroll-pane");
+        assertTrue(resultScrollPane.getContent().getLayoutBounds().getHeight()
+                > resultScrollPane.getViewportBounds().getHeight(),
+                "result text must overflow before scrolling");
+        commandBox.requestFocus();
+
+        String[][] sections = {
+            {"studentListView", ".student-roster-title"},
+            {"lessonListView", "#lessonCount"},
+            {"homeworkListView", "#homeworkCount"}
         };
-        try {
-            runOnFxThread(() -> {
-                Stage stage = new Stage();
-                stages[0] = stage;
-                new MainWindow(stage, logic, Path.of("data", "tutorflow.json")).fillInnerParts();
-                stage.show();
-                Region root = (Region) stage.getScene().getRoot();
-                root.applyCss();
-                root.layout();
-                TextField commandBox = (TextField) root.lookup("#commandTextField");
-                TextArea resultDisplay = (TextArea) root.lookup("#resultDisplay");
-                resultDisplay.setText("A command result with enough lines to scroll.\n".repeat(100));
-                commandBox.setText("homework ");
+        for (String[] section : sections) {
+            assertSectionScrolling(stage, section);
+        }
+        assertResultScrolling(stage, resultDisplay);
+        model.setAddressBook(new AddressBook());
+        assertEmptySectionScrolling(stage, sections);
+    }
 
-                // Wait for actual overflow; TextArea's skin may need multiple pulses after root.layout().
-                stage.getScene().addPostLayoutPulseListener(signalLayout);
-                Platform.requestNextPulse();
-            });
-            layoutReady.get(10, TimeUnit.SECONDS);
-            runOnFxThread(() -> {
-                Stage stage = stages[0];
-                Region root = (Region) stage.getScene().getRoot();
-                TextField commandBox = (TextField) root.lookup("#commandTextField");
-                TextArea resultDisplay = (TextArea) root.lookup("#resultDisplay");
-                ScrollPane resultScrollPane = (ScrollPane) resultDisplay.lookup(".scroll-pane");
-                assertTrue(resultScrollPane.getContent().getLayoutBounds().getHeight()
-                        > resultScrollPane.getViewportBounds().getHeight(),
-                        "result text must overflow before scrolling");
-                commandBox.requestFocus();
+    private static void assertSectionScrolling(Stage stage, String[] section) {
+        Region root = (Region) stage.getScene().getRoot();
+        ListView<?> list = (ListView<?>) root.lookup("#" + section[0]);
+        VirtualFlow<?> flow = (VirtualFlow<?>) list.lookup(".virtual-flow");
+        assertEquals(0, flow.getPosition());
+        scroll(root.lookup(section[1]), -80);
+        assertTrue(flow.getPosition() > 0, section[0] + " did not scroll from its heading");
 
-                String[][] sections = {
-                    {"studentListView", ".student-roster-title"},
-                    {"lessonListView", "#lessonCount"},
-                    {"homeworkListView", "#homeworkCount"}
-                };
-                for (String[] section : sections) {
-                    ListView<?> list = (ListView<?>) root.lookup("#" + section[0]);
-                    VirtualFlow<?> flow = (VirtualFlow<?>) list.lookup(".virtual-flow");
-                    assertEquals(0, flow.getPosition());
-                    scroll(root.lookup(section[1]), -80);
-                    assertTrue(flow.getPosition() > 0, section[0] + " did not scroll from its heading");
+        double position = flow.getPosition();
+        scroll(flow.getFirstVisibleCell(), -80, ScrollEvent.VerticalTextScrollUnits.LINES, -3);
+        assertTrue(flow.getPosition() > position, section[0] + " did not scroll over a cell");
+        assertCommandUnchanged(stage);
+        assertEquals(-1, list.getSelectionModel().getSelectedIndex());
+    }
 
-                    double position = flow.getPosition();
-                    scroll(flow.getFirstVisibleCell(), -80, ScrollEvent.VerticalTextScrollUnits.LINES, -3);
-                    assertTrue(flow.getPosition() > position, section[0] + " did not scroll over a cell");
-                    assertSame(commandBox, stage.getScene().getFocusOwner());
-                    assertEquals("homework ", commandBox.getText());
-                    assertEquals(-1, list.getSelectionModel().getSelectedIndex());
-                }
+    private static void assertResultScrolling(Stage stage, TextArea resultDisplay) {
+        for (ScrollEvent.VerticalTextScrollUnits units : List.of(ScrollEvent.VerticalTextScrollUnits.NONE,
+                ScrollEvent.VerticalTextScrollUnits.LINES)) {
+            assertResultScrolling(stage, resultDisplay, units);
+        }
+    }
 
-                resultDisplay.setScrollTop(0);
-                scroll(resultDisplay.getParent(), -80);
-                assertTrue(resultDisplay.getScrollTop() > 0, "results did not scroll from their surrounding panel");
-                assertSame(commandBox, stage.getScene().getFocusOwner());
-                assertEquals("homework ", commandBox.getText());
+    private static void assertResultScrolling(Stage stage, TextArea resultDisplay,
+            ScrollEvent.VerticalTextScrollUnits units) {
+        double textDeltaY = units == ScrollEvent.VerticalTextScrollUnits.LINES ? -3 : 0;
+        Node viewport = resultDisplay.lookup(".scroll-pane > .viewport");
+        resultDisplay.setScrollTop(0);
+        scroll(viewport, -80, units, textDeltaY);
+        double expectedScrollTop = resultDisplay.getScrollTop();
+        assertTrue(expectedScrollTop > 0, "viewport must scroll before comparing forwarded gestures");
+        Node outerPadding = stage.getScene().lookup("#resultDisplayPlaceholder");
+        for (Node target : List.of(outerPadding, resultDisplay.getParent(), resultDisplay)) {
+            resultDisplay.setScrollTop(0);
+            scroll(target, -80, units, textDeltaY);
+            assertEquals(expectedScrollTop, resultDisplay.getScrollTop(), 1,
+                    target.getId() + " must scroll exactly once for " + units);
+            assertCommandUnchanged(stage);
+            scroll(target, 80, units, -textDeltaY);
+            assertEquals(0, resultDisplay.getScrollTop(), 1,
+                    target.getId() + " must scroll back to the top for " + units);
+            assertCommandUnchanged(stage);
+        }
+    }
 
-                model.setAddressBook(new AddressBook());
-                root.layout();
-                for (String[] section : sections) {
-                    ListView<?> list = (ListView<?>) root.lookup("#" + section[0]);
-                    assertTrue(list.getItems().isEmpty());
-                    scroll(root.lookup(section[1]), -80, ScrollEvent.VerticalTextScrollUnits.LINES, -3);
-                }
-                assertSame(commandBox, stage.getScene().getFocusOwner());
-            });
-        } finally {
-            runOnFxThread(() -> {
-                if (stages[0] != null) {
-                    if (stages[0].getScene() != null) {
-                        stages[0].getScene().removePostLayoutPulseListener(signalLayout);
-                    }
-                    stages[0].close();
-                }
-            });
+    private static void assertEmptySectionScrolling(Stage stage, String[][] sections) {
+        Region root = (Region) stage.getScene().getRoot();
+        root.layout();
+        for (String[] section : sections) {
+            ListView<?> list = (ListView<?>) root.lookup("#" + section[0]);
+            assertTrue(list.getItems().isEmpty());
+            scroll(root.lookup(section[1]), -80, ScrollEvent.VerticalTextScrollUnits.LINES, -3);
+        }
+        assertCommandUnchanged(stage);
+    }
+
+    private static void assertCommandUnchanged(Stage stage) {
+        TextField commandBox = (TextField) stage.getScene().lookup("#commandTextField");
+        assertSame(commandBox, stage.getScene().getFocusOwner());
+        assertEquals("homework ", commandBox.getText());
+    }
+
+    private static void closeScrollingWindow(Stage stage, Runnable signalLayout) {
+        if (stage != null) {
+            if (stage.getScene() != null) {
+                stage.getScene().removePostLayoutPulseListener(signalLayout);
+            }
+            stage.close();
         }
     }
 

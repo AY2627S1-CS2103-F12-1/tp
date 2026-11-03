@@ -48,6 +48,18 @@ public class JsonAddressBookStorageTest {
     public Path testFolder;
 
     @Test
+    public void saveAndRead_combiningMarksInNames_preservesRecords() throws Exception {
+        AddressBook original = new AddressBook();
+        original.addStudent(new StudentBuilder().withName("\u0905\u0928\u093f\u0932")
+                .withGuardianName("Jose\u0301").build());
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(testFolder.resolve("names.json"));
+
+        storage.saveAddressBook(original);
+
+        assertEquals(original, new AddressBook(storage.readAddressBook().orElseThrow()));
+    }
+
+    @Test
     public void readAddressBook_utf8Bom_preservesRecordsAndOriginalBytes() throws Exception {
         Path file = testFolder.resolve("bom.json");
         AddressBook original = getTypicalAddressBook();

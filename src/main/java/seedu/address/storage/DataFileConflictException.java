@@ -2,7 +2,9 @@ package seedu.address.storage;
 
 import java.io.IOException;
 
-/** Indicates that saving would conflict with another writer's data or active save. */
+/**
+ * Indicates that saving would conflict with another writer's data or active save.
+ */
 public class DataFileConflictException extends IOException {
     /** Message for a data file changed since this copy last read or wrote it, whose {@code %s} is its name. */
     public static final String MESSAGE_CHANGED = "Another program or copy of TutorFlow changed %s after this copy "
@@ -13,6 +15,9 @@ public class DataFileConflictException extends IOException {
     public static final String MESSAGE_CREATED = "Another program or copy of TutorFlow created %s after this copy "
             + "started. Restart TutorFlow before making changes. No data was changed.";
 
+    /**
+     * Creates a conflict exception with recovery guidance for the user.
+     */
     public DataFileConflictException(String message) {
         super(message);
     }

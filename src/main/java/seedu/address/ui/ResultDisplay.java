@@ -3,6 +3,7 @@ package seedu.address.ui;
 import static java.util.Objects.requireNonNull;
 
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.Region;
 
@@ -21,7 +22,14 @@ public class ResultDisplay extends UiPart<Region> {
      */
     public ResultDisplay() {
         super(FXML);
-        ScrollSupport.enableScrolling(getRoot(), resultDisplay);
+        enableScrollingFrom(getRoot());
+    }
+
+    /**
+     * Routes scrolling over {@code section} to this display without changing keyboard focus.
+     */
+    void enableScrollingFrom(Node section) {
+        ScrollSupport.enableScrolling(section, resultDisplay);
     }
 
     public void setFeedbackToUser(String feedbackToUser) {

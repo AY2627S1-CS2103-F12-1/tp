@@ -71,7 +71,8 @@ public class LessonDeleteCommand extends Command {
         Student lessonOwner = selectedLessonEntry.student();
         RegularLesson selectedLesson = selectedLessonEntry.lesson();
         List<RegularLesson> updatedLessons = new ArrayList<>(lessonOwner.getLessons());
-        updatedLessons.remove(selectedLesson);
+        boolean wasRemoved = updatedLessons.remove(selectedLesson);
+        assert wasRemoved : "The scheduled lesson must belong to its owner";
 
         model.setStudent(lessonOwner, lessonOwner.withLessons(updatedLessons));
         return new CommandResult(String.format(MESSAGE_SUCCESS,

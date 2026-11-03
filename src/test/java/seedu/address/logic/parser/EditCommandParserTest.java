@@ -19,6 +19,14 @@ public class EditCommandParserTest {
     private final EditCommandParser parser = new EditCommandParser();
 
     @Test
+    public void parse_markOnlyStudentAndGuardianNames_rejected() {
+        for (String invalidName : new String[] {"\u034F", "\uFE0F", "\u034F \uFE0F"}) {
+            assertParseFailure("1 n/" + invalidName, StudentName.MESSAGE_CONSTRAINTS);
+            assertParseFailure("1 gn/" + invalidName, StudentName.MESSAGE_CONSTRAINTS);
+        }
+    }
+
+    @Test
     public void parse_allFieldsInAnyOrder_returnsEditCommand() throws ParseException {
         EditStudentDescriptor descriptor = new EditStudentDescriptor(new StudentName("Ravi s/o Kumar"),
                 AcademicLevel.S4, new TuitionSubjects("PHYSICS, MATH"), new StudentPhone("92345678"),

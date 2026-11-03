@@ -179,49 +179,66 @@ public class StudentUiTest {
     @Test
     public void upcomingPanel_narrowWidths_entriesAndHeadingsFit() throws Exception {
         runOnFxThread(() -> {
-            Student student = new StudentBuilder().withName(LONG_NAME).withLessons(MONDAY_MATH)
-                    .withHomeworks(new HomeworkBuilder().withTitle("A long homework title that must wrap on resize")
-                            .build()).build();
             for (String family : List.of("System", "Serif", "Monospaced")) {
-                Region panel = new UpcomingPanel(FXCollections.observableArrayList(student)).getRoot();
-                Scene scene = new Scene(panel, 360, 600);
-                scene.getStylesheets().add(getClass().getResource("/view/DarkTheme.css").toExternalForm());
-                panel.applyCss();
-                panel.layout();
-                for (Node node : panel.lookupAll(".label")) {
-                    node.setStyle("-fx-font-family: '" + family + "'; -fx-font-size: 16px;");
-                }
-                // Different skins can add different cell insets. Leave room for them without a fixed pixel guess.
-                for (Node node : panel.lookupAll(".list-cell")) {
-                    node.setStyle("-fx-padding: 2 13 2 9;");
-                }
-                panel.applyCss();
+                Region panel = createWrappingPanel(family);
                 for (double width : new double[] {220, 360, 260}) {
-                    panel.resize(width, 600);
-                    panel.layout();
-                    panel.layout();
-                    for (Node node : panel.lookupAll(".upcoming-section-title")) {
-                        Label heading = (Label) node;
-                        assertTrue(heading.getWidth() >= heading.prefWidth(-1), "heading is truncated with " + family);
-                    }
-                    for (String id : List.of("lessonListView", "homeworkListView")) {
-                        ListView<?> list = (ListView<?>) panel.lookup("#" + id);
-                        Label entry = (Label) list.lookup(".upcoming-entry");
-                        assertTrue(entry.getWidth() > 0);
-                        assertEndsBefore(rightEdge(list.lookup(".clipped-container")), entry, id);
-                        assertTrue(entry.getHeight() + 1 >= entry.prefHeight(entry.getWidth()),
-                                id + " clips wrapped text with " + family + " at width " + width);
-                        assertTrue(entry.getWidth() <= ((Region) entry.getParent()).getWidth() - 22 + 1,
-                                id + " ignores the cell insets");
-                        for (Node node : list.lookupAll(".scroll-bar")) {
-                            ScrollBar bar = (ScrollBar) node;
-                            assertTrue(bar.getOrientation() == Orientation.VERTICAL || !bar.isVisible(),
-                                    id + " has a horizontal scroll bar");
-                        }
-                    }
+                    assertPanelFitsWidth(panel, family, width);
                 }
             }
         });
+    }
+
+    private Region createWrappingPanel(String fontFamily) {
+        Student student = new StudentBuilder().withName(LONG_NAME).withLessons(MONDAY_MATH)
+                .withHomeworks(new HomeworkBuilder().withTitle("A long homework title that must wrap on resize")
+                        .build()).build();
+        Region panel = new UpcomingPanel(FXCollections.observableArrayList(student)).getRoot();
+        Scene scene = new Scene(panel, 360, 600);
+        scene.getStylesheets().add(getClass().getResource("/view/DarkTheme.css").toExternalForm());
+        panel.applyCss();
+        panel.layout();
+        for (Node node : panel.lookupAll(".label")) {
+            node.setStyle("-fx-font-family: '" + fontFamily + "'; -fx-font-size: 16px;");
+        }
+        // Different skins can add different cell insets. Leave room for them without a fixed pixel guess.
+        for (Node node : panel.lookupAll(".list-cell")) {
+            node.setStyle("-fx-padding: 2 13 2 9;");
+        }
+        panel.applyCss();
+        return panel;
+    }
+
+    private static void assertPanelFitsWidth(Region panel, String fontFamily, double width) {
+        panel.resize(width, 600);
+        panel.layout();
+        panel.layout();
+        for (Node node : panel.lookupAll(".upcoming-section-title")) {
+            Label heading = (Label) node;
+            assertTrue(heading.getWidth() >= heading.prefWidth(-1), "heading is truncated with " + fontFamily);
+        }
+        for (String id : List.of("lessonListView", "homeworkListView")) {
+            ListView<?> list = (ListView<?>) panel.lookup("#" + id);
+            assertWrappedEntryFits(list, id, fontFamily, width);
+            assertNoHorizontalScrollBar(list, id);
+        }
+    }
+
+    private static void assertWrappedEntryFits(ListView<?> list, String id, String fontFamily, double width) {
+        Label entry = (Label) list.lookup(".upcoming-entry");
+        assertTrue(entry.getWidth() > 0);
+        assertEndsBefore(rightEdge(list.lookup(".clipped-container")), entry, id);
+        assertTrue(entry.getHeight() + 1 >= entry.prefHeight(entry.getWidth()),
+                id + " clips wrapped text with " + fontFamily + " at width " + width);
+        assertTrue(entry.getWidth() <= ((Region) entry.getParent()).getWidth() - 22 + 1,
+                id + " ignores the cell insets");
+    }
+
+    private static void assertNoHorizontalScrollBar(ListView<?> list, String id) {
+        for (Node node : list.lookupAll(".scroll-bar")) {
+            ScrollBar bar = (ScrollBar) node;
+            assertTrue(bar.getOrientation() == Orientation.VERTICAL || !bar.isVisible(),
+                    id + " has a horizontal scroll bar");
+        }
     }
 
     @Test

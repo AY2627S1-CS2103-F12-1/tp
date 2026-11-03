@@ -2,6 +2,7 @@ package seedu.address.logic;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -10,7 +11,10 @@ import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Duration;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -37,15 +41,49 @@ public class ConcurrentLessonStorageTest {
         seedLessons();
         Session session = openSession();
         byte[] saved = Files.readAllBytes(dataFile());
+        Process writer = startLockHolder();
+        try {
+            awaitLockHolder(writer, Duration.ofSeconds(15));
+            CommandException error = assertThrows(CommandException.class, () ->
+                    session.logic().execute("lesson delete 1"));
+            assertTrue(error.getMessage().contains("Try again"));
+            assertArrayEquals(saved, Files.readAllBytes(dataFile()));
+        } finally {
+            stopLockHolder(writer);
+        }
+
+        session.logic().execute("lesson delete 1");
+        assertTrue(session.model().getAddressBook().getStudentList().getFirst().getLessons().isEmpty());
+    }
+
+    @Test
+    public void lockHolder_blockedBeforeReadiness_timesOutAndTerminates() throws Exception {
+        Path lockFile = dataFile().resolveSibling("tutorflow.json.lock");
+        try (FileChannel channel = FileChannel.open(lockFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+                FileLock lock = channel.lock()) {
+            assertTrue(lock.isValid());
+            Process writer = startLockHolder();
+            try {
+                assertThrows(TimeoutException.class, () -> awaitLockHolder(writer, Duration.ofMillis(100)));
+            } finally {
+                stopLockHolder(writer);
+            }
+            assertFalse(writer.isAlive(), "A timed-out helper must not survive the test");
+        }
+    }
+
+    private Process startLockHolder() throws Exception {
         Path source = temporaryFolder.resolve("LockHolder.java");
         Files.writeString(source, """
-                import java.nio.channels.*;
-                import java.nio.file.*;
+                import java.nio.channels.FileChannel;
+                import java.nio.channels.FileLock;
+                import java.nio.file.Path;
+                import java.nio.file.StandardOpenOption;
                 public class LockHolder {
                     public static void main(String[] args) throws Exception {
-                        try (FileChannel c = FileChannel.open(Path.of(args[0]),
+                        try (FileChannel channel = FileChannel.open(Path.of(args[0]),
                                 StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-                                FileLock lock = c.lock()) {
+                                FileLock lock = channel.lock()) {
                             System.out.println("locked");
                             System.out.flush();
                             System.in.read();
@@ -53,24 +91,27 @@ public class ConcurrentLessonStorageTest {
                     }
                 }
                 """);
-        Process writer = new ProcessBuilder(Path.of(System.getProperty("java.home"), "bin", "java").toString(),
+        return new ProcessBuilder(Path.of(System.getProperty("java.home"), "bin", "java").toString(),
                 source.toString(), dataFile().resolveSibling("tutorflow.json.lock").toString())
                 .redirectErrorStream(true).start();
+    }
+
+    private static void awaitLockHolder(Process writer, Duration timeout) throws Exception {
+        FutureTask<String> readiness = new FutureTask<>(writer.inputReader()::readLine);
+        Thread.ofVirtual().start(readiness);
+        assertEquals("locked", readiness.get(timeout.toMillis(), TimeUnit.MILLISECONDS),
+                "Lock holder must signal readiness");
+    }
+
+    private static void stopLockHolder(Process writer) throws Exception {
         try {
-            assertEquals("locked", writer.inputReader().readLine());
-            CommandException error = assertThrows(CommandException.class, () ->
-                    session.logic().execute("lesson delete 1"));
-            assertTrue(error.getMessage().contains("Try again"));
-            assertArrayEquals(saved, Files.readAllBytes(dataFile()));
-        } finally {
             writer.getOutputStream().close();
+        } finally {
             if (!writer.waitFor(5, TimeUnit.SECONDS)) {
                 writer.destroyForcibly();
+                assertTrue(writer.waitFor(5, TimeUnit.SECONDS), "Lock holder must terminate before retrying the save");
             }
         }
-
-        session.logic().execute("lesson delete 1");
-        assertTrue(session.model().getAddressBook().getStudentList().getFirst().getLessons().isEmpty());
     }
 
     @Test

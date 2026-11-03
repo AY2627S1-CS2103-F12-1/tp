@@ -81,7 +81,9 @@ public class UpcomingPanel extends UiPart<Region> {
         updateHomeworkEntries(students, today);
     }
 
-    /** Captures selections and keyboard navigation before a command rebuilds the reports. */
+    /**
+     * Captures selections and keyboard navigation before a command rebuilds the reports.
+     */
     ViewState captureViewState() {
         return new ViewState(lessonListView.getSelectionModel().getSelectedIndex(),
                 lessonListView.getFocusModel().getFocusedIndex(),
@@ -89,7 +91,9 @@ public class UpcomingPanel extends UiPart<Region> {
                 homeworkListView.getFocusModel().getFocusedIndex());
     }
 
-    /** Restores report navigation after a rejected command has restored the original data. */
+    /**
+     * Restores report navigation after a rejected command has restored the original data.
+     */
     void restoreViewState(ViewState state) {
         restoreSelection(lessonListView, state.lessonSelection(), state.lessonFocus());
         restoreSelection(homeworkListView, state.homeworkSelection(), state.homeworkFocus());
@@ -103,7 +107,9 @@ public class UpcomingPanel extends UiPart<Region> {
         list.getFocusModel().focus(focus);
     }
 
-    /** Holds navigation indices in the unchanged reports restored after a failure. */
+    /**
+     * Holds navigation indices in the unchanged reports restored after a failure.
+     */
     record ViewState(int lessonSelection, int lessonFocus, int homeworkSelection, int homeworkFocus) {
     }
 

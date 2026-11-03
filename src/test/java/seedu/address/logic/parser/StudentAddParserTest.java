@@ -19,6 +19,27 @@ public class StudentAddParserTest {
     private final StudentAddParser parser = new StudentAddParser();
 
     @Test
+    public void parse_markOnlyStudentAndGuardianNames_rejected() {
+        for (String invalidName : new String[] {"\u034F", "\uFE0F", "\u034F \uFE0F"}) {
+            assertParseFailure(VALID_ARGUMENTS.replace("n/John Tan", "n/" + invalidName),
+                    StudentName.MESSAGE_CONSTRAINTS);
+            assertParseFailure(VALID_ARGUMENTS.replace("gn/Mary Tan", "gn/" + invalidName),
+                    StudentName.MESSAGE_CONSTRAINTS);
+        }
+    }
+
+    @Test
+    public void parse_combiningMarksInStudentAndGuardianNames_preservesValues() throws ParseException {
+        String name = "\u0905\u0928\u093f\u0932";
+        String guardianName = "Jose\u0301";
+        Student student = parser.parse(VALID_ARGUMENTS.replace("n/John Tan", "n/" + name)
+                .replace("gn/Mary Tan", "gn/" + guardianName));
+
+        assertEquals(name, student.getName().toString());
+        assertEquals(guardianName, student.getGuardianName().toString());
+    }
+
+    @Test
     public void parse_nonAsciiStudentAndGuardianNames_preservesValues() throws ParseException {
         Student student = parser.parse(VALID_ARGUMENTS.replace("n/John Tan", "n/李明")
                 .replace("gn/Mary Tan", "gn/李华"));

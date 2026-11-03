@@ -77,6 +77,20 @@ public class CommandIndexValidationTest {
         }
     }
 
+    @Test
+    public void parse_lessonAddMissingFieldAndOverflow_reportsMissingFieldFirst() {
+        String command = "lesson add 2147483648 s/MATH d/MONDAY st/16:00";
+        assertEquals(String.format(LessonAddCommandParser.MESSAGE_MISSING_PREFIXES, "et/"),
+                assertThrows(ParseException.class, () -> parser.parseCommand(command)).getMessage());
+    }
+
+    @Test
+    public void parse_statusStudentOverflowAndHomeworkSyntax_reportsStudentRangeFirst() {
+        String command = "hw status 2147483648 0 status/COMPLETED";
+        assertEquals(Messages.MESSAGE_STUDENT_INDEX_TOO_LARGE,
+                assertThrows(ParseException.class, () -> parser.parseCommand(command)).getMessage());
+    }
+
     private record IndexCase(String format, String syntaxMessage, String rangeMessage, Command maximumCommand) {
     }
 }

@@ -11,7 +11,10 @@ title: Developer Guide
 
 * TutorFlow adapts the architecture, shared utilities, and documentation of the [AddressBook-Level3 project](https://github.com/se-edu/addressbook-level3), created by the [SE-EDU initiative](https://se-education.org).
 * TutorFlow uses [OpenJFX Monocle, packaged by TestFX](https://github.com/TestFX/Monocle), to run JavaFX UI tests in headless continuous integration environments.
+* Edison Choo ([@Edison-choo](https://github.com/Edison-choo)) used OpenAI Codex to help develop and review student commands, command history and the searchable help window, as well as their tests and documentation, and to assist with release checks.
 * Lim Jing Kai ([@Elljaykei](https://github.com/Elljaykei)) used OpenAI Codex for AI-assisted code review, regression-test development, fixes to homework filter/status commands, strict index validation in homework/lesson parsers, Java documentation cleanup, UML corrections, and final-submission checks.
+* Wee Wye Keong ([@wyekstudent](https://github.com/wyekstudent)) used OpenAI Codex to review student-management features against the practical-exam criteria, implement support for Unicode combining marks in student and guardian names, add regression tests, check test coverage, clarify the User Guide and Developer Guide, and check final-submission requirements.
+* Alex Chien ([@Alexc09](https://github.com/Alexc09)) used Anthropic Claude Code to help develop the homework commands (add, list, upcoming, edit, marks and delete), quoted command values, and saving and loading of the data file, as well as their tests and documentation; to review code; to fix bugs found during testing; to draw UML diagrams for the Developer Guide; and to assist with alpha and beta testing.
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -118,6 +121,13 @@ when shown. The content split pane binds its minimum height to its children's mi
 narrowest permitted widths, accounting for wrapped headings so the sidebar remains within its bounds. Both
 lists show entry counts and empty-state placeholders. `MainWindow.fxml` uses split panes to resize sections,
 and `ScrollSupport` lets users scroll over headings and padding while retaining command-box focus.
+
+`ResultDisplay` enables scroll forwarding on its own root. `MainWindow` also calls
+`ResultDisplay#enableScrollingFrom` with `resultDisplayPlaceholder`, covering the outer padding supplied by
+`MainWindow.fxml`. `ScrollSupport` forwards gestures to the control's viewport and consumes the original event;
+events already targeting that viewport or its descendants are not forwarded again. This prevents duplicate
+scrolling when the inner and outer handlers share an event path. The control's skin interprets wheel-line and
+pixel deltas without changing keyboard focus or the command draft.
 
 `MainWindow#createStudentListPanel` supplies a card factory that creates `StudentCard` roots using the window's
 current display date. `StudentListPanel` calls that factory and caches each root with its student reference and
@@ -338,7 +348,7 @@ unless saving fails: the rollback then restores them.
 All six prefixes are required exactly once, in any order. Structural checks run before field validation;
 `StudentAddParser` wraps a value-validation failure in a `ParseException`, preserving its message and cause.
 `StudentName` collapses Unicode whitespace and strips the ends before checking a length of 1 to 70 Unicode
-code points. It accepts Unicode letters and numbers, spaces, apostrophes, hyphens, periods, parentheses and `/`,
+code points and requires at least one character other than a combining mark or space. It accepts Unicode letters, combining marks and numbers, spaces, apostrophes, hyphens, periods, parentheses and `/`,
 while preserving case for display. `StudentPhone` strips the ends and accepts eight-digit local numbers starting
 with 6, 8 or 9, or a `+` followed by 8 to 15 digits. `TuitionSubjects` rejects empty, unsupported and repeated
 subjects, and preserves the supplied order in its unmodifiable set and display text.
@@ -1260,6 +1270,8 @@ testers are expected to do more *exploratory* testing.
       Expected: Algebra disappears from outstanding homework when completed, reappears when assigned and remains visible after receiving a score, without restarting. Zoe's upcoming-homework count remains 1 because the due date is in the future; this count is independent of completion and marks.
    1. Run `search Ben`, then resize the window and drag the split-pane dividers.<br>
       Expected: The student list shows Ben only, while the sidebar still shows Zoe's lesson and assigned Algebra homework with her name and phone. Entries remain readable; each section can be scrolled whenever its contents exceed its available space. Run `list` to restore the full roster.
+   1. Run `hw ls 1 all` and reduce the result section's height until its vertical scrollbar appears; add more homework to the test roster if needed. Leave `lesson ` in the command box without pressing Enter. Scroll up and down over the result text, then over the surrounding padding, including the narrow left and bottom edges.<br>
+      Expected: The result scrolls from each location. The unfinished command and keyboard focus remain in the command box. A single wheel notch scrolls by the same amount over padding as inside the text area, without an extra jump.
 
 ### Listing, searching, and deleting students
 

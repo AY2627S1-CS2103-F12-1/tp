@@ -136,7 +136,10 @@ including completed records, and **Overdue homework**, counting only assigned re
 Recording or clearing a score does not change either count. The upcoming count can therefore differ from the
 number of that student's outstanding tasks in the sidebar.
 
-Drag the dividers to resize the command box, result display, student list and sidebar. You can scroll over a section's heading or padding as well as its entries while keeping the cursor in the command box.
+Drag the dividers to resize the command box, result display, student list and sidebar. When a section overflows,
+you can scroll over its heading or padding as well as its entries. For long command results, scroll inside the
+result display or over the padding around it, including the narrow left and bottom edges. Scrolling keeps the
+cursor in the command box and preserves any unfinished command.
 
 ### Viewing help: `help`
 
@@ -156,7 +159,7 @@ Adds a student to the end of the student list.
 Format: `add n/STUDENT_NAME l/ACADEMIC_LEVEL s/SUBJECTS p/STUDENT_PHONE gn/GUARDIAN_NAME gp/GUARDIAN_PHONE`
 
 * All six fields are required, and each prefix must appear exactly once.
-* `STUDENT_NAME` and `GUARDIAN_NAME` must be 1 to 70 characters long and may contain letters, numbers, spaces, apostrophes, hyphens, periods, parentheses and `/`. Letters and numbers from non-English languages are accepted. Spaces at both ends are removed, and repeated whitespace between words becomes one space before the length is checked. Capitalization is kept.
+* `STUDENT_NAME` and `GUARDIAN_NAME` must be 1 to 70 Unicode code points long and may contain letters, combining marks, numbers, spaces, apostrophes, hyphens, periods, parentheses and `/`. At least one character must be neither a combining mark nor a space. Non-English names such as `अनिल` and accented names are accepted; a combining mark counts separately towards the length limit. Spaces at both ends are removed, and repeated whitespace between words becomes one space before the length is checked. Capitalization is kept. Different Unicode representations of the same visible name are stored and compared as typed.
 * A name may contain words such as `s/o` and `d/o`, but not this command's other prefixes (such as `p/` or `gn/`) after a space, unless the whole name is wrapped in double quotes (see the [notes about the command format](#features)).
 * `ACADEMIC_LEVEL` must be one of `S1`, `S2`, `S3`, `S4`, `S5`, `J1` or `J2` (in any case).
 * `SUBJECTS` is one or more of `MATH`, `PHYSICS` and `CHEMISTRY` (in any case), separated by commas, with no subject repeated. The student card shows the subjects in the order you type them.

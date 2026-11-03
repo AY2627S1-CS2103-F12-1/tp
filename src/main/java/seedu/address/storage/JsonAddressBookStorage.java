@@ -142,12 +142,16 @@ public class JsonAddressBookStorage {
         }
     }
 
-    /** Returns saved bytes, with null distinguishing a missing file from an empty file. */
+    /**
+     * Returns saved bytes, with null distinguishing a missing file from an empty file.
+     */
     private static byte[] readVersion(Path file) throws IOException {
         return Files.notExists(file) ? null : Files.readAllBytes(file);
     }
 
-    /** Serializes cooperating writers across processes before comparing and replacing the file. */
+    /**
+     * Serializes cooperating writers across processes before comparing and replacing the file.
+     */
     private static FileLock acquireWriteLock(FileChannel channel) throws IOException {
         try {
             FileLock lock = channel.tryLock();

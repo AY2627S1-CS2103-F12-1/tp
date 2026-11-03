@@ -15,6 +15,7 @@ title: Developer Guide
 * Lim Jing Kai ([@Elljaykei](https://github.com/Elljaykei)) used OpenAI Codex for AI-assisted code review, regression-test development, fixes to homework filter/status commands, Java documentation cleanup, UML corrections, and final-submission checks.
 * Wee Wye Keong ([@wyekstudent](https://github.com/wyekstudent)) used OpenAI Codex to review student-management features against the practical-exam criteria, implement support for Unicode combining marks in student and guardian names, add regression tests, check test coverage, clarify the User Guide and Developer Guide, and check final-submission requirements.
 * Alex Chien ([@Alexc09](https://github.com/Alexc09)) used Anthropic Claude Code to help develop the homework commands (add, list, upcoming, edit, marks and delete), quoted command values, and saving and loading of the data file, as well as their tests and documentation; to review code; to fix bugs found during testing; to draw UML diagrams for the Developer Guide; and to assist with alpha and beta testing.
+* Noel Tong ([@h0nh0nbaguette](https://github.com/h0nh0nbaguette)) used OpenAI Codex to assist with developing and refining lesson-management features and the user interface; adding regression tests; reviewing code quality; checking test coverage; investigating and fixing bugs; documentation refinement and cleanup, including UML corrections; and checking course conventions and release requirements.
 
 --------------------------------------------------------------------------------------------------------------------
 
